@@ -1,133 +1,110 @@
+
 # Provider Access Strategy
 
 ## Purpose
 
-Determine the simplest safe method to access tasks, repositories, PRs, and
-design artifacts.
+Determine the simplest, safest, and least expensive method to access tasks,
+repositories, Pull Requests / Merge Requests, and design artifacts.
 
 The Engineering System must not require MCP as its default mechanism.
 
+Provider access must remain independent from engineering knowledge,
+workflows, and client-specific configuration.
+
 ## General Priority
 
-Choose the first available method that provides enough information for
-the requested task.
+Choose the first available method that provides sufficient information
+for the requested task.
 
 1. Existing local repository and files.
-2. User-provided URL accessible through existing authorized tools.
-3. Existing authenticated CLI or client connection.
-4. Authorized read-only MCP or provider API.
-5. User-supplied diff, source files, screenshots, or exported documents.
-6. Ask for missing information only when it materially affects the result.
+2. User-provided URLs accessible through available authorized tools.
+3. Existing authenticated CLI or client connections.
+4. Authorized read-only provider integrations or APIs.
+5. MCP when structured or authenticated access is necessary.
+6. User-supplied diffs, source files, screenshots, or exported documents.
+7. Ask for missing information only when it materially affects the result.
 
-This priority may change when a provider offers significantly better or
-more reliable access through an available integration.
+This order may change when another method provides more reliable access
+with less cost or context.
+
+Do not configure a new provider merely because it is available.
 
 ## Repository Access
 
 For local repositories:
 
-- inspect the Git remote
-- inspect the branch and commit
-- inspect the working-tree status
-- inspect only relevant files and dependencies
+- Inspect the Git remote.
+- Inspect the current branch and commit.
+- Inspect the working-tree status.
+- Identify relevant files, dependencies, and configuration.
+- Read additional files only when necessary.
 
-For PR reviews:
+For Pull Request / Merge Request reviews:
 
-- identify source and target commits
-- preserve the active workspace
-- use an isolated worktree when necessary
-- inspect relevant surrounding code
-- never publish or modify remote changes
+- Identify the source and target branches and commits when available.
+- Retrieve the exact source revision when possible.
+- Preserve the active workspace.
+- Use an isolated Git worktree when necessary.
+- Inspect relevant surrounding code and existing abstractions.
+- Never publish or modify remote changes.
 
-If local credentials cannot retrieve the PR source, use another authorized
-read-only method or request the missing artifacts.
+If the source revision cannot be retrieved, report the limitation and
+use an authorized alternative or request the smallest useful artifact.
+
+Never discard uncommitted changes or overwrite the user's working tree.
 
 ## Task Access
 
-Accept:
+Accept task information through:
 
 - task URLs
-- identifiers
-- task descriptions
-- exported Markdown
-- JSON
+- task identifiers
+- task descriptions supplied by the user
+- Markdown or JSON files
 - attachments
-- provider integrations
+- existing provider integrations
+- authorized CLI or API access
 
-Retrieve acceptance criteria, comments, links, and dependencies only when
-available and relevant.
+Retrieve acceptance criteria, comments, dependencies, attachments, and
+related links only when available and relevant.
 
-Do not require a task-management MCP when the task information supplied
-by the user is sufficient.
+Prefer the original task source when accessible.
+
+Do not require a task-management MCP when the supplied task information
+is sufficient.
+
+A task URL does not automatically provide access to private content.
 
 ## Design Access
 
-Accept:
+Accept design references through:
 
-- URLs
-- node/frame/page identifiers
-- images and screenshots
+- design URLs
+- frame, node, page, or component identifiers
+- screenshots and images
 - PDFs
 - diagrams
 - wireframes
-- HTML/CSS
+- HTML and CSS
 - exported design specifications
 - local design artifacts
+- existing application screens
 
-Prefer a task-relevant design selection.
+Prefer the smallest design selection relevant to the task.
 
-Retrieve the surrounding screen only when needed to understand layout,
-interaction, or responsive behavior.
+Retrieve surrounding screen context only when needed to understand
+layout, relationships, interactions, or responsive behavior.
 
-If the design URL is private or inaccessible, do not invent its contents.
-Request an export or screenshot when necessary.
+A full-screen design may be used to understand the overall layout while
+implementation remains limited to the task-specific region.
 
-## MCP Selection
+Do not require Figma or a prewritten design-analysis Markdown file.
 
-Before enabling an MCP:
+If a design source is inaccessible, use available artifacts or request
+an export or screenshot when the missing information materially affects
+implementation.
 
-1. Determine which information is missing.
-2. Determine whether local files or existing tools provide it.
-3. Select the provider with the required capability.
-4. Prefer read-only permissions.
-5. Enable only relevant tools.
-6. Avoid enabling duplicate providers for the same task.
-7. Disable or exclude unrelated MCP tools when practical.
-
-## Cost and Authorization
-
-Prefer:
-
-- local tools
-- open-source tools
-- free tiers
-- organization-provided licenses
-- authorized low-cost services
-
-Do not purchase a service or initiate paid usage without authorization.
-
-Keep credentials outside the repository.
-
-## Token Efficiency
-
-- Load only relevant Skills.
-- Retrieve only relevant task fields.
-- Retrieve only relevant design regions.
-- Analyze the diff before expanding repository context.
-- Avoid repeating unchanged analysis.
-- Use compact review memory for follow-up commits.
-- Do not retrieve large design documents or entire repositories by default.
-
-## Failure Handling
-
-If access fails:
-
-- report what is inaccessible
-- continue with reliable available information
-- identify important gaps
-- ask for the smallest additional artifact required
-
-Never fabricate successful access.
+Never invent inaccessible design content.
 
 ## Direct Reference Resolution
 
@@ -141,135 +118,198 @@ Accepted references include:
 - repository URLs
 - design URLs
 - documentation URLs
-- local files and user-provided artifacts
-
-## Resolution Order
+- local files
+- user-provided descriptions and artifacts
 
 For each reference:
 
 1. Classify the resource.
-2. Check whether its content is already available in the current context.
-3. Use local Git or filesystem access if appropriate.
-4. Use available direct URL retrieval when the resource is accessible.
-5. Use an existing authenticated client, CLI, or read-only integration
-   when required.
-6. Use MCP only when it provides necessary access or structured data that
-   simpler methods cannot provide.
-7. Request a minimal export, screenshot, diff, or pasted content only
+2. Determine which information is required.
+3. Check whether the information is already available.
+4. Use local Git or filesystem access when appropriate.
+5. Use direct URL retrieval when supported and sufficient.
+6. Use an existing authenticated CLI, client, or read-only integration
+   when necessary.
+7. Use MCP when it provides required structured or authenticated access.
+8. Request a minimal export, screenshot, diff, or pasted content only
    when essential information remains inaccessible.
 
-## Private Resources
+When multiple references are supplied, classify and resolve them
+independently.
 
-A URL does not provide authentication.
+Prefer relevant links already associated with the task or PR.
 
-Never bypass authentication or attempt to access content without
+Do not retrieve every linked resource automatically.
+
+## Client and Artifact Limitations
+
+Choose an access method appropriate for the client, resource type, and
+required information.
+
+### Authentication
+
+A URL does not grant authorization.
+
+Do not assume that authentication from another browser session is
+available to the AI coding client.
+
+Never bypass authentication or access private resources without
 authorization.
 
-Do not expose tokens, cookies, or private content in logs or generated
-reports.
+Do not expose credentials, cookies, tokens, or private content in logs
+or generated reports.
 
-## Multiple References
+### Textual Content
 
-If multiple URLs are supplied, classify them independently as task,
-design, repository, PR, or documentation references.
+Use direct URL retrieval when the client supports it and the resource
+is accessible.
 
-Prefer links already present in the task or PR.
+A retrieved webpage does not prove that linked pages, attachments,
+images, or comments were also retrieved.
 
-Do not retrieve every linked resource automatically. Retrieve only
-resources relevant to the current task and expand context when needed.
-
-## Continuation with Partial Context
-
-If one reference fails, continue with other reliable sources when safe.
-
-Clearly identify which sources were accessible and which were not.
-
-Do not claim that an inaccessible task, design, or repository was
-successfully inspected.
-
-## Client Retrieval Limits
-
-The access method must match the artifact type.
-
-### Textual URLs
-
-Use direct URL retrieval when the client supports it and the resource is
-accessible.
-
-Do not assume that authentication in a separate web browser is shared
-with the AI coding client.
+Report which sources were actually inspected.
 
 ### Images and Binary Artifacts
 
-A textual URL-fetching tool may not retrieve an image, PDF, or other binary
-artifact as usable content.
+Text retrieval may be insufficient for images, PDFs, and other binary
+artifacts.
 
-When required:
+When necessary:
 
-- use an artifact accessible to the client's file/image tools
+- use an artifact accessible to the client's file or image tools
 - use an authorized provider integration
-- request an export or screenshot if necessary
+- request an export or screenshot
+
+Do not claim that a binary artifact was inspected merely because its URL
+was retrieved.
 
 ### Structured Design Data
 
-Do not treat access to a design webpage as equivalent to access to its
-structured design model.
+Access to a design webpage is not equivalent to access to its structured
+design model.
 
-Prefer frame/node-level retrieval when the authorized provider exposes it.
+Prefer frame-, node-, page-, or component-level retrieval when the
+authorized provider exposes it.
 
 Otherwise, analyze the available visual artifact and report limitations.
 
-### Provider Validation
+Do not assume that a URL provides access to design variables, component
+variants, layout metadata, or interactions.
 
-Before recommending an integration, distinguish:
+### Provider Verification
 
-- documented support
-- installed configuration
+Distinguish between:
+
+- documented provider support
+- configured client integration
 - successful authentication
 - verified read capability
 - verified write capability
+
+A provider appearing in documentation does not mean that it is configured.
+
+Never claim successful access without evidence.
 
 Read-only workflows require only the necessary read capability.
 
 Never enable write access merely to retrieve context.
 
-## Artifact and Client Limitations
+## MCP Selection
 
-Use an access method appropriate for the resource type.
+Before enabling or using an MCP:
 
-### Textual URLs
+1. Identify the missing information or capability.
+2. Determine whether local files or existing tools provide it.
+3. Select a provider with the required capability.
+4. Prefer read-only permissions.
+5. Enable only the relevant tools when practical.
+6. Avoid duplicate providers for the same task.
+7. Exclude unrelated MCP tools when practical.
+8. Verify the required access before depending on it.
 
-Use direct retrieval if the client supports it and the resource is
-accessible.
+MCP is an optional integration mechanism, not a Core dependency.
 
-Do not assume that authentication in another browser session is shared
-with the AI coding client.
+Do not install an MCP solely because one exists.
 
-### Images and Binary Artifacts
+## Cost and Authorization
 
-Textual URL-fetching tools may not retrieve images, PDFs, or other binary
-artifacts as usable content.
+Prefer:
 
-When needed:
+- local tools
+- open-source tools
+- free services
+- organization-provided licenses
+- authorized low-cost services
 
-- use an artifact accessible to the client's file/image tools
-- use an authorized integration
-- request an export or screenshot
+Use an organization-provided paid service when it is authorized and
+appropriate.
 
-### Structured Design Data
+Do not purchase subscriptions or initiate additional paid usage without
+authorization.
 
-Access to a design webpage is not equivalent to access to its underlying
-design model.
+Distinguish the cost of provider access from the cost of AI model
+inference.
 
-Prefer frame/node-level retrieval when the authorized provider exposes it.
+A free MCP server does not guarantee that the underlying service or model
+is free.
 
-Otherwise, analyze the accessible visual artifact and report limitations.
+Credentials must remain outside the repository.
 
-### Provider Verification
+## Token Efficiency
 
-Distinguish documented support from configured access and verified
+- Load only relevant Skills.
+- Retrieve only task fields needed for the current work.
+- Retrieve only relevant design regions.
+- Analyze the diff before expanding repository context.
+- Inspect related code only when necessary.
+- Avoid retrieving entire repositories or large design documents by default.
+- Avoid repeating unchanged analysis.
+- Use compact review memory for follow-up PR revisions.
+- Do not load every provider's tools when one provider is sufficient.
+- Expand context only to resolve ambiguity, verify a finding, or establish
+  an important dependency.
+
+Accuracy and security take precedence over token minimization.
+
+## Failure Handling
+
+If access fails:
+
+1. Report what could not be accessed.
+2. Continue with reliable available information when safe.
+3. Identify any missing context that materially affects correctness.
+4. Request the smallest additional artifact or permission required.
+
+Never fabricate inaccessible content.
+
+Never claim that a task, design, repository, or PR was successfully
+inspected when it was not.
+
+## Read-Only and Remote Write Policy
+
+The current workflow supports preparing copy-ready engineering artifacts.
+
+The system may:
+
+- prepare a copy-ready PR/MR title and description
+- prepare copy-ready PR review comments
+- inspect repositories and diffs using authorized read access
+- execute appropriate local validation when permitted
+
+The current workflow does not authorize:
+
+- creating or publishing PRs/MRs
+- publishing review comments
+- approving or rejecting PRs/MRs through a provider
+- merging Pull Requests
+- pushing source branches
+- updating remote task status
+- modifying remote repository data
+
+The user performs these remote actions manually.
+
+These restrictions apply even if a provider integration exposes write
 capabilities.
 
-Read-only workflows need only read access.
-
-Never enable remote write operations merely to retrieve context.
+Future changes to this policy require explicit authorization and
+corresponding updates to the affected workflows and client permissions.
