@@ -405,3 +405,65 @@ Produce a concise:
 12. Respect existing project conventions.
 13. Do not expand task scope without justification.
 14. Report conflicts between design and implementation before changing them.
+
+## Task-Scoped Design Analysis
+
+### Goal
+
+Analyze only the design area relevant to the current task while preserving
+enough surrounding context to understand its behavior.
+
+### Selection Strategy
+
+Use this preference order:
+
+1. Exact frame, node, component, page, or artboard referenced by the task.
+2. Design section or region identifiable from the provided artifact.
+3. Cropped screenshot of the relevant area.
+4. Full screenshot when necessary to understand the surrounding layout.
+
+If structured design access is available, request only the relevant
+selection and its necessary context.
+
+If the design contains one complete screen, inspect the whole screen only
+to the extent necessary to understand layout and relationships, then focus
+the implementation analysis on the task-specific region.
+
+Do not treat the entire design as implementation scope merely because it
+is visible.
+
+### When Screenshots Are Needed
+
+Request or use a screenshot when:
+
+- the design source cannot be accessed
+- the relevant region cannot be selected
+- layout fidelity is important but unavailable from structured data
+- the task description cannot identify the affected area reliably
+
+Prefer a crop of the relevant region, plus the whole-screen context only
+when needed.
+
+### Scope Output
+
+Include:
+
+- relevant design area
+- surrounding elements that affect behavior
+- components and states in scope
+- elements intentionally excluded
+- unavailable information
+- reason for requesting additional visual context, if applicable
+
+### Token Efficiency
+
+- Do not retrieve all design pages by default.
+- Do not retrieve all assets by default.
+- Do not request repeated screenshots of the same unchanged frame.
+- Do not analyze unrelated screens.
+- Expand the design context only when the task or implementation requires it.
+
+### Accuracy
+
+Do not invent measurements, interactions, hidden states, or responsive
+behavior that the artifact does not establish.

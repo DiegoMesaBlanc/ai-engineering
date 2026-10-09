@@ -122,3 +122,47 @@ Do not generate large numbers of low-value comments.
 
 Prioritize correctness, security, architecture, requirements, and meaningful
 maintainability issues over personal style preferences.
+
+## PR Preparation and Review Policy
+
+Pull Request preparation and Pull Request review are separate workflows.
+
+### PR Preparation
+
+The `/pr` command generates copy-ready content.
+
+It does not create, publish, approve, merge, or modify a PR/MR.
+
+### PR Review
+
+The `/review-pr` command performs read-only analysis.
+
+It does not:
+
+- modify PR source code
+- fix findings
+- publish comments
+- approve or reject a PR
+- merge
+- update tasks
+- push changes
+
+Review output must contain evidence-based feedback grouped by file and line,
+with copy-ready comments whenever an actionable issue is found.
+
+### Repository Access
+
+Prefer local repository inspection when it provides sufficient context.
+
+Use isolated worktrees for source inspection when necessary.
+
+Preserve the user's active working tree.
+
+### External Services
+
+Use read-only access for review.
+
+MCP is optional and must not be required when an available local or
+artifact-based method is sufficient.
+
+Never store credentials in the Engineering System repository.

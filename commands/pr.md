@@ -1,117 +1,96 @@
 # /pr
 
-Create or prepare a Pull Request / Merge Request from the current
-validated implementation.
+Prepare a Pull Request / Merge Request proposal for manual creation.
 
----
+This command generates copy-ready content.
+It does not create or publish a PR/MR.
 
-## Behavior
+## Inputs
 
-1. Detect the Git provider.
-2. Inspect repository status.
-3. Inspect current branch.
-4. Determine target branch.
-5. Inspect commits.
-6. Inspect changed files.
-7. Inspect associated task when available.
-8. Inspect associated design when available.
-9. Validate tests.
-10. Validate typecheck when available.
-11. Validate lint when available.
-12. Validate build when appropriate.
-13. Analyze architecture impact.
-14. Analyze potential risks.
-15. Generate PR title.
-16. Generate PR description.
-17. Suggest reviewers when evidence exists.
-18. Present PR READY summary.
-19. Request approval.
-20. Create the PR/MR only after approval.
+Accept any available combination of:
 
----
+- current local repository
+- source branch
+- target branch
+- task URL or identifier
+- design URL or artifact
+- PR template or repository contribution guidelines
 
-## PR READY
+Infer provider details when reliable evidence is available.
 
-Display:
+Do not require an MCP if local Git and repository files provide sufficient
+information.
 
-PR READY
+## Workflow
 
-Provider:
-...
+1. Inspect repository status and current branch.
+2. Identify the intended source and target branches.
+3. Inspect commits and relevant changes.
+4. Inspect the task when available.
+5. Inspect associated design artifacts when relevant.
+6. Analyze architecture and affected modules.
+7. Identify unrelated or accidental changes.
+8. Check available validation evidence.
+9. Generate copy-ready PR title and description.
+10. Include appropriate testing and risk information.
 
-Repository:
-...
+Do not load unrelated project documentation unless needed.
 
-Source branch:
-...
+## Output
 
-Target branch:
-...
+### PR TITLE
 
-Task:
-...
+<Copy-ready title>
 
-Title:
-...
+### PR DESCRIPTION
 
-Summary:
-...
+#### Summary
+<What changed and why>
 
-Changes:
-...
+#### Task / Requirements
+<Task reference and acceptance criteria addressed, when available>
 
-Architecture:
-...
+#### Changes
+<Important implementation details>
 
-Tests:
-...
+#### Design
+<Relevant design decisions, when applicable>
 
-Typecheck:
-...
+#### Architecture
+<Architectural impact, if significant>
 
-Lint:
-...
+#### Testing
+<Only tests and validations actually performed>
 
-Build:
-...
+#### Risks and Limitations
+<Relevant risks or unresolved issues>
 
-Security:
-...
+#### Reviewer Notes
+<Files or decisions reviewers should focus on>
 
-Risks:
-...
+#### Checklist
+<Project-specific checklist, when available>
 
-Suggested Reviewers:
-...
+## Quality Rules
 
----
+- Follow the repository's existing PR template and conventions.
+- Prefer concise, concrete, technically useful descriptions.
+- Never claim tests passed unless they were executed or reliable results
+  were retrieved.
+- Do not invent task IDs, links, requirements, or reviewers.
+- Do not include unrelated refactoring.
+- Use the language expected by the project or team.
 
-## Safety
+## Strict Read-Only Policy
 
 Never:
 
-- create a PR containing unrelated changes
-- commit secrets
-- force push
-- rewrite history
-- change the target branch silently
-- merge automatically
-- approve automatically
+- create a PR/MR
+- publish comments
+- push a branch
+- merge
+- approve a PR
+- change a task
+- modify a remote repository
 
-The command creates the PR only after explicit authorization.
-
----
-
-## Provider Independence
-
-The command must work with:
-
-- GitHub
-- GitLab
-- Azure Repos
-- Bitbucket
-- other supported Git providers
-
-Do not hardcode provider-specific logic in the command.
-
-Use the Git Provider contract and appropriate integration.
+The user copies the generated content and creates the PR manually.

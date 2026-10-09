@@ -1,389 +1,144 @@
 # Pull Request Review Workflow
 
-## Purpose
+## Goal
 
-Perform a complete engineering review of a Pull Request or Merge Request.
+Produce a rigorous, context-aware, read-only review of a colleague's
+Pull Request / Merge Request.
 
-The workflow evaluates:
+The deliverable is feedback the user can copy and paste.
 
-Task
-→ Design
-→ Repository
-→ Architecture
-→ Source Branch
-→ Diff
-→ Tests
-→ Integration
+No remote writes are allowed.
 
 ---
 
-# Phase 1 — Identify PR
+## Phase 1 — Identify
 
-Retrieve:
+Accept a PR/MR URL, provider and identifier, local repository, or supplied
+diff.
 
-- provider
-- PR/MR ID
-- title
-- description
-- author
-- source branch
-- target branch
-- source commit
-- target commit
-- reviewers
-- previous comments
-- previous reviews
-- linked tasks
-- linked designs
+Determine available:
 
----
+- PR metadata
+- source and target commits
+- linked task
+- linked design
+- prior comments
 
-# Phase 2 — Preserve Workspace
+Do not ask the user for data that can be reliably retrieved.
 
-Inspect:
+## Phase 2 — Access Strategy
 
-- current branch
-- working tree
-- staged changes
-- unstaged changes
+Choose the lowest-cost option that supports a useful review.
 
-Never replace the user's active work.
+Preference:
 
-Create an isolated worktree whenever possible.
+1. Existing read-only access.
+2. Local Git repository.
+3. Supplied diff/source artifacts.
 
----
+When private content is inaccessible, request only the missing information.
 
-# Phase 3 — Retrieve PR Code
+## Phase 3 — Preserve Workspace
 
-Retrieve the exact source commit referenced by the PR.
+Inspect current Git status.
 
-Do not rely on an outdated local checkout.
+Never discard user changes.
 
-Record:
+Use an isolated worktree when checking out source code.
 
-Reviewed commit:
-...
+Do not switch or overwrite the user's primary branch.
 
----
+## Phase 4 — Exact Version
 
-# Phase 4 — Target Branch
+Identify and record the source commit.
 
-Retrieve the relevant target branch.
+Compare with the target commit when available.
 
-Determine:
+Do not silently review a different or stale revision.
 
-- merge base
-- target commit
-- PR changes
-- potential target changes
+## Phase 5 — Minimal Context
 
----
+Inspect changed files first.
 
-# Phase 5 — Repository Analysis
+Follow references into related components, services, tests, configuration,
+or architecture only when needed.
 
-Analyze the PR branch:
+Do not load the complete repository into model context by default.
 
-- project structure
-- stack
-- framework
-- architecture
-- conventions
-- abstractions
-- state management
-- APIs
-- database
-- testing
-- CI/CD
-- design system
+## Phase 6 — Task and Design
 
----
+When available:
 
-# Phase 6 — Task Context
+- load Task Context
+- load Design Analysis
 
-When a task exists:
+Retrieve only relevant acceptance criteria and design regions.
 
-Load:
+If no task or design is available, continue using the code and PR description.
 
-`skills/task-context/SKILL.md`
+## Phase 7 — Review
 
-Analyze:
+Use:
 
-- business intent
-- functional requirements
-- acceptance criteria
-- constraints
-- dependencies
-- scope
+- Project Analysis
+- Stack Detection
+- Complexity Advisor
+- Architecture Advisor
+- Testing Strategy
+- Engineering Review
 
----
+Load only Skills required for the changes.
 
-# Phase 7 — Design Context
+## Phase 8 — Validate
 
-When a design exists:
+Run relevant existing checks if safe and useful.
 
-Load:
+Record actual results.
 
-`skills/design-analysis/SKILL.md`
+Do not perform unnecessary full builds or test suites when a smaller check
+provides adequate evidence for the specific concern.
 
-Analyze:
+## Phase 9 — Review Memory
 
-- relevant screens
-- components
-- states
-- interactions
-- responsive behavior
-- accessibility
-- design-system usage
+When a previous review iteration exists:
 
-The design source may be:
+- compare source commit
+- retrieve compact previous findings
+- track unresolved/resolved findings
+- identify regressions
+- avoid duplicate feedback
 
-- Figma
-- Penpot
-- Sketch
-- Storybook
-- PDF
-- image
-- screenshot
-- HTML/CSS
-- other artifact
+## Phase 10 — Report
 
----
+Group findings by file.
 
-# Phase 8 — Complexity
+Each finding must include:
 
-Load:
-
-`skills/complexity-advisor/SKILL.md`
-
-Determine:
-
-- task complexity
-- architectural risk
-- implementation risk
-
----
-
-# Phase 9 — Architecture
-
-Load:
-
-`skills/architecture-advisor/SKILL.md`
-
-when justified.
-
-Evaluate:
-
-- architecture compatibility
-- coupling
-- abstraction
-- patterns
-- boundaries
-- maintainability
-
----
-
-# Phase 10 — Diff Review
-
-Analyze:
-
-- added files
-- deleted files
-- modified files
-- renamed files
-- dependencies
-- configuration
-- migrations
-- tests
-
-Do not evaluate changes only from line-level syntax.
-
----
-
-# Phase 11 — Engineering Review
-
-Evaluate:
-
-## Correctness
-
-Logic, edge cases, state transitions, concurrency, errors.
-
-## Maintainability
-
-Naming, cohesion, duplication, abstractions.
-
-## Architecture
-
-Boundaries, coupling, responsibilities, conventions.
-
-## Design Patterns
-
-Appropriateness and complexity.
-
-## Security
-
-Authentication, authorization, validation, injection, secrets.
-
-## Performance
-
-CPU, memory, rendering, network, database, caching.
-
-## Testing
-
-Unit, integration, E2E, regressions, failure paths.
-
-## Accessibility
-
-Relevant frontend accessibility requirements.
-
-## Requirements
-
-Task and acceptance criteria compliance.
-
----
-
-# Phase 12 — Validation
-
-When safe and appropriate:
-
-- typecheck
-- lint
-- unit tests
-- integration tests
-- E2E
-- build
-- security validation
-
-Never claim success without evidence.
-
----
-
-# Phase 13 — Integration Analysis
-
-When possible, create an isolated synthetic merge:
-
-Target Branch
-+
-PR Source
-
-Do not push this result.
-
-Use it to detect:
-
-- conflicts
-- build failures
-- type incompatibilities
-- dependency conflicts
-- integration regressions
-
----
-
-# Phase 14 — Previous Review Analysis
-
-Retrieve previous review comments.
-
-Determine:
-
-- resolved findings
-- unresolved findings
-- developer responses
-- changed code
-- regressions
-
-Do not repeat resolved findings unnecessarily.
-
----
-
-# Phase 15 — Findings
-
-Classify:
-
-BLOCKING
-IMPORTANT
-SUGGESTION
-QUESTION
-PRAISE
-
-Each finding must contain:
-
-- location
-- problem
-- impact
+- file and line
+- priority
+- category
 - evidence
+- comment to copy
+- rationale
 - recommendation
 
----
+Provide a concise overall assessment.
 
-# Phase 16 — Review Summary
+If no actionable findings exist, say so explicitly.
 
-Generate:
+## Phase 11 — Human Action
 
-## PR REVIEW
+The user decides whether to:
 
-### Verdict
+- copy a comment
+- ignore a suggestion
+- request clarification
+- ask the developer for a correction
 
-Choose:
+The workflow does not publish findings or modify code.
 
-- Approve
-- Approve with suggestions
-- Request changes
-- Unable to review
+## Phase 12 — Cleanup
 
-### Findings
+Remove a temporary worktree only when safe.
 
-...
-
-### Positive Observations
-
-...
-
-### Risks
-
-...
-
-### Validation
-
-...
-
-### Reviewed Commit
-
-...
-
----
-
-# Phase 17 — Human Decision
-
-Read-only:
-
-Return the review.
-
-Comment mode:
-
-Request authorization before publishing comments.
-
-Fix mode:
-
-Request authorization before changing code.
-
----
-
-# Phase 18 — Publish
-
-After authorization:
-
-- publish inline comments
-- publish summary
-- preserve previous findings
-- do not approve automatically unless explicitly requested
-
----
-
-# Phase 19 — Cleanup
-
-Remove the temporary review worktree when safe.
-
-Never remove:
-
-- user work
-- project branches
-- PR branches
-- committed repository data
+Never delete user work or project branches.

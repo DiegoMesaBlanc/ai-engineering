@@ -78,3 +78,46 @@ HUMAN DECISION REQUIRED
 ## Human approval
 
 Require approval before implementing significant architectural changes.
+
+## Frontend UI Organization
+
+Distinguish application architecture from frontend component organization
+and UI design methodologies.
+
+Application architecture candidates may include:
+
+- Layered
+- MVC
+- Clean Architecture
+- Hexagonal Architecture
+- Modular Monolith
+- Domain-Driven Design
+
+Frontend organization candidates may include:
+
+- Feature-based
+- Domain-based
+- Route-based
+- Component-based
+- Hybrid organization
+
+UI organization and design-system methodologies may include:
+
+- Atomic Design
+- design systems
+- composition-based component architecture
+- shared component libraries
+
+Atomic Design is a UI design and component-organization methodology, not
+a replacement for the application's architectural style.
+
+Use it only when it helps the project establish reusable UI components,
+consistent design patterns, and a useful hierarchy.
+
+Do not reorganize an existing application around Atomic Design merely
+because the methodology is available.
+
+Prefer the current structure when it works well.
+
+Evaluate migration cost, reuse, component boundaries, coupling, and the
+project's actual design-system needs before recommending a change.

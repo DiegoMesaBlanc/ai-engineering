@@ -1,210 +1,106 @@
 # /review-pr
 
-Perform a context-aware Pull Request / Merge Request review.
+Review an existing Pull Request / Merge Request and generate actionable
+feedback for a human reviewer.
 
----
+This command is strictly read-only.
 
-## Goal
+## Input
 
-Review the actual PR implementation as a Senior Engineer, Staff Engineer,
-Tech Lead, or Architect according to the complexity of the change.
+Accept:
 
-Do not review only the diff.
+- a PR/MR URL
+- provider and PR identifier
+- a local repository path and PR identifier
+- a source branch and target branch
+- a supplied diff or source files
 
----
+Infer available context before asking the user.
 
-## Behavior
+## Workflow
 
-1. Detect Git provider.
-2. Identify the PR/MR.
-3. Retrieve PR metadata.
-4. Retrieve source branch.
-5. Retrieve target branch.
-6. Retrieve exact source commit.
-7. Retrieve associated task.
-8. Retrieve associated design.
-9. Inspect current local Git state.
-10. Preserve the user's active workspace.
-11. Create an isolated review worktree when possible.
-12. Checkout the exact PR source commit.
-13. Analyze the repository.
-14. Analyze architecture.
-15. Analyze the PR diff.
-16. Analyze the task requirements.
-17. Analyze the design.
-18. Analyze testing.
-19. Analyze security.
-20. Analyze performance.
-21. Analyze integration impact.
-22. Run appropriate validations.
-23. Perform synthetic merge analysis when possible.
-24. Generate findings.
-25. Present review summary.
+1. Identify the PR and provider.
+2. Retrieve the source and target commits when accessible.
+3. Retrieve task context when available.
+4. Retrieve design context when available.
+5. Inspect the current local Git state before any checkout.
+6. Preserve the user's working tree.
+7. Use an isolated worktree when local source inspection is necessary.
+8. Analyze repository architecture and relevant conventions.
+9. Analyze the complete relevant diff.
+10. Inspect related existing code and abstractions.
+11. Evaluate correctness, requirements, architecture, security,
+    performance, maintainability, accessibility, and testing.
+12. Run safe, relevant validations when appropriate.
+13. Check previous review findings when available.
+14. Generate copy-ready feedback grouped by file and line.
+15. Provide a concise overall assessment.
 
----
+## Review Output
 
-## Review Modes
+Start with:
 
-### Read Only
-
-Default mode.
-
-Analyze and report findings.
-
-Do not modify the PR.
-Do not publish comments.
-
----
-
-### Review and Comment
-
-Analyze the PR and ask for approval before publishing findings.
-
-Example:
-
-Found:
-
-2 BLOCKING
-1 IMPORTANT
-2 SUGGESTIONS
-
-Publish these findings to the PR?
-
----
-
-### Review and Fix
-
-Only when explicitly requested.
-
-Flow:
-
-Review
-→ Findings
-→ Human Approval
-→ Fix
-→ Tests
-→ Re-review
-→ Commit
-
-Do not push changes automatically.
-
----
-
-## Review Context
-
-Use:
-
-- Task Context
-- Design Analysis
-- Project Analysis
-- Stack Detection
-- Architecture Advisor
-- Complexity Advisor
-- Testing Strategy
-- Engineering Review
-
-Load only the Skills relevant to the PR.
-
----
-
-## Findings
-
-Classify findings as:
-
-BLOCKING
-IMPORTANT
-SUGGESTION
-QUESTION
-PRAISE
-
-Optional priorities:
-
-P0 Critical
-P1 High
-P2 Medium
-P3 Low
-
-Each finding must explain:
-
-- what is wrong
-- why it matters
-- evidence
-- recommendation
-
-Avoid vague comments.
-
----
-
-## Final Output
-
-PR REVIEW
-
-Provider:
-...
+### REVIEW SUMMARY
 
 PR:
-...
-
-Reviewed commit:
-...
-
+Author:
+Source commit:
 Target:
-...
+Scope:
+Overall assessment:
 
-Verdict:
-...
+Then report each actionable finding.
 
-Blocking:
-...
+### FINDING
 
-Important:
-...
+Priority: P0 / P1 / P2 / P3
+Type: BLOCKING / IMPORTANT / SUGGESTION / QUESTION
+Category:
+File:
+Line or range:
+Evidence:
+Impact:
+Confidence:
 
-Suggestions:
-...
+#### Comment to copy
 
-Architecture:
-...
+<Exact proposed review comment>
 
-Correctness:
-...
+#### Recommendation
 
-Security:
-...
+<Optional explanation for the human reviewer>
 
-Performance:
-...
+Use source-commit line numbers and anchor feedback to changed lines whenever
+possible.
 
-Testing:
-...
+If a concern is outside the diff, explain the connection to the change and
+identify an appropriate changed-line anchor when possible.
 
-Design:
-...
+## Review Language
 
-Integration:
-...
+Use the team's existing PR language when it can be determined.
 
-Positive observations:
-...
-
-Recommended actions:
-...
-
-Validation:
-...
-
----
+Otherwise, provide explanations in the user's preferred language and
+copy-ready comments in English by default.
 
 ## Safety
 
 Never:
 
-- destroy user changes
-- replace the active branch
-- review a stale source commit when a newer PR commit exists
-- modify code during read-only review
-- publish comments without authorization
-- approve automatically
-- merge automatically
+- publish comments or reviews
+- approve or reject the PR through the provider
+- modify source code
+- push changes
+- merge the PR
+- update tasks
+- change branches in the user's primary worktree
+- delete user files or changes
 
-Prefer an isolated Git worktree.
+When a local checkout is needed, use an isolated worktree or another safe,
+read-only approach.
+
+## No-Finding Result
+
+If no actionable issues are found, say so explicitly.
+
+Do not invent findings merely to produce comments.

@@ -98,3 +98,84 @@ A provider must be replaceable without changing:
 - PR review logic
 
 Only the provider integration should change.
+
+## Organization-Provided Services
+
+The system may use paid services or licensed MCP providers when the
+organization already provides authorized access.
+
+Examples include:
+
+- company-provided API tokens
+- organization-managed MCP services
+- licensed design tools
+- enterprise task-management integrations
+- company-approved AI models and gateways
+
+Before using an organization-provided service, determine when possible:
+
+- whether use is authorized
+- which account or credential is required
+- which capabilities are available
+- whether usage generates additional costs
+- whether the service can access the required project data
+
+Do not purchase subscriptions or initiate paid usage independently.
+
+Do not assume a supplied token is unlimited or free to use.
+
+## Cost Classification
+
+Classify providers as:
+
+- OPEN_SOURCE
+- FREE
+- ORGANIZATION_LICENSED
+- LOW_COST
+- PAID
+- UNKNOWN
+
+An organization-provided license is preferred over purchasing another
+service when it meets the requirements.
+
+## Optional Integrations
+
+MCP is optional.
+
+Use direct repository access, local Git, supplied artifacts, existing
+connectors, or documented provider APIs when they provide a simpler
+solution.
+
+Do not install an MCP solely because it exists.
+
+## Read-Only Default
+
+For PR analysis and review, prefer read-only access.
+
+Request only the capabilities needed to:
+
+- retrieve PR metadata
+- retrieve diffs
+- inspect source files
+- retrieve task context
+- retrieve design context
+- read previous review comments
+
+Do not enable remote write capabilities for read-only workflows.
+
+## Credential Separation
+
+Credentials must remain in the appropriate local or organization-managed
+configuration.
+
+Never commit credentials into:
+
+- ai-engineering
+- a project repository
+- Skills
+- Agents
+- Workflows
+- Commands
+- documentation
+
+Use the least privileged credentials appropriate for the task.
