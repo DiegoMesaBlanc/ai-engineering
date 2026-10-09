@@ -128,3 +128,61 @@ If access fails:
 - ask for the smallest additional artifact required
 
 Never fabricate successful access.
+
+## Direct Reference Resolution
+
+All workflows must accept direct references when the client supports the
+required input and retrieval capabilities.
+
+Accepted references include:
+
+- task URLs and identifiers
+- Pull Request / Merge Request URLs
+- repository URLs
+- design URLs
+- documentation URLs
+- local files and user-provided artifacts
+
+## Resolution Order
+
+For each reference:
+
+1. Classify the resource.
+2. Check whether its content is already available in the current context.
+3. Use local Git or filesystem access if appropriate.
+4. Use available direct URL retrieval when the resource is accessible.
+5. Use an existing authenticated client, CLI, or read-only integration
+   when required.
+6. Use MCP only when it provides necessary access or structured data that
+   simpler methods cannot provide.
+7. Request a minimal export, screenshot, diff, or pasted content only
+   when essential information remains inaccessible.
+
+## Private Resources
+
+A URL does not provide authentication.
+
+Never bypass authentication or attempt to access content without
+authorization.
+
+Do not expose tokens, cookies, or private content in logs or generated
+reports.
+
+## Multiple References
+
+If multiple URLs are supplied, classify them independently as task,
+design, repository, PR, or documentation references.
+
+Prefer links already present in the task or PR.
+
+Do not retrieve every linked resource automatically. Retrieve only
+resources relevant to the current task and expand context when needed.
+
+## Continuation with Partial Context
+
+If one reference fails, continue with other reliable sources when safe.
+
+Clearly identify which sources were accessible and which were not.
+
+Do not claim that an inaccessible task, design, or repository was
+successfully inspected.

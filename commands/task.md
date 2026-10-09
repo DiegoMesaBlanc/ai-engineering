@@ -7,6 +7,40 @@ Start or continue the engineering task specified by:
 
 $ARGUMENTS
 
+## Supported Input Formats
+
+Accept any combination of:
+
+- task URL
+- task identifier
+- PR/MR URL
+- repository URL
+- design URL
+- local Markdown or JSON path
+- user-provided description
+- attached files or images
+
+Examples:
+
+/task https://company.atlassian.net/browse/PROJ-123
+
+/task https://dev.azure.com/company/project/_workitems/edit/12345
+
+/task tasks/DEMO-001.md
+
+/task task=https://example.com/task/123 design=https://example.com/design/456
+
+Classify each provided reference by its resource type.
+
+Use the Task Context, Design Analysis, and Repository Analysis workflows
+as needed.
+
+A URL does not guarantee access to private content. Use available
+authorized read-only tools. If access fails, identify the missing
+information and request the smallest useful alternative artifact.
+
+Do not require a local Markdown file when a task URL is accessible.
+
 Follow the central Engineering Orchestrator and Task-to-Code workflow.
 
 ## Mandatory branch policy

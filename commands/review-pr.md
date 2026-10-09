@@ -7,6 +7,33 @@ Review this Pull Request / Merge Request:
 
 $ARGUMENTS
 
+## Supported Inputs
+
+The primary input is a Pull Request / Merge Request URL or identifier.
+
+Optional additional references may include:
+
+- task URL or identifier
+- design URL
+- repository URL or local repository path
+- supplied diff or source files
+
+Examples:
+
+/review-pr https://github.com/company/app/pull/142
+
+/review-pr pr=https://dev.azure.com/company/project/_git/app/pullrequest/142 task=https://dev.azure.com/company/project/_workitems/edit/12345
+
+/review-pr pr=https://gitlab.com/company/app/-/merge_requests/142 design=https://example.com/design/456
+
+Resolve each reference independently.
+
+Prefer task and design references already linked to the PR. Use additional
+references supplied by the user when necessary.
+
+Review only the relevant code and supporting context. Do not publish review
+comments or modify the repository.
+
 The workflow is strictly read-only.
 
 ## Workflow

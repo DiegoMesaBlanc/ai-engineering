@@ -467,3 +467,28 @@ Include:
 
 Do not invent measurements, interactions, hidden states, or responsive
 behavior that the artifact does not establish.
+
+---
+
+## Direct Design References
+
+A design reference may be supplied directly as a URL, local path,
+attachment, screenshot, image, PDF, or other accessible artifact.
+
+When a URL is supplied:
+
+1. Identify the design source when possible.
+2. Determine whether the relevant frame, page, node, or component can be
+   accessed through available authorized tools.
+3. Retrieve only the relevant design context.
+4. Use the task description to determine the likely area in scope.
+5. Inspect surrounding context only when needed to understand layout or
+   behavior.
+
+Do not require a prewritten design-analysis Markdown file.
+
+If the source is inaccessible, request an appropriate export or screenshot
+only when the missing information materially affects implementation.
+
+Never claim to have inspected a private design when its content could not
+be retrieved.

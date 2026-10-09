@@ -314,3 +314,34 @@ Produce:
 8. Reuse repository context whenever available.
 9. Ask only materially necessary questions.
 10. Do not expand scope silently.
+
+---
+
+## Direct References and URL Resolution
+
+Task input may be:
+
+- a URL
+- a provider-specific identifier
+- a local file
+- an attachment
+- a pasted description
+- multiple labeled references
+
+When a URL is supplied:
+
+1. Identify the likely resource type and provider.
+2. Attempt retrieval using the available authorized read-only tools.
+3. Prefer information from the original task source.
+4. Retrieve relevant acceptance criteria, comments, dependencies, and links.
+5. Pass associated design references to Design Analysis.
+6. Preserve the source URL for traceability.
+
+If the resource is inaccessible:
+
+- do not invent its contents
+- identify what could not be retrieved
+- use other available task information
+- request an export or pasted content only if necessary
+
+A direct URL is a valid task input. A local Markdown file is not mandatory.
