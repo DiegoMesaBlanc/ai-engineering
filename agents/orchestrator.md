@@ -247,11 +247,14 @@ Existing Project
 → Complexity
 → Architecture
 → Plan
+→ Branch Preparation
 → Implementation
 → Validation
-→ Review
-→ Git
-→ PR
+→ Engineering Review
+→ Git Diff
+→ Commit Proposal
+→ PR Proposal (copy-ready)
+→ Human creates PR manually
 
 ---
 

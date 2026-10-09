@@ -186,3 +186,90 @@ Clearly identify which sources were accessible and which were not.
 
 Do not claim that an inaccessible task, design, or repository was
 successfully inspected.
+
+## Client Retrieval Limits
+
+The access method must match the artifact type.
+
+### Textual URLs
+
+Use direct URL retrieval when the client supports it and the resource is
+accessible.
+
+Do not assume that authentication in a separate web browser is shared
+with the AI coding client.
+
+### Images and Binary Artifacts
+
+A textual URL-fetching tool may not retrieve an image, PDF, or other binary
+artifact as usable content.
+
+When required:
+
+- use an artifact accessible to the client's file/image tools
+- use an authorized provider integration
+- request an export or screenshot if necessary
+
+### Structured Design Data
+
+Do not treat access to a design webpage as equivalent to access to its
+structured design model.
+
+Prefer frame/node-level retrieval when the authorized provider exposes it.
+
+Otherwise, analyze the available visual artifact and report limitations.
+
+### Provider Validation
+
+Before recommending an integration, distinguish:
+
+- documented support
+- installed configuration
+- successful authentication
+- verified read capability
+- verified write capability
+
+Read-only workflows require only the necessary read capability.
+
+Never enable write access merely to retrieve context.
+
+## Artifact and Client Limitations
+
+Use an access method appropriate for the resource type.
+
+### Textual URLs
+
+Use direct retrieval if the client supports it and the resource is
+accessible.
+
+Do not assume that authentication in another browser session is shared
+with the AI coding client.
+
+### Images and Binary Artifacts
+
+Textual URL-fetching tools may not retrieve images, PDFs, or other binary
+artifacts as usable content.
+
+When needed:
+
+- use an artifact accessible to the client's file/image tools
+- use an authorized integration
+- request an export or screenshot
+
+### Structured Design Data
+
+Access to a design webpage is not equivalent to access to its underlying
+design model.
+
+Prefer frame/node-level retrieval when the authorized provider exposes it.
+
+Otherwise, analyze the accessible visual artifact and report limitations.
+
+### Provider Verification
+
+Distinguish documented support from configured access and verified
+capabilities.
+
+Read-only workflows need only read access.
+
+Never enable remote write operations merely to retrieve context.

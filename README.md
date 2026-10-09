@@ -17,7 +17,7 @@ A provider-agnostic, free-first engineering workflow for OpenCode and compatible
 ## Current top-level structure
 
 - `agents/`: OpenCode agents and orchestration.
-- `commands/`: commands such as `/task`, `/pr`, and `/review-pr`.
+- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, and `/system-check`.
 - `contracts/`: provider-neutral task, design, and Git contracts.
 - `integrations/`: provider access, security, cost, and compatibility policy.
 - `skills/`: reusable domain and engineering knowledge.
@@ -27,6 +27,18 @@ A provider-agnostic, free-first engineering workflow for OpenCode and compatible
   `AGENTS.md`.
 
 Do not create `core/` or `external/` solely to match a previous folder proposal. Add a directory only when it owns real, non-duplicated content.
+
+## Commands
+
+- `/task`: start or continue an engineering task.
+- `/pr`: generate copy-ready PR/MR content.
+- `/review-pr`: generate copy-ready review feedback.
+- `/system-check`: read-only validation of repository consistency and
+  OpenCode integration.
+
+OpenCode supports Markdown commands and agents with permissions defined in
+frontmatter. This diagnostic therefore integrates without adding execution
+code or a new runtime dependency.
 
 ## OpenCode setup (macOS)
 
@@ -70,6 +82,16 @@ ln -s "$HOME/Documents/ai-engineering/skills" "$HOME/.claude/skills"
 These are examples for a clean configuration. Inspect the paths first and execute only the links whose destinations are absent. If any destination already contains your own files, integrate the references manually instead of replacing it.
 
 Restart OpenCode after setting up discovery. Validate with `/help`, then run the demo tasks in the supplied demo project. The current repository has not yet been validated on the user's machine.
+
+If OpenCode already discovers the other commands, no global configuration change is required for `/system-check`. Restart the session and verify that `/system-check` appears in the command list.
+
+To confirm the central system before starting any task, run:
+
+```
+/system-check
+```
+
+It reports PASS, WARN, FAIL, or NOT VERIFIED for each check without modifying the repository or configuration.
 
 ## Branch policy
 
