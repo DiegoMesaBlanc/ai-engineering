@@ -22,7 +22,9 @@ A provider-agnostic, free-first engineering workflow for OpenCode and compatible
 - `integrations/`: provider access, security, cost, and compatibility policy.
 - `skills/`: reusable domain and engineering knowledge.
 - `workflows/`: end-to-end engineering processes.
-- `CLAUDE.md`: canonical engineering rules shared through compatible configuration.
+- `AGENTS.md`: canonical shared engineering instructions.
+- `CLAUDE.md`: Claude Code compatibility entry point that imports
+  `AGENTS.md`.
 
 Do not create `core/` or `external/` solely to match a previous folder proposal. Add a directory only when it owns real, non-duplicated content.
 
@@ -35,7 +37,7 @@ OpenCode supports global Skills, commands, agents, and global rules. See the off
 - https://docs.opencode.ai/docs/agents/
 - https://docs.opencode.ai/docs/rules/
 
-Assuming this repository is at `~/ai-engineering`, OpenCode can discover Skills from `~/.claude/skills` when that link already points to `~/ai-engineering/skills`.
+Assuming this repository is at `~/Documents/ai-engineering`, OpenCode can discover Skills from `~/.claude/skills` when that link already points to `~/Documents/ai-engineering/skills`.
 
 For global rules, commands, and agents, first inspect existing configuration:
 
@@ -53,16 +55,16 @@ Do not replace any existing file or directory. If the corresponding destination 
 mkdir -p "$HOME/.config/opencode"
 
 # Run each ln only if its destination does not already exist.
-ln -s "$HOME/ai-engineering/CLAUDE.md" "$HOME/.config/opencode/AGENTS.md"
-ln -s "$HOME/ai-engineering/commands" "$HOME/.config/opencode/commands"
-ln -s "$HOME/ai-engineering/agents" "$HOME/.config/opencode/agents"
+ln -s "$HOME/Documents/ai-engineering/AGENTS.md" "$HOME/.config/opencode/AGENTS.md"
+ln -s "$HOME/Documents/ai-engineering/commands" "$HOME/.config/opencode/commands"
+ln -s "$HOME/Documents/ai-engineering/agents" "$HOME/.config/opencode/agents"
 ```
 
 If `~/.claude/skills` does not already point to this repository and no existing destination would be overwritten, link it too:
 
 ```sh
 mkdir -p "$HOME/.claude"
-ln -s "$HOME/ai-engineering/skills" "$HOME/.claude/skills"
+ln -s "$HOME/Documents/ai-engineering/skills" "$HOME/.claude/skills"
 ```
 
 These are examples for a clean configuration. Inspect the paths first and execute only the links whose destinations are absent. If any destination already contains your own files, integrate the references manually instead of replacing it.
