@@ -27,17 +27,21 @@ Check for the existence of:
 - README.md
 - agents/orchestrator.md
 - agents/reviewer.md
+- agents/auditor.md
 - commands/task.md
 - commands/pr.md
 - commands/review-pr.md
+- commands/system-check.md
 - contracts/task-provider.md
 - contracts/design-provider.md
 - contracts/git-provider.md
 - integrations/access-strategy.md
 - integrations/provider-policy.md
 - integrations/provider-matrix.md
+- integrations/external-skill-registry.md
 - workflows/task-to-code.md
 - workflows/pull-request-review.md
+- workflows/system-validation.md
 
 Check that CLAUDE.md references AGENTS.md rather than duplicating
 the complete shared instructions.
@@ -66,6 +70,54 @@ At minimum inspect:
 Do not require a dedicated Next.js Skill.
 
 Next.js must be covered by stack detection.
+
+## 3.1 Validate External Skills
+
+Read:
+
+- integrations/external-skill-registry.md
+
+For every registered external Skill, verify:
+
+- canonical local directory exists
+- SKILL.md exists and contains valid metadata
+- source repository and source path are recorded
+- upstream commit is recorded as a full Git commit SHA
+- license identifier is recorded
+- required license file exists
+- supporting files referenced by SKILL.md exist
+- local modifications are documented
+- no conflicting internal Skill or policy is introduced
+
+For the initially selected Skills, verify:
+
+### frontend-design
+
+- Path: skills/frontend-design/
+- Required files: SKILL.md and LICENSE.txt
+- License: Apache-2.0
+
+### test-driven-development
+
+- Path: skills/test-driven-development/
+- Required files: SKILL.md, writing-good-tests.md, and LICENSE-MIT.txt
+- License: MIT
+- Verify that the local language-neutral adaptation is documented.
+
+Possible statuses:
+
+- VERIFIED
+- NOT INSTALLED
+- LICENSE MISSING
+- SOURCE REVISION MISSING
+- SUPPORTING FILE MISSING
+- POLICY CONFLICT
+- NOT VERIFIED
+
+Never report an external Skill as VERIFIED based only on its registry entry.
+
+Report E2E readiness as BLOCKED while a required external Skill is missing
+or its license and source cannot be verified.
 
 ## 4. Validate Client Adapters
 
@@ -165,3 +217,10 @@ Never expose secrets.
 
 Report checks as NOT VERIFIED when the available tools cannot establish
 their result.
+
+- External Skill registry:
+- External Skills installed:
+- External Skill licenses:
+- Upstream commit verification:
+- External Skill policy conflicts:
+- E2E readiness:

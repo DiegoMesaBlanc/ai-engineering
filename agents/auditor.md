@@ -1,6 +1,6 @@
 ---
 description: Read-only auditor for the AI Engineering System configuration, file references, client discovery, and policy consistency.
-mode: primary
+mode: subagent
 temperature: 0.1
 permission:
   edit: deny

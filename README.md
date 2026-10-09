@@ -23,8 +23,7 @@ A provider-agnostic, free-first engineering workflow for OpenCode and compatible
 - `skills/`: reusable domain and engineering knowledge.
 - `workflows/`: end-to-end engineering processes.
 - `AGENTS.md`: canonical shared engineering instructions.
-- `CLAUDE.md`: Claude Code compatibility entry point that imports
-  `AGENTS.md`.
+- `CLAUDE.md`: Claude Code compatibility entry point importing `AGENTS.md`.
 
 Do not create `core/` or `external/` solely to match a previous folder proposal. Add a directory only when it owns real, non-duplicated content.
 
@@ -42,56 +41,46 @@ code or a new runtime dependency.
 
 ## OpenCode setup (macOS)
 
-OpenCode supports global Skills, commands, agents, and global rules. See the official documentation:
+Set the path to the canonical repository:
 
-- https://docs.opencode.ai/docs/skills/
-- https://docs.opencode.ai/docs/commands/
-- https://docs.opencode.ai/docs/agents/
-- https://docs.opencode.ai/docs/rules/
+    export AI_ENGINEERING_HOME="$HOME/Documents/ai-engineering"
 
-Assuming this repository is at `~/Documents/ai-engineering`, OpenCode can discover Skills from `~/.claude/skills` when that link already points to `~/Documents/ai-engineering/skills`.
+Verify the repository:
 
-For global rules, commands, and agents, first inspect existing configuration:
+    git -C "$AI_ENGINEERING_HOME" status --short --branch
 
-```sh
-ls -ld "$HOME/.config/opencode" \
-  "$HOME/.config/opencode/AGENTS.md" \
-  "$HOME/.config/opencode/commands" \
-  "$HOME/.config/opencode/agents" \
-  "$HOME/.claude/skills" 2>/dev/null
-```
+OpenCode's global configuration directory is:
 
-Do not replace any existing file or directory. If the corresponding destination does not exist, create the link:
+    "$HOME/.config/opencode"
 
-```sh
-mkdir -p "$HOME/.config/opencode"
+Before creating links, inspect every destination:
 
-# Run each ln only if its destination does not already exist.
-ln -s "$HOME/Documents/ai-engineering/AGENTS.md" "$HOME/.config/opencode/AGENTS.md"
-ln -s "$HOME/Documents/ai-engineering/commands" "$HOME/.config/opencode/commands"
-ln -s "$HOME/Documents/ai-engineering/agents" "$HOME/.config/opencode/agents"
-```
+    ls -ld "$HOME/.config/opencode/AGENTS.md" \
+      "$HOME/.config/opencode/commands" \
+      "$HOME/.config/opencode/agents" \
+      "$HOME/.claude/skills" 2>/dev/null
 
-If `~/.claude/skills` does not already point to this repository and no existing destination would be overwritten, link it too:
+If a destination does not exist, link it to the canonical repository:
 
-```sh
-mkdir -p "$HOME/.claude"
-ln -s "$HOME/Documents/ai-engineering/skills" "$HOME/.claude/skills"
-```
+    ln -s "$AI_ENGINEERING_HOME/AGENTS.md" \
+      "$HOME/.config/opencode/AGENTS.md"
 
-These are examples for a clean configuration. Inspect the paths first and execute only the links whose destinations are absent. If any destination already contains your own files, integrate the references manually instead of replacing it.
+    ln -s "$AI_ENGINEERING_HOME/commands" \
+      "$HOME/.config/opencode/commands"
 
-Restart OpenCode after setting up discovery. Validate with `/help`, then run the demo tasks in the supplied demo project. The current repository has not yet been validated on the user's machine.
+    ln -s "$AI_ENGINEERING_HOME/agents" \
+      "$HOME/.config/opencode/agents"
 
-If OpenCode already discovers the other commands, no global configuration change is required for `/system-check`. Restart the session and verify that `/system-check` appears in the command list.
+Skills are stored in the canonical repository's `skills/` directory.
+Reuse an existing compatible global Skill link when it already targets
+this directory.
 
-To confirm the central system before starting any task, run:
+Do not overwrite existing files, directories, or links.
 
-```
-/system-check
-```
+Restart OpenCode after modifying discovery configuration.
 
-It reports PASS, WARN, FAIL, or NOT VERIFIED for each check without modifying the repository or configuration.
+The installation must use one canonical repository. Client adapters must
+not duplicate Skills, contracts, or workflows.
 
 ## Branch policy
 
