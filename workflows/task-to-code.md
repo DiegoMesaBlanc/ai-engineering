@@ -2,10 +2,8 @@
 
 ## Goal
 
-Transform an engineering task and its available design context into a
-validated implementation.
-
----
+Transform an engineering task and available design context into a validated
+implementation on a user-provided task branch.
 
 ## Phase 1 — Detect
 
@@ -16,168 +14,155 @@ Determine:
 - task provider
 - design provider
 - Git provider
+- current branch
+- working-tree status
 
----
+## Phase 2 — Understand the Task
 
-## Phase 2 — Understand Task
+When a task reference is available:
 
-Load:
+- retrieve the task
+- extract business intent
+- extract functional requirements
+- identify acceptance criteria
+- inspect dependencies and comments
+- identify design references
 
-`skills/task-context/SKILL.md`
+Load Task Context only when relevant.
 
-Extract:
+## Phase 3 — Analyze the Design
 
-- business intent
-- functional requirements
-- acceptance criteria
-- constraints
-- dependencies
-- design references
-- technical references
+When design context exists:
 
----
+- identify the relevant frame, page, component, or region
+- retrieve the smallest useful design context
+- map design requirements to existing components
+- identify missing information
 
-## Phase 3 — Analyze Design
+Do not assume Figma.
 
-When a design reference exists:
+## Phase 4 — Analyze the Repository
 
-Load:
+For an existing project:
 
-`skills/design-analysis/SKILL.md`
+- inspect repository structure
+- detect language and framework
+- detect application architecture
+- detect monorepo or multi-repository organization
+- detect microfrontend composition when present
+- identify conventions and reusable abstractions
 
-Map:
+For a new project:
 
-Task
-→ Design
-→ Existing Components
-→ Required Changes
+- determine the minimum viable architecture
+- establish repository structure
+- determine whether a workspace is justified
+- evaluate whether microfrontends provide a concrete benefit
 
----
+Do not introduce a monorepo or microfrontends without evidence.
 
-## Phase 4 — Analyze Project
+## Phase 5 — Ask for the Branch
 
-For existing projects:
+Before implementation, ask for the exact branch name if it was not provided.
 
-- inspect repository
-- detect stack
-- determine architecture
-- identify conventions
-- identify reusable abstractions
+Do not generate the name automatically.
 
-For new projects:
+## Phase 6 — Prepare the Branch
 
-- determine minimum viable architecture
-- initialize project
-- validate initial project
-- continue with this workflow
+- validate the name
+- detect branch collisions
+- identify the correct base
+- preserve uncommitted work
+- create the branch or isolated worktree
+- verify the active working location
 
----
+Do not implement until the requested branch is ready.
 
-## Phase 5 — Complexity
+## Phase 7 — Complexity and Architecture
 
-Determine:
+Evaluate:
 
-- complexity
-- risk
+- task complexity
 - affected modules
+- repository strategy
+- frontend composition
 - architecture impact
-- testing needs
+- relevant design patterns
+- risks and testing needs
 
----
+Use only the analyses relevant to this task.
 
-## Phase 6 — Architecture
+Require human approval for significant architectural changes.
 
-Only if justified:
+## Phase 8 — Plan
 
-- evaluate architecture
-- evaluate design patterns
-- determine reuse strategy
-- identify risks
+Provide a concise implementation plan including:
 
----
-
-## Phase 7 — Plan
-
-Create an implementation plan.
-
-Include:
-
-- affected files/modules
-- reusable abstractions
-- new components/services only when necessary
-- tests
+- files and modules affected
+- existing abstractions to reuse
+- proposed new components only when justified
 - validation
-- potential risks
-
----
-
-## Phase 8 — Human Decision
-
-Ask only for unresolved meaningful decisions.
-
----
+- risks
 
 ## Phase 9 — Implement
 
-Implement according to:
+Implement on the requested branch.
 
-- repository conventions
-- selected architecture
-- existing abstractions
-- task requirements
-- design requirements
+Preserve existing conventions.
 
----
+Do not expand the scope silently.
 
 ## Phase 10 — Validate
 
-Run appropriate:
+Run the relevant project checks:
 
 - tests
 - typecheck
 - lint
 - build
-- security checks
+- security checks when appropriate
 
----
+Report actual results and unexecuted checks honestly.
 
-## Phase 11 — Engineering Review
+## Phase 11 — Review
 
 Review the resulting implementation for:
 
 - correctness
+- requirements
 - architecture
-- maintainability
-- testing
 - security
 - performance
+- maintainability
+- testing
 - scope
 
----
-
-## Phase 12 — Git
+## Phase 12 — Git Delivery
 
 Inspect:
 
+- current branch
 - status
 - diff
-- commits
+- changed files
 - unrelated changes
 
-Prepare a commit proposal.
+Propose a commit message.
 
-Create commit only after approval.
+Create a commit only under the established human-approval policy.
 
----
+Do not push automatically.
 
-## Phase 13 — Pull Request
+## Phase 13 — PR Preparation
 
-When requested:
+When requested, generate:
 
-- detect provider
-- prepare PR
-- include task context
-- include relevant design context
-- include validation results
-- request human approval
-- create PR
+- copy-ready PR title
+- copy-ready PR description
+- testing summary
+- risks and limitations
+- reviewer notes
+
+The user creates the PR/MR manually.
+
+Never create or publish the PR/MR.

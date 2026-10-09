@@ -114,3 +114,85 @@ Never create meaningless commits such as:
 - work in progress
 
 Never bundle unrelated changes into one commit.
+
+## Task Branch Lifecycle
+
+Every implementation task must have an explicit working branch.
+
+### Before Implementation
+
+1. Inspect the current branch.
+2. Inspect working-tree status.
+3. Identify the repository's default branch or the explicitly required
+   base branch.
+4. Read and understand the task.
+5. Ask the user for the exact task branch name if it has not already
+   been provided.
+
+Use this question:
+
+"What branch name would you like me to use for this task?"
+
+Do not invent the branch name.
+
+Do not modify application code until the user has provided the name and
+the working branch is ready.
+
+### Validate the Name
+
+- Follow the project's existing branch naming conventions.
+- Validate the proposed name using Git's branch-name validation when
+  available.
+- Do not silently rename the branch.
+- Do not overwrite or reuse an existing branch without explicit
+  authorization.
+
+### Select the Base
+
+Prefer the task's explicitly required base branch when available.
+
+Otherwise, use the repository's detected default branch.
+
+If the correct base cannot be established, ask before creating the branch.
+
+### Preserve Existing Work
+
+Inspect uncommitted changes before switching branches.
+
+Never discard user changes.
+
+If the working tree is dirty, preserve the primary workspace and prefer
+an isolated worktree for the new task branch when safe.
+
+If the task depends on uncommitted changes, ask how the user wants those
+changes incorporated.
+
+Never stash, reset, or overwrite user work silently.
+
+### Create and Verify
+
+After the name is provided:
+
+1. Check whether the branch already exists.
+2. Check the intended base.
+3. Create the task branch, or an isolated worktree if needed.
+4. Verify the active branch or worktree.
+5. Confirm the working location.
+6. Begin implementation only after verification.
+
+### New Projects
+
+For a new project that has no Git history, obtain the branch name before
+generating the task implementation.
+
+Initialize the repository and use the requested branch as the initial
+working branch when no established base branch exists.
+
+### Remote Operations
+
+Creating a local task branch is part of the authorized task workflow once
+the user provides its name.
+
+Do not push the branch unless separately requested.
+
+Do not create a PR/MR. Prepare copy-ready PR content only.

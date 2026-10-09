@@ -85,3 +85,42 @@ Report:
 - Relevant technical debt
 
 Do not modify unrelated code.
+
+## Repository Topology Detection
+
+Determine whether the project is:
+
+- a single application repository
+- a monorepo
+- a collection of separately managed repositories
+- a frontend/backend multi-repository system
+- a repository containing microfrontends
+- a monorepo that contains several applications or packages
+
+Use evidence from:
+
+- workspace configuration
+- application entry points
+- package and dependency relationships
+- CI/CD pipelines
+- deployment configuration
+- ownership rules
+- repository boundaries
+
+Report the evidence used for the classification.
+
+## Frontend Composition Detection
+
+Determine whether the frontend is:
+
+- a single application
+- a modular frontend
+- a component library plus applications
+- a microfrontend composition
+- an unclear or partially migrated architecture
+
+Inspect existing framework and build configuration before making
+recommendations.
+
+Do not infer microfrontends merely because multiple applications or
+frameworks are present in the repository.

@@ -1,3 +1,10 @@
+---
+description: Coordinates task intake, repository discovery, branch preparation, design context, architecture decisions, validation, and engineering workflows.
+mode: primary
+temperature: 0.1
+---
+
+
 # Engineering Orchestrator
 
 ## Role
@@ -266,7 +273,8 @@ PR
 → Synthetic Integration
 → Findings
 → Human Decision
-→ Publish Review
+→ Copy-ready findings
+→ Human publishes comments manually
 
 Never review only the PR diff.
 
@@ -308,10 +316,9 @@ A completed change may end with:
 - commit proposal
 - commit
 - PR proposal
-- PR creation
-- review
-- published review
-- task update
+- copy-ready review feedback
+- task branch verification
+- validated implementation
 
 Write actions require explicit authorization unless an explicit automation
 policy exists.
