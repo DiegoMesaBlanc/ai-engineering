@@ -1,106 +1,61 @@
-# /review-pr
+---
+description: Review a colleague's Pull Request or Merge Request and generate evidence-based, copy-ready feedback by file and line without modifying code or publishing comments.
+agent: orchestrator
+---
 
-Review an existing Pull Request / Merge Request and generate actionable
-feedback for a human reviewer.
+Review this Pull Request / Merge Request:
 
-This command is strictly read-only.
+$ARGUMENTS
 
-## Input
-
-Accept:
-
-- a PR/MR URL
-- provider and PR identifier
-- a local repository path and PR identifier
-- a source branch and target branch
-- a supplied diff or source files
-
-Infer available context before asking the user.
+The workflow is strictly read-only.
 
 ## Workflow
 
-1. Identify the PR and provider.
-2. Retrieve the source and target commits when accessible.
-3. Retrieve task context when available.
-4. Retrieve design context when available.
-5. Inspect the current local Git state before any checkout.
-6. Preserve the user's working tree.
-7. Use an isolated worktree when local source inspection is necessary.
-8. Analyze repository architecture and relevant conventions.
-9. Analyze the complete relevant diff.
-10. Inspect related existing code and abstractions.
-11. Evaluate correctness, requirements, architecture, security,
-    performance, maintainability, accessibility, and testing.
-12. Run safe, relevant validations when appropriate.
-13. Check previous review findings when available.
-14. Generate copy-ready feedback grouped by file and line.
-15. Provide a concise overall assessment.
+1. Identify the PR URL, provider, source/target commit, and author when available.
+2. Retrieve the task and relevant design context when available.
+3. Inspect current local Git state before checkout.
+4. Preserve user changes; use an isolated worktree if local source inspection is required.
+5. Inspect the exact PR source commit and relevant target context.
+6. Analyze the diff and only the surrounding repository context needed to validate findings.
+7. Evaluate correctness, requirements, architecture, design patterns, security, performance, maintainability, accessibility, testing, and integration risk.
+8. Run safe, relevant existing validations when helpful.
+9. Use compact review memory when previous findings exist.
+10. Generate feedback grouped by file and line.
 
-## Review Output
-
-Start with:
+## Output
 
 ### REVIEW SUMMARY
 
-PR:
-Author:
-Source commit:
-Target:
-Scope:
-Overall assessment:
+- PR:
+- Author:
+- Source commit:
+- Target:
+- Scope:
+- Overall assessment:
 
-Then report each actionable finding.
+For every actionable finding include:
 
-### FINDING
-
-Priority: P0 / P1 / P2 / P3
-Type: BLOCKING / IMPORTANT / SUGGESTION / QUESTION
-Category:
-File:
-Line or range:
-Evidence:
-Impact:
-Confidence:
+- Priority: P0 / P1 / P2 / P3
+- Type: BLOCKING / IMPORTANT / SUGGESTION / QUESTION
+- Category
+- File and exact line/range when available
+- Evidence and impact
+- Confidence
 
 #### Comment to copy
 
-<Exact proposed review comment>
+<Concise, respectful, actionable review comment>
+
+#### Why it matters
+
+<Explanation for the human reviewer>
 
 #### Recommendation
 
-<Optional explanation for the human reviewer>
+<Optional implementation direction>
 
-Use source-commit line numbers and anchor feedback to changed lines whenever
-possible.
+Do not invent line numbers or test results. If the source is inaccessible, identify the missing artifact and continue only with reliable available context. If no actionable issues are found, state that explicitly.
 
-If a concern is outside the diff, explain the connection to the change and
-identify an appropriate changed-line anchor when possible.
+## Strict Read-Only Policy
 
-## Review Language
-
-Use the team's existing PR language when it can be determined.
-
-Otherwise, provide explanations in the user's preferred language and
-copy-ready comments in English by default.
-
-## Safety
-
-Never:
-
-- publish comments or reviews
-- approve or reject the PR through the provider
-- modify source code
-- push changes
-- merge the PR
-- update tasks
-- change branches in the user's primary worktree
-- delete user files or changes
-
-When a local checkout is needed, use an isolated worktree or another safe,
-read-only approach.
-
-## No-Finding Result
-
-If no actionable issues are found, say so explicitly.
-
-Do not invent findings merely to produce comments.
+Never edit source code, fix findings, publish comments, approve/reject, merge, push, create a PR, or update tasks. The user decides which comments to publish manually.

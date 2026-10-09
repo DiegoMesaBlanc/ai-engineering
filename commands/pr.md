@@ -1,46 +1,27 @@
-# /pr
+---
+description: Prepare copy-ready Pull Request or Merge Request title, description, testing summary, risks, and reviewer notes without publishing anything.
+agent: orchestrator
+---
 
 Prepare a Pull Request / Merge Request proposal for manual creation.
 
-This command generates copy-ready content.
-It does not create or publish a PR/MR.
-
-## Inputs
-
-Accept any available combination of:
-
-- current local repository
-- source branch
-- target branch
-- task URL or identifier
-- design URL or artifact
-- PR template or repository contribution guidelines
-
-Infer provider details when reliable evidence is available.
-
-Do not require an MCP if local Git and repository files provide sufficient
-information.
+This command generates copy-ready content. It does not create or publish a PR/MR.
 
 ## Workflow
 
-1. Inspect repository status and current branch.
-2. Identify the intended source and target branches.
-3. Inspect commits and relevant changes.
-4. Inspect the task when available.
-5. Inspect associated design artifacts when relevant.
-6. Analyze architecture and affected modules.
-7. Identify unrelated or accidental changes.
-8. Check available validation evidence.
-9. Generate copy-ready PR title and description.
-10. Include appropriate testing and risk information.
-
-Do not load unrelated project documentation unless needed.
+1. Inspect repository status, current branch, commits, and changed files.
+2. Identify intended source and target branches.
+3. Inspect the task and relevant design when available.
+4. Analyze architecture impact, unrelated changes, and risks.
+5. Report validation actually performed; identify checks not run.
+6. Follow an existing repository PR template when available.
+7. Generate the copy-ready proposal.
 
 ## Output
 
 ### PR TITLE
 
-<Copy-ready title>
+<Concise title following repository conventions>
 
 ### PR DESCRIPTION
 
@@ -48,49 +29,30 @@ Do not load unrelated project documentation unless needed.
 <What changed and why>
 
 #### Task / Requirements
-<Task reference and acceptance criteria addressed, when available>
+<Actual task reference and acceptance criteria, when available>
 
 #### Changes
-<Important implementation details>
+<Meaningful implementation details>
 
-#### Design
-<Relevant design decisions, when applicable>
-
-#### Architecture
-<Architectural impact, if significant>
+#### Design / Architecture
+<Only relevant decisions>
 
 #### Testing
-<Only tests and validations actually performed>
+<Executed checks and results, plus important checks not run>
 
 #### Risks and Limitations
-<Relevant risks or unresolved issues>
+<Relevant risks>
 
 #### Reviewer Notes
-<Files or decisions reviewers should focus on>
+<Areas requiring attention>
 
 #### Checklist
-<Project-specific checklist, when available>
+<Use project-specific checklist if present>
 
-## Quality Rules
+## Rules
 
-- Follow the repository's existing PR template and conventions.
-- Prefer concise, concrete, technically useful descriptions.
-- Never claim tests passed unless they were executed or reliable results
-  were retrieved.
-- Do not invent task IDs, links, requirements, or reviewers.
-- Do not include unrelated refactoring.
-- Use the language expected by the project or team.
-
-## Strict Read-Only Policy
-
-Never:
-
-- create a PR/MR
-- publish comments
-- push a branch
-- merge
-- approve a PR
-- change a task
-- modify a remote repository
-
-The user copies the generated content and creates the PR manually.
+- Never invent task IDs, links, requirements, reviewers, or test results.
+- Avoid unrelated refactoring.
+- Use local Git first; MCP is optional.
+- Never create a PR/MR, publish comments, push, merge, approve, or update a remote task.
+- The user copies the generated content and creates the PR manually.

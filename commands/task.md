@@ -1,5 +1,6 @@
 ---
-description: Start a development task, analyze its context, ask for the branch name, and implement only after the task branch is ready.
+description: Start a task, understand its requirements and design, ask for the branch name, and implement only after the task branch is ready.
+agent: orchestrator
 ---
 
 Start or continue the engineering task specified by:
@@ -15,11 +16,10 @@ Before modifying application code:
 1. Detect the repository and project state.
 2. Retrieve and understand the task when possible.
 3. Inspect current Git status and identify the correct base branch.
-4. Ask the user for the exact branch name if it has not already been
-   supplied.
-5. Validate that the branch name is valid and not already in use.
-6. Create the local task branch or an isolated worktree as appropriate.
-7. Verify that work will take place on the requested branch.
+4. Ask for the exact branch name if one has not been provided.
+5. Validate the name and check whether the branch already exists.
+6. Preserve uncommitted work and prepare the requested branch or isolated worktree.
+7. Verify the working location before implementation.
 
 Ask exactly:
 
@@ -29,29 +29,27 @@ Do not guess the name.
 
 Do not begin implementation before the branch is ready.
 
-Do not discard, stash, reset, or overwrite existing user changes silently.
+Do not discard, stash, reset, or overwrite user changes silently.
 
-If the requested branch already exists, stop and ask whether the user
-wants to use it or provide another name.
+If the branch already exists, stop and ask whether to use it or choose another name.
 
 ## Normal workflow
 
 After the branch is ready:
 
-1. Analyze task requirements and acceptance criteria.
+1. Analyze acceptance criteria.
 2. Analyze the relevant design when available.
-3. Analyze the repository and detect its stack.
+3. Analyze repository and stack.
 4. Evaluate architecture, repository topology, complexity, and patterns.
-5. Present meaningful decisions when human approval is required.
-6. Implement using existing project conventions.
-7. Test and validate the changes.
-8. Review the implementation.
-9. Present the Git diff and commit proposal.
+5. Present meaningful decisions when approval is required.
+6. Implement following current conventions.
+7. Validate and review.
+8. Present the Git diff and commit proposal.
 
 ## PR policy
 
-Prepare copy-ready PR title and description when requested.
+Generate copy-ready PR title and description when requested.
 
-Do not create or publish the PR/MR.
+Do not create or publish a PR/MR.
 
-Do not push, merge, publish comments, or update a task remotely.
+Do not push, merge, publish comments, or update a remote task.
