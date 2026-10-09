@@ -1,6 +1,6 @@
 ---
 description: Review a colleague's Pull Request or Merge Request and generate evidence-based, copy-ready feedback by file and line without modifying code or publishing comments.
-agent: orchestrator
+agent: reviewer
 ---
 
 Review this Pull Request / Merge Request:

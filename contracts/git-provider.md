@@ -76,3 +76,25 @@ PullRequest
 ├── linked tasks
 ├── linked designs
 └── status
+
+## Current Operating Scope
+
+The current engineering workflows use provider integrations primarily
+for read-only inspection.
+
+The following operations are not enabled in the current workflow:
+
+- Create or publish Pull Requests / Merge Requests.
+- Publish review comments.
+- Approve or merge PRs/MRs.
+- Push source branches.
+- Update remote task status.
+
+The pull-request Skill prepares copy-ready text.
+
+The pull-request-review Skill produces copy-ready feedback.
+
+The human user performs the actual publication.
+
+Future provider capabilities documented in this contract must not be
+treated as permission to execute them.
