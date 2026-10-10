@@ -222,6 +222,12 @@ Return:
 - OpenCode discovery:
 - Provider configuration status:
 - License status:
+- External Skill registry:
+- External Skills installed:
+- External Skill licenses:
+- Upstream commit verification:
+- External Skill policy conflicts:
+- E2E readiness:
 
 ### Findings
 
@@ -245,10 +251,3 @@ Never expose secrets.
 
 Report checks as NOT VERIFIED when the available tools cannot establish
 their result.
-
-- External Skill registry:
-- External Skills installed:
-- External Skill licenses:
-- Upstream commit verification:
-- External Skill policy conflicts:
-- E2E readiness:

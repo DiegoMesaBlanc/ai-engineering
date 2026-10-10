@@ -182,9 +182,7 @@ Vague name, tests mock not code
 
 **MANDATORY. Never skip.**
 
-```bash
-npm test path/to/test.test.ts
-```
+the project's targeted test command
 
 Confirm:
 
@@ -238,9 +236,7 @@ Don't add features, refactor other code, or "improve" beyond the test.
 
 **MANDATORY.**
 
-```bash
-npm test path/to/test.test.ts
-```
+the project's targeted test command
 
 Confirm:
 
@@ -291,39 +287,38 @@ When writing or changing any test, read [writing-good-tests.md](writing-good-tes
 - Keep test-only code in test utilities, out of production classes
 - Understand a dependency's side effects before mocking it
 
-## Common Rationalizations
+## Common Testing Decisions
 
-| Excuse                                               | Reality                                                                                                                                                                                                                                                                             |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| "Too simple to test"                                 | Simple code breaks. Test takes 30 seconds.                                                                                                                                                                                                                                          |
-| "I'll test after"                                    | Tests written after pass immediately — which proves nothing. They may test the wrong thing, test the implementation instead of the behavior, or miss the edge case you forgot. You never watched it fail, so you never proved it can catch the bug. Test-first forces that failure. |
-| "Tests after achieve same goals (spirit not ritual)" | Tests-after answer "what does this do?"; tests-first answer "what should this do?" Tests written after are biased by the code you already wrote — you verify the cases you remembered, not the ones you'd have discovered. Coverage without proof the tests work.                   |
-| "Already manually tested"                            | Manual testing is ad-hoc: no record of what you covered, no way to re-run it when the code changes, easy to forget cases under pressure. "Worked when I tried it" ≠ comprehensive. Automated tests run the same way every time.                                                     |
-| "Deleting X hours is wasteful"                       | Sunk cost fallacy — that time is already spent either way. The real choice: rewrite with TDD (high confidence) vs. keep it and bolt tests on after (low confidence, likely bugs). Keeping code you can't trust is the waste.                                                        |
-| "Keep as reference, write tests first"               | You'll adapt it. That's testing after. Delete means delete.                                                                                                                                                                                                                         |
-| "Need to explore first"                              | Fine. Throw away exploration, start with TDD.                                                                                                                                                                                                                                       |
-| "Test hard = design unclear"                         | Listen to test. Hard to test = hard to use.                                                                                                                                                                                                                                         |
-| "TDD will slow me down"                              | TDD IS the pragmatic path: catches bugs before commit, prevents regressions, lets you refactor without fear. "Pragmatic" shortcuts mean debugging in production — slower, not faster.                                                                                               |
-| "Manual test faster"                                 | Manual doesn't prove edge cases. You'll re-test every change.                                                                                                                                                                                                                       |
-| "Existing code has no tests"                         | You're improving it. Add tests for existing code.                                                                                                                                                                                                                                   |
+| Situation                             | Recommended response                                                                                                    |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| New behavior                          | Prefer writing a focused test before implementation and verify that it fails for the expected reason.                   |
+| Existing implementation without tests | Add a meaningful regression test and run it against the existing implementation.                                        |
+| Existing test passes                  | Determine whether it independently protects the requirement. Do not force a failure merely to satisfy the TDD sequence. |
+| Documentation-only change             | Use documentation checks and other proportionate validation instead of adding meaningless tests.                        |
+| Difficult test setup                  | Investigate the existing test utilities and simplify the testable boundary when justified.                              |
+| Exploratory implementation            | Preserve useful work. Use focused tests to establish expected behavior before further changes when appropriate.         |
+| Expensive full test suite             | Run focused tests first and select broader validation according to risk, project policy, and available CI.              |
+| Existing code is difficult to test    | Consider a minimal, justified refactor without rewriting unrelated functionality.                                       |
 
-## Red Flags - STOP and Start Over
+## Review Before Rewriting
 
-- Code before test
-- Test after implementation
-- Test passes immediately
-- Can't explain why test failed
-- Tests added "later"
-- Rationalizing "just this once"
-- "I already manually tested it"
-- "Tests after achieve the same purpose"
-- "It's about spirit not ritual"
-- "Keep as reference" or "adapt existing code"
-- "Already spent X hours, deleting is wasteful"
-- "TDD is dogmatic, I'm being pragmatic"
-- "This is different because..."
+A failed test may justify changing implementation code. It does not
+automatically justify replacing an entire implementation.
 
-**All of these mean: Delete code. Start over with TDD.**
+Before rewriting existing code:
+
+1. Identify the specific requirement or defect.
+2. Establish evidence with a relevant test or another appropriate check.
+3. Inspect existing behavior and dependencies.
+4. Evaluate the smallest safe correction.
+5. Explain why a larger rewrite is necessary if one is proposed.
+6. Preserve unrelated changes.
+
+Never delete existing implementation or user work merely because it was
+written before a test.
+
+TDD guides the development process. It does not override workspace safety,
+task scope, or human approval requirements.
 
 ## Example: Bug Fix
 
@@ -340,10 +335,7 @@ test("rejects empty email", async () => {
 
 **Verify RED**
 
-```bash
-$ npm test
-FAIL: expected 'Email required', got undefined
-```
+the project's targeted test command
 
 **GREEN**
 
@@ -358,28 +350,29 @@ function submitForm(data: FormData) {
 
 **Verify GREEN**
 
-```bash
-$ npm test
-PASS
-```
+the project's targeted test command
 
 **REFACTOR**
 Extract validation for multiple fields if needed.
 
 ## Verification Checklist
 
-Before marking work complete:
+Before marking work complete, evaluate:
 
-- [ ] Every new function/method has a test
-- [ ] Watched each test fail before implementing
-- [ ] Each test failed for expected reason (feature missing, not typo)
-- [ ] Wrote minimal code to pass each test
-- [ ] All tests pass
-- [ ] Output pristine (no errors, warnings)
-- [ ] Tests use real code (mocks only if unavoidable)
-- [ ] Edge cases and errors covered
+- [ ] Relevant behavior has appropriate test coverage.
+- [ ] New behavior tests were verified to fail for the expected reason
+      when using the TDD cycle.
+- [ ] Regression tests protect important fixed behavior.
+- [ ] Tests use meaningful assertions.
+- [ ] Relevant tests have been executed.
+- [ ] Broader validation was selected according to risk and project policy.
+- [ ] Failures and unexecuted checks are reported accurately.
+- [ ] No unrelated code or user work was discarded.
 
-Can't check all boxes? You skipped TDD. Start over.
+Not every change requires the same test suite.
+
+If a check is not applicable, explain why. If a check cannot be executed,
+report that limitation instead of pretending it passed.
 
 ## When Stuck
 
@@ -392,15 +385,24 @@ Can't check all boxes? You skipped TDD. Start over.
 
 ## Debugging Integration
 
-Bug found? Write failing test reproducing it. Follow TDD cycle. Test proves fix and prevents regression.
+When a reproducible bug is found, prefer a regression test that demonstrates
+the incorrect behavior and protects the fix.
 
-Never fix bugs without a test.
+If a meaningful automated test is not feasible, use an appropriate
+alternative validation method and document the limitation.
+
+Never modify or delete unrelated code merely to follow a testing ritual.
 
 ## Final Rule
 
-```
-Production code → test exists and failed first
-Otherwise → not TDD
-```
+Prefer the TDD cycle for new or changed behavior:
 
-No exceptions without your human partner's permission.
+Red → Green → Refactor
+
+Use the smallest meaningful test, the project's established tooling,
+and proportionate validation.
+
+Never discard existing work solely because it predates the test.
+
+When strict TDD is not appropriate, explain the reason and validate the
+change using the best available alternative.

@@ -124,6 +124,11 @@ Run the relevant project checks:
 
 Report actual results and unexecuted checks honestly.
 
+A successful compilation alone does not mean that the task is complete.
+
+Completion requires the applicable validation and review criteria for
+the project and task to be satisfied.
+
 ## Phase 11 — Review
 
 Review the resulting implementation for:

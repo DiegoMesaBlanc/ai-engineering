@@ -39,25 +39,30 @@ each external Skill used by the AI Engineering System.
 
 ## Verification Rules
 
-Replace PENDING with the full upstream Git commit SHA used during import.
+Each upstream commit identifies a specific baseline revision.
 
-Confirm the recorded revision by checking that the imported files are
-byte-identical to that revision's content when no local modifications
-affected them.
+Record the full commit SHA used for verification.
 
-Do not invent or guess a source revision.
+Do not claim that it was the original import revision unless evidence
+establishes that fact.
 
-Verify that license files and required supporting files are present.
+For unchanged upstream files, verify content against the recorded revision.
 
-Document the changes made to imported Skills.
+For adapted files:
 
-Keep external Skills under the canonical skills/ directory.
+- preserve the upstream source reference
+- document all intentional local changes
+- retain upstream license notices
+- verify required supporting files
+- ensure the adapted instructions do not conflict with AGENTS.md
 
-Do not install entire external agent frameworks when only an individual
-Skill is required.
+Never invent a source revision.
 
-External Skills must follow AGENTS.md, the project conventions, the
-minimal-effective-architecture principle, and applicable security rules.
+Do not automatically overwrite local adaptations during updates.
 
-Do not consider the End-to-End setup ready until the required Skills have
-been installed and verified.
+External Skills must follow the Engineering System's workspace safety,
+minimal-effective-architecture, security, and testing policies.
+
+Do not consider End-to-End validation ready while an external Skill is
+missing, its provenance is unverified, or active instructions conflict
+with system policies.

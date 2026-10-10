@@ -136,20 +136,6 @@ Do not purchase subscriptions or initiate paid usage independently.
 
 Do not assume a supplied token is unlimited or free to use.
 
-## Cost Classification
-
-Classify providers as:
-
-- OPEN_SOURCE
-- FREE
-- ORGANIZATION_LICENSED
-- LOW_COST
-- PAID
-- UNKNOWN
-
-An organization-provided license is preferred over purchasing another
-service when it meets the requirements.
-
 ## Optional Integrations
 
 MCP is optional.
