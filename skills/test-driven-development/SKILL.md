@@ -1,7 +1,12 @@
 ---
 name: test-driven-development
-description: Use when implementing any feature or bugfix, before writing implementation code
+description: Apply TDD to behavior-changing features and bug fixes when automated tests add value, following project conventions and preserving existing work.
 ---
+
+**Core principle:** When TDD is appropriate, verify expected behavior with
+a focused test, implement the smallest justified change, and validate
+proportionally. Preserve existing work and report unrelated failures
+without modifying them automatically.
 
 # Test-Driven Development (TDD)
 

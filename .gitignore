@@ -1,0 +1,38 @@
+# OS metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Environment and secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.keystore
+credentials.json
+secrets.json
+
+# Dependencies
+node_modules/
+vendor/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Build and generated output
+dist/
+build/
+out/
+.next/
+.turbo/
+coverage/
+*.log
+*.tmp
+.cache/
+
+# Local tooling state
+.opencode/tmp/
+node/
