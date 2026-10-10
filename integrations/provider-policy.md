@@ -74,15 +74,27 @@ Credentials belong to the user's local client/provider configuration.
 
 # Provider Evaluation
 
-Every new provider must be classified as:
+## Cost Classification
 
-OPEN
-FREE
-LOW_COST
-PAID
-UNKNOWN
+Classify every provider as:
 
-The reasoning must be documented.
+- OPEN_SOURCE
+- FREE
+- ORGANIZATION_LICENSED
+- LOW_COST
+- PAID
+- UNKNOWN
+
+Use the same classification in provider-matrix.md.
+
+A provider's software license and service cost are different attributes.
+
+A provider can be open-source while the hosted service requires payment.
+
+An organization-provided license can be used when authorized without
+making that paid service a mandatory Core dependency.
+
+Do not initiate additional paid usage without approval.
 
 ---
 

@@ -13,7 +13,9 @@ each external Skill used by the AI Engineering System.
 - Local path: skills/frontend-design/
 - License: Apache-2.0
 - License file: LICENSE.txt
-- Upstream commit: PENDING
+- Upstream commit: dbd4588f9e1033efb41dad4bef2f7947c8993d44
+- Revision verification: byte-identical match of SKILL.md and LICENSE.txt
+  against the recorded upstream revision, confirmed 2026-10-09.
 - Local modifications: none planned
 
 ## 2. Test-Driven Development
@@ -25,13 +27,23 @@ each external Skill used by the AI Engineering System.
 - License: MIT
 - License file: LICENSE-MIT.txt
 - Required supporting file: writing-good-tests.md
-- Upstream commit: PENDING
+- Upstream commit: 8ca22dba9a94f28898bbce59f2537ff4d87c747d
+- Revision verification: writing-good-tests.md and LICENSE-MIT.txt are
+  byte-identical to the recorded upstream revision, confirmed 2026-10-09.
+  License-MIT.txt matches the upstream MIT LICENSE at the repository root.
+  SKILL.md was locally adapted for language-neutral applicability and
+  Engineering System policy alignment, so it differs from the upstream
+  revision.
 - Local modifications: language-neutral applicability and compatibility
   with Engineering System policies
 
 ## Verification Rules
 
 Replace PENDING with the full upstream Git commit SHA used during import.
+
+Confirm the recorded revision by checking that the imported files are
+byte-identical to that revision's content when no local modifications
+affected them.
 
 Do not invent or guess a source revision.
 

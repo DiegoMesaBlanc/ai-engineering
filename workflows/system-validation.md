@@ -119,6 +119,34 @@ Never report an external Skill as VERIFIED based only on its registry entry.
 Report E2E readiness as BLOCKED while a required external Skill is missing
 or its license and source cannot be verified.
 
+## License Metadata Interpretation
+
+The registry records the canonical SPDX license identifier.
+
+The upstream Skill frontmatter may use a license-file reference, an SPDX
+identifier, or omit a license field.
+
+Do not require the frontmatter value to match the registry SPDX identifier
+literally.
+
+For frontend-design:
+
+- Accept the upstream metadata "Complete terms in LICENSE.txt".
+- Verify that LICENSE.txt exists.
+- Verify that the registry records Apache-2.0.
+
+For test-driven-development:
+
+- A missing license field in SKILL.md is not automatically an error.
+- Verify that LICENSE-MIT.txt exists and contains the MIT license.
+- Verify that the registry records MIT.
+
+Report LICENSE METADATA INCONSISTENCY only if the metadata contradicts
+the actual license evidence or points to a missing license file.
+
+Do not modify upstream Skill metadata solely to satisfy a simplistic
+string-equality check.
+
 ## 4. Validate Client Adapters
 
 For OpenCode, inspect:

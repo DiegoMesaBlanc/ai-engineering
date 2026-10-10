@@ -76,6 +76,7 @@ PullRequest
 ├── linked tasks
 ├── linked designs
 └── status
+```
 
 ## Current Operating Scope
 

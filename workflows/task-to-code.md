@@ -166,3 +166,25 @@ When requested, generate:
 The user creates the PR/MR manually.
 
 Never create or publish the PR/MR.
+
+## Phase 14 — Engineering Insights
+
+After implementation and validation, report meaningful engineering
+observations related to the task.
+
+Include only observations with practical value, such as:
+
+- relevant improvement opportunities
+- technical debt discovered during the task
+- reusable abstractions worth considering
+- architectural risks
+- testing gaps
+- security or performance concerns
+
+Separate these observations from the task deliverable.
+
+Do not implement unrelated improvements automatically.
+
+Explain the expected benefit and relevant trade-offs.
+
+Keep the report concise and proportional to the task complexity.
