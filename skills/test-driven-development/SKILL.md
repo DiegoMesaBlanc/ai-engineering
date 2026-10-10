@@ -98,17 +98,6 @@ Prefer established project conventions over introducing new tooling.
 
 Do not claim that a test passed unless it was executed successfully.
 
-Language-neutral applicability added.
-
-Existing implementation protection added.
-
-Destructive delete-and-restart instructions replaced with a
-regression-testing approach.
-
-TDD cycle retained for new behavior.
-
-Existing testing tools and project conventions are preferred.
-
 ## Red-Green-Refactor
 
 ```dot
@@ -178,85 +167,40 @@ Vague name, tests mock not code
 - Clear name
 - Real code (no mocks unless unavoidable)
 
-### Verify RED - Watch It Fail
+### Verify RED — Watch It Fail
 
-**MANDATORY. Never skip.**
+When using TDD for new behavior:
 
-the project's targeted test command
+1. Run the focused test using the test command identified from the project.
+2. Confirm that it fails for the expected behavioral reason.
+3. Distinguish an expected test failure from a test setup or infrastructure
+   error.
 
-Confirm:
+If the test passes immediately, determine whether it correctly represents
+new behavior or existing behavior. Do not force a failure merely to comply
+with the process.
 
-- Test fails (not errors)
-- Failure message is expected
-- Fails because feature missing (not typos)
+If the test cannot execute, report the limitation and investigate only the
+necessary setup issues.
 
-**Test passes?** You're testing existing behavior. Fix test.
+TDD is preferred for new behavior, not a reason to create meaningless tests
+for documentation-only or otherwise non-behavioral changes.
 
-**Test errors?** Fix error, re-run until it fails correctly.
+### Verify GREEN — Watch It Pass
 
-### GREEN - Minimal Code
+After implementing the minimum change:
 
-Write simplest code to pass the test.
+1. Run the focused tests.
+2. Run additional relevant tests based on the change's risk and the
+   project's conventions.
+3. Run broader validation when required by project policy or when the
+   change's impact justifies it.
+4. Report failures accurately, including known pre-existing failures.
 
-<Good>
-```typescript
-async function retryOperation<T>(fn: () => Promise<T>): Promise<T> {
-  for (let i = 0; i < 3; i++) {
-    try {
-      return await fn();
-    } catch (e) {
-      if (i === 2) throw e;
-    }
-  }
-  throw new Error('unreachable');
-}
-```
-Just enough to pass
-</Good>
+Do not change unrelated code merely to make an unrelated test pass.
 
-<Bad>
-```typescript
-async function retryOperation<T>(
-  fn: () => Promise<T>,
-  options?: {
-    maxRetries?: number;
-    backoff?: 'linear' | 'exponential';
-    onRetry?: (attempt: number) => void;
-  }
-): Promise<T> {
-  // YAGNI
-}
-```
-Over-engineered
-</Bad>
-
-Don't add features, refactor other code, or "improve" beyond the test.
-
-### Verify GREEN - Watch It Pass
-
-**MANDATORY.**
-
-the project's targeted test command
-
-Confirm:
-
-- Test passes
-- Other tests still pass
-- Output pristine (no errors, warnings)
-
-**Test fails?** Fix code, not test.
-
-**Other tests fail?** Fix now.
-
-**"Other tests" means the project's suite, not just your file.** A
-green run of the test you wrote is not a green suite. Before you call
-the change done, run the project's test command (bare `pytest`,
-`npm test`, `cargo test` — whatever the repo uses) even when your task
-named only one test file. A scope statement in your task bounds the
-deliverable, not your verification. Any failure that run shows —
-including one you didn't cause — goes in your report by name; a red
-test you watched scroll past and didn't mention is a report falsified
-by omission.
+Do not claim that the implementation is fully validated when relevant
+checks remain unexecuted.
 
 ### REFACTOR - Clean Up
 

@@ -179,6 +179,25 @@ Confirm consistency across the Core, Skills, commands, and workflows:
 - Treat MCP as optional.
 - Keep credentials out of version control.
 
+## Policy Conflict Detection
+
+Inspect active instructions, not only headings and file references.
+
+Verify that:
+
+- provider-policy.md contains exactly one Cost Classification section
+- provider-policy.md and provider-matrix.md use the same cost taxonomy
+- TDD does not authorize deleting existing work
+- TDD does not require fixing unrelated test failures automatically
+- TDD test requirements are proportional to task complexity and risk
+- the external Skill registry accurately documents local modifications
+
+Distinguish active instructions from quoted examples or explanatory text.
+
+If an active instruction conflicts with AGENTS.md, report POLICY CONFLICT.
+
+A successful file-existence check alone does not establish policy consistency.
+
 ## 6. Reference Integrity
 
 Inspect references to Skills, workflows, contracts, agents, and commands.
