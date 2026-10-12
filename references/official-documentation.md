@@ -212,6 +212,30 @@ explicitly justified.
 
 - Official documentation: https://prettier.io/docs/
 
+### Angular ESLint
+
+- Official documentation: https://github.com/angular-eslint/angular-eslint
+
+### Ruff
+
+- Official documentation: https://docs.astral.sh/ruff/
+
+### google-java-format
+
+- Official documentation: https://github.com/google/google-java-format
+
+### Checkstyle
+
+- Official documentation: https://checkstyle.org/
+
+### SQLFluff
+
+- Official documentation: https://sqlfluff.com/
+
+Use the formatter and linter appropriate to the detected stack and the
+project's existing configuration, as required by the Formatting and
+Linting Policy in AGENTS.md.
+
 ## Security
 
 ### OWASP

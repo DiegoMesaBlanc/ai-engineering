@@ -50,6 +50,11 @@ Check for the existence of:
 Check that CLAUDE.md references AGENTS.md rather than duplicating
 the complete shared instructions.
 
+Do not hardcode a required-file total. The inventory above is the
+maintained list; report the count as derived from the actual file
+existence check, not from a fixed constant. A partial commit that removes
+one of the required files must fail this check.
+
 ## 3. Validate Skills
 
 Check that every referenced Skill exists at its canonical location.
@@ -200,9 +205,25 @@ Verify that:
 - validation commands are discovered from actual project configuration
 - no universal test runner or coverage threshold is assumed
 - validation scope is proportionate to task complexity and risk
-- missing dependencies are reported rather than installed automatically
-- validation does not modify application source code
+- missing dependencies are reported rather than installed automatically,
+  except for the mandatory formatting and linting setup
+- validation does not modify application behavior; the only permitted
+  source mutation is automated formatting of files within the declared
+  task scope per the mandatory formatting and linting policy
 - potentially destructive commands require appropriate authorization
+- formatting and linting are configured and treated as mandatory
+- missing formatter or linter tooling is reported as SETUP_REQUIRED,
+  never as NOT_APPLICABLE
+- workflows authorize the mandatory formatter and linter setup instead of
+  unconditionally forbidding dependency installation and configuration
+- AGENTS.md, the testing Skill, and the validation workflows agree on the
+  formatting and linting policy
+- reproducible lint, format, and format-check commands are required, not
+  optional
+- no active instruction claims validation passed without evidence or
+  treats a successful build as a substitute for formatting and linting
+- the required-file inventory above matches the actual maintained set of
+  canonical files
 
 Distinguish active instructions from quoted examples or explanatory text.
 

@@ -22,7 +22,8 @@ or quality gate.
 3. Start with targeted validation when appropriate.
 4. Increase validation scope according to risk.
 5. Do not install dependencies or introduce tools without justification
-   and authorization.
+   and authorization, except for the mandatory formatting and linting
+   setup defined in AGENTS.md and Section 6.
 6. Preserve the user's code and working tree.
 7. Report actual execution results.
 8. Never claim that a check passed when it was not executed.
@@ -272,10 +273,48 @@ change's risk justifies it.
 Do not assume that a monorepo uses Nx, Turborepo, or a particular workspace
 tool.
 
-## 6. Static Analysis and Formatting
+## 6. Static Analysis, Formatting, and Linting
 
-Run configured linting, type checking, and formatting checks when relevant.
+Formatting and linting are mandatory. Every project must have a configured
+formatter and linter appropriate for its languages and frameworks, with
+reproducible commands to run both. Follow the canonical tooling policy in
+AGENTS.md:
 
+- JavaScript and TypeScript: Prettier and ESLint with framework plugins.
+- Angular: Prettier and Angular ESLint, including template linting.
+- Ionic: the tooling of its underlying Angular or React stack.
+- Python: Ruff format and Ruff check.
+- Java: google-java-format and Checkstyle or an equivalent tool.
+- SQL: dialect-aware formatting and linting such as SQLFluff.
+- Other languages: the ecosystem-standard formatter and linter.
+
+Detect existing configuration, dependencies, scripts, and source-file
+coverage before selecting tools. Preserve suitable existing tooling and do
+not force Prettier onto file types it does not support.
+
+If the mandatory formatter or linter is missing or incomplete, report it as
+`SETUP_REQUIRED`, not as `NOT_APPLICABLE`, and configure it as part of the
+task:
+
+1. select compatible open-source tools
+2. add configuration files and ignore patterns for generated output
+3. add reproducible, project-appropriate scripts
+4. add development dependencies with the existing package manager
+5. update the lockfile when installation succeeds
+6. format files within the declared task scope when necessary and safe,
+   without rewriting unrelated user-owned files
+7. run the formatter's non-mutating check and the linter
+8. disclose every configuration and dependency change made
+
+Never install paid tools or introduce paid services, and do not make
+unrelated dependency upgrades.
+
+For JavaScript and TypeScript, expose scripts equivalent to `lint`,
+`format`, and `format:check`, adapted to the existing package manager.
+Adopt equivalent reproducible commands for other ecosystems through their
+build system or scripts.
+
+Run configured linting, type checking, and a non-mutating formatting check.
 Do not automatically fix unrelated files merely to achieve a clean
 validation result.
 
@@ -289,6 +328,9 @@ Report whether a failure comes from:
 - unavailable permissions
 
 Do not confuse formatting checks with source-code correctness.
+
+A successful build does not substitute for successful formatting or
+linting.
 
 ## 7. Build Validation
 
@@ -365,8 +407,17 @@ If dependencies are unavailable:
 - explain the minimal installation or configuration required
 - obtain approval before a significant or network-dependent change
 
+The mandatory formatting and linting setup defined in Section 6 is an
+explicit exception. Adding the required open-source development
+dependencies with the existing package manager is expected and does not
+require separate authorization. Do not make unrelated upgrades.
+
 Never use a different test runner merely to avoid reporting a missing
 dependency.
+
+When a real environment limitation, unavailable network, permission
+restriction, or incompatible dependency prevents mandatory setup, report
+`BLOCKED`, explain the exact reason, and state what remains incomplete.
 
 ## 12. Execution Evidence
 
@@ -387,9 +438,14 @@ Use these statuses:
 - FAIL: executed and failed
 - BASELINE_FAILURE: reliable evidence shows a pre-existing failure
 - BLOCKED: could not run because a requirement was unavailable
+- SETUP_REQUIRED: mandatory tooling is missing and must be configured; an
+  intermediate state that is never a final successful result
 - NOT_RUN: available but not executed
 - SKIPPED: deliberately omitted with a reason
 - NOT_APPLICABLE: irrelevant to the current change
+
+`NOT_APPLICABLE` must never be used for mandatory formatting or linting
+merely because configuration, dependencies, or scripts are absent.
 
 Do not label checks PASS based on configuration alone.
 

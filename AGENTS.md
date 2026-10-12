@@ -47,9 +47,60 @@ Never invent the branch name or discard user work.
 - Code, identifiers, comments, JSDoc, and TSDoc must be in English.
 - Human interaction may be in Spanish or English.
 - Test and validate changes using available project tooling.
+- Format and lint changes with the project's configured tools.
 - Report checks that were not run.
 - Never claim a test or build passed without evidence.
 - Keep unrelated refactoring out of scope.
+
+## Formatting and Linting Policy
+
+This section is the single source of truth for the formatting and linting
+policy. Skills and workflows reference it instead of maintaining
+divergent copies.
+
+Every project must have a configured formatter and a configured linter
+appropriate for its languages and frameworks. This is mandatory, not an
+optional recommendation.
+
+- Detect the actual stack, versions, package manager, repository
+  structure, and existing tooling before selecting tools.
+- Preserve suitable existing tooling and configuration.
+- Prefer established, maintained, open-source tools with conventional
+  configuration; avoid redundant tools.
+- Provide reproducible commands to run formatting and linting.
+- Apply this requirement to new projects and ordinary implementation
+  tasks, not only when `/validate` is invoked.
+- Never classify missing formatting or linting tooling as
+  `NOT_APPLICABLE`.
+- When required tooling, configuration, scripts, or dependencies are
+  missing, set them up as part of the work using the existing package
+  manager and compatible versions, and disclose every change.
+- A project is not fully validated while mandatory formatting or linting
+  remains unconfigured or unverified.
+- A successful build does not substitute for successful formatting or
+  linting.
+
+Default tool choices by ecosystem:
+
+- JavaScript and TypeScript (React, Next.js, Vue, Node.js, React Native):
+  Prettier for formatting and ESLint for linting, with the appropriate
+  framework plugins.
+- Angular: Prettier and Angular ESLint, preserving Angular template and
+  TypeScript linting.
+- Ionic: the tooling of its underlying Angular or React stack, including
+  relevant template checks.
+- Python: Ruff format and Ruff check, unless a consistent formatter and
+  linter already exist.
+- Java: a compatible formatter such as google-java-format plus a linter
+  such as Checkstyle or an equivalent project-standard tool.
+- SQL: dialect-aware formatting and linting such as SQLFluff where
+  compatible with the selected dialect.
+- Other languages: the ecosystem-standard formatter and linter.
+
+Do not force Prettier onto file types it does not support. Account for
+monorepos, multiple languages, generated files, templates, and database
+code, and ensure relevant source files are covered. Do not install paid
+tools or introduce paid services.
 
 ## Pull Request Policy
 

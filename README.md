@@ -15,6 +15,7 @@ A provider-agnostic, free-first engineering workflow for OpenCode and compatible
 - Prefer free/open-source options, but use company-provided licenses when authorized.
 - Use official documentation on demand for the detected technology and version.
 - Evaluate external Skills across the full supported stack without installing one per framework by default.
+- Require a configured formatter and linter for every project, with reproducible commands and honest validation results.
 
 ## Current top-level structure
 
@@ -51,7 +52,8 @@ code or a new runtime dependency.
 - `/system-check` audits the AI Engineering System, file structure,
   Skills, workflows, references, and client configuration.
 - `/validate` audits the current software project's changes using
-  detected tooling, relevant tests, static checks, and build validation.
+  detected tooling, relevant tests, static checks, and build validation,
+  and configures the mandatory formatter and linter when they are missing.
 
 ## OpenCode setup (macOS)
 

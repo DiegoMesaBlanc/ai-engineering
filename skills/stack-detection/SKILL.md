@@ -57,6 +57,9 @@ Determine:
 - styling system
 - testing framework
 - E2E framework
+- formatter
+- linter
+- formatting and linting commands
 - database
 - ORM/ODM
 - API framework
@@ -142,6 +145,29 @@ version.
 - Detect Ionic version and its React, Angular, or Vue integration.
 - Identify Capacitor or Cordova when present.
 - Detect routing, native plugins, styling, and testing conventions.
+
+## Formatter and linter detection
+
+Every project must have a configured formatter and linter, so detect them
+from repository evidence before selecting tools.
+
+Inspect, when present:
+
+- JavaScript and TypeScript: ESLint configuration, Prettier configuration,
+  and related scripts in package.json
+- Angular: Angular ESLint and Prettier configuration
+- Python: Ruff configuration in pyproject.toml or a dedicated file, plus
+  other configured formatters or linters
+- Java: build-plugin configuration for formatters and linters such as
+  google-java-format and Checkstyle
+- SQL: SQLFluff or an equivalent dialect-aware configuration
+- other ecosystems: the ecosystem-standard formatter and linter
+
+Determine the configured commands, the package manager or build system that
+runs them, and whether relevant source files are actually covered.
+
+If the mandatory formatter or linter is absent, report it as
+`SETUP_REQUIRED`; do not record it as `NOT_APPLICABLE`.
 
 ## Database detection
 

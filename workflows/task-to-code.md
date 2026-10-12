@@ -58,6 +58,8 @@ For a new project:
 - establish repository structure
 - determine whether a workspace is justified
 - evaluate whether microfrontends provide a concrete benefit
+- establish a formatter and linter with reproducible commands, following
+  the Formatting and Linting Policy in AGENTS.md
 
 Do not introduce a monorepo or microfrontends without evidence.
 
@@ -101,6 +103,7 @@ Provide a concise implementation plan including:
 - files and modules affected
 - existing abstractions to reuse
 - proposed new components only when justified
+- formatting and linting setup when the project lacks it
 - validation
 - risks
 
@@ -126,6 +129,12 @@ Load `skills/testing-strategy/SKILL.md`.
 7. Report failures and checks that were not executed.
 8. Never claim that validation passed without evidence.
 
+Formatting and linting are mandatory for every detected language. If the
+project lacks a configured formatter or linter, configure them as part of
+the task, as described in the Formatting and Linting Policy in AGENTS.md
+and in `workflows/project-validation.md`. Report missing tooling as
+`SETUP_REQUIRED`, never as `NOT_APPLICABLE`.
+
 Prefer focused tests for changed behavior before running broad suites.
 
 Use existing test frameworks, type checkers, linters, formatters, build
@@ -136,7 +145,7 @@ workspace tooling is available.
 
 Never install dependencies, add frameworks, change configuration, or
 execute potentially destructive validation commands without appropriate
-authorization.
+authorization, except for the mandatory formatting and linting setup.
 
 Preserve unrelated and uncommitted user changes.
 

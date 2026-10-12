@@ -292,8 +292,16 @@ test framework's documentation.
 
 - ESLint: https://eslint.org/docs/latest/
 - Prettier: https://prettier.io/docs/
+- Angular ESLint: https://github.com/angular-eslint/angular-eslint
+- Ruff: https://docs.astral.sh/ruff/
+- google-java-format: https://github.com/google/google-java-format
+- Checkstyle: https://checkstyle.org/
+- SQLFluff: https://sqlfluff.com/
 - Status: DOCS_ONLY
 - Decision: Follow the installed version and existing configuration.
+  Configure the formatter and linter required by the Formatting and
+  Linting Policy in AGENTS.md using the tools appropriate to the detected
+  stack. Do not force Prettier onto file types it does not support.
 
 ## Security
 
