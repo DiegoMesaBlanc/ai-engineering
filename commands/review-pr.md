@@ -1,5 +1,5 @@
 ---
-description: Review a colleague's Pull Request or Merge Request and generate evidence-based, copy-ready feedback by file and line without modifying code or publishing comments.
+description: Review a colleague's Pull Request or Merge Request and generate evidence-based, copy-ready feedback grounded in the reviewed revision without modifying code or publishing comments.
 agent: reviewer
 ---
 
@@ -34,7 +34,7 @@ references supplied by the user when necessary.
 Review only the relevant code and supporting context. Do not publish review
 comments or modify the repository.
 
-The workflow is strictly read-only.
+The workflow is strictly read-only and copy-only.
 
 ## Workflow
 
@@ -42,47 +42,76 @@ The workflow is strictly read-only.
 2. Retrieve the task and relevant design context when available.
 3. Inspect current local Git state before checkout.
 4. Preserve user changes; use an isolated worktree if local source inspection is required.
-5. Inspect the exact PR source commit and relevant target context.
+5. Inspect the exact PR source revision and base; never substitute a stale branch or unrelated diff.
 6. Analyze the diff and only the surrounding repository context needed to validate findings.
-7. Evaluate correctness, requirements, architecture, design patterns, security, performance, maintainability, accessibility, testing, and integration risk.
-8. Run safe, relevant existing validations when helpful.
-9. Use compact review memory when previous findings exist.
-10. Generate feedback grouped by file and line.
+7. Select relevant review dimensions for the affected code and stack.
+8. Run safe, relevant existing validations when helpful and record actual results.
+9. Verify every finding against the surrounding implementation and the reviewed revision before reporting it.
+10. Use compact review memory when previous findings exist.
+11. Generate the copy-ready report required by `workflows/pull-request-review.md`.
+
+Follow the evidence requirements, severity definitions, and required report
+format defined in `workflows/pull-request-review.md`.
 
 ## Output
 
-### REVIEW SUMMARY
+Produce the required report:
 
-- PR:
-- Author:
-- Source commit:
-- Target:
-- Scope:
-- Overall assessment:
+### Review context
 
-For every actionable finding include:
+- PR or change identifier.
+- Reviewed branch/revision and base, when known.
+- Task or acceptance criteria used.
+- Scope and evidence sources.
+- Checks actually executed.
 
-- Priority: P0 / P1 / P2 / P3
-- Type: BLOCKING / IMPORTANT / SUGGESTION / QUESTION
-- Category
-- File and exact line/range when available
-- Evidence and impact
-- Confidence
+### Findings
 
-#### Comment to copy
+Order findings by severity, then confidence. For each:
 
-<Concise, respectful, actionable review comment>
+- `[Severity] Short title` (Critical / High / Medium / Low)
+- `File:line` verified against the reviewed revision
+- **Evidence:** verified code path, requirement, or execution result.
+- **Impact:** concrete failure mode.
+- **Recommendation:** actionable correction.
+- **Confidence:** High / Medium / Low.
 
-#### Why it matters
+If no actionable defects are found, state that explicitly. Do not claim
+the change is bug-free.
 
-<Explanation for the human reviewer>
+### Verification gaps
 
-#### Recommendation
+Record checks that could not be performed and why.
 
-<Optional implementation direction>
+### Non-blocking observations
 
-Do not invent line numbers or test results. If the source is inaccessible, identify the missing artifact and continue only with reliable available context. If no actionable issues are found, state that explicitly.
+Include only observations that do not meet the bar for a confirmed defect.
+
+### Summary
+
+Choose one evidence-supported recommendation:
+
+- Request changes.
+- Review comments / follow-up recommended.
+- No actionable findings identified.
+
+Do not say "Approved" or imply that a remote PR state was changed.
+
+## Evidence Rules
+
+Do not invent line numbers, test results, runtime behavior, requirements,
+or design specifications.
+
+Verify line numbers against the reviewed revision; inspect the file when
+the diff lacks context.
+
+Separate confirmed defects from concerns that require human verification.
+
+Do not report stylistic preferences as defects unless an explicit project
+rule or requirement supports them.
 
 ## Strict Read-Only Policy
 
-Never edit source code, fix findings, publish comments, approve/reject, merge, push, create a PR, or update tasks. The user decides which comments to publish manually.
+Never edit source code, fix findings, publish comments, approve/reject,
+merge, push, create a PR, or update tasks. The user decides which comments
+to publish manually.

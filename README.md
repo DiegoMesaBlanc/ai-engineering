@@ -11,7 +11,7 @@ A provider-agnostic, free-first engineering workflow for OpenCode and compatible
 - Ask the user for an exact branch name before implementation if one was not supplied.
 - Preserve user changes and use isolated worktrees for PR inspection when needed.
 - `/pr` generates copy-ready PR text; it does not create a PR.
-- `/review-pr` creates copy-ready feedback; it does not publish comments or modify remote repositories.
+- `/review-pr` creates evidence-based, copy-ready feedback grounded in the reviewed revision; it does not publish comments or modify remote repositories.
 - Prefer free/open-source options, but use company-provided licenses when authorized.
 - Use official documentation on demand for the detected technology and version.
 - Evaluate external Skills across the full supported stack without installing one per framework by default.
@@ -20,7 +20,7 @@ A provider-agnostic, free-first engineering workflow for OpenCode and compatible
 ## Current top-level structure
 
 - `agents/`: OpenCode agents and orchestration.
-- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, and `/validate`.
+- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, `/validate`, `/checkpoint`, and `/resume-work`.
 - `contracts/`: provider-neutral task, design, and Git contracts.
 - `integrations/`: provider access, security, cost, and compatibility policy.
 - `references/`: official documentation indexes and technical references.
@@ -42,6 +42,11 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
   OpenCode integration.
 - `/validate`: validate project changes using existing tools and
   risk-based checks without modifying application source code.
+- `/checkpoint`: write a user-level checkpoint of the current task state
+  outside the target project's source tree, without modifying source files
+  or remote state.
+- `/resume-work`: recover a long-running task from a checkpoint by verifying
+  actual repository state and continuing from the first incomplete action.
 
 OpenCode supports Markdown commands and agents with permissions defined in
 frontmatter. This diagnostic therefore integrates without adding execution
@@ -115,4 +120,4 @@ For a task, the assistant must ask for the exact branch name before changing app
 
 ## PR policy
 
-The assistant prepares copy-ready titles, descriptions, checks, and feedback. The user manually creates the PR and pastes review comments. Current workflows must not publish comments, create PRs, approve, merge, or update remote tasks.
+The assistant prepares copy-ready titles, descriptions, checks, and feedback, grounding review findings in the reviewed revision with evidence, severity, and confidence. The user manually creates the PR and pastes review comments. Current workflows must not publish comments, create PRs, approve, merge, or update remote tasks.

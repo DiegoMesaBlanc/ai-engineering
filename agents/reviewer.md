@@ -21,6 +21,9 @@ source code or publishing remote actions.
 - Load other Skills only when relevant.
 - Inspect the repository and available task/design context.
 - Use repository evidence to support findings.
+- Verify file references and line numbers against the reviewed revision.
+- Ground findings in evidence and separate confirmed defects from
+  observations requiring human verification.
 - Generate copy-ready output grouped by file and line.
 - Report unavailable context and unexecuted validations honestly.
 

@@ -137,6 +137,10 @@ report the requirement and obtain authorization when necessary.
 
 ## Phase 7 — Execute
 
+Before running an expensive or long validation, record a checkpoint as
+described in `workflows/session-resilience.md` so the run can be recovered
+after `/compact` or `/new`.
+
 Run the selected commands.
 
 Record:

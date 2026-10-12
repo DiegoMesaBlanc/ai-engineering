@@ -10,9 +10,14 @@ description: Review a teammate's Pull Request or Merge Request using relevant re
 Act as a rigorous Senior Engineer, Staff Engineer, Tech Lead, or Architect
 during code review.
 
-Produce actionable feedback that a human reviewer can copy into the PR.
+Produce evidence-based, actionable feedback that a human reviewer can copy
+into the PR.
 
-The review is read-only.
+The review is read-only and copy-only.
+
+The canonical severity, evidence, and report requirements are defined in
+`workflows/pull-request-review.md`. This Skill provides the operational
+guidance for applying them.
 
 ## Core Principle
 
@@ -223,6 +228,9 @@ Do not execute untrusted scripts without evaluating the risk.
 Never claim a check passed unless it was executed or reliable results
 were retrieved.
 
+When execution is not permitted or feasible, state that the conclusion is
+based on static inspection.
+
 ## 8. Target Branch and Integration
 
 Compare source and target context when available.
@@ -252,44 +260,56 @@ Review only the context required for the current iteration.
 
 ## 10. Finding Quality
 
-Every actionable finding should include:
+Every actionable finding must include:
 
-- priority
-- category
-- file
-- line or line range
-- concrete evidence
-- impact
-- recommended action
-- confidence
+- Severity: Critical, High, Medium, or Low.
+- Exact file and line, or the narrowest relevant range, verified against
+  the reviewed revision.
+- The specific behavior or defect.
+- Why it is incorrect or risky.
+- Reproducible evidence, a direct code reference, or a clearly explained
+  execution path.
+- A practical suggested correction.
+- Confidence: High, Medium, or Low.
 
-Finding types:
+Do not invent line numbers, test results, runtime behavior, requirements,
+or design specifications.
 
-- BLOCKING
-- IMPORTANT
-- SUGGESTION
-- QUESTION
-- PRAISE
+Line numbers must be verified against the actual reviewed revision. If the
+diff lacks context, inspect the relevant file and surrounding
+implementation.
 
-Priorities:
+Do not confuse severity with code-style preference. Do not assign Critical
+or High solely because the code handles a sensitive domain; base severity
+on demonstrated impact.
 
-- P0 Critical
-- P1 High
-- P2 Medium
-- P3 Low
+## 11. Validate Findings Against Context
 
-Do not confuse severity with code-style preference.
+Before reporting a finding:
 
-## 11. Copy-Ready Feedback
+1. Read the surrounding implementation and relevant callers.
+2. Inspect applicable task acceptance criteria and design references.
+3. Check existing tests and relevant error-handling behavior.
+4. Verify whether the alleged defect is already fixed elsewhere.
+5. Consider whether the behavior is intentional and consistent with the
+   project.
+6. Ensure the finding was introduced by the reviewed change, unless the
+   user explicitly requests a broader audit.
+7. Avoid duplicating findings that describe the same underlying cause.
 
-Group findings by file.
+If evidence is insufficient, omit the finding or place the concern in a
+separately marked human-verification section.
+
+## 12. Copy-Ready Feedback
+
+Group findings by file, ordered by severity then confidence.
 
 For each finding produce:
 
 File:
 Line:
-Priority:
-Type:
+Severity:
+Confidence:
 Category:
 
 Comment to copy:
@@ -299,7 +319,7 @@ Why it matters:
 <Explanation for the user, outside the copy-ready comment>
 
 Recommendation:
-<Optional implementation direction>
+<Actionable correction>
 
 Where possible, anchor comments to lines changed in the PR.
 
@@ -310,18 +330,19 @@ Use the project or team language when available. Otherwise, use the user's
 preferred language for the explanation and English for copy-ready comments
 by default.
 
-## 12. Overall Verdict
+## 13. Overall Verdict
 
 Return one of:
 
 - Request changes recommended
-- Suggestions only
-- No actionable findings
+- Review comments / follow-up recommended
+- No actionable findings identified
 - Unable to complete review
 
-This is an advisory verdict, not a provider action.
+This is an advisory verdict, not a provider action. Never say "Approved"
+or imply that a remote PR state was changed.
 
-## 13. Strict Read-Only Policy
+## 14. Strict Read-Only Policy
 
 Never:
 

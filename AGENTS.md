@@ -52,6 +52,41 @@ Never invent the branch name or discard user work.
 - Never claim a test or build passed without evidence.
 - Keep unrelated refactoring out of scope.
 
+## Context and Session Resilience
+
+Long-running tasks must survive context compaction (`/compact`) and a new
+session (`/new`) without losing verified progress or requiring the user to
+close and reopen the terminal.
+
+- Keep automatic compaction enabled.
+- Prune or discard old tool output where the client supports it, instead of
+  disabling compaction.
+- Do not introduce undocumented context-threshold configuration keys.
+- Checkpoint at logical phase boundaries, before expensive validations, and
+  before a context reset when needed.
+- Do not depend solely on a displayed context percentage to decide when to
+  checkpoint.
+- Never require closing and reopening the terminal as the normal recovery
+  path.
+- Do not add an experimental compaction plugin unless a demonstrated
+  requirement cannot be met with stable built-in functionality.
+
+The checkpoint and recovery behavior is defined canonically in
+`workflows/session-resilience.md`, using the existing command conventions in
+`commands/checkpoint.md` and `commands/resume-work.md`.
+
+A checkpoint is written to the user-level handoff directory outside the
+target project's source tree. Never store credentials, tokens, or secrets in
+a checkpoint. Never overwrite a different task's checkpoint. Checkpointing
+must not modify source files as a side effect.
+
+Recovery treats a checkpoint as a guide, not as proof that the described
+state still exists. Verify the actual repository, branch, HEAD, and
+working-tree state, detect divergence, preserve current work, and continue
+from the first incomplete action instead of repeating completed phases.
+Never claim a prior validation passed without recorded evidence or
+re-executing the relevant check.
+
 ## Formatting and Linting Policy
 
 This section is the single source of truth for the formatting and linting

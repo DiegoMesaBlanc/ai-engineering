@@ -1,0 +1,168 @@
+# Session Resilience Workflow
+
+## Goal
+
+Allow long-running engineering tasks to survive context compaction
+(`/compact`) and a new session (`/new`) without losing verified progress,
+reconstructing state manually, or closing and reopening the terminal.
+
+This workflow is the canonical definition of checkpoint and recovery
+behavior. `AGENTS.md` states the policy; `commands/checkpoint.md` and
+`commands/resume-work.md` are client adapters that delegate here.
+
+Checkpointing and recovery are read-only with respect to the target
+project's source tree. The only file written is the checkpoint itself, in
+the user-level handoff directory.
+
+---
+
+## Phase 1 — Resolve the Target
+
+Determine:
+
+- repository root
+- task identifier, when available
+- branch
+- base commit
+- current HEAD
+- working-tree state
+
+Use local Git inspection. Do not modify the working tree to gather this
+information.
+
+If the repository root or branch cannot be established, report the missing
+information instead of guessing.
+
+---
+
+## Phase 2 — Handoff Location
+
+The checkpoint is written to the user-level handoff directory **outside the
+target project's source tree**:
+
+```
+$HOME/.config/opencode/handoffs/<repo-slug>/<task-slug>.md
+```
+
+Rules:
+
+- Derive `<repo-slug>` from the repository root directory name.
+- Derive `<task-slug>` from the task identifier, or the branch name when no
+  task identifier exists.
+- Never write checkpoints inside the target project's source tree or into
+  the canonical ai-engineering repository's tracked files.
+- Never overwrite a different task's checkpoint. If the destination already
+  describes a different task identifier or branch, write to the correct
+  path for the current task or stop and report the conflict.
+- Re-checkpointing the same task may update that task's own checkpoint.
+
+The handoff directory contains only checkpoint metadata. Never store
+credentials, tokens, secrets, cookies, private keys, or private content
+values in a checkpoint.
+
+---
+
+## Phase 3 — Checkpoint Contents
+
+A checkpoint records at least:
+
+- Repository root.
+- Task identifier.
+- Branch.
+- Base commit.
+- Current HEAD.
+- Git status summary.
+- Staged, unstaged, and untracked changes.
+- Objective.
+- Completed work.
+- Decisions and rationale.
+- Changed files.
+- Validation evidence actually observed.
+- Blockers.
+- Exact next actions.
+
+When a field cannot be determined, record it explicitly as unknown rather
+than inventing a value.
+
+---
+
+## Phase 4 — Checkpoint Procedure
+
+1. Resolve the target and handoff location (Phase 1 and Phase 2).
+2. Inspect Git state: branch, base commit, HEAD, status, staged, unstaged,
+   and untracked changes, and changed files.
+3. Summarize objective, completed work, decisions, blockers, and next
+   actions from the current session.
+4. Record only validation evidence that was actually executed, including
+   the command and its observed result. Do not record a validation as
+   passed without evidence.
+5. Write the checkpoint to the task-scoped handoff path.
+6. Do not stage, commit, reset, stash, checkout, or edit source files as a
+   side effect. Preserve all uncommitted work.
+
+A checkpoint is a snapshot. It does not replace the working tree, and it
+does not authorize any commit, push, merge, or remote action.
+
+---
+
+## Phase 5 — Recovery Procedure
+
+1. Read the requested checkpoint.
+2. Treat the checkpoint as a recovery guide, not as proof that the
+   described state still exists.
+3. Verify the actual repository root, branch, HEAD, and working-tree state.
+4. Compare the verified state with the checkpoint and detect divergence,
+   including a changed branch, moved HEAD, missing or additional changes,
+   and validation that cannot be confirmed.
+5. Preserve current work. Do not reset, stash, discard, or overwrite
+   uncommitted changes to match the checkpoint.
+6. Continue from the first incomplete action instead of repeating completed
+   phases.
+7. Never claim a prior validation passed without recorded evidence; when
+   evidence is missing or stale, re-execute the relevant check or report it
+   as not verified.
+
+If the checkpoint's repository root, branch, or task does not match the
+current workspace, report the mismatch and ask before proceeding.
+
+---
+
+## Phase 6 — Context Management
+
+- Keep automatic compaction enabled.
+- Prune or discard old tool output where the client supports it instead of
+  disabling compaction.
+- Do not introduce undocumented context-threshold configuration keys.
+- Use focused file reads, bounded tool output, and concise subagent
+  summaries to limit context growth.
+- Checkpoint at logical phase boundaries, before expensive validations, and
+  before a context reset when needed.
+- Do not depend solely on a displayed context percentage to decide when to
+  checkpoint.
+- Never require closing and reopening the terminal as the normal recovery
+  path.
+- Do not add an experimental compaction plugin unless a demonstrated
+  requirement cannot be met with stable built-in functionality.
+
+---
+
+## Phase 7 — Suspected Hangs
+
+If a session appears stalled during compaction or a long operation:
+
+- Report the observed symptoms, timestamps, and affected step.
+- Do not assert an unverified root cause.
+- Recommend the smallest safe next step, such as completing a checkpoint
+  when possible, then recovering in a new session with `/resume-work`.
+- Do not claim that closing and reopening the terminal is required.
+
+---
+
+## Safety
+
+- Read-only with respect to the target project's source tree.
+- The only write is the checkpoint in the user-level handoff directory.
+- Never store credentials, tokens, or secrets.
+- Never overwrite a different task's checkpoint.
+- Never commit, push, merge, publish, or modify remote state.
+- Never claim a validation passed without evidence.

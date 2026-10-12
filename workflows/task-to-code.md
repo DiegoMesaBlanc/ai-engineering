@@ -137,6 +137,11 @@ and in `workflows/project-validation.md`. Report missing tooling as
 
 Prefer focused tests for changed behavior before running broad suites.
 
+Before an expensive validation, and at logical phase boundaries, record a
+checkpoint as described in `workflows/session-resilience.md` so the task can
+continue after `/compact` or `/new`. Keep compaction enabled and limit
+context growth with focused reads and bounded output.
+
 Use existing test frameworks, type checkers, linters, formatters, build
 commands, and configured security tools.
 

@@ -33,6 +33,8 @@ Check for the existence of:
 - commands/review-pr.md
 - commands/system-check.md
 - commands/validate.md
+- commands/checkpoint.md
+- commands/resume-work.md
 - contracts/task-provider.md
 - contracts/design-provider.md
 - contracts/git-provider.md
@@ -46,6 +48,7 @@ Check for the existence of:
 - workflows/pull-request-review.md
 - workflows/system-validation.md
 - workflows/project-validation.md
+- workflows/session-resilience.md
 
 Check that CLAUDE.md references AGENTS.md rather than duplicating
 the complete shared instructions.
@@ -225,11 +228,64 @@ Verify that:
 - the required-file inventory above matches the actual maintained set of
   canonical files
 
+## Review Quality and Evidence
+
+Verify the Pull Request review workflow maintains evidence quality and
+remains read-only and copy-only:
+
+- every finding requires supporting evidence and an actionable explanation
+- file references and line ranges are grounded in the reviewed revision,
+  not assigned without inspection
+- severity is proportionate to demonstrated impact and is not inflated for
+  sensitive domains alone
+- confirmed defects are separated from observations, questions, and
+  design-review items
+- findings are scoped to the requested change unless a broader audit is
+  explicitly requested
+- test or command execution is not claimed without an actual result
+- /review-pr is read-only and copy-only
+- no remote comments, approvals, merges, commits, or pushes are authorized
+  by the review workflow
+- the review workflow respects provider access and authorization rules
+
 Distinguish active instructions from quoted examples or explanatory text.
 
 If an active instruction conflicts with AGENTS.md, report POLICY CONFLICT.
 
-A successful file-existence check alone does not establish policy consistency.
+A successful file-existence check alone does not establish policy
+consistency.
+
+## Session Resilience and Checkpoint Safety
+
+Verify that checkpoint and recovery behavior is defined once and remains
+safe:
+
+- `workflows/session-resilience.md` is the single canonical definition
+- `/checkpoint` and `/resume-work` delegate to that workflow instead of
+  duplicating its logic
+- checkpoints are written to a user-level handoff directory outside the
+  target project's source tree
+- checkpointing does not modify source files, commits, branches, or remote
+  state
+- a checkpoint never overwrites a different task's checkpoint
+- checkpoints never store credentials, tokens, or secrets
+- recovery verifies the actual repository, branch, HEAD, and working-tree
+  state instead of trusting the checkpoint as proof
+- recovery treats the checkpoint as a guide, detects divergence, preserves
+  current work, and continues from the first incomplete action instead of
+  repeating completed phases
+- uncommitted changes are preserved during both checkpointing and recovery
+- context continuity across `/compact` and `/new` is preserved without
+  requiring the terminal to be closed and reopened
+- no instruction claims a prior validation passed without recorded evidence
+  or re-execution
+- automatic compaction remains enabled and no undocumented context-threshold
+  configuration keys are introduced
+- no active instruction requires closing and reopening the terminal as the
+  normal recovery path
+- no experimental compaction plugin is required by the policy
+- command references in AGENTS.md and README.md match the actual command
+  files
 
 ## 6. Reference Integrity
 
