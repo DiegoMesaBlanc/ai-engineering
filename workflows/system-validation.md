@@ -39,6 +39,8 @@ Check for the existence of:
 - integrations/provider-policy.md
 - integrations/provider-matrix.md
 - integrations/external-skill-registry.md
+- integrations/skill-catalog.md
+- references/official-documentation.md
 - workflows/task-to-code.md
 - workflows/pull-request-review.md
 - workflows/system-validation.md
@@ -209,6 +211,13 @@ Identify:
 - obsolete command names
 - contradictory lifecycle instructions
 - duplicate canonical instructions
+- official-documentation.md contains documentation references for all
+  supported technology families
+- skill-catalog.md contains a decision for every supported technology
+- every installed external Skill appears in external-skill-registry.md
+- candidate Skills are not reported as installed
+- installed external Skills have verified licenses and recorded source
+  revisions
 
 Do not flag a reference as broken merely because a file is intentionally
 provided by the client rather than by the canonical repository.
@@ -270,3 +279,16 @@ Never expose secrets.
 
 Report checks as NOT VERIFIED when the available tools cannot establish
 their result.
+
+## Documentation and Skill Selection
+
+Verify that:
+
+- technology and version detection precedes documentation selection
+- only relevant documentation sources are retrieved
+- existing project tooling is preferred
+- candidates are not automatically installed
+- repository-specific Skills are not treated as universal engineering rules
+- external Skills cannot override AGENTS.md
+- the absence of a dedicated framework Skill is not reported as a failure
+  when official documentation provides adequate guidance

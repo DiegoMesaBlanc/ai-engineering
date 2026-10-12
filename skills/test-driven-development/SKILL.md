@@ -129,48 +129,31 @@ digraph tdd_cycle {
 
 ### RED - Write Failing Test
 
-Write one minimal test showing what should happen.
+Write one minimal test that demonstrates the expected behavior.
 
-<Good>
-```typescript
-test('retries failed operations 3 times', async () => {
+The following example uses TypeScript/Jest for illustration only.
+Always use the language, test framework, and conventions detected in the
+actual project.
+
+````typescript
+test("retries failed operations three times", async () => {
   let attempts = 0;
+
   const operation = () => {
-    attempts++;
-    if (attempts < 3) throw new Error('fail');
-    return 'success';
+    attempts += 1;
+
+    if (attempts < 3) {
+      throw new Error("fail");
+    }
+
+    return "success";
   };
 
-const result = await retryOperation(operation);
+  const result = await retryOperation(operation);
 
-expect(result).toBe('success');
-expect(attempts).toBe(3);
+  expect(result).toBe("success");
+  expect(attempts).toBe(3);
 });
-
-````
-Clear name, tests real behavior, one thing
-</Good>
-
-<Bad>
-```typescript
-test('retry works', async () => {
-  const mock = jest.fn()
-    .mockRejectedValueOnce(new Error())
-    .mockRejectedValueOnce(new Error())
-    .mockResolvedValueOnce('success');
-  await retryOperation(mock);
-  expect(mock).toHaveBeenCalledTimes(3);
-});
-````
-
-Vague name, tests mock not code
-</Bad>
-
-**Requirements:**
-
-- One behavior
-- Clear name
-- Real code (no mocks unless unavoidable)
 
 ### Verify RED — Watch It Fail
 
@@ -280,7 +263,7 @@ test("rejects empty email", async () => {
   const result = await submitForm({ email: "" });
   expect(result.error).toBe("Email required");
 });
-```
+````
 
 **Verify RED**
 

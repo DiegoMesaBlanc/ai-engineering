@@ -13,6 +13,8 @@ A provider-agnostic, free-first engineering workflow for OpenCode and compatible
 - `/pr` generates copy-ready PR text; it does not create a PR.
 - `/review-pr` creates copy-ready feedback; it does not publish comments or modify remote repositories.
 - Prefer free/open-source options, but use company-provided licenses when authorized.
+- Use official documentation on demand for the detected technology and version.
+- Evaluate external Skills across the full supported stack without installing one per framework by default.
 
 ## Current top-level structure
 
@@ -20,6 +22,9 @@ A provider-agnostic, free-first engineering workflow for OpenCode and compatible
 - `commands/`: commands such as `/task`, `/pr`, `/review-pr`, and `/system-check`.
 - `contracts/`: provider-neutral task, design, and Git contracts.
 - `integrations/`: provider access, security, cost, and compatibility policy.
+- `references/`: official documentation indexes and technical references.
+- `integrations/skill-catalog.md`: evaluation decisions for external Skills.
+- `integrations/external-skill-registry.md`: provenance and license records for Skills actually installed.
 - `skills/`: reusable domain and engineering knowledge.
 - `workflows/`: end-to-end engineering processes.
 - `AGENTS.md`: canonical shared engineering instructions.
