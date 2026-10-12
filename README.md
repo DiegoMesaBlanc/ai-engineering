@@ -19,7 +19,7 @@ A provider-agnostic, free-first engineering workflow for OpenCode and compatible
 ## Current top-level structure
 
 - `agents/`: OpenCode agents and orchestration.
-- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, and `/system-check`.
+- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, and `/validate`.
 - `contracts/`: provider-neutral task, design, and Git contracts.
 - `integrations/`: provider access, security, cost, and compatibility policy.
 - `references/`: official documentation indexes and technical references.
@@ -39,48 +39,68 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
 - `/review-pr`: generate copy-ready review feedback.
 - `/system-check`: read-only validation of repository consistency and
   OpenCode integration.
+- `/validate`: validate project changes using existing tools and
+  risk-based checks without modifying application source code.
 
 OpenCode supports Markdown commands and agents with permissions defined in
 frontmatter. This diagnostic therefore integrates without adding execution
 code or a new runtime dependency.
 
+### System validation versus project validation
+
+- `/system-check` audits the AI Engineering System, file structure,
+  Skills, workflows, references, and client configuration.
+- `/validate` audits the current software project's changes using
+  detected tooling, relevant tests, static checks, and build validation.
+
 ## OpenCode setup (macOS)
 
 Set the path to the canonical repository:
 
-    export AI_ENGINEERING_HOME="$HOME/Documents/ai-engineering"
+```sh
+export AI_ENGINEERING_HOME="$HOME/Documents/ai-engineering"
+```
 
 Verify the repository:
 
-    git -C "$AI_ENGINEERING_HOME" status --short --branch
+```sh
+git -C "$AI_ENGINEERING_HOME" status --short --branch
+```
 
 OpenCode's global configuration directory is:
 
-    "$HOME/.config/opencode"
+```sh
+"$HOME/.config/opencode"
+```
 
 Before creating links, inspect every destination:
 
-    ls -ld "$HOME/.config/opencode/AGENTS.md" \
-      "$HOME/.config/opencode/commands" \
-      "$HOME/.config/opencode/agents" \
-      "$HOME/.claude/skills" 2>/dev/null
+```sh
+ls -ld "$HOME/.config/opencode/AGENTS.md" \
+  "$HOME/.config/opencode/commands" \
+  "$HOME/.config/opencode/agents" \
+  "$HOME/.claude/skills" 2>/dev/null
+```
 
 If a destination does not exist, link it to the canonical repository:
 
-    ln -s "$AI_ENGINEERING_HOME/AGENTS.md" \
-      "$HOME/.config/opencode/AGENTS.md"
+```sh
+ln -s "$AI_ENGINEERING_HOME/AGENTS.md" \
+  "$HOME/.config/opencode/AGENTS.md"
 
-    ln -s "$AI_ENGINEERING_HOME/commands" \
-      "$HOME/.config/opencode/commands"
+ln -s "$AI_ENGINEERING_HOME/commands" \
+  "$HOME/.config/opencode/commands"
 
-    ln -s "$AI_ENGINEERING_HOME/agents" \
-      "$HOME/.config/opencode/agents"
+ln -s "$AI_ENGINEERING_HOME/agents" \
+  "$HOME/.config/opencode/agents"
+```
+
+Never overwrite an existing configuration or symlink without inspecting
+its target.
 
 Skills are stored in the canonical repository's `skills/` directory.
 Reuse an existing compatible global Skill link when it already targets
 this directory.
-
-Do not overwrite existing files, directories, or links.
 
 Restart OpenCode after modifying discovery configuration.
 

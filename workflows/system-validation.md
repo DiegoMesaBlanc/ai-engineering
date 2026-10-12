@@ -32,6 +32,7 @@ Check for the existence of:
 - commands/pr.md
 - commands/review-pr.md
 - commands/system-check.md
+- commands/validate.md
 - contracts/task-provider.md
 - contracts/design-provider.md
 - contracts/git-provider.md
@@ -44,6 +45,7 @@ Check for the existence of:
 - workflows/task-to-code.md
 - workflows/pull-request-review.md
 - workflows/system-validation.md
+- workflows/project-validation.md
 
 Check that CLAUDE.md references AGENTS.md rather than duplicating
 the complete shared instructions.
@@ -193,6 +195,14 @@ Verify that:
 - TDD does not require fixing unrelated test failures automatically
 - TDD test requirements are proportional to task complexity and risk
 - the external Skill registry accurately documents local modifications
+- /system-check validates the Engineering System, not application code
+- /validate validates the current software project, not the system configuration
+- validation commands are discovered from actual project configuration
+- no universal test runner or coverage threshold is assumed
+- validation scope is proportionate to task complexity and risk
+- missing dependencies are reported rather than installed automatically
+- validation does not modify application source code
+- potentially destructive commands require appropriate authorization
 
 Distinguish active instructions from quoted examples or explanatory text.
 

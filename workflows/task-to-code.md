@@ -114,20 +114,33 @@ Do not expand the scope silently.
 
 ## Phase 10 — Validate
 
-Run the relevant project checks:
+Load `skills/testing-strategy/SKILL.md`.
 
-- tests
-- typecheck
-- lint
-- build
-- security checks when appropriate
+1. Inspect the current changes and project tooling.
+2. Determine validation risk.
+3. Select the smallest sufficient validation plan.
+4. Run relevant checks using existing project commands.
+5. Broaden validation when risk, failure evidence, or project policy
+   requires it.
+6. Record commands, outcomes, and limitations.
+7. Report failures and checks that were not executed.
+8. Never claim that validation passed without evidence.
 
-Report actual results and unexecuted checks honestly.
+Prefer focused tests for changed behavior before running broad suites.
 
-A successful compilation alone does not mean that the task is complete.
+Use existing test frameworks, type checkers, linters, formatters, build
+commands, and configured security tools.
 
-Completion requires the applicable validation and review criteria for
-the project and task to be satisfied.
+For monorepos, target the affected project or packages when reliable
+workspace tooling is available.
+
+Never install dependencies, add frameworks, change configuration, or
+execute potentially destructive validation commands without appropriate
+authorization.
+
+Preserve unrelated and uncommitted user changes.
+
+A passing build alone does not establish completion.
 
 ## Phase 11 — Review
 
