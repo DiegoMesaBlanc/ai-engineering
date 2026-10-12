@@ -287,6 +287,25 @@ safe:
 - command references in AGENTS.md and README.md match the actual command
   files
 
+### Checkpoint Identity and Duplicate Detection
+
+Verify checkpoint slug and overwrite rules statically:
+
+- the handoff directory path is identical across AGENTS.md,
+  `workflows/session-resilience.md`, `commands/checkpoint.md`, and
+  `commands/resume-work.md`
+- checkpoint identity uses the task identifier or a generated checkpoint
+  identifier and never relies on the branch name alone
+- no two checkpoint-writing implementations exist; `/checkpoint` and
+  `/resume-work` delegate to the workflow and do not duplicate its logic
+- `/checkpoint` rejects checkpoint paths outside the authorized handoff
+  directory
+- `/resume-work` lists multiple matching checkpoints and asks for a
+  selection instead of picking one by branch name
+- no instruction authorizes creating or updating another task's checkpoint
+- checkpoint contents require a task identifier or checkpoint identifier,
+  so two tasks on the same branch remain distinguishable
+
 ## 6. Reference Integrity
 
 Inspect references to Skills, workflows, contracts, agents, and commands.

@@ -106,10 +106,35 @@ Never overwrite an existing configuration or symlink without inspecting
 its target.
 
 Skills are stored in the canonical repository's `skills/` directory.
-Reuse an existing compatible global Skill link when it already targets
-this directory.
+Expose them through the global Skill directory inspected above
+(`$HOME/.claude/skills`):
+
+- If `$HOME/.claude/skills` does not exist, link the canonical directory:
+
+  ```sh
+  ln -s "$AI_ENGINEERING_HOME/skills" "$HOME/.claude/skills"
+  ```
+
+- If it already exists as a symlink to the canonical `skills/` directory,
+  reuse it and do not change it.
+
+- If it exists but points elsewhere, or already contains other Skills, do
+  not overwrite it. Link only the missing canonical Skills individually and
+  skip names that already exist:
+
+  ```sh
+  for dir in "$AI_ENGINEERING_HOME"/skills/*; do
+    target="$HOME/.claude/skills/$(basename "$dir")"
+    [ -e "$target" ] || ln -s "$dir" "$target"
+  done
+  ```
+
+Never overwrite an existing directory, symlink, or Skill.
 
 Restart OpenCode after modifying discovery configuration.
+
+The installation is not complete until `/system-check` reports PASS for
+OpenCode discovery: global AGENTS.md, commands, agents, and Skills.
 
 The installation must use one canonical repository. Client adapters must
 not duplicate Skills, contracts, or workflows.

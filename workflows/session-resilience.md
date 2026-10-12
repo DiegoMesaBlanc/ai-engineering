@@ -47,13 +47,16 @@ $HOME/.config/opencode/handoffs/<repo-slug>/<task-slug>.md
 Rules:
 
 - Derive `<repo-slug>` from the repository root directory name.
-- Derive `<task-slug>` from the task identifier, or the branch name when no
-  task identifier exists.
+- Derive `<task-slug>` from the task identifier. When no task identifier
+  exists, `/checkpoint` generates a unique checkpoint identifier and uses it
+  as the task slug. Never use the branch name as the task slug: two tasks
+  on the same branch would reach the same path.
+- A checkpoint may be updated only when it unambiguously belongs to the
+  current task, identified by the same repository root and the same task
+  identifier or generated checkpoint identifier. Never overwrite a
+  checkpoint that belongs to a different task.
 - Never write checkpoints inside the target project's source tree or into
   the canonical ai-engineering repository's tracked files.
-- Never overwrite a different task's checkpoint. If the destination already
-  describes a different task identifier or branch, write to the correct
-  path for the current task or stop and report the conflict.
 - Re-checkpointing the same task may update that task's own checkpoint.
 
 The handoff directory contains only checkpoint metadata. Never store
@@ -68,6 +71,7 @@ A checkpoint records at least:
 
 - Repository root.
 - Task identifier.
+- Checkpoint identifier, when the task identifier is absent.
 - Branch.
 - Base commit.
 - Current HEAD.
@@ -89,15 +93,17 @@ than inventing a value.
 ## Phase 4 — Checkpoint Procedure
 
 1. Resolve the target and handoff location (Phase 1 and Phase 2).
-2. Inspect Git state: branch, base commit, HEAD, status, staged, unstaged,
+2. When no task identifier exists, generate a unique checkpoint identifier
+   and use it as the task slug.
+3. Inspect Git state: branch, base commit, HEAD, status, staged, unstaged,
    and untracked changes, and changed files.
-3. Summarize objective, completed work, decisions, blockers, and next
+4. Summarize objective, completed work, decisions, blockers, and next
    actions from the current session.
-4. Record only validation evidence that was actually executed, including
+5. Record only validation evidence that was actually executed, including
    the command and its observed result. Do not record a validation as
    passed without evidence.
-5. Write the checkpoint to the task-scoped handoff path.
-6. Do not stage, commit, reset, stash, checkout, or edit source files as a
+6. Write the checkpoint to the task-scoped handoff path.
+7. Do not stage, commit, reset, stash, checkout, or edit source files as a
    side effect. Preserve all uncommitted work.
 
 A checkpoint is a snapshot. It does not replace the working tree, and it
@@ -124,6 +130,10 @@ does not authorize any commit, push, merge, or remote action.
 
 If the checkpoint's repository root, branch, or task does not match the
 current workspace, report the mismatch and ask before proceeding.
+
+When more than one checkpoint exists for the current repository and branch,
+list the available checkpoints with their task or checkpoint identifiers and
+ask which to resume instead of guessing.
 
 ---
 
