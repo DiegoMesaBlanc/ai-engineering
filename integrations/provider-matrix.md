@@ -9,28 +9,33 @@
 - VERIFIED: successfully tested for the stated capability.
 - UNAVAILABLE: required access is not available.
 
-A provider appearing in this matrix does not imply that it is configured.
+A provider appearing in this matrix does not imply that it is configured
+or verified.
+
+Cost classification, client configuration, and verified capability are
+separate attributes. Keep them in separate columns or sections.
 
 ## Access Matrix
 
-| Capability | Source | Preferred Access | MCP Required | Status |
+| Capability | Provider | Access Method | Cost Classification | Status |
 |---|---|---|---|---|
-| Task | Markdown / JSON | Local filesystem | No | CORE |
-| Task | User description | Current conversation | No | CORE |
-| Task | Public URL | Direct retrieval when supported | No | OPTIONAL |
-| Task | Jira | Authorized access or provider integration | Conditional | CANDIDATE |
-| Task | Azure DevOps | Authorized CLI/API or provider integration | Conditional | CANDIDATE |
-| Task | GitHub / GitLab Issues | Authorized access or provider integration | Conditional | CANDIDATE |
-| Repository | Local Git | Git CLI and filesystem | No | CORE |
-| Repository | Public URL | Git or direct retrieval | No | OPTIONAL |
-| PR / MR | Local changes | Git status, log, and diff | No | CORE |
-| PR / MR | Hosted provider | Authorized read-only API, CLI, or MCP | Conditional | CANDIDATE |
-| Design | Images / screenshots | Supported image input | No | CORE |
-| Design | SVG / HTML / CSS | Local artifact inspection | No | CORE |
-| Design | PDF / specification | File inspection | No | CORE |
-| Design | Public URL | Direct retrieval when supported | No | OPTIONAL |
-| Design | Figma / Penpot structured data | Authorized provider integration | Conditional | CANDIDATE |
-| Design | Private design source | Authorized integration or export | Conditional | CANDIDATE |
+| Task | Markdown / JSON | Local filesystem | FREE | CORE |
+| Task | User description | Current conversation | FREE | CORE |
+| Task | Public URL | Direct retrieval when supported | UNKNOWN | OPTIONAL |
+| Task | Jira | Authorized access or provider integration | UNKNOWN | CANDIDATE |
+| Task | Azure DevOps | Authorized CLI/API or provider integration | UNKNOWN | CANDIDATE |
+| Task | GitHub / GitLab Issues | Authorized access or provider integration | UNKNOWN | CANDIDATE |
+| Repository | Local Git | Git CLI and filesystem | FREE | CORE |
+| Repository | Public URL | Git or direct retrieval | UNKNOWN | OPTIONAL |
+| PR / MR | Local changes | Git status, log, and diff | FREE | CORE |
+| PR / MR | Hosted provider | Authorized read-only API, CLI, or MCP | UNKNOWN | CANDIDATE |
+| Design | Images / screenshots | Supported image input | FREE | CORE |
+| Design | SVG / HTML / CSS | Local artifact inspection | FREE | CORE |
+| Design | PDF / specification | File inspection | FREE | CORE |
+| Design | Public URL | Direct retrieval when supported | UNKNOWN | OPTIONAL |
+| Design | Figma | Authorized provider integration | UNKNOWN | CANDIDATE |
+| Design | Penpot | Local, API, or provider integration | OPEN_SOURCE | CANDIDATE |
+| Design | Private design source | Authorized integration or export | UNKNOWN | CANDIDATE |
 
 ## Cost Classification
 
@@ -59,6 +64,12 @@ For each optional provider, distinguish:
 
 Only mark a provider VERIFIED for a capability after testing that
 capability.
+
+Do not mark a provider CONFIGURED or VERIFIED merely because its
+documentation exists or its name appears in this matrix.
+
+If the license or the actual cost of the service has not been confirmed,
+classify its cost as UNKNOWN.
 
 The current workflow requires read access only for PR review.
 

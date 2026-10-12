@@ -71,6 +71,20 @@ have been verified.
   - validate proportionally to risk
   - record local modifications
 
+## Languages
+
+### TypeScript
+
+- Documentation: https://www.typescriptlang.org/docs/
+- Status: DOCS_ONLY
+- Decision: Use the official documentation and existing project tooling.
+
+### JavaScript
+
+- Documentation: https://developer.mozilla.org/docs/Web/JavaScript
+- Status: DOCS_ONLY
+- Decision: Use runtime-specific documentation when relevant.
+
 ## Frontend Technologies
 
 ### React
@@ -263,6 +277,29 @@ Use the installed tools.
 
 Do not import a Skill or install a dependency solely to repeat the
 test framework's documentation.
+
+## UI, Styling, and Components
+
+### Styling and UI Libraries
+
+- Tailwind CSS: https://tailwindcss.com/docs
+- Material UI: https://mui.com/material-ui/getting-started/
+- PrimeNG: https://primeng.org/
+- Status: DOCS_ONLY
+- Decision: Use the UI library already present in the project.
+
+## Linting and Formatting
+
+- ESLint: https://eslint.org/docs/latest/
+- Prettier: https://prettier.io/docs/
+- Status: DOCS_ONLY
+- Decision: Follow the installed version and existing configuration.
+
+## Security
+
+- OWASP Cheat Sheet Series: https://cheatsheetseries.owasp.org/
+- Status: DOCS_ONLY
+- Decision: Retrieve relevant guidance based on the application's threat model.
 
 ## Reassessment Rules
 

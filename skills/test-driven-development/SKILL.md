@@ -14,10 +14,6 @@ without modifying them automatically.
 
 Write the test first. Watch it fail. Write minimal code to pass.
 
-**Core principle:** If you didn't watch the test fail, you don't know if it tests the right thing.
-
-**Violating the letter of the rules is violating the spirit of the rules.**
-
 ## Language and Tooling Selection
 
 TDD is language-agnostic.
@@ -135,7 +131,7 @@ The following example uses TypeScript/Jest for illustration only.
 Always use the language, test framework, and conventions detected in the
 actual project.
 
-````typescript
+```typescript
 test("retries failed operations three times", async () => {
   let attempts = 0;
 
@@ -154,6 +150,7 @@ test("retries failed operations three times", async () => {
   expect(result).toBe("success");
   expect(attempts).toBe(3);
 });
+```
 
 ### Verify RED — Watch It Fail
 
@@ -263,7 +260,7 @@ test("rejects empty email", async () => {
   const result = await submitForm({ email: "" });
   expect(result.error).toBe("Email required");
 });
-````
+```
 
 **Verify RED**
 

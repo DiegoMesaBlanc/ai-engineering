@@ -292,3 +292,24 @@ Verify that:
 - external Skills cannot override AGENTS.md
 - the absence of a dedicated framework Skill is not reported as a failure
   when official documentation provides adequate guidance
+
+Verify that every technology family in
+references/official-documentation.md has a corresponding decision in
+integrations/skill-catalog.md.
+
+A decision may be DOCS_ONLY, CANDIDATE, TASK_SPECIFIC, INSTALLED,
+REJECTED, or REASSESS.
+
+Do not require a dedicated external Skill when official documentation
+is sufficient.
+
+Report a missing catalog entry as P3 unless it causes an actual workflow
+failure.
+
+Also verify that Markdown code fences are balanced in the Skills,
+workflows, and references. An unbalanced fence changes which instructions
+are interpreted as text or as code, so treat it as a defect even when the
+content remains readable.
+
+Report an unbalanced fence in a Skill that is actively loaded as P2, and
+in other documentation as P3.
