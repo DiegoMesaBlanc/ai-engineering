@@ -67,23 +67,27 @@ Do not discard, stash, reset, or overwrite user changes silently.
 
 If the branch already exists, stop and ask whether to use it or choose another name.
 
+The repository and project state and the task understanding gathered in
+this step are reused by the Task-to-Code workflow. Do not repeat that
+inspection after the branch is ready.
+
 ## Normal workflow
 
-After the branch is ready:
+Follow `workflows/task-to-code.md` as the canonical, ordered sequence.
 
-1. Analyze acceptance criteria.
-2. Analyze the relevant design when available.
-3. Analyze repository and stack, including dependency manifests, lockfiles,
-   and installed dependencies.
-4. Run the dependency assessment in
-   `workflows/dependency-assessment.md` and record its outcome before
-   finalizing the plan.
-5. Evaluate architecture, repository topology, complexity, and patterns.
-6. Present meaningful decisions when approval is required, including any
-   proposed new dependency.
-7. Implement following current conventions.
-8. Validate and review.
-9. Present the Git diff and commit proposal.
+Continue from the first incomplete phase and reuse analysis already
+completed — task and acceptance criteria, design, repository and stack,
+dependencies, complexity, and architecture — instead of repeating it.
+
+Key required behaviors within that workflow:
+
+- complete the dependency assessment in
+  `workflows/dependency-assessment.md` and record its outcome before
+  finalizing the plan
+- present meaningful decisions when approval is required, including any
+  proposed new dependency
+- implement following current conventions, then validate and review
+- present the Git diff and commit proposal
 
 Prefer no new dependency when the existing stack, native APIs, or project
 abstractions are sufficient. Adding or installing a new runtime or

@@ -238,6 +238,12 @@ Verify that:
   treats a successful build as a substitute for formatting and linting
 - the required-file inventory above matches the actual maintained set of
   canonical files
+- `agents/orchestrator.md` delegates the detailed task and PR-review
+  sequences to the canonical workflows and does not define a parallel,
+  contradictory order
+- `/task` continues from the first incomplete phase of the canonical
+  Task-to-Code workflow and does not repeat analysis already completed
+  before branch preparation
 
 ## Review Quality and Evidence
 
@@ -463,6 +469,24 @@ workflows, `commands/task.md`, and `skills/stack-detection/SKILL.md` that:
 - the documentation-only ai-engineering repository is not converted into a
   software package to implement this workflow
 - no new slash command was added unless a demonstrated use case required one
+
+## 7.3 Orchestrator and Workflow Sequence Consistency
+
+Verify against `agents/orchestrator.md`, `workflows/task-to-code.md`,
+`workflows/pull-request-review.md`, and `commands/task.md` that:
+
+- `agents/orchestrator.md` delegates the detailed, ordered task sequence to
+  `workflows/task-to-code.md` instead of maintaining a parallel sequence
+- the orchestrator project lifecycles do not contradict the canonical
+  workflow's branch-preparation, analysis, planning, and implementation
+  order
+- the orchestrator delegates PR-review sequencing to
+  `workflows/pull-request-review.md`
+- `/task` follows the canonical Task-to-Code sequence, continues from the
+  first incomplete phase, and reuses completed analysis instead of repeating
+  task, design, repository, or stack inspection
+- no file in the core execution path defines a competing ordering of the
+  lifecycle
 
 ## 8. Output
 

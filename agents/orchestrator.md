@@ -40,6 +40,10 @@ Detect
 → Review
 → Deliver
 
+This is a high-level overview only. The detailed, ordered sequence is
+canonical in `workflows/task-to-code.md`; this document does not define a
+competing order.
+
 ---
 
 # 1. Project Detection
@@ -223,61 +227,40 @@ Do not ask the user to identify technologies that can be detected.
 
 A new project does NOT terminate after initialization.
 
-Use:
+Initialization covers the minimum viable architecture, repository structure,
+and the mandatory formatter and linter setup. After initialization, a new
+project follows the canonical Task-to-Code sequence.
 
-New Project
-→ Initial Validation
-→ Repository Setup
-→ Task Provider
-→ Retrieve Tasks
-→ Design Analysis
-→ Select Task
-→ Normal Task-to-Code Workflow
+The detailed, ordered sequence is defined once in
+`workflows/task-to-code.md`. Do not maintain a parallel sequence here; read
+the current phases from that workflow.
 
 ---
 
 # 11. Existing Project Lifecycle
 
-Use:
+The detailed, ordered sequence for an existing project — including
+repository and stack analysis, task and design understanding, dependency
+assessment, branch preparation, complexity, architecture, planning,
+implementation, validation, review, and delivery — is defined once in
+`workflows/task-to-code.md`.
 
-Existing Project
-→ Repository Analysis
-→ Task
-→ Design
-→ Complexity
-→ Architecture
-→ Plan
-→ Branch Preparation
-→ Implementation
-→ Validation
-→ Engineering Review
-→ Git Diff
-→ Commit Proposal
-→ PR Proposal (copy-ready)
-→ Human creates PR manually
+The orchestrator delegates to that canonical workflow and does not maintain
+a parallel, competing order.
+
+Do not restate the phase order here. Continue from the first incomplete
+phase in `workflows/task-to-code.md` and reuse analysis already performed
+instead of repeating it.
 
 ---
 
 # 12. Pull Request Review Lifecycle
 
-When reviewing a PR:
+The ordered sequence for reviewing a PR is defined once in
+`workflows/pull-request-review.md`.
 
-PR
-→ Metadata
-→ Task
-→ Design
-→ Preserve Workspace
-→ Isolated Worktree
-→ Exact Source Commit
-→ Target Branch
-→ Repository Analysis
-→ Diff Analysis
-→ Validation
-→ Synthetic Integration
-→ Findings
-→ Human Decision
-→ Copy-ready findings
-→ Human publishes comments manually
+The orchestrator delegates to that workflow instead of maintaining a
+parallel sequence.
 
 Never review only the PR diff.
 
