@@ -148,8 +148,10 @@ version.
 
 ## Formatter and linter detection
 
-Every project must have a configured formatter and linter, so detect them
-from repository evidence before selecting tools.
+Every software project must have a configured formatter and linter within
+the scope defined in AGENTS.md, so detect them from repository evidence
+before selecting tools. Documentation-only knowledge repositories are out
+of scope for the mandatory setup.
 
 Inspect, when present:
 
@@ -166,8 +168,9 @@ Inspect, when present:
 Determine the configured commands, the package manager or build system that
 runs them, and whether relevant source files are actually covered.
 
-If the mandatory formatter or linter is absent, report it as
-`SETUP_REQUIRED`; do not record it as `NOT_APPLICABLE`.
+If the mandatory formatter or linter is absent in an in-scope software
+project, report it as `SETUP_REQUIRED`; do not record it as
+`NOT_APPLICABLE`.
 
 ## Database detection
 

@@ -30,15 +30,21 @@ relevant current task or change set.
 2. Inspect Git status and current branch.
 3. Identify changed files and existing project tooling.
 4. Detect language, framework, and repository topology.
-5. Verify that a formatter and linter are configured for every detected
-   language, and configure the mandatory ones when missing.
+5. Verify that a formatter and linter are configured for the application
+   code of the software project, for every detected language, and
+   configure the mandatory ones when missing. When the target repository
+   has no application source code (a documentation-only knowledge
+   repository), report that determination as out of scope and do not
+   create a package.json or install tooling solely to comply.
 6. Select relevant checks according to risk.
 7. Execute safe, available validation commands.
 8. Report actual outcomes and limitations.
 
-Formatting and linting are mandatory; tests, type checking, and builds
-remain risk-based. Treat missing formatter or linter tooling as
-`SETUP_REQUIRED`, never as `NOT_APPLICABLE`.
+Formatting and linting are mandatory within the scope defined in
+`AGENTS.md`: the application code of the software project, per its
+detected stack. Tests, type checking, and builds remain risk-based. Treat
+missing formatter or linter tooling in scope as `SETUP_REQUIRED`, never as
+`NOT_APPLICABLE`.
 
 Do not assume npm, pytest, Maven, Gradle, Vitest, or another tool is
 available without repository evidence.

@@ -221,6 +221,12 @@ Verify that:
   unconditionally forbidding dependency installation and configuration
 - AGENTS.md, the testing Skill, and the validation workflows agree on the
   formatting and linting policy
+- the formatting and linting policy is scoped to the application code of
+  software projects the system works on, and does not require converting
+  documentation-only knowledge repositories into software projects
+- no active instruction requires creating a package.json or installing
+  formatter or linter tooling in the canonical ai-engineering repository
+  solely to satisfy the policy
 - reproducible lint, format, and format-check commands are required, not
   optional
 - no active instruction claims validation passed without evidence or
@@ -291,11 +297,21 @@ safe:
 
 Verify checkpoint slug and overwrite rules statically:
 
-- the handoff directory path is identical across AGENTS.md,
-  `workflows/session-resilience.md`, `commands/checkpoint.md`, and
-  `commands/resume-work.md`
+- the literal handoff directory path is defined in exactly one place,
+  `workflows/session-resilience.md`
+- AGENTS.md delegates to that workflow instead of repeating the literal
+  path, and `/checkpoint` and `/resume-work` reference the workflow's path
+  without duplicating it
 - checkpoint identity uses the task identifier or a generated checkpoint
   identifier and never relies on the branch name alone
+- task and checkpoint identifiers are normalized into safe file names:
+  path separators, `.`/`..` components, and other unsafe characters are
+  rejected before any path is derived
+- `/checkpoint` resolves the final checkpoint path and verifies it stays
+  inside the authorized handoff directory, rejecting identifiers, paths,
+  or symlinks that would escape it
+- `/resume-work` applies the same normalization when resolving a supplied
+  task identifier or checkpoint path
 - no two checkpoint-writing implementations exist; `/checkpoint` and
   `/resume-work` delegate to the workflow and do not duplicate its logic
 - `/checkpoint` rejects checkpoint paths outside the authorized handoff

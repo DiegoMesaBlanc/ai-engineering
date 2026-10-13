@@ -59,6 +59,23 @@ Rules:
   the canonical ai-engineering repository's tracked files.
 - Re-checkpointing the same task may update that task's own checkpoint.
 
+### Safe identifier normalization
+
+Normalize every identifier that becomes a path component before deriving
+a checkpoint path:
+
+- Accept task and checkpoint identifiers composed only of ASCII letters,
+  digits, `-`, `_`, and `.`, with a bounded length (up to 128 characters).
+- Reject empty identifiers, path separators (`/` and `\`), the components
+  `.` and `..`, and any other character outside the accepted set.
+- Never concatenate an untrusted identifier directly into a path.
+- After building the path, resolve it and verify that the resolved path
+  still starts with the canonical handoff directory. Reject the write when
+  the target escapes that directory or when any symlink along the path
+  points outside it.
+- Apply the same normalization to a task identifier used as the task slug
+  and to any identifier supplied as a checkpoint or resume argument.
+
 The handoff directory contains only checkpoint metadata. Never store
 credentials, tokens, secrets, cookies, private keys, or private content
 values in a checkpoint.

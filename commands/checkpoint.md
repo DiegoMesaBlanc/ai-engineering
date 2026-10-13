@@ -19,8 +19,8 @@ Optional `$ARGUMENTS`:
 - task identifier, used as the checkpoint slug; when absent, `/checkpoint`
   generates a unique checkpoint identifier
 - checkpoint path, accepted only when it resolves inside the authorized
-  handoff directory `$HOME/.config/opencode/handoffs/`; reject any other
-  destination
+  handoff directory defined in `workflows/session-resilience.md`; reject
+  any other destination
 - milestone or note label
 
 If no argument is supplied, use the current repository and branch, and
@@ -29,15 +29,22 @@ generate a checkpoint identifier when no task identifier exists.
 ## Mandatory Behavior
 
 1. When no task identifier is supplied, generate a unique checkpoint
-   identifier and use it as the checkpoint slug. Never use the branch name
-   alone as the identifier.
+   identifier and use it as the checkpoint slug. Normalize any supplied
+   task identifier into a safe file identifier before deriving the path,
+   rejecting separators, `.`/`..`, and other unsafe components. Never use
+   the branch name alone as the identifier.
 2. Accept a supplied checkpoint path only when it resolves inside the
-   authorized handoff directory; reject destinations inside the target
-   project's source tree or outside the handoff directory.
+   authorized handoff directory defined in `workflows/session-resilience.md`;
+   reject destinations inside the target project's source tree or outside
+   the handoff directory. After building the checkpoint path, resolve it
+   and verify it still stays inside the authorized handoff directory,
+   rejecting identifiers, paths, or symlinks that escape it.
 3. Resolve the repository root, task identifier, branch, base commit, HEAD,
    and working-tree state.
-4. Write to `$HOME/.config/opencode/handoffs/<repo-slug>/<task-slug>.md`,
-   outside the target project's source tree.
+4. Write to the user-level handoff directory defined in
+   `workflows/session-resilience.md`, as
+   `<handoff-dir>/<repo-slug>/<task-slug>.md`, outside the target
+   project's source tree.
 5. Include objective, completed work, decisions, changed files, validation
    evidence actually observed, blockers, and exact next actions.
 6. Record fields that cannot be determined as unknown instead of inventing
@@ -60,5 +67,7 @@ generate a checkpoint identifier when no task identifier exists.
 - Never store credentials, tokens, or secrets.
 - Never overwrite a checkpoint that belongs to a different task.
 - Reject checkpoint paths outside the authorized handoff directory.
+- Reject identifiers containing path separators or `.`/`..` navigation
+  components.
 - Never modify source files as a side effect of checkpointing.
 - Never commit, push, merge, or modify remote state.

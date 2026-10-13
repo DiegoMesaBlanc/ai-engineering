@@ -22,10 +22,20 @@ Determine:
 - changed files
 - supplied task or paths
 - relevant modules and dependencies
+- repository class: software project with application source code, or a
+  documentation-only knowledge repository
 
 If paths are provided, prioritize them.
 
 Do not assume that every changed file belongs to the requested task.
+
+Classify the repository before applying the mandatory formatter and
+linter requirement. The mandatory setup defined in AGENTS.md applies to
+the application code of software projects, per their detected stack. A
+documentation-only knowledge repository is out of scope: do not create a
+package.json, install formatter or linter tooling, or add scripts in it
+solely to satisfy the policy. That determination is a scope
+classification, not a `NOT_APPLICABLE` label for missing tooling.
 
 ## Phase 2 — Establish Available Tooling
 
@@ -51,7 +61,10 @@ Do not invent or assume package scripts.
 For every language and framework in scope, determine whether a formatter
 and a linter are configured, together with their dependencies, commands,
 and source-file coverage. Record missing mandatory tooling as
-`SETUP_REQUIRED`, never as `NOT_APPLICABLE`.
+`SETUP_REQUIRED`, never as `NOT_APPLICABLE`, when the repository is a
+software project within the AGENTS.md scope. For a documentation-only
+knowledge repository, apply the out-of-scope determination from Phase 1
+instead of configuring mandatory tooling.
 
 ## Phase 3 — Determine Risk
 
@@ -81,8 +94,9 @@ Prefer:
 
 Use existing tooling and project conventions.
 
-Formatting and linting are mandatory for every relevant language and
-framework. Tests, type checking, and builds remain risk-based.
+Formatting and linting are mandatory for the application code of every
+relevant software project, language, and framework in scope. Tests, type
+checking, and builds remain risk-based.
 
 Do not add dependencies, change configuration, or install frameworks
 merely to satisfy a generic checklist. The mandatory formatter and linter
@@ -93,6 +107,11 @@ Phase 5.
 
 When Phase 2 found that a required formatter or linter is missing or
 incomplete, configure it. This is mandatory, not optional.
+
+Before configuring anything, confirm the repository is a software project
+within scope. Never create a package.json, install formatter or linter
+tooling, or add scripts in a documentation-only knowledge repository
+solely to satisfy this policy.
 
 1. Select compatible open-source tools for the detected stack.
 2. Add configuration files and ignore patterns for generated artifacts and
@@ -189,8 +208,9 @@ Risk:
 | Security | ... | ... |
 | Coverage | ... | ... |
 
-Formatting and linting are always required when a formatter and linter
-apply to the detected languages. Include other checks only when relevant.
+Formatting and linting are always required within the defined scope when
+a formatter and linter apply to the detected languages of a software
+project. Include other checks only when relevant.
 
 Use the configured statuses:
 

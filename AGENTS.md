@@ -93,10 +93,21 @@ This section is the single source of truth for the formatting and linting
 policy. Skills and workflows reference it instead of maintaining
 divergent copies.
 
-Every project must have a configured formatter and a configured linter
-appropriate for its languages and frameworks. This is mandatory, not an
-optional recommendation.
+Every software project the system works on must have a configured
+formatter and a configured linter appropriate for its detected stack,
+languages, and frameworks. This is mandatory, not an optional
+recommendation.
 
+Scope: this requirement covers the application code of software projects.
+It does not apply to documentation-only knowledge repositories such as
+the canonical ai-engineering repository itself. Never create a
+package.json, install formatter or linter tooling, or add scripts in
+ai-engineering solely to satisfy this policy. Verification infrastructure
+for this system's own documents, if ever needed, is a separate decision.
+
+- Classify the target repository first: mandatory setup applies only to
+  software projects with application source code, never to
+  documentation-only repositories.
 - Detect the actual stack, versions, package manager, repository
   structure, and existing tooling before selecting tools.
 - Preserve suitable existing tooling and configuration.
@@ -106,7 +117,9 @@ optional recommendation.
 - Apply this requirement to new projects and ordinary implementation
   tasks, not only when `/validate` is invoked.
 - Never classify missing formatting or linting tooling as
-  `NOT_APPLICABLE`.
+  `NOT_APPLICABLE` within the defined scope. An out-of-scope
+  documentation-only repository is a scope determination, not a missing
+  tool classification.
 - When required tooling, configuration, scripts, or dependencies are
   missing, set them up as part of the work using the existing package
   manager and compatible versions, and disclose every change.

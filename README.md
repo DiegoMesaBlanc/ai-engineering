@@ -15,7 +15,7 @@ A provider-agnostic, free-first engineering workflow for OpenCode and compatible
 - Prefer free/open-source options, but use company-provided licenses when authorized.
 - Use official documentation on demand for the detected technology and version.
 - Evaluate external Skills across the full supported stack without installing one per framework by default.
-- Require a configured formatter and linter for every project, with reproducible commands and honest validation results.
+- Require a configured formatter and linter for every software project, per its detected stack, with reproducible commands and honest validation results; documentation-only repositories are not converted to satisfy this policy.
 
 ## Current top-level structure
 
@@ -74,11 +74,8 @@ Verify the repository:
 git -C "$AI_ENGINEERING_HOME" status --short --branch
 ```
 
-OpenCode's global configuration directory is:
-
-```sh
-"$HOME/.config/opencode"
-```
+OpenCode's global configuration directory is the expanded value of
+`$HOME/.config/opencode`.
 
 Before creating links, inspect every destination:
 

@@ -275,10 +275,13 @@ tool.
 
 ## 6. Static Analysis, Formatting, and Linting
 
-Formatting and linting are mandatory. Every project must have a configured
-formatter and linter appropriate for its languages and frameworks, with
-reproducible commands to run both. Follow the canonical tooling policy in
-AGENTS.md:
+Formatting and linting are mandatory within the scope defined in
+AGENTS.md: the application code of the software project, per its detected
+stack. Every in-scope project must have a configured formatter and linter
+appropriate for its languages and frameworks, with reproducible commands
+to run both. Documentation-only knowledge repositories are out of scope;
+never create a package.json or install tooling in them solely to satisfy
+this policy. Follow the canonical tooling policy in AGENTS.md:
 
 - JavaScript and TypeScript: Prettier and ESLint with framework plugins.
 - Angular: Prettier and Angular ESLint, including template linting.
@@ -292,9 +295,9 @@ Detect existing configuration, dependencies, scripts, and source-file
 coverage before selecting tools. Preserve suitable existing tooling and do
 not force Prettier onto file types it does not support.
 
-If the mandatory formatter or linter is missing or incomplete, report it as
-`SETUP_REQUIRED`, not as `NOT_APPLICABLE`, and configure it as part of the
-task:
+If the mandatory formatter or linter is missing or incomplete for an
+in-scope software project, report it as `SETUP_REQUIRED`, not as
+`NOT_APPLICABLE`, and configure it as part of the task:
 
 1. select compatible open-source tools
 2. add configuration files and ignore patterns for generated output
@@ -445,7 +448,9 @@ Use these statuses:
 - NOT_APPLICABLE: irrelevant to the current change
 
 `NOT_APPLICABLE` must never be used for mandatory formatting or linting
-merely because configuration, dependencies, or scripts are absent.
+within the defined scope merely because configuration, dependencies, or
+scripts are absent. A documentation-only repository is an out-of-scope
+classification, not a missing-tool classification.
 
 Do not label checks PASS based on configuration alone.
 

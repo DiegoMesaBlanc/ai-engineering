@@ -129,11 +129,14 @@ Load `skills/testing-strategy/SKILL.md`.
 7. Report failures and checks that were not executed.
 8. Never claim that validation passed without evidence.
 
-Formatting and linting are mandatory for every detected language. If the
-project lacks a configured formatter or linter, configure them as part of
-the task, as described in the Formatting and Linting Policy in AGENTS.md
-and in `workflows/project-validation.md`. Report missing tooling as
-`SETUP_REQUIRED`, never as `NOT_APPLICABLE`.
+Formatting and linting are mandatory for the application code of the
+software project, for every detected language in scope. If the project
+lacks a configured formatter or linter, configure them as part of the
+task, as described in the Formatting and Linting Policy in AGENTS.md and
+in `workflows/project-validation.md`. Report missing tooling in scope as
+`SETUP_REQUIRED`, never as `NOT_APPLICABLE`. A documentation-only
+knowledge repository is out of scope and must not be converted into a
+software project to comply.
 
 Prefer focused tests for changed behavior before running broad suites.
 
