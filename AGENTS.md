@@ -150,6 +150,29 @@ monorepos, multiple languages, generated files, templates, and database
 code, and ensure relevant source files are covered. Do not install paid
 tools or introduce paid services.
 
+## Dependency Policy
+
+Every software implementation task must complete the evidence-based
+dependency assessment defined in `workflows/dependency-assessment.md`
+before its implementation plan is finalized. That workflow is the single
+canonical procedure; Skills and workflows reference it instead of
+duplicating its decision policy.
+
+- Prefer no new dependency when the existing stack, native APIs, or
+  project abstractions are sufficient, and check for a compatible already
+  installed dependency before proposing a new one.
+- Adding or installing a new runtime or development dependency requires
+  explicit authorization for that specific option and scope.
+- A general approval to implement a task is not authorization to introduce
+  arbitrary libraries.
+- The mandatory formatter and linter setup authorized above is the only
+  exception; do not extend it to unrelated libraries or frameworks.
+- Never install paid services or dependencies, initiate billable usage, or
+  change an approved package, version, license, cost, or purpose without
+  renewed authorization.
+- This policy applies to target software projects, not to the
+  documentation-only ai-engineering repository.
+
 ## Pull Request Policy
 
 - /pr generates copy-ready PR/MR content only.

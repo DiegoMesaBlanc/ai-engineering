@@ -49,6 +49,7 @@ For an existing project:
 - detect language and framework
 - detect application architecture
 - detect monorepo or multi-repository organization
+- inspect dependency manifests, lockfiles, and installed direct dependencies
 - detect microfrontend composition when present
 - identify conventions and reusable abstractions
 
@@ -98,16 +99,26 @@ Require human approval for significant architectural changes.
 
 ## Phase 8 — Plan
 
+Before the plan is finalized, complete the dependency assessment described
+in `workflows/dependency-assessment.md` and record its outcome.
+
 Provide a concise implementation plan including:
 
 - files and modules affected
 - existing abstractions to reuse
+- the dependency outcome (`NO_NEW_DEPENDENCY`, `REUSE_EXISTING`,
+  `NEW_DEPENDENCY_PROPOSED`, or `BLOCKED`) with its evidence
 - proposed new components only when justified
 - formatting and linting setup when the project lacks it
 - the Secure Delivery Workflow selected when the task involves CI/CD,
   security, or delivery controls
 - validation
 - risks
+
+A new dependency must be authorized through the approval gate in
+`workflows/dependency-assessment.md` before it is added or installed. Do not
+treat approval to implement the task as authorization to introduce
+libraries.
 
 ## Phase 9 — Implement
 

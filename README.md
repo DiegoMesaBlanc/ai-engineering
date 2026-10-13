@@ -97,6 +97,24 @@ code or a new runtime dependency.
   proof of execution. Documentation-only repositories are not converted
   into software projects to satisfy software-project CI/CD checks.
 
+### Dependency decisions
+
+- Every software implementation task completes the evidence-based
+  dependency assessment in `workflows/dependency-assessment.md` before its
+  implementation plan is finalized. The assessment records one outcome:
+  `NO_NEW_DEPENDENCY`, `REUSE_EXISTING`, `NEW_DEPENDENCY_PROPOSED`, or
+  `BLOCKED`.
+- The assessment prefers the existing stack, native APIs, and project
+  abstractions, and checks for a compatible installed dependency before
+  proposing a new one. No new dependency is requested when none is needed.
+- Adding or installing a new runtime or development dependency requires
+  explicit authorization for that specific option, except for the mandatory
+  formatter and linter setup. A general task approval is not authorization
+  to introduce arbitrary libraries.
+- This policy applies to target software projects. The documentation-only
+  ai-engineering repository is never converted into a software package to
+  satisfy it.
+
 ## OpenCode setup (macOS)
 
 Set the path to the canonical repository:

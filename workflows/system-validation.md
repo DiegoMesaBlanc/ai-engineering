@@ -53,6 +53,7 @@ Check for the existence of:
 - workflows/session-resilience.md
 - workflows/provider-integration-proof.md
 - workflows/secure-delivery.md
+- workflows/dependency-assessment.md
 
 Check that CLAUDE.md references AGENTS.md rather than duplicating
 the complete shared instructions.
@@ -429,6 +430,40 @@ Verify against `workflows/secure-delivery.md`, `commands/delivery-check.md`,
 - the required-file count is derived from the actual inventory, never a
   hardcoded total
 
+## 7.2 Dependency Decision and Approval
+
+Verify against `workflows/dependency-assessment.md`, AGENTS.md, the task
+workflows, `commands/task.md`, and `skills/stack-detection/SKILL.md` that:
+
+- every software implementation task performs the dependency assessment
+  before its implementation plan is finalized
+- the dependency assessment is defined once, canonically, in
+  `workflows/dependency-assessment.md`, and other files reference it
+  instead of duplicating its decision policy
+- exactly one dependency outcome is recorded: `NO_NEW_DEPENDENCY`,
+  `REUSE_EXISTING`, `NEW_DEPENDENCY_PROPOSED`, or `BLOCKED`
+- existing dependencies are checked before a new one is recommended, and a
+  dependency-free option is considered where reasonable
+- a new-dependency recommendation includes evidence-based tradeoffs and
+  does not invent versions, security status, or maintenance claims
+- installation of a new runtime or development dependency requires explicit
+  authorization, except for the established mandatory formatter/linter setup
+- a general task approval is not treated as blanket authorization to
+  introduce libraries
+- a user refusal prevents installation, and the no-approval path does not
+  silently change the task scope
+- approved installation uses the project's package manager, updates the
+  manifest and lockfile together without upgrading unrelated dependencies,
+  and reports actual results
+- an installation failure is reported rather than silently substituting a
+  different dependency
+- package manifests and lockfiles remain consistent
+- no credentials, registry tokens, paid usage, or billable integrations are
+  introduced by the assessment or installation
+- the documentation-only ai-engineering repository is not converted into a
+  software package to implement this workflow
+- no new slash command was added unless a demonstrated use case required one
+
 ## 8. Output
 
 Return:
@@ -444,6 +479,7 @@ Return:
 - OpenCode discovery:
 - Provider configuration status:
 - Delivery and CI/CD state:
+- Dependency decision state:
 - License status:
 - External Skill registry:
 - External Skills installed:

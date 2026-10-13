@@ -187,6 +187,21 @@ Also detect:
 Do not assume a database is in use merely because its name appears in
 documentation.
 
+## Dependency inspection
+
+Determine from repository evidence, to support dependency decisions:
+
+- dependency manifests and lockfiles
+- installed direct dependencies and relevant transitive dependencies
+- declared and resolved dependency versions
+- package manager, workspace, and shared-versus-package boundaries
+- existing internal utilities, abstractions, and native or standard-library
+  APIs that could satisfy a requirement without a new package
+
+This inspection supplies evidence only. The dependency decision and its
+authorization gate are canonical in `workflows/dependency-assessment.md`;
+do not duplicate that decision policy here.
+
 ## Detection constraints
 
 - Do not load every framework's documentation by default.

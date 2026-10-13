@@ -73,12 +73,23 @@ After the branch is ready:
 
 1. Analyze acceptance criteria.
 2. Analyze the relevant design when available.
-3. Analyze repository and stack.
-4. Evaluate architecture, repository topology, complexity, and patterns.
-5. Present meaningful decisions when approval is required.
-6. Implement following current conventions.
-7. Validate and review.
-8. Present the Git diff and commit proposal.
+3. Analyze repository and stack, including dependency manifests, lockfiles,
+   and installed dependencies.
+4. Run the dependency assessment in
+   `workflows/dependency-assessment.md` and record its outcome before
+   finalizing the plan.
+5. Evaluate architecture, repository topology, complexity, and patterns.
+6. Present meaningful decisions when approval is required, including any
+   proposed new dependency.
+7. Implement following current conventions.
+8. Validate and review.
+9. Present the Git diff and commit proposal.
+
+Prefer no new dependency when the existing stack, native APIs, or project
+abstractions are sufficient. Adding or installing a new runtime or
+development dependency requires explicit authorization, except for the
+mandatory formatter and linter setup defined in AGENTS.md. Never treat
+approval to implement the task as authorization to introduce libraries.
 
 ## PR policy
 
