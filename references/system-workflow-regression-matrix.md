@@ -1,0 +1,104 @@
+# System Workflow Regression Matrix
+
+## Purpose
+
+A lightweight reference for protecting the transversal behavior of the
+Engineering System. It helps select targeted checks when a change touches
+shared policies, cross-workflow boundaries, or orchestration.
+
+## Status and Scope
+
+- This is a reference, not a canonical workflow, and not a mandatory
+  procedure for every task. It does not add a required acceptance phase.
+- It does not define a closed architecture, a fixed process order, or a new
+  layer of the system.
+- Scenarios are selected according to the files, policies, and behaviors a
+  change actually affects. Do not run the whole matrix by default.
+- Broader integral validation is reserved for significant changes: the
+  orchestrator, permission boundaries, or the interaction between several
+  workflows.
+- The canonical policies remain the source of truth. This reference never
+  overrides or duplicates the decision policy of the task, dependency,
+  validation, provider, delivery, review, or session-resilience workflows.
+
+## When to Use
+
+Use selectively when a change touches one of these areas:
+
+- branch preparation or the branch policy
+- the dependency approval gate or its refusal path
+- mandatory formatting and linting, or validation reporting
+- provider or delivery read-only boundaries
+- PR preparation or review character
+- checkpoint identity, preservation, or recovery behavior
+
+For an ordinary localized implementation that touches none of these, this
+reference requires no action.
+
+## Evidence Classes
+
+Record each outcome with exactly one evidence class, and never conflate
+them:
+
+- **REAL**: execution against an available local project or an authorized
+  external provider.
+- **SIMULATED**: execution using a fixture or mock, including a simulated
+  approval or provider response.
+- **STATIC**: inspection of instructions, references, configuration,
+  permissions, or repository state without runtime execution.
+
+A static check does not prove runtime behavior, a simulated provider does
+not prove authentication, and a passing build does not prove the whole
+workflow. When a check cannot be executed, record BLOCKED or NOT_VERIFIED
+with the concrete reason.
+
+## Critical Transversal Scenarios
+
+| ID | Protected behavior | Select when the change touches | Expected invariant | Evidence |
+|---|---|---|---|---|
+| R-01 | Branch name requested before code changes | Branch policy, `/task`, `workflows/task-to-code.md` | The exact branch name is requested before implementation | Interaction transcript or documented invocation |
+| R-02 | Branch collision and correct base | Branch preparation | An existing branch stops the flow; the base is taken from repository state | `git branch`, `git status` |
+| R-03 | Preservation of uncommitted work | Branch preparation, checkpoint, recovery | Staged, unstaged, and untracked changes are not lost | Before/after `git status --short` |
+| R-04 | Dependency approval gate | `workflows/dependency-assessment.md`, `AGENTS.md` | No install before explicit authorization; manifests and lockfiles unchanged by the proposal | Manifest and lockfile diff or hashes before approval |
+| R-05 | Dependency refusal path | `workflows/dependency-assessment.md` | No install; scope is not changed silently | Recorded outcome |
+| R-06 | Mandatory formatter and linter scope | `AGENTS.md`, `workflows/project-validation.md` | Missing in-scope tooling is `SETUP_REQUIRED`, never `NOT_APPLICABLE`; a documentation-only repository is out of scope | Recorded status |
+| R-07 | Honest validation reporting | `workflows/project-validation.md` | Reported statuses match observed command output | Command output and exit codes |
+| R-08 | Provider capability separation | `workflows/provider-integration-proof.md` | Configuration, authentication, read evidence, and untested write are distinguished; simulation is never real | Provider report |
+| R-09 | Optional providers absent | `workflows/provider-integration-proof.md` | An absent optional provider is not a core failure | Status `NOT_CONFIGURED` |
+| R-10 | Delivery read-only boundary | `workflows/secure-delivery.md` | Assessment changes no configuration or remote state | Delivery report |
+| R-11 | PR and review are copy-only | `workflows/pull-request-review.md`, `commands/pr.md`, `commands/review-pr.md` | Nothing is published, approved, merged, or pushed | Absence of remote actions |
+| R-12 | Review grounded in the revision | `workflows/pull-request-review.md` | Findings correspond to the reviewed revision; no invented lines or results | Report plus reviewed diff |
+| R-13 | Checkpoint identity and preservation | `workflows/session-resilience.md` | Distinct tasks have distinct checkpoints; mixed working-tree state is preserved; no source file changes | Checkpoint metadata plus `git status` |
+| R-14 | Recovery divergence and next action | `workflows/session-resilience.md` | Divergence is reported, work is preserved, and the next action derives from actual repository state | Recovery report |
+
+## Broader Integral Validation
+
+Reserve a fuller sweep for significant or cross-cutting changes:
+
+- orchestrator sequencing and lifecycle delegation
+- agent and command permission boundaries
+- interaction between several workflows
+
+In those cases run the relevant scenarios above together with a complete
+`workflows/system-validation.md` pass. This is a selection decision, not a
+mandatory step for every task.
+
+## Harness
+
+An optional external, disposable harness may be used for scenarios that need
+a project to run against. Keep provider fixtures separate from real provider
+checks, and never create a `package.json`, formatter or linter tooling, or a
+testing framework in the canonical documentation repository. Destructive or
+divergent scenarios use a separate disposable repository and clean up only
+the assets they create.
+
+## Safety
+
+- Read-only with respect to the canonical repository.
+- Never install dependencies in the canonical repository.
+- Never commit, push, merge, publish, approve, deploy, or modify remote
+  state.
+- Never expose credentials, tokens, or secret values.
+- Never overwrite evidence from previous runs or discard user work.
+- Report checks as NOT VERIFIED when the available tools cannot establish
+  their result.

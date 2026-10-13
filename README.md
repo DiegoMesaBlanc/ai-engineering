@@ -115,6 +115,20 @@ code or a new runtime dependency.
   ai-engineering repository is never converted into a software package to
   satisfy it.
 
+### System workflow regression matrix
+
+- `references/system-workflow-regression-matrix.md` is a lightweight,
+  optional reference for protecting the transversal behavior of the system.
+  It is not a mandatory procedure for every task and does not define a closed
+  architecture, a fixed process order, or a new layer.
+- Scenarios are selected according to the files, policies, and behaviors a
+  change affects, not run wholesale by default. Broader integral validation
+  is reserved for significant changes such as the orchestrator, permission
+  boundaries, or interaction between several workflows.
+- Recorded outcomes are classified REAL, SIMULATED, or STATIC and are never
+  conflated. The matrix requires no new command, no package.json, and no
+  testing framework in the canonical documentation repository.
+
 ## OpenCode setup (macOS)
 
 Set the path to the canonical repository:

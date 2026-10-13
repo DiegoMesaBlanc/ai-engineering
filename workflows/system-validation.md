@@ -46,6 +46,7 @@ Check for the existence of:
 - integrations/external-skill-registry.md
 - integrations/skill-catalog.md
 - references/official-documentation.md
+- references/system-workflow-regression-matrix.md
 - workflows/task-to-code.md
 - workflows/pull-request-review.md
 - workflows/system-validation.md
@@ -356,6 +357,9 @@ Identify:
   instruction for their read-only mode
 - `workflows/secure-delivery.md` references only existing commands,
   workflows, and policies
+- `references/system-workflow-regression-matrix.md` references only
+  existing workflows, commands, and policies and does not restate a
+  duplicated literal handoff path
 
 Do not flag a reference as broken merely because a file is intentionally
 provided by the client rather than by the canonical repository.
@@ -488,6 +492,37 @@ Verify against `agents/orchestrator.md`, `workflows/task-to-code.md`,
 - no file in the core execution path defines a competing ordering of the
   lifecycle
 
+## 7.4 System Workflow Regression Matrix
+
+Verify that `references/system-workflow-regression-matrix.md` remains a
+lightweight reference and not a competing procedure:
+
+- it exists at its canonical path and references only existing workflows,
+  commands, and policies
+- it is explicitly described as a reference, not a mandatory procedure for
+  every task, and it adds no required acceptance phase
+- it states that scenarios are selected according to the files, policies, and
+  behaviors a change affects, rather than run wholesale by default
+- it states that it does not define a closed architecture, a fixed process
+  order, or a new layer
+- it reserves broader integral validation for significant changes: the
+  orchestrator, permission boundaries, or interaction between several
+  workflows
+- it protects the critical transversal behaviors: the branch policy,
+  preservation of uncommitted work, the dependency approval gate and refusal
+  path, the mandatory formatter and linter scope, honest validation
+  reporting, provider and delivery read-only boundaries, PR and review
+  copy-only character, and checkpoint and recovery safety
+- REAL, SIMULATED, and STATIC evidence are defined and never conflated
+- it does not duplicate the decision policy of the task, dependency,
+  validation, provider, delivery, review, or session-resilience workflows,
+  and references them instead
+- it does not require creating a package.json, formatter or linter tooling,
+  or a testing framework in the canonical repository
+- no new command was introduced solely to host the regression matrix
+- no active instruction in the regression matrix contradicts AGENTS.md or a
+  canonical workflow
+
 ## 8. Output
 
 Return:
@@ -510,6 +545,7 @@ Return:
 - External Skill licenses:
 - Upstream commit verification:
 - External Skill policy conflicts:
+- System workflow regression matrix:
 - E2E readiness:
 
 ### Findings
