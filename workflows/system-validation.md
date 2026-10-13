@@ -36,6 +36,7 @@ Check for the existence of:
 - commands/checkpoint.md
 - commands/resume-work.md
 - commands/provider-check.md
+- commands/delivery-check.md
 - contracts/task-provider.md
 - contracts/design-provider.md
 - contracts/git-provider.md
@@ -51,6 +52,7 @@ Check for the existence of:
 - workflows/project-validation.md
 - workflows/session-resilience.md
 - workflows/provider-integration-proof.md
+- workflows/secure-delivery.md
 
 Check that CLAUDE.md references AGENTS.md rather than duplicating
 the complete shared instructions.
@@ -342,6 +344,11 @@ Identify:
 - candidate Skills are not reported as installed
 - installed external Skills have verified licenses and recorded source
   revisions
+- `commands/delivery-check.md` and `commands/provider-check.md` reference
+  existing workflows and contain no deployment, publish, or remote-write
+  instruction for their read-only mode
+- `workflows/secure-delivery.md` references only existing commands,
+  workflows, and policies
 
 Do not flag a reference as broken merely because a file is intentionally
 provided by the client rather than by the canonical repository.
@@ -384,6 +391,44 @@ Verify against `workflows/provider-integration-proof.md`,
 - the required-file count is derived from the actual inventory, never a
   hardcoded total
 
+## 7.1 Secure Delivery and CI/CD Safety
+
+Verify against `workflows/secure-delivery.md`, `commands/delivery-check.md`,
+`workflows/project-validation.md`, and the existing command boundaries that:
+
+- `/delivery-check` references `workflows/secure-delivery.md` and respects
+  read-only agent permissions
+- `secure-delivery.md` distinguishes read-only assessment, authorized
+  implementation, execution of tests and scans, and publication or
+  deployment that requires explicit authorization
+- `/system-check`, `/validate`, `/provider-check`, and `/delivery-check`
+  keep distinct responsibilities with no duplicate canonical policy
+- tooling and CI decisions are project-specific and evidence-based rather
+  than universal defaults or familiar-platform bias
+- the mandatory software-project formatter/linter policy in AGENTS.md is
+  unchanged and remains intact in the delivery workflow
+- security checks never print, reproduce, or store discovered secret
+  values; sensitive evidence is redacted to location and type
+- configured checks and actually executed or passed checks are clearly
+  distinguished
+- a clean dependency audit is reported only when the audit command
+  executed successfully and its vulnerability database was available
+- simulated scans are never reported as real security results
+- absent optional CI/CD platforms or providers are reported as
+  NOT_CONFIGURED and do not incorrectly fail the provider-agnostic core
+- no unapproved installations, billable integrations, remote writes,
+  deployments, or publisher actions are authorized by the delivery
+  workflow
+- the delivery workflow never weakens required checks or security
+  controls to obtain a green pipeline
+- declarations of pipeline security or production readiness require
+  supporting evidence, not static review alone
+- NOT_APPLICABLE is used only when a control genuinely does not apply;
+  missing in-scope mandatory tooling remains SETUP_REQUIRED
+- a read-only assessment is not silently turned into implementation work
+- the required-file count is derived from the actual inventory, never a
+  hardcoded total
+
 ## 8. Output
 
 Return:
@@ -398,6 +443,7 @@ Return:
 - Policy contradictions:
 - OpenCode discovery:
 - Provider configuration status:
+- Delivery and CI/CD state:
 - License status:
 - External Skill registry:
 - External Skills installed:

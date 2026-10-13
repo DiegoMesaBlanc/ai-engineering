@@ -103,6 +103,11 @@ merely to satisfy a generic checklist. The mandatory formatter and linter
 defined in AGENTS.md are the explicit exception and are configured in
 Phase 5.
 
+When the change set includes CI/CD, security, or delivery definitions,
+consult `workflows/secure-delivery.md` for delivery checks. `/delivery-check`
+owns that scope; `/validate` validates the current change set and must not
+silently install CI tooling or security scanners.
+
 ## Phase 5 — Configure Mandatory Formatting and Linting
 
 When Phase 2 found that a required formatter or linter is missing or

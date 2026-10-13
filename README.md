@@ -16,11 +16,12 @@ A provider-agnostic, free-first engineering workflow for OpenCode and compatible
 - Use official documentation on demand for the detected technology and version.
 - Evaluate external Skills across the full supported stack without installing one per framework by default.
 - Require a configured formatter and linter for every software project, per its detected stack, with reproducible commands and honest validation results; documentation-only repositories are not converted to satisfy this policy.
+- Delivery and CI/CD checks are read-only by default; deployment and publication require explicit authorization for the specific operation.
 
 ## Current top-level structure
 
 - `agents/`: OpenCode agents and orchestration.
-- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, `/validate`, `/checkpoint`, `/resume-work`, and `/provider-check`.
+- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, `/validate`, `/checkpoint`, `/resume-work`, `/provider-check`, and `/delivery-check`.
 - `contracts/`: provider-neutral task, design, and Git contracts.
 - `integrations/`: provider access, security, cost, and compatibility policy.
 - `references/`: official documentation indexes and technical references.
@@ -50,6 +51,9 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
 - `/provider-check`: verify actual task, design, and Git provider
   capabilities with evidence-based statuses, read-only and without
   exposing credentials.
+- `/delivery-check`: read-only assessment of the current project's
+  CI/CD, security, and delivery readiness, with evidence-based statuses
+  and without modifying the project or performing remote writes.
 
 OpenCode supports Markdown commands and agents with permissions defined in
 frontmatter. This diagnostic therefore integrates without adding execution
@@ -62,6 +66,8 @@ code or a new runtime dependency.
 - `/validate` audits the current software project's changes using
   detected tooling, relevant tests, static checks, and build validation,
   and configures the mandatory formatter and linter when they are missing.
+- `/delivery-check` assesses CI/CD, security, and delivery readiness of
+  the target project in read-only mode; it does not change the project.
 
 ### Provider verification
 
@@ -72,6 +78,24 @@ code or a new runtime dependency.
   results are labeled SIMULATED and never reported as real verification.
 - The absence of optional external providers is not a failure of the
   provider-agnostic core.
+
+### Delivery and secure CI/CD readiness
+
+- `/delivery-check` assesses the CI/CD, security, and delivery readiness
+  of a target software project in read-only mode. It reports the detected
+  stack, platform, configured quality gates, executed security controls,
+  and delivery safeguards, and distinguishes configured from executed,
+  passed, failed, blocked, and not verified.
+- `/delivery-check` modifies nothing: assessment does not install, deploy,
+  publish, or change CI configuration. Recommended controls are handled as
+  scoped implementation work under the existing authorization and branch
+  policies.
+- `/delivery-check` is distinct from `/validate`, which validates the
+  current change set with the project's tools, and from `/provider-check`,
+  which verifies the capabilities of task, design, and Git providers.
+- Missing controls are recommendations for a later implementation, not
+  proof of execution. Documentation-only repositories are not converted
+  into software projects to satisfy software-project CI/CD checks.
 
 ## OpenCode setup (macOS)
 

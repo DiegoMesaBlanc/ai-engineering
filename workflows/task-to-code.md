@@ -104,6 +104,8 @@ Provide a concise implementation plan including:
 - existing abstractions to reuse
 - proposed new components only when justified
 - formatting and linting setup when the project lacks it
+- the Secure Delivery Workflow selected when the task involves CI/CD,
+  security, or delivery controls
 - validation
 - risks
 
@@ -128,6 +130,10 @@ Load `skills/testing-strategy/SKILL.md`.
 6. Record commands, outcomes, and limitations.
 7. Report failures and checks that were not executed.
 8. Never claim that validation passed without evidence.
+
+When the change set touches CI/CD, security, or delivery configuration,
+follow `workflows/secure-delivery.md` for scoped delivery checks and
+respect its read-only and authorization boundaries.
 
 Formatting and linting are mandatory for the application code of the
 software project, for every detected language in scope. If the project

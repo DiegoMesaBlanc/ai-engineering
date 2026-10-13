@@ -1,0 +1,68 @@
+---
+description: Read-only assessment of the CI/CD, security, and delivery readiness of the current project, with evidence-based statuses, without modifying the project or performing remote writes.
+agent: auditor
+---
+
+# /delivery-check
+
+Run the Secure Delivery Workflow:
+
+`workflows/secure-delivery.md`
+
+## Input
+
+Optional `$ARGUMENTS`:
+
+- project or source paths
+- CI/CD platform or workflow files
+- validation scope
+
+If no argument is supplied, inspect the current project.
+
+## Mandatory Behavior
+
+1. Detect and report the project and its CI/CD environment.
+2. Classify the repository as a software project or a
+   documentation-only knowledge repository.
+3. Assess existing CI/CD platform, workflow files, quality gates,
+   security controls, and delivery safeguards.
+4. Distinguish configured, executed, passed, failed, blocked, and not
+   verified.
+5. Report all seven items required by the Secure Delivery Workflow.
+6. Never modify source files, install tools, change CI configuration,
+   deploy, publish, or perform remote writes.
+
+If no CI/CD platform is configured, report that honestly and recommend a
+suitable option only when useful. Do not classify the project or the core
+system as broken solely because an optional provider is absent.
+
+Do not claim an audit was executed when the report only describes
+configuration.
+
+## Output
+
+1. Project type and detected stack.
+2. Existing CI/CD platform and relevant workflow files.
+3. Configured quality gates and their actual execution status.
+4. Security controls detected and the scope of checks actually executed.
+5. Delivery, artifact, environment, and deployment safeguards where
+   relevant.
+6. Missing controls, evidence-supported findings, and prioritized
+   recommendations.
+7. What could not be verified and why.
+
+Use the statuses: PASS, FAIL, BASELINE_FAILURE, BLOCKED, NOT_CONFIGURED,
+NOT_RUN, NOT_VERIFIED, SIMULATED, and NOT_APPLICABLE only when a control
+genuinely does not apply to the target project.
+
+Every finding includes severity, location when available, evidence,
+practical remediation, confidence, and verification limitations.
+
+## Rules
+
+- Read-only. Never modify the target project.
+- Never print, reproduce, or store secret values.
+- Never install dependencies, change CI configuration, deploy, publish,
+  push, approve, or merge.
+- Never claim a check was executed or passed without observed evidence.
+- Never report simulated results as real security or delivery results.

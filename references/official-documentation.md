@@ -243,8 +243,43 @@ Linting Policy in AGENTS.md.
 - OWASP Cheat Sheet Series: https://cheatsheetseries.owasp.org/
 - Application Security Verification Standard: https://owasp.org/www-project-application-security-verification-standard/
 
+### Dependency and Secret Scanning (open source)
+
+- OWASP Dependency-Check: https://dependency-check.github.io/
+- OSV-Scanner: https://google.github.io/osv-scanner/
+- Trivy (vulnerabilities, misconfigurations, IaC): https://aquasecurity.github.io/trivy/
+- gitleaks (secret scanning): https://github.com/gitleaks/gitleaks
+
 Use security references relevant to the application's actual threat model
-and technology.
+and technology, and prefer the project's existing or approved tooling.
+
+## CI/CD and Delivery
+
+### GitHub Actions
+
+- Official documentation: https://docs.github.com/en/actions
+- Workflows: https://docs.github.com/en/actions/using-workflows
+- Security hardening: https://docs.github.com/en/actions/security-guides
+
+### GitLab CI/CD
+
+- Official documentation: https://docs.gitlab.com/ci/
+- Pipeline security: https://docs.gitlab.com/ci/pipelines/
+
+### Azure Pipelines
+
+- Official documentation: https://learn.microsoft.com/en-us/azure/devops/pipelines/
+- Security and secrets:
+  https://learn.microsoft.com/en-us/azure/devops/pipelines/security/
+
+### Bitbucket Pipelines
+
+- Official documentation:
+  https://support.atlassian.com/bitbucket-cloud/docs/configure-bitbucket-pipelinesyml/
+
+Detect the platform actually used by the project and consult the
+corresponding documentation. CI/CD and delivery decisions follow
+`workflows/secure-delivery.md`.
 
 ## Selection Workflow
 

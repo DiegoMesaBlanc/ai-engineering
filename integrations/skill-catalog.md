@@ -309,6 +309,35 @@ test framework's documentation.
 - Status: DOCS_ONLY
 - Decision: Retrieve relevant guidance based on the application's threat model.
 
+## CI/CD and Delivery
+
+- GitHub Actions: https://docs.github.com/en/actions
+- GitLab CI/CD: https://docs.gitlab.com/ci/
+- Azure Pipelines: https://learn.microsoft.com/en-us/azure/devops/pipelines/
+- Bitbucket Pipelines:
+  https://support.atlassian.com/bitbucket-cloud/docs/configure-bitbucket-pipelinesyml/
+- Status: DOCS_ONLY
+- Decision: Use the detected platform's official documentation and the
+  existing pipeline. CI/CD and delivery decisions are project-specific and
+  are applied through `workflows/secure-delivery.md`. Do not import a CI/CD
+  Skill by default and do not introduce a familiar platform when the
+  project already uses another one.
+
+## Dependency Auditing and Secret Scanning
+
+- OWASP Dependency-Check: https://dependency-check.github.io/
+- OSV-Scanner: https://google.github.io/osv-scanner/
+- Trivy: https://aquasecurity.github.io/trivy/
+- gitleaks: https://github.com/gitleaks/gitleaks
+- Status: DOCS_ONLY
+- Decision: These are project-tooling checks driven by the detected stack
+  and existing configuration. Prefer open-source tools compatible with the
+  project and reuse already approved organizational tooling. Distinguish a
+  configured control from an executed and passed check; report a clean
+  dependency audit only when the audit command ran successfully and its
+  vulnerability database was available. Do not install paid scanners or
+  add MCP integrations without explicit authorization.
+
 ## Reassessment Rules
 
 Reassess a candidate when:
