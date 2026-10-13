@@ -134,8 +134,8 @@ Possible statuses:
 
 Never report an external Skill as VERIFIED based only on its registry entry.
 
-Report E2E readiness as BLOCKED while a required external Skill is missing
-or its license and source cannot be verified.
+Report Required External Skill readiness as BLOCKED while a required
+external Skill is missing or its license and source cannot be verified.
 
 ## License Metadata Interpretation
 
@@ -546,7 +546,7 @@ Return:
 - Upstream commit verification:
 - External Skill policy conflicts:
 - System workflow regression matrix:
-- E2E readiness:
+- External Skill readiness:
 
 ### Findings
 
