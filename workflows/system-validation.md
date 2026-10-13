@@ -35,6 +35,7 @@ Check for the existence of:
 - commands/validate.md
 - commands/checkpoint.md
 - commands/resume-work.md
+- commands/provider-check.md
 - contracts/task-provider.md
 - contracts/design-provider.md
 - contracts/git-provider.md
@@ -49,6 +50,7 @@ Check for the existence of:
 - workflows/system-validation.md
 - workflows/project-validation.md
 - workflows/session-resilience.md
+- workflows/provider-integration-proof.md
 
 Check that CLAUDE.md references AGENTS.md rather than duplicating
 the complete shared instructions.
@@ -356,6 +358,31 @@ Distinguish:
 Do not claim a provider works merely because its name appears in a table.
 
 Do not print credentials or secret environment-variable values.
+
+### Provider Integration Proof
+
+Verify against `workflows/provider-integration-proof.md`,
+`integrations/provider-policy.md`, `integrations/access-strategy.md`,
+`integrations/provider-matrix.md`, and the provider contracts that:
+
+- provider statuses are supported by observed evidence
+- simulation is never reported as real verification
+- authentication and read verification are distinguished
+- read and write capabilities are tracked independently
+- no remote write operation is performed by the verification workflow
+- credentials and secrets are not exposed
+- absent optional providers do not incorrectly fail the provider-agnostic
+  core
+- `/provider-check` references the canonical workflow
+  (`workflows/provider-integration-proof.md`) and respects read-only agent
+  permissions
+- provider policies remain consistent with the contracts and the access
+  strategy
+- provider verification never triggers unapproved paid usage or installs
+  unnecessary integrations
+- the documented commands and the required-file inventory remain correct
+- the required-file count is derived from the actual inventory, never a
+  hardcoded total
 
 ## 8. Output
 

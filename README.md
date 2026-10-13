@@ -20,7 +20,7 @@ A provider-agnostic, free-first engineering workflow for OpenCode and compatible
 ## Current top-level structure
 
 - `agents/`: OpenCode agents and orchestration.
-- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, `/validate`, `/checkpoint`, and `/resume-work`.
+- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, `/validate`, `/checkpoint`, `/resume-work`, and `/provider-check`.
 - `contracts/`: provider-neutral task, design, and Git contracts.
 - `integrations/`: provider access, security, cost, and compatibility policy.
 - `references/`: official documentation indexes and technical references.
@@ -47,6 +47,9 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
   or remote state.
 - `/resume-work`: recover a long-running task from a checkpoint by verifying
   actual repository state and continuing from the first incomplete action.
+- `/provider-check`: verify actual task, design, and Git provider
+  capabilities with evidence-based statuses, read-only and without
+  exposing credentials.
 
 OpenCode supports Markdown commands and agents with permissions defined in
 frontmatter. This diagnostic therefore integrates without adding execution
@@ -59,6 +62,16 @@ code or a new runtime dependency.
 - `/validate` audits the current software project's changes using
   detected tooling, relevant tests, static checks, and build validation,
   and configures the mandatory formatter and linter when they are missing.
+
+### Provider verification
+
+- `/provider-check` distinguishes documented support, client
+  configuration, authentication, verified read access, and write
+  capability.
+- Proven capabilities are reported with observed evidence; simulated
+  results are labeled SIMULATED and never reported as real verification.
+- The absence of optional external providers is not a failure of the
+  provider-agnostic core.
 
 ## OpenCode setup (macOS)
 

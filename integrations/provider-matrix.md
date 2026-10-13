@@ -15,6 +15,30 @@ or verified.
 Cost classification, client configuration, and verified capability are
 separate attributes. Keep them in separate columns or sections.
 
+## Runtime Verification Status
+
+The statuses above classify documented support and client configuration.
+Machine-specific runtime verification uses the Provider Integration Proof
+workflow (`workflows/provider-integration-proof.md`) and these statuses:
+
+- DOCUMENTED_ONLY: support is described but no configuration has been
+  demonstrated.
+- NOT_CONFIGURED: evidence indicates that the integration is not
+  configured.
+- CONFIGURED_UNVERIFIED: configuration is present, but authentication or
+  capability has not been proven.
+- AUTHENTICATED: authentication was established, but the requested read
+  capability has not yet been proven.
+- READ_VERIFIED: an actual authorized read succeeded against a known
+  resource.
+- BLOCKED: a concrete limitation prevented verification.
+- SIMULATED: behavior was tested using a fixture or mock rather than a
+  real provider.
+
+Read and write capabilities are tracked independently. Simulated results
+never change a real provider's status. Do not commit credentials, personal
+account information, or unredacted machine-specific runtime configuration.
+
 ## Access Matrix
 
 | Capability | Provider | Access Method | Cost Classification | Status |
@@ -67,6 +91,11 @@ capability.
 
 Do not mark a provider CONFIGURED or VERIFIED merely because its
 documentation exists or its name appears in this matrix.
+
+Follow `workflows/provider-integration-proof.md` for the repeatable
+verification procedure and record machine-specific results there or in a
+local report; do not commit personal account information or credentials to
+this matrix.
 
 If the license or the actual cost of the service has not been confirmed,
 classify its cost as UNKNOWN.
