@@ -254,7 +254,7 @@ Create a commit only under the established human-approval policy.
 
 Do not push automatically.
 
-## Phase 13 — PR Preparation
+## Phase 14 — PR Preparation
 
 When requested, generate:
 
@@ -268,7 +268,7 @@ The user creates the PR/MR manually.
 
 Never create or publish the PR/MR.
 
-## Phase 14 — Engineering Insights
+## Phase 15 — Engineering Insights
 
 After implementation and validation, report meaningful engineering
 observations related to the task.

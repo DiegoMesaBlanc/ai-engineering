@@ -299,7 +299,7 @@ Review the exact PR source commit.
 
 ---
 
-# 14. Validation
+# 15. Validation
 
 Before claiming completion, perform appropriate:
 
@@ -313,7 +313,7 @@ Never claim successful execution without evidence.
 
 ---
 
-# 15. Delivery
+# 16. Delivery
 
 A completed change may end with:
 
@@ -329,7 +329,7 @@ policy exists.
 
 ---
 
-# 16. Complexity Control
+# 17. Complexity Control
 
 Prefer:
 
