@@ -53,6 +53,79 @@ Never invent missing information.
 
 ---
 
+# Automatic Task Interpretation
+
+A short, ordinary task description is a complete valid task input.
+
+Examples of sufficient input:
+
+- "Implement authentication with MSAL."
+- "Fix the checkout total when a discount code is applied."
+- a Jira or Azure DevOps ticket URL
+- a pasted ticket description
+- a local task artifact
+
+Never require the user to:
+
+- rewrite the task into an elaborate prompt
+- author or update a Markdown task specification
+- provide manual implementation instructions
+- list technical acceptance criteria that can be derived from evidence
+- choose frameworks, libraries, or structures the repository already
+  determines
+
+Interpret the task automatically:
+
+1. Retrieve the task when access is authorized and available.
+2. Preserve the original wording and explicit acceptance criteria.
+3. Inspect the target repository, relevant code, project instructions,
+   architecture, dependencies, configuration, tests, and designs.
+4. Detect the intended engineering outcome.
+5. Infer likely implementation requirements from the task and actual
+   project evidence.
+6. Identify testable acceptance criteria, affected modules, constraints,
+   risks, and non-goals.
+7. Resolve details autonomously through existing code, conventions,
+   official documentation, and engineering policy.
+8. Identify only the material ambiguities that cannot safely be inferred.
+
+When a provider is unavailable, use the available task text or artifact.
+Request only the minimum missing information needed to proceed.
+
+Never claim to have read inaccessible task content.
+
+Never present an inferred requirement as if the task stated it explicitly.
+Never invent business rules, security policies, or acceptance criteria
+unsupported by available evidence.
+
+---
+
+# Working Interpretation
+
+Construct a concise, temporary working interpretation within the current
+agent session. It contains:
+
+- original objective
+- explicit requirements from the task
+- inferred requirements supported by repository or design evidence
+- proposed acceptance criteria
+- assumptions and material unknowns
+- affected components and architectural implications
+- dependency assessment outcome
+- security and validation considerations
+- decisions that require user input
+
+Rules:
+
+- Do not create a Markdown file for the working interpretation by default.
+- Do not ask the user to author or complete it.
+- Persist information only through existing checkpoint mechanisms when
+  continuity requires it, or when the user requests a durable artifact.
+- Present inferred requirements as inferred, never as explicit task text.
+- The working interpretation is session state, not a deliverable.
+
+---
+
 # Task Retrieval
 
 Retrieve, when available:

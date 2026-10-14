@@ -19,14 +19,28 @@ Determine:
 
 ## Phase 2 — Understand the Task
 
-When a task reference is available:
+Accept the task in any available form: provider reference, URL, local
+artifact, or a short ordinary user description. A brief description is a
+complete valid task; do not require a rewritten prompt, a Markdown task
+specification, or manual implementation instructions.
 
-- retrieve the task
+When a task exists:
+
+- retrieve the task when access is authorized and available; never claim
+  to have read inaccessible content
+- preserve the original wording and explicit acceptance criteria
 - extract business intent
 - extract functional requirements
 - identify acceptance criteria
 - inspect dependencies and comments
 - identify design references
+- infer requirements and acceptance criteria supported by repository,
+  design, and policy evidence, and mark them as inferred
+- identify only the material ambiguities that cannot safely be inferred
+
+Maintain the result as a concise working interpretation inside the
+session, as defined in `skills/task-context/SKILL.md`. Do not create a
+task specification file by default.
 
 Load Task Context only when relevant.
 

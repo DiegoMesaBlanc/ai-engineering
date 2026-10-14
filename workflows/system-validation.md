@@ -575,6 +575,7 @@ Return:
 - External Skill policy conflicts:
 - System workflow regression matrix:
 - V2.5 interactive autonomy checks:
+- V2.5 automatic task interpretation checks:
 - External Skill readiness:
 
 ### Findings
@@ -651,3 +652,38 @@ Verify the following controls exist and are not contradictory:
 - Architecture-only and estimation-only requests do not require branch preparation or Git state changes unrelated to the requested analysis.
 - Software implementation requests still require branch preparation before modifying application code per the branch policy.
 - No conflicting rules have been introduced in AGENTS.md, the orchestrator, the task workflow, or commands.
+
+## V2.5 Refinement — Automatic Task Interpretation
+
+Verify the following controls exist and are not contradictory across
+`AGENTS.md`, `agents/orchestrator.md`, `commands/task.md`,
+`workflows/task-to-code.md`, and `skills/task-context/SKILL.md`:
+
+- a short, ordinary task description is accepted as a complete task input,
+  with no requirement to rewrite it into an elaborate prompt
+- short tasks trigger repository-aware interpretation: the repository,
+  code, conventions, configuration, tests, and designs are inspected
+  before technical questions are asked of the user
+- explicit task requirements and inferred requirements are distinguishable,
+  and inferred requirements are never presented as explicit task text
+- acceptance criteria are derived from task and repository evidence and
+  are validated with the user only when a material ambiguity exists
+- missing business or product decisions trigger selective, one-at-a-time
+  questions instead of guesses
+- the user is not asked to author or maintain a separate Markdown task
+  specification, and no Markdown artifact is produced for the internal
+  working interpretation by default
+- the working interpretation is persisted only through the existing
+  checkpoint mechanism when continuity requires it, or when the user
+  requests a durable artifact
+- routine implementation details remain autonomous after alignment
+- branch preparation, dependency approval, architecture approval,
+  security, and validation gates remain intact and unchanged
+- repeated repository analysis is avoided by reusing completed analysis
+- architecture-only and estimation-only requests do not automatically
+  modify application code
+- interpretation extends the existing task-context Skill and Task-to-Code
+  workflow; no duplicate canonical workflow, task-transcription subsystem,
+  or task-interpreter command was introduced
+- task retrieval that fails never results in a claim that inaccessible
+  task content was read; only the minimum missing information is requested

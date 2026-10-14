@@ -30,6 +30,15 @@ Examples:
 
 /task task=https://example.com/task/123 design=https://example.com/design/456
 
+/task Implement authentication with MSAL.
+
+A short, ordinary description is a sufficient task input. Interpret it
+automatically against the repository: retrieve the task when possible,
+inspect the code and project evidence, infer requirements and acceptance
+criteria, and ask only for material ambiguities that cannot be inferred.
+Do not ask the user to rewrite the task, author a Markdown task
+specification, or supply manual implementation instructions.
+
 Classify each provided reference by its resource type.
 
 Use the Task Context, Design Analysis, and Repository Analysis workflows

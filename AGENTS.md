@@ -69,6 +69,7 @@ For software implementation tasks:
 
 Constraints:
 - Do not produce a lengthy Markdown specification as a substitute for conversation.
+- Treat the original task — provider ticket, artifact, or short direct description — as the source of truth in its original wording, and keep any working interpretation inside the session, persisted only through the checkpoint mechanism for continuity. Do not require the user to rewrite a short task into an elaborate prompt or to maintain a separate task-specification document.
 - Do not ask questions whose answers are already available in the repository, task, design, configuration, or prior conversation.
 - Do not ask the user to choose a framework, library, design pattern, file structure, or implementation detail when the correct choice can be inferred safely from evidence and existing conventions.
 - Follow the existing branch-name policy before modifying application code.

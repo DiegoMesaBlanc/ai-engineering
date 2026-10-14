@@ -72,6 +72,10 @@ Determine whether the work comes from:
 - direct user request
 - local documentation
 
+A short direct user description is a valid task. Interpret tasks
+automatically using the task-context Skill; do not require a rewritten
+prompt or a Markdown task specification.
+
 When a task exists, load:
 
 `skills/task-context/SKILL.md`
