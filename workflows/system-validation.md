@@ -620,4 +620,6 @@ Verify the following controls exist and are not contradictory:
 - Status updates report progress but do not create artificial approval gates.
 - The agent reuses previously completed analysis after alignment.
 - Client-specific interaction features are used only where supported.
+- Architecture-only and estimation-only requests do not require branch preparation or Git state changes unrelated to the requested analysis.
+- Software implementation requests still require branch preparation before modifying application code per the branch policy.
 - No conflicting rules have been introduced in AGENTS.md, the orchestrator, the task workflow, or commands.

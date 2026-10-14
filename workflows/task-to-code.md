@@ -64,24 +64,7 @@ For a new project:
 
 Do not introduce a monorepo or microfrontends without evidence.
 
-## Phase 5 — Ask for the Branch
-
-Before implementation, ask for the exact branch name if it was not provided.
-
-Do not generate the name automatically.
-
-## Phase 6 — Prepare the Branch
-
-- validate the name
-- detect branch collisions
-- identify the correct base
-- preserve uncommitted work
-- create the branch or isolated worktree
-- verify the active working location
-
-Do not implement until the requested branch is ready.
-
-## Phase 7 — Intent, Alignment and Architecture
+## Phase 5 — Intent, Alignment and Architecture
 
 Identify the engineering intent from the request:
 - Architecture or solution design.
@@ -91,8 +74,9 @@ Identify the engineering intent from the request:
 - Validation, debugging, or code review.
 
 Apply intent-specific behavior:
-- Architecture-only or estimation-only requests: do not start implementation or modify application source code unless separately authorized. Produce proportionate analysis (options, trade-offs, assumptions, uncertainty, risks, unresolved questions). When moving to implementation later, reuse this work.
-- Other modes: proceed.
+- Architecture-only or estimation-only requests: do not start implementation or modify application source code unless separately authorized. Do not request a branch name or prepare a Git branch. Produce proportionate analysis (options, trade-offs, assumptions, uncertainty, risks, unresolved questions). When moving to implementation later, reuse this work.
+- Other modes (e.g., requirements analysis/technical investigation, validation/debugging/code review that do not require application code changes): do not request or prepare a branch unless the user explicitly needs to make code changes. If read-only, perform the requested analysis without Git branch preparation.
+- Software implementation: proceed to alignment and, once agreed, branch preparation will occur before modifying code.
 
 If software implementation:
 
@@ -117,7 +101,44 @@ Use only the analyses relevant to this task.
 
 Require human approval for significant architectural changes per the Human Decision Gates in AGENTS.md. Do not treat routine component choices as significant architectural changes.
 
-## Phase 8 — Plan
+## Phase 6 — Ask for the Branch (implementation only)
+
+Only when a software implementation task has been aligned and code changes are required, ask for the exact branch name if it was not provided.
+
+Do not generate the name automatically.
+
+Do not request or prepare a branch for architecture-only, estimation-only, read-only investigation, validation/debugging reviews, or other non-implementation requests.
+
+## Phase 7 — Prepare the Branch (implementation only)
+
+Only when a software implementation task has been aligned and code changes are required:
+
+- validate the name
+- detect branch collisions
+- identify the correct base
+- preserve uncommitted work
+- create the branch or isolated worktree
+- verify the active working location
+
+Do not implement until the requested branch is ready.
+
+## Phase 8 — Complexity and Architecture
+
+Evaluate:
+
+- task complexity
+- affected modules
+- repository strategy
+- frontend composition
+- architecture impact
+- relevant design patterns
+- risks and testing needs
+
+Use only the analyses relevant to this task.
+
+Require human approval for significant architectural changes per the Human Decision Gates in AGENTS.md. Do not treat routine component choices as significant architectural decisions.
+
+## Phase 9 — Plan
 
 Before the plan is finalized, complete the dependency assessment described
 in `workflows/dependency-assessment.md` and record its outcome.
@@ -140,7 +161,7 @@ A new dependency must be authorized through the approval gate in
 treat approval to implement the task as authorization to introduce
 libraries.
 
-## Phase 9 — Implement
+## Phase 10 — Implement
 
 Implement on the requested branch.
 
@@ -156,7 +177,7 @@ Use checkpoints according to `workflows/session-resilience.md`. Do not require r
 
 Do not expand the scope silently.
 
-## Phase 10 — Validate
+## Phase 11 — Validate
 
 Load `skills/testing-strategy/SKILL.md`.
 
@@ -204,7 +225,7 @@ Preserve unrelated and uncommitted user changes.
 
 A passing build alone does not establish completion.
 
-## Phase 11 — Review
+## Phase 12 — Review
 
 Review the resulting implementation for:
 
@@ -217,7 +238,7 @@ Review the resulting implementation for:
 - testing
 - scope
 
-## Phase 12 — Git Delivery
+## Phase 13 — Git Delivery
 
 Inspect:
 
