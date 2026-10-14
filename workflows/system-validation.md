@@ -546,6 +546,7 @@ Return:
 - Upstream commit verification:
 - External Skill policy conflicts:
 - System workflow regression matrix:
+- V2.5 interactive autonomy checks:
 - External Skill readiness:
 
 ### Findings
@@ -604,3 +605,19 @@ content remains readable.
 
 Report an unbalanced fence in a Skill that is actively loaded as P2, and
 in other documentation as P3.
+
+## V2.5 Regression Coverage
+
+Verify the following controls exist and are not contradictory:
+
+- The user is not asked to make routine implementation decisions.
+- The agent resolves discoverable technical choices independently.
+- Material business ambiguities trigger concise clarification.
+- The implementation approach is aligned before code changes.
+- Routine code adjustments and validation proceed without repeated approval requests.
+- Significant architectural decisions and new dependencies retain their existing authorization gates.
+- Architecture-only and estimation-only requests do not silently generate application code.
+- Status updates report progress but do not create artificial approval gates.
+- The agent reuses previously completed analysis after alignment.
+- Client-specific interaction features are used only where supported.
+- No conflicting rules have been introduced in AGENTS.md, the orchestrator, the task workflow, or commands.

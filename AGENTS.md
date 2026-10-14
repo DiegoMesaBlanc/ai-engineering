@@ -41,6 +41,80 @@ Before modifying application code for a task:
 
 Never invent the branch name or discard user work.
 
+## Engineering Intent Modes
+
+Distinguish the following outcomes from natural-language requests:
+
+- Architecture or solution design.
+- Time and cost estimation.
+- Requirements analysis or technical investigation.
+- Software implementation.
+- Validation, debugging, or code review.
+
+Do not force the user to learn new commands when the intended outcome is clear from the request.
+
+- For architecture-only and estimation-only requests, do not start implementation or modify application source code unless separately authorized.
+- For implementation requests, use the existing Task-to-Code workflow.
+
+## Requirement Alignment Before Implementation
+
+For software implementation tasks:
+
+1. Understand the business objective and inspect available task, design, and repository context.
+2. Identify relevant acceptance criteria, constraints, non-goals, and material unknowns.
+3. Infer routine technical details from the existing codebase, framework conventions, official documentation, and current project policies.
+4. Ask concise questions when important business requirements are missing, conflicting, or cannot safely be inferred.
+5. Present a concise summary of the agreed behavior and proposed approach before implementation.
+6. Ensure the task is aligned with the user before beginning code changes.
+
+Constraints:
+- Do not produce a lengthy Markdown specification as a substitute for conversation.
+- Do not ask questions whose answers are already available in the repository, task, design, configuration, or prior conversation.
+- Do not ask the user to choose a framework, library, design pattern, file structure, or implementation detail when the correct choice can be inferred safely from evidence and existing conventions.
+- Follow the existing branch-name policy before modifying application code.
+
+## Autonomous Implementation After Alignment
+
+Once the task scope and approach are aligned, independently carry out routine implementation work. Make decisions required to:
+
+- Choose functions, components, names, types, and local abstractions.
+- Reuse existing dependencies and project utilities.
+- Implement tests and regression coverage.
+- Consult official documentation for version-sensitive or unfamiliar behavior.
+- Configure and run the existing formatter, linter, type checker, tests, and build as appropriate.
+- Fix routine defects discovered during implementation and validation.
+- Perform localized refactoring necessary to maintain code quality.
+- Choose the smallest maintainable solution consistent with project conventions.
+
+- Do not pause for user approval for each file edit, test, formatting change, local refactoring, or ordinary corrective adjustment within the approved scope.
+- Do not weaken existing quality, security, testing, or validation standards for speed.
+- For new dependencies, follow `workflows/dependency-assessment.md`. Preserve its explicit authorization requirements and mandatory formatter/linter exception.
+
+## Human Decision Gates
+
+Ask the user before proceeding only when the decision materially requires human judgment or authorization, including:
+
+- Ambiguous or conflicting business requirements that cannot be resolved from available evidence.
+- Significant architectural choices with meaningful long-term consequences.
+- A proposed new runtime or development dependency under the canonical dependency policy.
+- Changes that materially affect scope, backward compatibility, security, sensitive data, or production behavior.
+- Destructive actions or changes to shared or production resources.
+- New paid services, billable usage, or additional cost requiring approval.
+- A material departure from the agreed approach.
+
+Present the recommended option, relevant alternatives, concrete trade-offs, and the reason a human decision is needed.
+
+- Do not ask for decisions already governed by a clear repository policy.
+- For architecture changes, follow the existing architecture approval rules. Do not classify every component or function choice as a significant architectural decision.
+
+## Progress Updates Without Approval Fatigue
+
+During implementation, provide concise status updates at meaningful milestones: requirements and approach aligned, implementation milestone completed, important new finding or decision required, validation results, final diff and completion summary. Each update must explain what changed, the evidence available, and the next step. An update is not a request for approval unless a decision gate actually applies.
+
+If new evidence changes a material requirement or approved design, pause and explain the reason before continuing beyond the approved scope. Otherwise, proceed autonomously.
+
+Use checkpoints for long-running tasks according to `workflows/session-resilience.md`. Do not require the user to restart the terminal as the normal recovery method.
+
 ## Implementation and Validation
 
 - Follow existing project conventions.
@@ -51,6 +125,7 @@ Never invent the branch name or discard user work.
 - Report checks that were not run.
 - Never claim a test or build passed without evidence.
 - Keep unrelated refactoring out of scope.
+- Reuse previously completed analysis after alignment when proceeding from architecture/estimation to implementation.
 
 ## Context and Session Resilience
 

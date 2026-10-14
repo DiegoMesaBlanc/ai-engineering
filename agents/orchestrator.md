@@ -206,24 +206,40 @@ Providers are replaceable.
 
 ---
 
-# 9. Human Interaction
+# 9. Intent Detection
 
-Ask only when the answer cannot be safely inferred.
+Identify the outcome before acting:
+- Architecture or solution design.
+- Time and cost estimation.
+- Requirements analysis or technical investigation.
+- Software implementation.
+- Validation, debugging, or code review.
 
-Examples:
+For architecture-only or estimation-only requests, do not start implementation or modify application source code unless separately authorized.
 
-- unresolved business requirements
-- architecture decision
-- destructive operation
-- contradictory design
-- significant scope expansion
-- provider authorization
+For software implementation requests, follow the Task-to-Code workflow with requirement alignment before implementation.
+
+# 10. Human Interaction
+
+Ask only when the answer cannot be safely inferred and a human decision gate applies:
+
+- Ambiguous or conflicting business requirements that cannot be resolved from available evidence.
+- Significant architectural choices with meaningful long-term consequences.
+- A proposed new runtime or development dependency under the canonical dependency policy.
+- Changes that materially affect scope, backward compatibility, security, sensitive data, or production behavior.
+- Destructive actions or changes to shared or production resources.
+- New paid services, billable usage, or additional cost requiring approval.
+- A material departure from the agreed approach.
+
+Do not ask for decisions already governed by a clear repository policy.
+
+Do not produce a lengthy Markdown specification in place of conversation. Do not ask the user to choose a framework, library, design pattern, file structure, or implementation detail when it can be inferred from evidence and existing conventions.
 
 Do not ask the user to identify technologies that can be detected.
 
 ---
 
-# 10. New Project Lifecycle
+# 11. New Project Lifecycle
 
 A new project does NOT terminate after initialization.
 
@@ -237,7 +253,7 @@ the current phases from that workflow.
 
 ---
 
-# 11. Existing Project Lifecycle
+# 12. Existing Project Lifecycle
 
 The detailed, ordered sequence for an existing project — including
 repository and stack analysis, task and design understanding, dependency
@@ -252,9 +268,11 @@ Do not restate the phase order here. Continue from the first incomplete
 phase in `workflows/task-to-code.md` and reuse analysis already performed
 instead of repeating it.
 
+After alignment, proceed autonomously for routine work and provide concise status updates without approval fatigue. If new evidence changes a material requirement or approved design, pause and explain the reason before continuing beyond the approved scope.
+
 ---
 
-# 12. Pull Request Review Lifecycle
+# 13. Pull Request Review Lifecycle
 
 The ordered sequence for reviewing a PR is defined once in
 `workflows/pull-request-review.md`.
@@ -266,7 +284,7 @@ Never review only the PR diff.
 
 ---
 
-# 13. Workspace Safety
+# 14. Workspace Safety
 
 Never destroy or replace user work.
 

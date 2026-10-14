@@ -79,6 +79,8 @@ Continue from the first incomplete phase and reuse analysis already
 completed — task and acceptance criteria, design, repository and stack,
 dependencies, complexity, and architecture — instead of repeating it.
 
+Detect engineering intent from the request (architecture/solution design, time/cost estimation, requirements analysis/technical investigation, software implementation, validation/debugging/code review). For architecture-only or estimation-only, do not modify application source code unless separately authorized. For implementation, align requirements before code changes and then proceed autonomously for routine work, providing concise status updates without approval fatigue; pause only when a material decision gate applies.
+
 Key required behaviors within that workflow:
 
 - complete the dependency assessment in

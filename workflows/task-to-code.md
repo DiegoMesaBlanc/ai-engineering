@@ -81,7 +81,27 @@ Do not generate the name automatically.
 
 Do not implement until the requested branch is ready.
 
-## Phase 7 — Complexity and Architecture
+## Phase 7 — Intent, Alignment and Architecture
+
+Identify the engineering intent from the request:
+- Architecture or solution design.
+- Time and cost estimation.
+- Requirements analysis or technical investigation.
+- Software implementation.
+- Validation, debugging, or code review.
+
+Apply intent-specific behavior:
+- Architecture-only or estimation-only requests: do not start implementation or modify application source code unless separately authorized. Produce proportionate analysis (options, trade-offs, assumptions, uncertainty, risks, unresolved questions). When moving to implementation later, reuse this work.
+- Other modes: proceed.
+
+If software implementation:
+
+1. Understand business objective, task/design/repo context.
+2. Identify acceptance criteria, constraints, non-goals, material unknowns.
+3. Infer routine technical details from codebase, conventions, official docs, policies.
+4. Ask concise questions only for important business requirements missing/conflicting/cannot be inferred. Do not ask about choices inferrable from evidence or already available.
+5. Present concise summary of agreed behavior and proposed approach.
+6. Confirm alignment before implementation.
 
 Evaluate:
 
@@ -95,7 +115,7 @@ Evaluate:
 
 Use only the analyses relevant to this task.
 
-Require human approval for significant architectural changes.
+Require human approval for significant architectural changes per the Human Decision Gates in AGENTS.md. Do not treat routine component choices as significant architectural changes.
 
 ## Phase 8 — Plan
 
@@ -125,6 +145,14 @@ libraries.
 Implement on the requested branch.
 
 Preserve existing conventions.
+
+Proceed autonomously for routine work after alignment. Do not pause for user approval for each file edit, test, formatting change, local refactoring, or ordinary corrective adjustment within the approved scope. Do not weaken quality, security, testing, or validation standards.
+
+Provide concise status updates at meaningful milestones (alignment complete, milestone completed, important new finding or decision required, validation results, final diff/summary). Each update must explain what changed, the evidence available, and the next step. An update is not a request for approval unless a decision gate applies.
+
+If new evidence changes a material requirement or approved design, pause and explain the reason before continuing beyond the approved scope. Otherwise, proceed autonomously.
+
+Use checkpoints according to `workflows/session-resilience.md`. Do not require restarting the terminal.
 
 Do not expand the scope silently.
 
