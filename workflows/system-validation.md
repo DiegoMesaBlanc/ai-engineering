@@ -182,6 +182,27 @@ Inspect existing paths before suggesting any link changes.
 
 Never overwrite an existing configuration.
 
+### External-Directory Permissions
+
+Verify against the actual global client configuration, not only the policy
+text, that external-directory access remains narrowly scoped:
+
+- external-directory access does not default to an unrestricted wildcard
+  `allow`
+- the default action for unmatched external paths is `ask` or stricter,
+  never a blanket `allow`
+- the checkpoint handoff directory defined in
+  `workflows/session-resilience.md` remains accessible under an explicit,
+  narrow rule
+- more-specific rules follow the wildcard so the intended rule wins
+- no broad allowance is granted for the entire home directory, all projects,
+  or the whole filesystem
+- reviewer and auditor agent permission restrictions remain in effect and
+  are not widened by an inherited wildcard
+
+Report the actual configured values. Do not infer them from policy text, and
+do not modify the client configuration during validation.
+
 ## 5. Validate Policies
 
 Confirm consistency across the Core, Skills, commands, and workflows:
@@ -489,6 +510,13 @@ Verify against `agents/orchestrator.md`, `workflows/task-to-code.md`,
 - `/task` follows the canonical Task-to-Code sequence, continues from the
   first incomplete phase, and reuses completed analysis instead of repeating
   task, design, repository, or stack inspection
+- `workflows/task-to-code.md` defines the technical complexity and
+  architecture evaluation in exactly one phase, reuses a completed result
+  instead of repeating the affected-modules, architecture, pattern, and risk
+  checklist, and extends it only when new evidence justifies it
+- architecture-only and estimation-only requests remain free of branch
+  preparation, and software implementation still requires branch preparation
+  before modifying application code
 - no file in the core execution path defines a competing ordering of the
   lifecycle
 

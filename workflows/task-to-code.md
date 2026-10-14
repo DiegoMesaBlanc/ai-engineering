@@ -64,7 +64,7 @@ For a new project:
 
 Do not introduce a monorepo or microfrontends without evidence.
 
-## Phase 5 — Intent, Alignment and Architecture
+## Phase 5 — Intent and Alignment
 
 Identify the engineering intent from the request:
 - Architecture or solution design.
@@ -87,19 +87,10 @@ If software implementation:
 5. Present concise summary of agreed behavior and proposed approach.
 6. Confirm alignment before implementation.
 
-Evaluate:
-
-- task complexity
-- affected modules
-- repository strategy
-- frontend composition
-- architecture impact
-- relevant design patterns
-- risks and testing needs
-
-Use only the analyses relevant to this task.
-
-Require human approval for significant architectural changes per the Human Decision Gates in AGENTS.md. Do not treat routine component choices as significant architectural changes.
+The technical complexity and architecture evaluation is performed once in
+Phase 8. Do not repeat the affected-modules, repository-strategy,
+frontend-composition, architecture-impact, design-pattern, and risk
+checklist here; reuse the Phase 8 result when it has already been obtained.
 
 ## Phase 6 — Ask for the Branch (implementation only)
 
@@ -135,6 +126,12 @@ Evaluate:
 - risks and testing needs
 
 Use only the analyses relevant to this task.
+
+This is the single phase that performs the technical complexity and
+architecture evaluation. When it has already been completed for the current
+task and repository state, reuse the result instead of repeating it. Extend
+the analysis only when new evidence, a changed repository state, or a
+material unresolved question justifies it.
 
 Require human approval for significant architectural changes per the Human Decision Gates in AGENTS.md. Do not treat routine component choices as significant architectural decisions.
 
