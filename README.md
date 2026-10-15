@@ -1,6 +1,6 @@
 # AI Engineering System
 
-A provider-agnostic, free-first engineering workflow for OpenCode and compatible AI coding clients.
+A provider-agnostic, free-first engineering workflow with shared engineering guidance and client-specific entry points.
 
 ## Design principles
 
@@ -41,7 +41,7 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
 - `/pr`: generate copy-ready PR/MR content.
 - `/review-pr`: generate copy-ready review feedback.
 - `/system-check`: read-only validation of repository consistency and
-  OpenCode integration.
+  OpenCode and Codex CLI integration.
 - `/validate`: validate project changes using existing tools and
   risk-based checks without modifying application source code.
 - `/checkpoint`: write a user-level checkpoint of the current task state
@@ -57,8 +57,10 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
   and without modifying the project or performing remote writes.
 
 OpenCode supports Markdown commands and agents with permissions defined in
-frontmatter. This diagnostic therefore integrates without adding execution
-code or a new runtime dependency.
+frontmatter. Those files are OpenCode adapters; they do not create slash
+commands in other clients. Codex uses the shared `AGENTS.md` and native
+`SKILL.md` format, but its CLI does not automatically discover this
+repository's `commands/` directory.
 
 ### System validation versus project validation
 
@@ -150,6 +152,49 @@ code or a new runtime dependency.
 - Recorded outcomes are classified REAL, SIMULATED, or STATIC and are never
   conflated. The matrix requires no new command, no package.json, and no
   testing framework in the canonical documentation repository.
+
+## Codex CLI setup
+
+Codex CLI reads `AGENTS.md` files in the working project and supports Skills
+in its native skill directories. It does not automatically discover this
+repository's `skills/` directory from another project. To use the canonical
+Skills without changing global configuration, give Codex access to this
+repository and explicitly direct it to read the relevant `SKILL.md` files.
+This uses the installed CLI; it does not install a plugin or create a slash
+command.
+
+Set the canonical repository path and verify it:
+
+```sh
+export AI_ENGINEERING_HOME="$HOME/Documents/ai-engineering"
+git -C "$AI_ENGINEERING_HOME" status --short --branch
+```
+
+From the target project, start an implementation task with the original task
+wording. Codex must inspect the project and complete architecture analysis
+before changing application code:
+
+```sh
+codex -C "$PWD" --add-dir "$AI_ENGINEERING_HOME" \
+  "Read '$AI_ENGINEERING_HOME/AGENTS.md', '$AI_ENGINEERING_HOME/workflows/task-to-code.md', '$AI_ENGINEERING_HOME/workflows/dependency-assessment.md', '$AI_ENGINEERING_HOME/skills/discovery/SKILL.md', '$AI_ENGINEERING_HOME/skills/project-analysis/SKILL.md', and '$AI_ENGINEERING_HOME/skills/architecture-advisor/SKILL.md'. Follow the canonical task workflow. Treat commands/task.md as an OpenCode adapter, not a Codex command. My task is: <describe the task>."
+```
+
+Codex must ask for the exact branch name before changing application code
+when the task did not provide one. Preserve the shared repository: use it as
+read-only guidance and make task changes only in the target project.
+
+To validate a completed project change, invoke the project workflow explicitly:
+
+```sh
+codex -C "$PWD" --add-dir "$AI_ENGINEERING_HOME" \
+  "Read '$AI_ENGINEERING_HOME/AGENTS.md' and '$AI_ENGINEERING_HOME/workflows/project-validation.md'. Validate this project's current changes using its configured tooling. Report commands and actual results, including failed, blocked, and unexecuted checks. Do not install dependencies or modify application source during validation."
+```
+
+To audit the engineering system itself, ask Codex to read
+`$AI_ENGINEERING_HOME/workflows/system-validation.md` and report each check
+with evidence. That workflow validates system consistency; it does not
+assert that a custom Codex slash command exists or that Codex was executed
+unless an actual CLI run is recorded.
 
 ## OpenCode setup (macOS)
 

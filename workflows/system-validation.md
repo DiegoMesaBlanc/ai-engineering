@@ -182,6 +182,24 @@ Inspect existing paths before suggesting any link changes.
 
 Never overwrite an existing configuration.
 
+For Codex CLI, inspect:
+
+- the installed `codex --version`
+- the canonical README's Codex CLI setup instructions
+- the model-visible input from `codex debug prompt-input` when available
+- whether instructions are auto-loaded from the current project's
+  `AGENTS.md` and whether shared instructions and Skills are explicitly
+  referenced when the canonical repository is outside the project
+- whether the setup incorrectly claims that files in `commands/` become
+  Codex slash commands
+
+Classify `debug prompt-input` as STATIC evidence: it shows what Codex would
+receive, not that an agent read the referenced files or completed a task. A
+successful `codex exec` response is REAL behavioral evidence. If execution
+fails before the agent responds, report behavior as NOT VERIFIED and include
+the observed failure. Do not initiate billable execution without
+authorization. Do not modify global Codex configuration during validation.
+
 ### External-Directory Permissions
 
 Verify against the actual global client configuration, not only the policy
@@ -566,6 +584,8 @@ Return:
 - Invalid references:
 - Policy contradictions:
 - OpenCode discovery:
+- Codex CLI instruction loading:
+- Codex CLI behavioral execution:
 - Provider configuration status:
 - Delivery and CI/CD state:
 - Dependency decision state:
