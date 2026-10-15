@@ -37,3 +37,4 @@ coverage/
 .opencode/tmp/
 node/
 .aider*
+.DS_Store
