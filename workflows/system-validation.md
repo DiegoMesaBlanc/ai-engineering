@@ -765,3 +765,30 @@ and `references/system-workflow-regression-matrix.md`:
   validation, provider, delivery, review, or session-resilience gates
 - `skills/project-analysis/SKILL.md` reports the confidence of the
   architecture classification explicitly
+
+## V2.8 Regression — Architecture Catalog and Evidence Boundaries
+
+Verify that the architecture catalog offers alternatives for the ecosystems
+actually supported by `skills/stack-detection/SKILL.md`, without turning
+them into a universal folder structure or architecture requirement:
+
+- the canonical Skill distinguishes application architectural style, code
+  organization, and language/framework conventions
+- alternatives are documented for supported languages and frameworks and
+  are selected only after identifying the actual stack
+- architecture is detected from implementation evidence; when no coherent
+  architecture is identified or evidence conflicts, the flow presents
+  appropriate alternatives and trade-offs and waits for approval on an
+  important unresolved decision
+- guidance integrates reusable types, interfaces, contracts, components,
+  services, hooks/composables, contexts/providers, and adapters where
+  relevant, without requiring universal directories or empty folders
+- the catalog remains canonical in the existing architecture-advisor Skill;
+  no duplicate architecture document or per-framework architecture Skill is
+  introduced
+- `/system-check` validates consistency and completeness of the written
+  catalog and references only; it does not claim to execute `/task`, prove
+  agent behavior, inspect an arbitrary application's architecture, or
+  validate application code behavior
+- documentation consistency, flow compliance, implemented architecture
+  quality, and functional behavior remain separate findings

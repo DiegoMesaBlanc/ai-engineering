@@ -127,6 +127,31 @@ appropriate to their ecosystems. Do not impose hexagonal, Clean, feature,
 microservice, or any other option on every project. Justify the level of
 separation from context and real needs.
 
+#### Architecture Alternatives by Supported Ecosystem
+
+Use this catalog as a set of alternatives to evaluate after detecting the
+actual language, framework, and repository. It is not a mandatory mapping or
+a complete list of every possible architecture. Include only alternatives
+that fit the project and task, and use framework conventions as evidence for
+organization, not as proof of an application architecture.
+
+| Detected ecosystem | Architectural and organization alternatives to consider when relevant |
+| --- | --- |
+| JavaScript/TypeScript with React or Next.js | Existing route or component organization; feature/domain modules; layered or modular application; server/client boundaries in Next.js. |
+| Angular or Ionic Angular | Existing standalone-component or NgModule organization; feature modules; layered or domain-oriented modules; Ionic UI composition. |
+| Vue, Nuxt, or Ionic Vue | Existing route/component organization; feature/domain modules; layered or modular application; Nuxt server/client boundaries when present. |
+| Node.js with Express or Fastify | Simple route/module organization; layered application; modular monolith; ports-and-adapters where external boundaries justify it. |
+| Node.js with NestJS | Existing module/provider/controller organization; feature modules; modular monolith; layered or domain-oriented boundaries. |
+| Python with Django | Django app and model/view conventions; modular monolith; domain-oriented app boundaries where useful. |
+| Python with FastAPI or Flask | Router/blueprint and package organization; simple layered modules; feature/domain packages; ports-and-adapters when integrations justify it. |
+| Java with Spring Boot | Existing package and Spring module conventions; layered application; modular monolith; domain-oriented modules or Spring Modulith where boundaries justify it. |
+| React Native with Expo or bare React Native | Existing navigation and platform conventions; feature/domain modules; shared versus platform-specific code; modular application. |
+| SQL/database code | Schema and migration organization; bounded ownership by schema/module; procedural or event-driven patterns only when supported by workload needs. |
+
+For ecosystems not listed, derive alternatives from the detected language,
+framework, official documentation, and project conventions. Do not add a
+technology-specific architecture Skill solely to extend this catalog.
+
 ### Types, Interfaces, and Contracts
 
 Default rule:
@@ -148,6 +173,11 @@ Identify and correctly place the responsibilities relevant to the stack.
 For React/Next.js, for example, evaluate components, hooks,
 contexts/providers, services, API/adapters, types, utilities, and
 configuration, and explain why each element belongs to its module.
+
+For other detected stacks, identify the corresponding framework concepts
+(such as Angular services and injectors, Vue composables and plugins,
+Spring controllers and services, or Python routers and modules) without
+translating them into React terminology or prescribing matching directories.
 
 Do not create empty folders, do not require every such directory when it
 does not apply, and do not merge distinct responsibilities into a generic

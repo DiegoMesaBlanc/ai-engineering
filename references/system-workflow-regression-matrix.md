@@ -77,6 +77,7 @@ with the concrete reason.
 | R-17 | Evidence-based architecture diagnosis | `skills/architecture-advisor/SKILL.md`, `skills/project-analysis/SKILL.md` | Detected, inferred, and absent architecture are distinguished; directory names alone do not establish an architecture | Recorded diagnosis with evidence |
 | R-18 | Mandatory architecture decision gate | `workflows/task-to-code.md`, `commands/task.md`, `skills/architecture-advisor/SKILL.md` | When architecture is unclear or conflicting or a new one is required, options and trade-offs are presented and the user's decision is awaited before implementing | Recorded decision |
 | R-19 | Post-implementation validation with evidence | `workflows/task-to-code.md`, `skills/engineering-review/SKILL.md`, `skills/architecture-advisor/SKILL.md` | The result is compared to the approved design with concrete evidence; documentation consistency is not conflated with code quality or with proven behavior | Review report |
+| R-20 | Supported-stack architecture catalog and honest system check | `skills/architecture-advisor/SKILL.md`, `skills/stack-detection/SKILL.md`, `workflows/system-validation.md` | Alternatives fit the detected supported ecosystem; `/system-check` validates written consistency without claiming behavioral proof | System consistency report plus separate task-flow and application evidence |
 
 ## Broader Integral Validation
 
