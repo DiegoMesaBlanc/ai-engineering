@@ -126,6 +126,11 @@ code or a new runtime dependency.
   types, and interfaces belong; cohesion and separation of
   responsibilities; public exports, barrels, import aliases, and module
   conventions; design patterns only when justified; and styling decisions.
+- The diagnosis is evidence-based and classified as detected, inferred, or
+  absent; directory names alone do not establish an architecture. When no
+  coherent architecture is detected, conventions conflict, or a new one must
+  be chosen, options and trade-offs are presented and the user decides
+  before implementation.
 - After implementation, the result is validated against the proposed design
   and the project's conventions, in addition to functional tests.
 - No universal folder structure, fixed file count, or mandatory pattern is

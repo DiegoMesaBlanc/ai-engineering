@@ -145,6 +145,12 @@ the real project architecture and conventions, placement and cohesion,
 reuse and module conventions, design patterns only when justified, and
 existing dependencies, tools, and styling conventions.
 
+Base the diagnosis on implementation evidence and classify it as detected
+with evidence, inferred with uncertainty, or no identifiable architecture.
+Separate the architectural style, the organization strategy, and the
+language/framework conventions, and address reusable types, interfaces, and
+contracts separately from their consumers.
+
 Use only the analyses relevant to this task.
 
 This is the single phase that performs the technical complexity and
@@ -152,6 +158,26 @@ architecture evaluation. When it has already been completed for the current
 task and repository state, reuse the result instead of repeating it. Extend
 the analysis only when new evidence, a changed repository state, or a
 material unresolved question justifies it.
+
+Mandatory decision gate. Before implementing:
+
+- If the project has a coherent architecture, continue it unless there is
+  an important incompatibility.
+- If no clear architecture is detected, conventions conflict, or the task
+  requires choosing a new architecture, present the diagnosis and a
+  recommendation with concrete alternatives and trade-offs, then ask the
+  user whether to preserve the existing organization or adopt the
+  recommended alternative.
+- Wait for the answer before implementing. Do not silently turn a
+  recommendation into an approved decision.
+- Do not ask about routine decisions that can be inferred from the code.
+- If the user specifies an architecture, respect it and explain any
+  significant incompatibility before implementing it.
+
+The proposal must include a sufficiently concrete target structure, the
+location of relevant files, the contracts and types, the direction of
+dependencies, and the pending decisions; stating "architecture evaluated"
+is not sufficient.
 
 Require human approval for significant architectural changes per the Human Decision Gates in AGENTS.md. Do not treat routine component choices as significant architectural decisions. Consult the user when a styling-system decision significantly affects architecture, dependencies, or the visual experience.
 
@@ -258,9 +284,13 @@ Review the resulting implementation for:
 - scope
 
 Perform the post-implementation architectural validation defined in
-`skills/architecture-advisor/SKILL.md`: contrast the result with the
-proposed design and the project's conventions, in addition to the
-functional tests. Report deviations and their impact.
+`skills/architecture-advisor/SKILL.md`: compare the real architecture with
+the proposal and the approved decision, in addition to the functional
+tests. Each important conclusion must cite concrete evidence (files,
+modules, imports, configuration, or executed commands), and any property
+that cannot be verified automatically must be reported as such. Report
+deviations and their impact, and do not claim the agent's behavior is proven
+by verifying instructions alone.
 
 ## Phase 13 — Git Delivery
 

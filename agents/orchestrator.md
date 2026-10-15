@@ -158,12 +158,18 @@ when the architecture-first evaluation requires its detailed criteria.
 
 Architecture is evaluated before implementation, as part of the canonical
 Task-to-Code sequence, and covers code organization, reuse, module
-conventions, and styling decisions — not only the architectural style.
+conventions, types and contracts, and styling decisions — not only the
+architectural style.
+
+Base the diagnosis on implementation evidence, distinguishing detected,
+inferred, and absent architecture. If no coherent architecture is detected,
+conventions conflict, or a new architecture must be chosen, present the
+options and wait for the user's decision before implementing.
 
 Do not introduce new architecture for small changes.
 
 After implementation, the result is validated against the proposed design
-and the project's conventions.
+and the project's conventions, with concrete evidence.
 
 ---
 

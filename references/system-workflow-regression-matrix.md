@@ -27,7 +27,8 @@ Use selectively when a change touches one of these areas:
 
 - branch preparation or the branch policy
 - the dependency approval gate or its refusal path
-- architecture evaluation or code-organization conventions
+- architecture evaluation, the architecture decision gate, or
+  code-organization conventions
 - mandatory formatting and linting, or validation reporting
 - provider or delivery read-only boundaries
 - PR preparation or review character
@@ -73,6 +74,9 @@ with the concrete reason.
 | R-14 | Recovery divergence and next action | `workflows/session-resilience.md` | Divergence is reported, work is preserved, and the next action derives from actual repository state | Recovery report |
 | R-15 | Architecture evaluated before implementation | `workflows/task-to-code.md`, `skills/architecture-advisor/SKILL.md` | Placement, reuse, module conventions, and styling decisions are evaluated before code changes | Recorded architecture evaluation |
 | R-16 | Post-implementation architectural validation | `workflows/task-to-code.md`, `skills/engineering-review/SKILL.md` | The result is contrasted with the proposed design and project conventions | Review report |
+| R-17 | Evidence-based architecture diagnosis | `skills/architecture-advisor/SKILL.md`, `skills/project-analysis/SKILL.md` | Detected, inferred, and absent architecture are distinguished; directory names alone do not establish an architecture | Recorded diagnosis with evidence |
+| R-18 | Mandatory architecture decision gate | `workflows/task-to-code.md`, `commands/task.md`, `skills/architecture-advisor/SKILL.md` | When architecture is unclear or conflicting or a new one is required, options and trade-offs are presented and the user's decision is awaited before implementing | Recorded decision |
+| R-19 | Post-implementation validation with evidence | `workflows/task-to-code.md`, `skills/engineering-review/SKILL.md`, `skills/architecture-advisor/SKILL.md` | The result is compared to the approved design with concrete evidence; documentation consistency is not conflated with code quality or with proven behavior | Review report |
 
 ## Broader Integral Validation
 

@@ -52,7 +52,24 @@ Possible examples include:
 
 Do not classify an architecture solely from directory names.
 
-Use implementation evidence.
+Use implementation evidence:
+
+- real structure, entry points, and organization by domain, module, or
+  responsibility
+- imports, dependencies, and the boundaries between modules
+- the components, hooks, contexts, services, controllers, models,
+  interfaces, and adapters relevant to the detected stack
+- configuration files, testing conventions, and framework rules
+- existing architecture documentation and the patterns used by working code
+
+Report the confidence of the classification explicitly:
+
+- detected with evidence
+- inferred with uncertainty, stating what would confirm it
+- no identifiable architecture
+
+Finding `components`, `services`, or `lib` directories does not, by itself,
+establish an architecture.
 
 ## Existing abstractions
 

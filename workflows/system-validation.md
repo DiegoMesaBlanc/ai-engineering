@@ -579,6 +579,7 @@ Return:
 - V2.5 interactive autonomy checks:
 - V2.5 automatic task interpretation checks:
 - V2.6 architecture-first checks:
+- V2.7 architecture decision gate checks:
 - External Skill readiness:
 
 ### Findings
@@ -718,3 +719,49 @@ after it, across frameworks, languages, and application types:
   post-implementation validation is distinct from it
 - `skills/project-analysis/SKILL.md` detects module and import conventions
   without introducing new ones during analysis
+
+## V2.7 Regression — Architecture Decision Gate
+
+Verify that the architecture diagnosis is evidence-based and that the
+mandatory decision gate exists and is not contradictory across
+`skills/architecture-advisor/SKILL.md`, `skills/project-analysis/SKILL.md`,
+`workflows/task-to-code.md`, `commands/task.md`, `agents/orchestrator.md`,
+and `references/system-workflow-regression-matrix.md`:
+
+- the architecture knowledge remains defined once in
+  `skills/architecture-advisor/SKILL.md`; no technology-specific Skill and no
+  new document directory was created
+- the canonical Skill requires inspecting real structure, entry points,
+  imports, boundaries, stack-relevant elements, configuration, tests, and
+  existing documentation before proposing a solution
+- the diagnosis explicitly distinguishes detected with evidence, inferred
+  with uncertainty, and no identifiable architecture, and states that
+  finding `components`, `services`, or `lib` directories does not by itself
+  establish an architecture
+- the Skill separates architectural style, organization strategy, and
+  language/framework conventions, and does not impose hexagonal, Clean,
+  feature, microservice, or any other option universally
+- the Skill defines the default rule to separate reusable types,
+  interfaces, and contracts from their consumers, organized by
+  feature/domain/module, with justified exceptions and respect for language
+  conventions
+- the Skill covers responsibility separation per stack without requiring
+  empty folders or a fixed directory set
+- the Skill and `workflows/task-to-code.md` define the mandatory decision
+  gate: continue a coherent existing architecture, or present the diagnosis
+  with a recommendation, concrete alternatives, and trade-offs, and wait for
+  the user's decision before implementing; a recommendation is never
+  silently treated as approved
+- `commands/task.md` and `agents/orchestrator.md` delegate to that gate
+  instead of defining a competing order
+- the post-implementation validation requires concrete evidence and
+  distinguishes documentation consistency of `ai-engineering`, compliance
+  with the flow before implementing, and architectural quality of the
+  resulting code; it does not claim the agent's behavior is proven by
+  verifying instructions alone
+- the Skill carries compact references to recognized architectural sources
+  without creating a Skill per technology
+- the V2.7 checks do not weaken the existing branch, dependency,
+  validation, provider, delivery, review, or session-resilience gates
+- `skills/project-analysis/SKILL.md` reports the confidence of the
+  architecture classification explicitly

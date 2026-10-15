@@ -99,6 +99,10 @@ Key required behaviors within that workflow:
   proposed new dependency
 - evaluate architecture, reuse, and code organization before implementing,
   and validate the result against the proposed design and conventions
+- base the architecture diagnosis on implementation evidence (detected,
+  inferred, or absent), and when no coherent architecture is detected,
+  conventions conflict, or a new architecture must be chosen, present the
+  options and wait for the user's decision before implementing
 - implement following current conventions, then validate and review
 - present the Git diff and commit proposal
 
