@@ -513,7 +513,9 @@ Verify against `agents/orchestrator.md`, `workflows/task-to-code.md`,
 - `workflows/task-to-code.md` defines the technical complexity and
   architecture evaluation in exactly one phase, reuses a completed result
   instead of repeating the affected-modules, architecture, pattern, and risk
-  checklist, and extends it only when new evidence justifies it
+  checklist, and extends it only when new evidence justifies it; the
+  post-implementation architectural validation in the review phase is
+  distinct from that evaluation and does not duplicate it
 - architecture-only and estimation-only requests remain free of branch
   preparation, and software implementation still requires branch preparation
   before modifying application code
@@ -576,6 +578,7 @@ Return:
 - System workflow regression matrix:
 - V2.5 interactive autonomy checks:
 - V2.5 automatic task interpretation checks:
+- V2.6 architecture-first checks:
 - External Skill readiness:
 
 ### Findings
@@ -687,3 +690,31 @@ Verify the following controls exist and are not contradictory across
   or task-interpreter command was introduced
 - task retrieval that fails never results in a claim that inaccessible
   task content was read; only the minimum missing information is requested
+
+## V2.6 Regression — Architecture-First Engineering
+
+Verify that architecture is evaluated before implementation and validated
+after it, across frameworks, languages, and application types:
+
+- `workflows/task-to-code.md` performs the architecture evaluation before
+  the implementation phase and does not implement first
+- the architecture evaluation covers code organization and placement,
+  cohesion, reuse, module conventions (public exports, barrels, import
+  aliases), design patterns only when justified, and styling decisions
+- the architecture knowledge is defined once in
+  `skills/architecture-advisor/SKILL.md`; no duplicate architecture Skill
+  was created and no competing order was introduced
+- `skills/engineering-review/SKILL.md` and the review phase require a
+  post-implementation architectural validation that contrasts the result
+  with the proposed design and the project's conventions, in addition to
+  functional tests
+- the rules are framework- and language-neutral: no universal folder
+  structure, fixed file count, or mandatory pattern is imposed
+- a styling-system decision that significantly affects architecture,
+  dependencies, or the visual experience triggers a human decision gate
+- routine technical details remain autonomous and are not turned into
+  approval gates
+- the architecture evaluation remains in exactly one phase, and the
+  post-implementation validation is distinct from it
+- `skills/project-analysis/SKILL.md` detects module and import conventions
+  without introducing new ones during analysis

@@ -19,9 +19,13 @@ Review the actual changes, not the entire repository unless required.
 
 ### Architecture
 
-- Does the change respect the existing architecture?
+- Does the change respect the existing architecture and conventions?
 - Were unnecessary abstractions introduced?
 - Were existing abstractions reused?
+- Perform the post-implementation architectural validation defined in
+  `skills/architecture-advisor/SKILL.md`: contrast the result with the
+  proposed design and the project's conventions, including placement,
+  cohesion, reuse, module conventions, and unnecessary fragmentation.
 
 ### Code quality
 

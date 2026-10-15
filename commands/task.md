@@ -97,6 +97,8 @@ Key required behaviors within that workflow:
   finalizing the plan
 - present meaningful decisions when approval is required, including any
   proposed new dependency
+- evaluate architecture, reuse, and code organization before implementing,
+  and validate the result against the proposed design and conventions
 - implement following current conventions, then validate and review
 - present the Git diff and commit proposal
 

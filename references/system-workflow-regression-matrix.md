@@ -27,6 +27,7 @@ Use selectively when a change touches one of these areas:
 
 - branch preparation or the branch policy
 - the dependency approval gate or its refusal path
+- architecture evaluation or code-organization conventions
 - mandatory formatting and linting, or validation reporting
 - provider or delivery read-only boundaries
 - PR preparation or review character
@@ -70,6 +71,8 @@ with the concrete reason.
 | R-12 | Review grounded in the revision | `workflows/pull-request-review.md` | Findings correspond to the reviewed revision; no invented lines or results | Report plus reviewed diff |
 | R-13 | Checkpoint identity and preservation | `workflows/session-resilience.md` | Distinct tasks have distinct checkpoints; mixed working-tree state is preserved; no source file changes | Checkpoint metadata plus `git status` |
 | R-14 | Recovery divergence and next action | `workflows/session-resilience.md` | Divergence is reported, work is preserved, and the next action derives from actual repository state | Recovery report |
+| R-15 | Architecture evaluated before implementation | `workflows/task-to-code.md`, `skills/architecture-advisor/SKILL.md` | Placement, reuse, module conventions, and styling decisions are evaluated before code changes | Recorded architecture evaluation |
+| R-16 | Post-implementation architectural validation | `workflows/task-to-code.md`, `skills/engineering-review/SKILL.md` | The result is contrasted with the proposed design and project conventions | Review report |
 
 ## Broader Integral Validation
 

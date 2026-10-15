@@ -79,6 +79,83 @@ HUMAN DECISION REQUIRED
 
 Require approval before implementing significant architectural changes.
 
+## Architecture-First Engineering
+
+Evaluate architecture, reuse, and code organization before writing code,
+for every framework, language, and application type. This evaluation is part
+of the canonical task flow; do not implement first and justify later.
+
+### Inspect Before Proposing
+
+Inspect the real project architecture and conventions before proposing
+changes:
+
+- feature or module organization
+- separation of responsibilities and layers
+- existing reusable abstractions
+- dependencies and their direction
+- component and module boundaries
+
+Use implementation evidence, not directory names alone.
+
+### Placement and Cohesion
+
+Decide where components, hooks, services, configuration, types, and
+interfaces belong.
+
+- Group cohesive elements when it is reasonable.
+- Separate elements with distinct responsibilities or that need reuse.
+- Avoid monolithic files and unnecessary fragmentation.
+- Do not impose a universal folder structure or a fixed number of files.
+
+### Module Conventions and Reuse
+
+Evaluate public exports, barrels, import aliases such as `@/`, and module
+conventions.
+
+- Reuse the existing conventions when they are viable.
+- Do not introduce barrels, aliases, or new module conventions
+  automatically; justify their utility and compatibility first.
+
+### Design Patterns
+
+Select a design pattern only when it solves a real need.
+
+Prefer existing abstractions and framework capabilities over a new pattern.
+
+### Dependencies, Tooling, and Styling
+
+Inspect existing dependencies, available tools, and styling conventions
+before choosing a solution.
+
+If the project needs a new styling system, compare relevant alternatives and
+consult the user when the decision significantly affects architecture,
+dependencies, or the visual experience.
+
+### Autonomy and Decision Gates
+
+Resolve routine technical details autonomously.
+
+Consult the user only for an important product or architecture decision that
+cannot be reasonably inferred from evidence and existing conventions.
+
+### Post-Implementation Architectural Validation
+
+After implementation, contrast the result with the proposed design and the
+project's conventions, in addition to the functional tests.
+
+Verify:
+
+- components, hooks, services, configuration, types, and interfaces are
+  placed consistently with the project's organization
+- cohesive elements are grouped and distinct responsibilities are separated
+- existing abstractions and conventions were reused where appropriate
+- no unnecessary abstraction, pattern, or fragmentation was introduced
+- public exports, barrels, aliases, and module conventions remain consistent
+
+Report deviations and their impact. Do not silently accept a result that
+diverges from the agreed design.
+
 ## Frontend UI Organization
 
 Distinguish application architecture from frontend component organization

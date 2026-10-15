@@ -154,9 +154,16 @@ Load:
 
 `skills/architecture-advisor/SKILL.md`
 
-only when architecture analysis is justified.
+when the architecture-first evaluation requires its detailed criteria.
+
+Architecture is evaluated before implementation, as part of the canonical
+Task-to-Code sequence, and covers code organization, reuse, module
+conventions, and styling decisions — not only the architectural style.
 
 Do not introduce new architecture for small changes.
+
+After implementation, the result is validated against the proposed design
+and the project's conventions.
 
 ---
 

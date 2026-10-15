@@ -72,6 +72,19 @@ Examples:
 - hooks
 - utilities
 
+## Module and Import Conventions
+
+Detect the conventions actually used, when present:
+
+- feature-based or module-based organization
+- public exports and barrel files
+- import aliases such as `@/`
+- shared versus feature-local code
+- component, hook, service, and type placement
+
+Report the conventions found. Do not introduce new conventions during
+analysis.
+
 ## Output
 
 Report:

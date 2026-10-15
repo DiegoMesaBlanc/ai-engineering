@@ -139,6 +139,12 @@ Evaluate:
 - relevant design patterns
 - risks and testing needs
 
+Perform the architecture-first evaluation defined in
+`skills/architecture-advisor/SKILL.md` before implementation. It must cover
+the real project architecture and conventions, placement and cohesion,
+reuse and module conventions, design patterns only when justified, and
+existing dependencies, tools, and styling conventions.
+
 Use only the analyses relevant to this task.
 
 This is the single phase that performs the technical complexity and
@@ -147,7 +153,7 @@ task and repository state, reuse the result instead of repeating it. Extend
 the analysis only when new evidence, a changed repository state, or a
 material unresolved question justifies it.
 
-Require human approval for significant architectural changes per the Human Decision Gates in AGENTS.md. Do not treat routine component choices as significant architectural decisions.
+Require human approval for significant architectural changes per the Human Decision Gates in AGENTS.md. Do not treat routine component choices as significant architectural decisions. Consult the user when a styling-system decision significantly affects architecture, dependencies, or the visual experience.
 
 ## Phase 9 — Plan
 
@@ -238,6 +244,8 @@ A passing build alone does not establish completion.
 
 ## Phase 12 — Review
 
+Load `skills/engineering-review/SKILL.md`.
+
 Review the resulting implementation for:
 
 - correctness
@@ -248,6 +256,11 @@ Review the resulting implementation for:
 - maintainability
 - testing
 - scope
+
+Perform the post-implementation architectural validation defined in
+`skills/architecture-advisor/SKILL.md`: contrast the result with the
+proposed design and the project's conventions, in addition to the
+functional tests. Report deviations and their impact.
 
 ## Phase 13 — Git Delivery
 

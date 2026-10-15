@@ -8,6 +8,7 @@ A provider-agnostic, free-first engineering workflow for OpenCode and compatible
 - Load Skills on demand; do not load the entire knowledge base for every task.
 - Prefer local Git and supplied artifacts when sufficient; MCP is optional.
 - Detect project stack, architecture, repository topology, and conventions from evidence.
+- Evaluate architecture, reuse, and code organization before implementing, and validate the result against the proposed design and project conventions.
 - Ask the user for an exact branch name before implementation if one was not supplied.
 - Preserve user changes and use isolated worktrees for PR inspection when needed.
 - `/pr` generates copy-ready PR text; it does not create a PR.
@@ -114,6 +115,22 @@ code or a new runtime dependency.
 - This policy applies to target software projects. The documentation-only
   ai-engineering repository is never converted into a software package to
   satisfy it.
+
+### Architecture-first engineering
+
+- `/task` evaluates architecture, reuse, and code organization before
+  implementing, for every framework, language, and application type. The
+  canonical evaluation lives in `skills/architecture-advisor/SKILL.md` and
+  is performed in the architecture phase of `workflows/task-to-code.md`.
+- The evaluation covers where components, hooks, services, configuration,
+  types, and interfaces belong; cohesion and separation of
+  responsibilities; public exports, barrels, import aliases, and module
+  conventions; design patterns only when justified; and styling decisions.
+- After implementation, the result is validated against the proposed design
+  and the project's conventions, in addition to functional tests.
+- No universal folder structure, fixed file count, or mandatory pattern is
+  imposed. Routine technical details remain autonomous; only significant
+  product or architecture decisions reach a human decision gate.
 
 ### System workflow regression matrix
 
