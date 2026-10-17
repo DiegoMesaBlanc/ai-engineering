@@ -99,6 +99,10 @@ Key required behaviors within that workflow:
   proposed new dependency
 - evaluate architecture, reuse, and code organization before implementing,
   and validate the result against the proposed design and conventions
+- apply proportional planning rigor: derive it from the Phase 8 complexity
+  classification via `workflows/task-planning.md`, keep simple tasks
+  lightweight, and define the expected behavior before implementing complex
+  or high-risk changes
 - base the architecture diagnosis on implementation evidence (detected,
   inferred, or absent), and when no coherent architecture is detected,
   conventions conflict, or a new architecture must be chosen, present the

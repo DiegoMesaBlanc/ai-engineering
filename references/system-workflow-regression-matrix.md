@@ -35,6 +35,8 @@ Use selectively when a change touches one of these areas:
 - checkpoint identity, preservation, or recovery behavior
 - importing, adapting, or recording external web quality Skills and their
   provenance or license
+- planning rigor, specification depth, or the planning and clarification
+  boundary
 
 For an ordinary localized implementation that touches none of these, this
 reference requires no action.
@@ -84,6 +86,10 @@ with the concrete reason.
 | R-22 | Web quality evidence integrity | `skills/performance/SKILL.md`, `skills/core-web-vitals/SKILL.md`, `skills/accessibility/SKILL.md`, `workflows/system-validation.md` | Field, lab, and hypothesis evidence stay distinct; a lab or Lighthouse score is never presented as WCAG conformance or as a ranking prediction | Recorded findings |
 | R-23 | Web quality application-type gate | `skills/seo/SKILL.md`, `skills/core-web-vitals/SKILL.md`, `integrations/skill-catalog.md` | SEO and Core Web Vitals checks apply only to web-facing surfaces; non-web deliverables are reported as NOT_APPLICABLE rather than scored | Recorded applicability decision |
 | R-24 | Memory-profiling gap disclosed | `skills/performance/SKILL.md`, `integrations/external-skill-registry.md`, `workflows/system-validation.md` | The absence of a heap-profiling workflow is documented and memory leaks are not claimed to be detected automatically | Recorded limitation |
+| R-25 | Proportional planning rigor | `skills/complexity-advisor/SKILL.md`, `workflows/task-planning.md`, `workflows/task-to-code.md` | Simple changes are not forced into a heavy specification; complex changes define their expected behavior before implementing | Recorded plan with its rigor level |
+| R-26 | Expected behavior before implementation and risk-based gates | `workflows/task-planning.md`, `workflows/task-to-code.md`, `AGENTS.md` | A complex or high-risk change defines its expected behavior first; approval is triggered by a Human Decision Gate, not by the classification label; a Critical task requires reinforced controls | Recorded plan and approval status |
+| R-27 | No redundant planning artifacts | `workflows/task-planning.md`, `skills/task-context/SKILL.md` | Plans are session state by default; a durable artifact is created only when justified; no duplicate specification of the code is produced | Recorded artifact decision |
+| R-28 | Portable proportional planning | `workflows/task-planning.md`, `commands/task.md`, `agents/orchestrator.md` | Planning lives in the common core and does not depend on OpenCode; commands and the orchestrator delegate instead of restating the logic | Static inspection |
 
 ## Broader Integral Validation
 

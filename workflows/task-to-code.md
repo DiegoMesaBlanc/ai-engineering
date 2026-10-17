@@ -101,6 +101,10 @@ If software implementation:
 5. Present concise summary of agreed behavior and proposed approach.
 6. Confirm alignment before implementation.
 
+A preliminary complexity estimate may be recorded here as tentative. It
+does not fix the rigor level. The definitive complexity classification is
+produced in Phase 8 and the rigor level is derived in Phase 9.
+
 The technical complexity and architecture evaluation is performed once in
 Phase 8. Do not repeat the affected-modules, repository-strategy,
 frontend-composition, architecture-impact, design-pattern, and risk
@@ -183,6 +187,10 @@ Require human approval for significant architectural changes per the Human Decis
 
 ## Phase 9 — Plan
 
+Determine the proportional rigor level from the Phase 8 complexity
+classification and produce the plan by following
+`workflows/task-planning.md`. Do not reclassify complexity here.
+
 Before the plan is finalized, complete the dependency assessment described
 in `workflows/dependency-assessment.md` and record its outcome.
 
@@ -198,6 +206,14 @@ Provide a concise implementation plan including:
   security, or delivery controls
 - validation
 - risks
+
+The depth of the plan follows its rigor level: R1 Brief for trivial and low
+tasks, R2 Moderate for medium tasks, R3 Complex for high tasks, and R4
+High-risk for critical tasks. A High task requires approval only when a
+Human Decision Gate applies; a Critical task activates reinforced controls
+and requires approval before high-impact operations. The plan is session
+state by default; a durable planning artifact is created only when
+`workflows/task-planning.md` justifies it.
 
 A new dependency must be authorized through the approval gate in
 `workflows/dependency-assessment.md` before it is added or installed. Do not

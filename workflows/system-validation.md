@@ -55,6 +55,7 @@ Check for the existence of:
 - workflows/provider-integration-proof.md
 - workflows/secure-delivery.md
 - workflows/dependency-assessment.md
+- workflows/task-planning.md
 
 Check that CLAUDE.md references AGENTS.md rather than duplicating
 the complete shared instructions.
@@ -645,6 +646,7 @@ Return:
 - V2.6 architecture-first checks:
 - V2.7 architecture decision gate checks:
 - V2.12 web quality checks:
+- V2.13 proportional planning checks:
 - External Skill readiness:
 
 ### Findings
@@ -887,3 +889,41 @@ honest about their evidence, and correctly gated:
 - the imported Skills do not override AGENTS.md or the branch, dependency,
   architecture, validation, provider, delivery, review, or
   session-resilience policies
+
+## V2.13 Regression — Proportional Planning and SDD
+
+Verify that planning is proportional, evidence-based, and integrated without
+duplicating rules across files:
+
+- `workflows/task-planning.md` exists at its canonical path, appears in the
+  required-file inventory, and is invoked from Phase 9 of
+  `workflows/task-to-code.md` without introducing a competing lifecycle
+  order
+- `skills/complexity-advisor/SKILL.md` classifies complexity and recommends
+  a rigor level; it does not implement the planning procedure
+- the planning procedure — levels and content per level — is defined once in
+  `workflows/task-planning.md`, and the retained rigor level and artifact
+  decision belong to `skills/task-context/SKILL.md`; no rule is duplicated
+  across these files
+- `agents/orchestrator.md` and `commands/task.md` delegate to the planning
+  workflow instead of restating the levels or the approval gates
+- a preliminary complexity estimate may be recorded as tentative during
+  alignment; it does not fix the rigor level
+- the definitive complexity classification (Phase 8) and the derived rigor
+  level (Phase 9) are not fixed before sufficient evidence is available
+- trivial and low tasks are not forced to produce a heavy specification, and
+  a Markdown specification is not required by default
+- medium and higher tasks define verifiable acceptance criteria, and complex
+  or high-risk tasks define their expected behavior before implementing
+- approval is triggered by the Human Decision Gates (risk, irreversible or
+  high-impact operations, security or data, cost, scope, shared or
+  production resources, project rules) and not by the classification label;
+  a Critical task activates reinforced controls and requires approval before
+  high-impact operations
+- a durable planning artifact is created only for justified traceability,
+  approval, or an explicit request; the default is session state, and no
+  second specification of the code is produced
+- `workflows/project-validation.md` and `skills/discovery/SKILL.md` remain
+  unchanged and their existing behavior is preserved
+- no duplicate canonical workflow, competing order, or second orchestrator
+  was introduced

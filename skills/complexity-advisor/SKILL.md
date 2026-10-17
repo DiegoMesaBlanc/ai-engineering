@@ -91,6 +91,28 @@ Recommendation:
 
 Require explicit human approval.
 
+## Proportional rigor (SDD)
+
+Complexity determines the required planning rigor. It does not by itself
+authorize or block work.
+
+| Complexity | Rigor | Planning depth |
+|---|---|---|
+| Trivial, Low | R1 Brief | objective, scope, brief verifiable criteria, validation |
+| Medium | R2 Moderate | criteria, solution design, planned tests, risks |
+| High | R3 Complex | explicit expected behavior, technical decisions, test strategy, risks |
+| Critical | R4 High-risk | R3 plus a validation and rollback strategy and security, data, and concurrency focus |
+
+Recommend the rigor level for the plan. The procedure and the required
+content per level are defined in `workflows/task-planning.md`; the retained
+result belongs to `skills/task-context/SKILL.md`.
+
+The rigor level never triggers human approval by itself. Approval is
+triggered by the Human Decision Gates in AGENTS.md: risk, irreversible or
+high-impact operations, security or data impact, cost, scope or
+backward-compatibility changes, shared or production resources, and
+project rules.
+
 ## Core question
 
 Before introducing abstraction, ask:

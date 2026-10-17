@@ -146,6 +146,11 @@ Classify the task:
 - High
 - Critical
 
+The classification recommends a proportional rigor level. The procedure is
+defined in `workflows/task-planning.md` and applied from Phase 9; the
+retained result belongs to `skills/task-context/SKILL.md`. The orchestrator
+delegates and does not restate the levels or the approval gates.
+
 ---
 
 # 6. Architecture

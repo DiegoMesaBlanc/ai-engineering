@@ -112,6 +112,8 @@ agent session. It contains:
 - assumptions and material unknowns
 - affected components and architectural implications
 - dependency assessment outcome
+- proportional rigor level and the plan artifact decision, recorded after
+  the planning phase
 - security and validation considerations
 - decisions that require user input
 
@@ -364,6 +366,12 @@ Produce:
 ### Unknowns
 
 - ...
+
+### Proportional Rigor
+
+- Complexity (definitive):
+- Rigor level (R1–R4, recorded after planning):
+- Plan artifact (session state or durable, with reason):
 
 ### Risks
 

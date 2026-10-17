@@ -139,6 +139,22 @@ repository's `commands/` directory.
   imposed. Routine technical details remain autonomous; only significant
   product or architecture decisions reach a human decision gate.
 
+### Proportional planning (SDD)
+
+- `/task` plans proportionally to the change. Complexity is classified and a
+  rigor level is recommended in `skills/complexity-advisor/SKILL.md`; the
+  procedure lives in `workflows/task-planning.md`, and the retained result
+  belongs to `skills/task-context/SKILL.md`.
+- Rigor levels: R1 Brief (trivial, low), R2 Moderate (medium), R3 Complex
+  (high), R4 High-risk (critical). Simple changes are not forced into a heavy
+  specification; complex or high-risk changes define their expected behavior
+  before implementing.
+- Approval is triggered by the Human Decision Gates (risk, irreversible or
+  high-impact operations, security or data, cost, scope, shared or production
+  resources, project rules), not by the classification label.
+- Plans are session state by default; a durable artifact is created only when
+  traceability, approval, or an explicit request requires it.
+
 ### System workflow regression matrix
 
 - `references/system-workflow-regression-matrix.md` is a lightweight,
