@@ -52,6 +52,13 @@ Look for relevant vulnerabilities based on the technology stack.
 
 Consider performance only when materially relevant.
 
+For web-facing changes, use `skills/performance/SKILL.md` and
+`skills/core-web-vitals/SKILL.md`, and `skills/accessibility/SKILL.md`,
+`skills/seo/SKILL.md`, and `skills/best-practices/SKILL.md` for
+accessibility, search, and web security. Keep field, lab, and hypothesis
+evidence distinct, and never present a lab or Lighthouse score as WCAG
+conformance or as a ranking prediction.
+
 ### Scope
 
 Identify unrelated changes.

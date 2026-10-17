@@ -33,6 +33,8 @@ Use selectively when a change touches one of these areas:
 - provider or delivery read-only boundaries
 - PR preparation or review character
 - checkpoint identity, preservation, or recovery behavior
+- importing, adapting, or recording external web quality Skills and their
+  provenance or license
 
 For an ordinary localized implementation that touches none of these, this
 reference requires no action.
@@ -78,6 +80,10 @@ with the concrete reason.
 | R-18 | Mandatory architecture decision gate | `workflows/task-to-code.md`, `commands/task.md`, `skills/architecture-advisor/SKILL.md` | When architecture is unclear or conflicting or a new one is required, options and trade-offs are presented and the user's decision is awaited before implementing | Recorded decision |
 | R-19 | Post-implementation validation with evidence | `workflows/task-to-code.md`, `skills/engineering-review/SKILL.md`, `skills/architecture-advisor/SKILL.md` | The result is compared to the approved design with concrete evidence; documentation consistency is not conflated with code quality or with proven behavior | Review report |
 | R-20 | Supported-stack architecture catalog and honest system check | `skills/architecture-advisor/SKILL.md`, `skills/stack-detection/SKILL.md`, `workflows/system-validation.md` | Alternatives fit the detected supported ecosystem; `/system-check` validates written consistency without claiming behavioral proof | System consistency report plus separate task-flow and application evidence |
+| R-21 | Web quality Skill provenance and license | `integrations/external-skill-registry.md`, `integrations/skill-catalog.md`, `skills/accessibility/`, `skills/seo/`, `skills/performance/`, `skills/core-web-vitals/`, `skills/best-practices/` | Imported web quality Skills carry the pinned upstream commit, an MIT license file, and documented local modifications; the upstream orchestration Skill is not imported | Registry and file-hash checks |
+| R-22 | Web quality evidence integrity | `skills/performance/SKILL.md`, `skills/core-web-vitals/SKILL.md`, `skills/accessibility/SKILL.md`, `workflows/system-validation.md` | Field, lab, and hypothesis evidence stay distinct; a lab or Lighthouse score is never presented as WCAG conformance or as a ranking prediction | Recorded findings |
+| R-23 | Web quality application-type gate | `skills/seo/SKILL.md`, `skills/core-web-vitals/SKILL.md`, `integrations/skill-catalog.md` | SEO and Core Web Vitals checks apply only to web-facing surfaces; non-web deliverables are reported as NOT_APPLICABLE rather than scored | Recorded applicability decision |
+| R-24 | Memory-profiling gap disclosed | `skills/performance/SKILL.md`, `integrations/external-skill-registry.md`, `workflows/system-validation.md` | The absence of a heap-profiling workflow is documented and memory leaks are not claimed to be detected automatically | Recorded limitation |
 
 ## Broader Integral Validation
 

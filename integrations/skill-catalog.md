@@ -71,6 +71,73 @@ have been verified.
   - validate proportionally to risk
   - record local modifications
 
+### accessibility
+
+- Source: https://github.com/addyosmani/web-quality-skills
+- Source directory: skills/accessibility/
+- License: MIT
+- Status: INSTALLED
+- Scope: WCAG 2.2 accessibility audit and remediation for web surfaces
+- Constraints:
+  - apply only to web-facing surfaces
+  - an automated audit score of 100 is not WCAG conformance; require
+    issue-level evidence and manual checks
+  - record local modifications
+
+### seo
+
+- Source: https://github.com/addyosmani/web-quality-skills
+- Source directory: skills/seo/
+- License: MIT
+- Status: INSTALLED
+- Scope: technical and on-page SEO and structured data for web surfaces
+- Constraints:
+  - apply only to web-facing surfaces, gated by application type
+  - a Lighthouse SEO score is not a prediction of rankings; report
+    indexation and ranking outcomes as pending
+  - record local modifications
+
+### performance
+
+- Source: https://github.com/addyosmani/web-quality-skills
+- Source directory: skills/performance/
+- License: MIT
+- Status: INSTALLED
+- Scope: loading, runtime responsiveness, and resource delivery for web pages
+- Constraints:
+  - establish a field-plus-lab baseline before editing
+  - label static findings as hypotheses, not measured regressions
+  - no heap-profiling workflow; memory leaks are not detected automatically
+  - record local modifications
+
+### core-web-vitals
+
+- Source: https://github.com/addyosmani/web-quality-skills
+- Source directory: skills/core-web-vitals/
+- License: MIT
+- Status: INSTALLED
+- Scope: LCP, INP, and CLS optimization using field and lab evidence
+- Constraints:
+  - apply only to user-facing web pages, gated by application type
+  - do not claim a field improvement without new user data
+  - record local modifications
+
+### best-practices
+
+- Source: https://github.com/addyosmani/web-quality-skills
+- Source directory: skills/best-practices/
+- License: MIT
+- Status: INSTALLED
+- Scope: security, browser compatibility, and code quality for web pages
+- Constraints:
+  - supplement runtime evidence with dependency, header, and source checks
+  - a high Lighthouse score is not proof that the application is secure
+  - record local modifications
+
+The upstream `web-quality-audit` orchestration Skill and its
+`scripts/analyze.sh` are intentionally not imported; no second orchestrator
+is added. See `integrations/external-skill-registry.md`.
+
 ## Languages
 
 ### TypeScript

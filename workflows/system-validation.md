@@ -84,6 +84,11 @@ At minimum inspect:
 - pull-request
 - pull-request-review
 - review-memory
+- accessibility
+- seo
+- performance
+- core-web-vitals
+- best-practices
 
 Do not require a dedicated Next.js Skill.
 
@@ -121,6 +126,45 @@ For the initially selected Skills, verify:
 - Required files: SKILL.md, writing-good-tests.md, and LICENSE-MIT.txt
 - License: MIT
 - Verify that the local language-neutral adaptation is documented.
+
+### accessibility
+
+- Path: skills/accessibility/
+- Required files: SKILL.md, references/WCAG.md,
+  references/A11Y-PATTERNS.md, and LICENSE.txt
+- License: MIT
+- Verify that the removed orchestration reference is documented.
+
+### seo
+
+- Path: skills/seo/
+- Required files: SKILL.md, references/STRUCTURED-DATA.md, and LICENSE.txt
+- License: MIT
+- Verify the application-type gate and the removed orchestration reference
+  are documented.
+
+### performance
+
+- Path: skills/performance/
+- Required files: SKILL.md, references/MEASUREMENT.md, references/RUM.md,
+  and LICENSE.txt
+- License: MIT
+- Verify the documented memory-profiling limitation.
+
+### core-web-vitals
+
+- Path: skills/core-web-vitals/
+- Required files: SKILL.md, references/LCP.md, references/INP.md,
+  references/CLS.md, and LICENSE.txt
+- License: MIT
+- Verify the application-type gate is documented.
+
+### best-practices
+
+- Path: skills/best-practices/
+- Required files: SKILL.md, references/SECURITY.md, and LICENSE.txt
+- License: MIT
+- Verify that the removed orchestration reference is documented.
 
 Possible statuses:
 
@@ -600,6 +644,7 @@ Return:
 - V2.5 automatic task interpretation checks:
 - V2.6 architecture-first checks:
 - V2.7 architecture decision gate checks:
+- V2.12 web quality checks:
 - External Skill readiness:
 
 ### Findings
@@ -812,3 +857,33 @@ them into a universal folder structure or architecture requirement:
   validate application code behavior
 - documentation consistency, flow compliance, implemented architecture
   quality, and functional behavior remain separate findings
+
+## V2.12 Regression — Web Quality Skills
+
+Verify that the imported web quality Skills remain faithfully vendored,
+honest about their evidence, and correctly gated:
+
+- `skills/accessibility/`, `skills/seo/`, `skills/performance/`,
+  `skills/core-web-vitals/`, and `skills/best-practices/` exist and each
+  contains SKILL.md, its referenced supporting files, and LICENSE.txt
+- every imported Skill is recorded in
+  `integrations/external-skill-registry.md` with the pinned upstream commit
+  `afa8da942115f2961fdbfa80807ea0b232ff6c00`, an MIT license, and documented
+  local modifications, and each is listed as INSTALLED in
+  `integrations/skill-catalog.md`
+- the upstream `web-quality-audit` orchestration Skill and its
+  `scripts/analyze.sh` are neither present nor referenced by any imported
+  Skill; no second orchestrator was introduced
+- field, lab, and hypothesis evidence remain distinct: a Lighthouse or lab
+  score is never reported as WCAG conformance or as a prediction of
+  rankings, and static findings are labeled as hypotheses
+- SEO and Core Web Vitals checks are gated by application type and are
+  reported as NOT_APPLICABLE for non-web deliverables rather than scored
+- the absence of a heap-profiling workflow is documented and memory leaks
+  are not claimed to be detected automatically
+- Chrome DevTools MCP integration is described as optional, with documented
+  non-MCP fallbacks; no imported Skill requires an MCP connection or an
+  automatic installation
+- the imported Skills do not override AGENTS.md or the branch, dependency,
+  architecture, validation, provider, delivery, review, or
+  session-resilience policies
