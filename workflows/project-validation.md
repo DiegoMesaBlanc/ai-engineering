@@ -66,6 +66,26 @@ software project within the AGENTS.md scope. For a documentation-only
 knowledge repository, apply the out-of-scope determination from Phase 1
 instead of configuring mandatory tooling.
 
+For each in-scope tool, also determine its lifecycle state. These states are
+per-tool and are independent of the check-result statuses (`PASS`, `FAIL`,
+`SETUP_REQUIRED`, `BLOCKED`) reported in Phase 9:
+
+- detected: presence established from repository evidence — a configuration,
+  script, manifest entry, or resolved dependency.
+- configured: configuration files, ignore patterns, and reproducible scripts
+  exist for the tool.
+- installed: the tool's dependency is actually resolvable locally (resolved
+  lockfile and available package), not merely declared.
+- executed: the non-mutating check actually ran and produced an exit code.
+- approved: authorization exists for the tool. The mandatory formatter and
+  linter required by AGENTS.md are authorized by that policy itself; only a
+  deviation — a paid tool, a non-standard dependency, or replacing a working
+  configuration — requires an explicit decision.
+
+Record the state actually established, and never promote a later state from
+an earlier one: a detected tool is not configured, a declared dependency is
+not installed, and an installed tool is not executed until its check has run.
+
 ## Phase 3 — Determine Risk
 
 Use `skills/testing-strategy/SKILL.md`.
@@ -110,30 +130,68 @@ silently install CI tooling or security scanners.
 
 ## Phase 5 — Configure Mandatory Formatting and Linting
 
-When Phase 2 found that a required formatter or linter is missing or
-incomplete, configure it. This is mandatory, not optional.
+When Phase 2 found that a required formatter or linter is missing,
+incomplete, or not yet installed, configure it. This is mandatory, not
+optional, and is established by the policy in AGENTS.md; do not request a
+redundant approval for the standard setup that policy already authorizes.
 
 Before configuring anything, confirm the repository is a software project
 within scope. Never create a package.json, install formatter or linter
 tooling, or add scripts in a documentation-only knowledge repository
 solely to satisfy this policy.
 
-1. Select compatible open-source tools for the detected stack.
-2. Add configuration files and ignore patterns for generated artifacts and
+1. Detect before configuring. Reuse the existing tools, configuration,
+   scripts, and conventions, and fill only actual gaps. Do not overwrite a
+   working configuration or add a redundant second tool.
+2. Select tools for the detected stack using the default choices in
+   AGENTS.md. Prefer a compatible already-installed dependency before adding
+   a new one.
+3. Configure concretely for the detected framework and versions, and prevent
+   formatter/linter conflicts:
+   - JavaScript and TypeScript: Prettier as the single formatter; keep the
+     ESLint configuration in the format the detected ESLint major expects
+     (flat config for the current major, legacy eslintrc only while the
+     project still uses it); disable the rules that overlap with Prettier
+     instead of letting the two disagree.
+   - Angular: Angular ESLint together with Prettier; do not add a generic
+     ESLint configuration that conflicts with the Angular one.
+   - Ionic: the tooling of its underlying Angular or React stack.
+   - Python: a single Ruff configuration (Ruff format and Ruff check) in the
+     project's existing configuration file; do not add Black or Flake8 when
+     Ruff already covers the project.
+   - Java: the project-standard formatter and linter already referenced by
+     the build.
+   - SQL: the dialect-aware formatter and linter when the dialect is known.
+   - other ecosystems: the ecosystem-standard formatter and linter; do not
+     invent compatibility.
+   Add configuration files and ignore patterns for generated artifacts and
    build output, without excluding relevant source code.
-3. Add reproducible scripts appropriate to the ecosystem.
-4. Add the development dependencies with the existing package manager and
-   compatible versions.
-5. Update the lockfile when installation succeeds.
-6. Format files within the task scope when necessary and safe, without
+4. Scope the change in monorepos. Identify the workspace tool and the
+   packages the change affects, and limit configuration, scripts, and
+   dependencies to those packages (or to a root configuration only when it
+   genuinely applies to all). Do not reconfigure or reformat unrelated
+   packages.
+5. Add reproducible scripts appropriate to the ecosystem, using the existing
+   package manager or build system.
+6. Add the development dependencies with the existing package manager and
+   compatible versions, project-locally; never install globally. Update the
+   lockfile when installation succeeds.
+7. Format files within the task scope only when necessary and safe, without
    rewriting unrelated user-owned files.
-7. Run the formatter's non-mutating check and the linter, capturing exit
+8. Run the formatter's non-mutating check and the linter, capturing exit
    codes and output.
-8. Disclose every configuration, script, and dependency change.
+9. Disclose every configuration, script, and dependency change, together
+   with the resulting tool lifecycle states.
+
+When tooling is missing, produce an explicit proposal instead of a silent
+omission: name the selected tool for the detected stack, the reason, the
+configuration and scripts to add, and the local dependencies required. If
+setup is authorized and the environment allows it, apply it; if a real
+restriction blocks it, report `BLOCKED` and state what remains incomplete.
 
 The mandatory formatting and linting requirement authorizes this
-project-local setup. Do not install paid tools, introduce paid services,
-or make unrelated dependency upgrades.
+project-local setup. It does not authorize paid tools, paid services, or
+unrelated dependency upgrades, which still require an explicit decision.
 
 If a real environment limitation, unavailable network, permission
 restriction, or incompatible dependency blocks setup, report `BLOCKED`,
@@ -222,6 +280,13 @@ Use the configured statuses:
 - PASS, FAIL, BASELINE_FAILURE, BLOCKED, NOT_RUN, SKIPPED
 - SETUP_REQUIRED: mandatory tooling was missing and the workflow is
   configuring it; this is not a final successful result.
+
+Report the per-tool lifecycle states (detected, configured, installed,
+executed, approved) separately from these check-result statuses, and list
+any tooling proposal, block, or formatter/linter error. For each formatter
+and linter in scope, state the tools that were detected, configured,
+installed, executed, and approved, so a configured-but-not-installed or
+installed-but-not-executed tool is never presented as a verified check.
 
 Do not use `NOT_APPLICABLE` for mandatory formatting or linting merely
 because a configuration, dependency, or script is absent. Do not convert

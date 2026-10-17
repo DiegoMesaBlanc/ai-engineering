@@ -603,9 +603,10 @@ lightweight reference and not a competing procedure:
   workflows
 - it protects the critical transversal behaviors: the branch policy,
   preservation of uncommitted work, the dependency approval gate and refusal
-  path, the mandatory formatter and linter scope, honest validation
-  reporting, provider and delivery read-only boundaries, PR and review
-  copy-only character, and checkpoint and recovery safety
+  path, the mandatory formatter and linter scope together with its tool
+  lifecycle states, honest validation reporting, provider and delivery
+  read-only boundaries, PR and review copy-only character, and checkpoint
+  and recovery safety
 - REAL, SIMULATED, and STATIC evidence are defined and never conflated
 - it does not duplicate the decision policy of the task, dependency,
   validation, provider, delivery, review, or session-resilience workflows,
@@ -647,6 +648,7 @@ Return:
 - V2.7 architecture decision gate checks:
 - V2.12 web quality checks:
 - V2.13 proportional planning checks:
+- V2.14 formatter/linter setup checks:
 - External Skill readiness:
 
 ### Findings
@@ -927,3 +929,37 @@ duplicating rules across files:
   unchanged and their existing behavior is preserved
 - no duplicate canonical workflow, competing order, or second orchestrator
   was introduced
+
+## V2.14 Regression — Formatter and Linter Setup and Execution
+
+Verify that formatter and linter configuration and execution are concrete,
+conflict-free, scoped, and reported honestly, with the procedure defined
+once:
+
+- `workflows/project-validation.md` defines the mandatory setup procedure
+  once, in Phase 5, and remains the canonical procedure; no separate
+  `workflows/tooling-setup.md` or second setup flow was created
+- Phase 2 defines the tool lifecycle states — detected, configured,
+  installed, executed, approved — and states explicitly that they are
+  independent of the check-result statuses (`PASS`, `FAIL`,
+  `SETUP_REQUIRED`, `BLOCKED`)
+- Phase 5 detects before configuring, selects tools per the AGENTS.md
+  defaults, configures for the detected framework and versions, prevents
+  formatter/linter conflicts, scopes monorepo changes to the affected
+  packages, and produces an explicit proposal when tooling is missing
+- existing working configuration is preserved and a redundant second tool is
+  not added
+- the standard mandatory setup is authorized by policy without a redundant
+  approval, while a paid tool, a non-standard dependency, or replacing a
+  working configuration still requires a decision, and a real restriction is
+  reported as BLOCKED rather than success
+- `skills/stack-detection/SKILL.md` adds only detection and selection rules
+  and delegates the procedure to `workflows/project-validation.md` instead of
+  restating it
+- `commands/validate.md` reports the per-tool lifecycle states separately
+  from check statuses and reports proposals, blocks, and formatter or linter
+  errors
+- `AGENTS.md` remains the single source of the default tools per ecosystem
+  and was not duplicated by the procedure
+- a documentation-only repository such as this one is not given an
+  application formatter, linter, `package.json`, or dependencies

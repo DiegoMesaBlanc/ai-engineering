@@ -172,6 +172,18 @@ If the mandatory formatter or linter is absent in an in-scope software
 project, report it as `SETUP_REQUIRED`; do not record it as
 `NOT_APPLICABLE`.
 
+When a required formatter or linter is missing, select a compatible
+open-source tool per the default choices in AGENTS.md, matching the detected
+framework and its major version, and read the existing package manager and
+configuration format (for example, the detected ESLint major determines flat
+config versus legacy eslintrc). Prefer a compatible already-installed
+dependency over a new one, and do not add a second tool that duplicates one
+already present. Record detected, configured, installed, executed, and
+approved states separately from the check-result statuses. Configuration,
+conflict avoidance, monorepo scoping, and installation are defined once in
+`workflows/project-validation.md` (Phase 2 and Phase 5); do not restate that
+procedure here.
+
 ## Database detection
 
 Identify the database and version from available configuration and
