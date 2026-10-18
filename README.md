@@ -99,6 +99,13 @@ repository's `commands/` directory.
 - Missing controls are recommendations for a later implementation, not
   proof of execution. Documentation-only repositories are not converted
   into software projects to satisfy software-project CI/CD checks.
+- Authoring a delivery pipeline is a separate, authorized mode of
+  `workflows/secure-delivery.md`. It builds one artifact and promotes it
+  across environments (local, development, QA, staging, production), runs
+  the required validation gates before every deployment, keeps environment
+  differences out of the artifact, and requires explicit approval for
+  production. A failing pipeline is met with a proposed fix or rollback,
+  never by weakening gates.
 
 ### Dependency decisions
 

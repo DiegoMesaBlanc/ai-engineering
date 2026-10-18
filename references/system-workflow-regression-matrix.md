@@ -31,6 +31,7 @@ Use selectively when a change touches one of these areas:
   code-organization conventions
 - mandatory formatting and linting, or validation reporting
 - provider or delivery read-only boundaries
+- pipeline authoring, environment promotion, or deployment gates
 - PR preparation or review character
 - checkpoint identity, preservation, or recovery behavior
 - importing, adapting, or recording external web quality Skills and their
@@ -101,6 +102,7 @@ with the concrete reason.
 | R-33 | Contract defined before implementation | `skills/api-contract-design/SKILL.md`, `workflows/task-to-code.md` (Phase 8), `skills/architecture-advisor/SKILL.md` | When a task changes a boundary, interface, or integration, the contract (schemas, error model, authorization, versioning, compatibility) is defined before implementation; the existing contract style is reused, and a new style or breaking change requires approval | Recorded contract |
 | R-34 | Quality is not proportional to task size | `AGENTS.md`, `skills/complexity-advisor/SKILL.md`, `skills/implementation-recipes/SKILL.md`, `workflows/task-to-code.md` (Phase 10) | Only planning rigor and test depth are proportional; a trivial change still follows conventions, typing, error handling, security, and tests, and is never implemented in a junior way | Review report |
 | R-35 | Database changes are safe and gated | `skills/database-engineering/SKILL.md`, `workflows/task-to-code.md` (Phase 8), `agents/orchestrator.md` | The Skill loads only when a task touches the schema, migrations, queries, indexes, or transactions; migrations are backward-compatible and applied through project tooling; queries are parameterized and avoid N+1; destructive or production data operations require explicit human approval | Database plan |
+| R-36 | Delivery pipeline is authored with environments and pre-deploy gates | `workflows/secure-delivery.md`, `workflows/task-to-code.md`, `agents/orchestrator.md`, `commands/delivery-check.md` | Authoring is an authorized mode distinct from the read-only `/delivery-check`; one artifact is promoted across environments with differences kept out of the artifact; the same validation gates run before every deployment and are never weakened; production requires an explicit approval gate; a failing pipeline is met with a proposed fix or rollback, never a bypass | Proposed pipeline configuration and environment/gate summary |
 
 ## Broader Integral Validation
 

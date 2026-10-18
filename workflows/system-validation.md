@@ -530,6 +530,13 @@ Verify against `workflows/secure-delivery.md`, `commands/delivery-check.md`,
 - NOT_APPLICABLE is used only when a control genuinely does not apply;
   missing in-scope mandatory tooling remains SETUP_REQUIRED
 - a read-only assessment is not silently turned into implementation work
+- pipeline authoring is an authorized mode distinct from the read-only
+  `/delivery-check`; it promotes one artifact across environments, keeps
+  environment differences out of the artifact, runs the required validation
+  gates before every deployment, requires an explicit approval gate for
+  production, and never weakens gates to obtain a green pipeline
+- a failing pipeline is handled by proposing a bounded fix or a rollback,
+  never by silently bypassing or disabling gates
 - the required-file count is derived from the actual inventory, never a
   hardcoded total
 
@@ -616,7 +623,8 @@ lightweight reference and not a competing procedure:
   lifecycle states, honest validation reporting, provider and delivery
   read-only boundaries, PR and review copy-only character, checkpoint and
   recovery safety, contract-before-implementation, the quality-not-proportional
-  baseline, database safety and destructive-operation gates, and proportional
+  baseline, database safety and destructive-operation gates, delivery pipeline
+  authoring with environments and pre-deploy gates, and proportional
   decision records
 - REAL, SIMULATED, and STATIC evidence are defined and never conflated
 - it does not duplicate the decision policy of the task, dependency,
@@ -662,6 +670,7 @@ Return:
 - V2.14 formatter/linter setup checks:
 - V2.15 contract and recipe checks:
 - V2.16 database engineering checks:
+- V2.17 delivery pipeline authoring checks:
 - External Skill readiness:
 
 ### Findings
@@ -1038,3 +1047,32 @@ Verify that database work is gated, safe, and non-duplicative:
   safety scenario (R-35)
 - no new command, package.json, dependency, or competing orchestrator was
   introduced
+
+## V2.17 Regression — Delivery Pipeline Authoring
+
+Verify that pipeline authoring is an authorized mode, environment-aware, and
+gate-enforced, without weakening the read-only assessment:
+
+- `workflows/secure-delivery.md` describes an authoring mode distinct from
+  the read-only assessment, and `commands/delivery-check.md` remains
+  read-only and states that authoring happens inside a task
+- the authoring mode builds one artifact and promotes it across environments
+  with environment differences kept out of the artifact and no secret values
+  in source
+- it requires the same validation gates before every deployment and states
+  that gates are never weakened to obtain a green pipeline
+- production deployment requires an explicit approval gate, and each
+  deployable environment has a stated rollback or recovery path
+- a failing pipeline is met with a proposed fix or rollback, never a silent
+  bypass, and no remote write, push, merge, or deploy occurs without explicit
+  authorization
+- `workflows/task-to-code.md`, `agents/orchestrator.md`, and `README.md`
+  reference the authoring mode consistently and do not restate a competing
+  delivery policy
+- `workflows/secure-delivery.md` still does not recommend or introduce a CI
+  platform, container base, or deployment dependency without justification
+  and authorization
+- `references/system-workflow-regression-matrix.md` includes the pipeline
+  authoring scenario (R-36)
+- no new command, skill, package.json, dependency, or competing orchestrator
+  was introduced

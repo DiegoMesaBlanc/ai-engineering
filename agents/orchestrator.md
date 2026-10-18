@@ -198,6 +198,7 @@ Select only Skills relevant to:
 - implementation recipes for the detected stack
 - API and integration contracts
 - database changes
+- CI/CD and delivery pipeline authoring
 - testing
 - security
 - design
@@ -361,6 +362,14 @@ A completed change may end with:
 
 Write actions require explicit authorization unless an explicit automation
 policy exists.
+
+When a task touches CI/CD or delivery, follow
+`workflows/secure-delivery.md`. Its read-only assessment mode never
+implements; its authoring mode builds one artifact and promotes it across
+environments (local, development, QA, staging, production), runs the
+required validation gates before every deployment, and requires explicit
+approval for production and any remote operation. A failing pipeline is
+handled by proposing a bounded fix or rollback, never by weakening gates.
 
 ---
 

@@ -214,7 +214,8 @@ Provide a concise implementation plan including:
 - proposed new components only when justified
 - formatting and linting setup when the project lacks it
 - the Secure Delivery Workflow selected when the task involves CI/CD,
-  security, or delivery controls
+  security, or delivery controls, including authoring a delivery pipeline
+  with its environments, gates, and deployment stages
 - validation
 - risks
 
@@ -268,7 +269,11 @@ Load `skills/testing-strategy/SKILL.md`.
 
 When the change set touches CI/CD, security, or delivery configuration,
 follow `workflows/secure-delivery.md` for scoped delivery checks and
-respect its read-only and authorization boundaries.
+respect its read-only and authorization boundaries. When a task authors a
+delivery pipeline, follow the same workflow's authoring mode: build once
+and promote across environments, run the required validation gates before
+every deployment, keep environment differences out of the artifact, and
+require explicit authorization for production and remote operations.
 
 Formatting and linting are mandatory for the application code of the
 software project, for every detected language in scope. If the project

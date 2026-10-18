@@ -66,3 +66,6 @@ practical remediation, confidence, and verification limitations.
   push, approve, or merge.
 - Never claim a check was executed or passed without observed evidence.
 - Never report simulated results as real security or delivery results.
+- Authoring or modifying a pipeline is out of scope for this read-only
+  command; it is handled inside a task under
+  `workflows/secure-delivery.md` with explicit authorization.

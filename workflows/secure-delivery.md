@@ -6,6 +6,10 @@ Assess, configure, and improve CI/CD, security, and delivery controls in
 target software projects, using the project's actual stack, existing
 tooling, risk, and the authorized delivery platform.
 
+This workflow also covers authoring the delivery pipeline itself — its
+environments, validation gates, and deployment stages — when that work is
+authorized as part of a task.
+
 This workflow is evidence-driven, portable, modular, and low-cost. It is
 read-only by default.
 
@@ -19,6 +23,8 @@ Distinguish between these operation modes:
 - read-only assessment of an existing project
 - recommendations for missing controls
 - authorized implementation of configuration changes
+- authorized authoring of the delivery pipeline (environments, gates, and
+  deployment stages)
 - execution of tests, scans, builds, and pipeline validation
 - publication and deployment, which require their own explicit
   authorization
@@ -175,7 +181,84 @@ A declaration that a pipeline is secure or production-ready requires
 supporting evidence; a static review alone is not proof of runtime
 behavior.
 
-## Phase 5 — Execution and Authorization
+## Phase 5 — Author the Delivery Pipeline (Authorized Mode)
+
+Authoring a pipeline is an authorized implementation activity, not a
+read-only assessment. Do not switch to authoring without authorization.
+
+### Environment Model and Promotion
+
+Identify the real environments (for example local, development, QA,
+staging, production) and how the project promotes a change across them.
+
+- Build the artifact once and promote the same immutable artifact across
+  environments; do not rebuild per environment.
+- Keep environment differences in configuration and secret injection, never
+  baked into the artifact, image, or code.
+- Read configuration and secrets from the environment's approved mechanism;
+  never commit secret values.
+- Define which environments deploy on green and which require approval;
+  production deployment always requires an explicit approval gate.
+- Keep environment names, URLs, and credentials out of source.
+
+### Validation Gates Before Deployment
+
+Every deployment is preceded by the same required gates; gates are not
+skipped or weakened for any environment, including fast-moving ones.
+
+- formatter check (non-mutating), linter, type checking when applicable
+- unit and integration tests; contract, end-to-end, or migration checks
+  when warranted by scope and risk
+- build or compilation
+- the security checks selected in Phase 3
+- database migration validation when the change includes migrations
+
+Run focused gates first and broaden with risk. The same gates run locally
+through the project's scripts, so local, CI, and deployed environments
+agree. A failing gate blocks deployment; it is never bypassed to obtain a
+green pipeline.
+
+### Authoring Guidance
+
+Produce concrete configuration for the platform actually used
+(GitHub Actions, GitLab CI, Azure Pipelines, Bitbucket Pipelines, or the
+detected system).
+
+- reuse the project's existing scripts, package manager, and lockfiles
+  instead of duplicating commands in pipeline YAML
+- pin third-party actions and images to immutable versions
+- apply least privilege to tokens and permissions; mask secrets
+- separate validation, packaging, and deployment stages
+- use caching, concurrency, cancellation, and artifact retention sensibly
+- keep the pipeline readable and maintainable; do not add stages that
+  enforce nothing
+- extend an existing working pipeline rather than replacing it
+
+Do not introduce a new CI platform, container base, or deployment
+dependency without a justified reason and the required authorization.
+
+### Deployment and Recovery
+
+- Deploy only after the required gates pass for that environment.
+- Choose a deployment strategy the project can actually support (for
+  example rolling, blue/green, or recreate) and state its rollback path.
+- Define a rollback or recovery step for each deployable environment.
+- A stopped or failed deployment is reported honestly, not as success.
+
+### Failure Handling (Propose Only)
+
+When a pipeline or deployment fails, do not silently weaken or bypass gates.
+
+- Diagnose the real cause from logs and evidence; classify it as a
+  pre-existing (baseline) failure, a regression introduced by the change, or
+  an environmental/flaky issue.
+- Propose a bounded forward fix, or a rollback, as a scoped change; do not
+  apply remote writes, pushes, merges, or deployments without explicit
+  authorization.
+- Never reduce required checks, permissions, or security controls to make
+  the pipeline pass.
+
+## Phase 6 — Execution and Authorization
 
 Read-only assessment is the default. Do not silently switch to
 implementation.
@@ -258,6 +341,14 @@ Use the `/delivery-check` report format described in
    recommendations.
 7. What could not be verified and why.
 
+When authoring a pipeline, the deliverable is additionally:
+
+- the environment model and the promotion path across environments
+- the validation gates that run before each deployment
+- the proposed pipeline configuration for the detected platform
+- the deployment stages, and the approval and rollback path per environment
+- the authorization each stage requires
+
 ## Safety
 
 - Read-only by default.
@@ -267,6 +358,9 @@ Use the `/delivery-check` report format described in
 - Never deploy, publish, push, approve, merge, or modify remote
   environments without explicit authorization for that specific
   operation.
+- Authoring a pipeline requires authorization and never weakens required
+  gates, permissions, or security controls; a proposed fix or rollback is
+  not applied remotely without explicit authorization.
 - Never introduce paid usage, billable integrations, or MCP integrations
   without explicit authorization.
 - Report checks as NOT VERIFIED when the available tools cannot
