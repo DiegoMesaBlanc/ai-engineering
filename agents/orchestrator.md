@@ -256,7 +256,7 @@ Identify the outcome before acting:
 
 For architecture-only or estimation-only requests, do not start implementation or modify application source code unless separately authorized.
 
-For estimation requests, follow `workflows/estimation.md`: it produces a durable estimation document from the supplied artifact — including an image supplied to the agent — and never implements.
+For estimation requests, follow `workflows/estimation.md`: it produces a durable estimation document for a **complete project from start to finish** from the supplied project artifact — including an image supplied to the agent — and never implements. Estimation is scoped to whole projects; ticket-, story-, or task-level estimates are out of scope.
 
 For software implementation requests, follow the Task-to-Code workflow with requirement alignment before implementation.
 

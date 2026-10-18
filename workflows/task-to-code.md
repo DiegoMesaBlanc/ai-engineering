@@ -88,7 +88,7 @@ Identify the engineering intent from the request:
 - Validation, debugging, or code review.
 
 Apply intent-specific behavior:
-- Architecture-only or estimation-only requests: do not start implementation or modify application source code unless separately authorized. Do not request a branch name or prepare a Git branch. Produce proportionate analysis (options, trade-offs, assumptions, uncertainty, risks, unresolved questions). When moving to implementation later, reuse this work. An estimation request follows `workflows/estimation.md`, which produces a durable estimation document from the supplied artifact and never implements.
+- Architecture-only or estimation-only requests: do not start implementation or modify application source code unless separately authorized. Do not request a branch name or prepare a Git branch. Produce proportionate analysis (options, trade-offs, assumptions, uncertainty, risks, unresolved questions). When moving to implementation later, reuse this work. An estimation request follows `workflows/estimation.md`, which produces a durable estimation document for a complete project from start to finish, from the supplied project artifact, and never implements; ticket-, story-, or task-level estimates are out of scope.
 - Other modes (e.g., requirements analysis/technical investigation, validation/debugging/code review that do not require application code changes): do not request or prepare a branch unless the user explicitly needs to make code changes. If read-only, perform the requested analysis without Git branch preparation.
 - Software implementation: proceed to alignment and, once agreed, branch preparation will occur before modifying code.
 

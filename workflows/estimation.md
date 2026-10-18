@@ -3,9 +3,18 @@
 ## Purpose
 
 Produce a durable, honest estimation of effort, duration, and optional cost
-from a supplied artifact — a PDF, a text, a link, a file, or an image —
-without starting implementation and without dragging the task through the
-full development lifecycle.
+to deliver a **complete software project from start to finish**, from a
+supplied project artifact — a brief, a specification or PRD, a PDF, a text,
+a link, a file, or an image — without starting implementation and without
+dragging the work through the full development lifecycle.
+
+Estimation is scoped to whole projects: from inception and requirements
+through design, build, testing, and delivery. It does **not** estimate
+individual tickets, stories, tasks, sub-tasks, or isolated changes; those are
+implementation-planning concerns. When a request asks for a ticket- or
+task-level estimate, make that boundary explicit and estimate only the
+complete project the work belongs to — or decline the fragmented estimate —
+instead of producing a ticket-sized number.
 
 This workflow is the canonical definition of estimation behavior.
 `commands/estimate.md` is the client adapter that delegates here.
@@ -15,6 +24,9 @@ an implementation task does not implicitly require an estimation.
 
 ## Boundaries
 
+- Estimation is scoped to a complete project from start to finish. It never
+  estimates tickets, stories, tasks, or isolated changes, and it never emits
+  a ticket-sized number as if it were a project estimate.
 - Estimation never writes application source code and never prepares a Git
   branch, commit, push, or remote action.
 - The only file written is the estimation document itself, in the current
@@ -24,9 +36,9 @@ an implementation task does not implicitly require an estimation.
 - Estimation reuses existing analysis (complexity, architecture) when it is
   already available instead of repeating it.
 
-## Phase 1 — Ingest the Artifact
+## Phase 1 — Ingest the Project Artifact
 
-Accept an artifact supplied to the agent:
+Accept a project artifact supplied to the agent:
 
 - a local PDF or document path
 - a text, Markdown, or plain file path
@@ -49,12 +61,14 @@ estimated and ask for a textual description or an accessible export; never
 fabricate content from an image that was not read, and never claim that an
 unread image was inspected.
 
-Extract the raw material for estimation:
+Extract the raw material for the whole-project estimate:
 
-- the objective and expected outcome
-- functional scope: features, flows, or deliverables described
+- the project objective and expected outcome
+- functional scope: the project's features, flows, or deliverables
 - non-functional scope: performance, security, compliance, accessibility,
   scale, or integration constraints mentioned
+- end-to-end delivery: the environments, release, and handover the project
+  implies
 - explicit assumptions, constraints, dependencies, and stated exclusions
 - ambiguities and missing information that would change the estimate
 
@@ -77,13 +91,16 @@ project; otherwise proceed with an explicit, stated assumption.
 
 ## Phase 3 — Decompose and Estimate
 
-Decompose the scope into discrete work items and group them by discipline.
-Use only the disciplines the scope actually involves, for example:
+Decompose the complete project scope into discrete work items and group them
+by discipline across the full lifecycle. Use only the disciplines the project
+actually involves, for example:
 
-- analysis and requirements
+- inception, analysis, and requirements
+- architecture and solution design
 - design and UX
 - backend
 - frontend
+- mobile or desktop clients, when the project has them
 - database and data
 - integration and APIs
 - delivery, CI/CD, and environments
@@ -132,13 +149,41 @@ committed date.
 
 ## Phase 5 — Produce the Document
 
+### Language and Format
+
+The estimation document is a human-facing deliverable. **Before writing it,
+ask the user for both the language and the format, offering a short list of
+suggestions, and wait for their answer.** Use exactly what the user chooses:
+
+- **Language:** suggest a few languages the current client and model can
+  produce reliably, and let the user pick one or type any other. Use the
+  language the user states, even when it differs from the language of the
+  request. Do **not** infer it from the request and do not default to English.
+  Keep identifiers, code, and proper nouns as-is.
+- **Format:** suggest the supported formats — Markdown (recommended, no extra
+  tooling) and a standalone HTML file (also dependency-free); PDF or DOCX only
+  when a converter already exists in the environment. Never add a dependency.
+- **Capability limits:** a language or format may not be supported by the
+  current client or model. If the user's choice cannot be produced reliably
+  (for example a script the model cannot render, or a binary format with no
+  converter), say so explicitly, offer the closest supported alternative, and
+  proceed only after the user confirms. Never silently produce an unsupported
+  language or format. Capability varies by client (OpenCode, Claude Code,
+  Codex, and others); see `integrations/access-strategy.md`.
+- If the session cannot ask (for example a non-interactive run), state the
+  assumption and the alternatives you would have offered, and let the user
+  confirm before writing.
+- State the chosen language and format in the document and in the final
+  report.
+
 ### Location and Naming
 
-Write the estimation as a single Markdown document in the **current working
-directory**, using a relative path so it is portable across macOS, Linux,
-and Windows:
+Write the estimation as a single document, in the chosen language and format,
+in the **current working directory**, using a relative path so it is portable
+across macOS, Linux, and Windows:
 
-- filename: `<slug>-estimation.md`
+- filename: `<slug>-estimation.<ext>`, where `<ext>` follows the chosen
+  format (`.md` for Markdown, `.html`, `.pdf`, `.docx`)
 - `<slug>` derives from the artifact title or filename, normalized to a
   safe, lowercase, cross-platform identifier: only ASCII letters, digits,
   `-`, `_`, and `.`, with a bounded length; reject path separators,
@@ -157,8 +202,8 @@ application source, configuration, or remote state.
 
 The document contains, in order:
 
-1. Title and the artifact it was derived from (path or link).
-2. Scope summary: what is included.
+1. Title and the project artifact it was derived from (path or link).
+2. Scope summary: the complete project scope included.
 3. Assumptions and constraints relied on.
 4. Per-discipline breakdown: items with low/likely/high effort and confidence.
 5. Total effort range.
@@ -175,6 +220,7 @@ The document contains, in order:
 When finished, report:
 
 - the resolved path of the saved document (relative and absolute)
+- the language and format the document was written in
 - the total effort range and the duration range
 - the overall confidence and the most material assumptions
 - what could not be determined from the artifact

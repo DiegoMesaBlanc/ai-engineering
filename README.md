@@ -55,9 +55,10 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
 - `/delivery-check`: read-only assessment of the current project's
   CI/CD, security, and delivery readiness, with evidence-based statuses
   and without modifying the project or performing remote writes.
-- `/estimate`: estimate effort, duration, and optional cost from a supplied
-  artifact (document, text, link, file, or image), producing a durable document
-  in the current working directory without starting implementation.
+- `/estimate`: estimate effort, duration, and optional cost for a complete
+  project from start to finish, from a supplied project artifact (brief,
+  document, text, link, file, or image), producing a durable document in the
+  current working directory without starting implementation.
 
 OpenCode supports Markdown commands and agents with permissions defined in
 frontmatter. Those files are OpenCode adapters; they do not create slash
@@ -225,11 +226,12 @@ repository's `commands/` directory.
 
 ### Estimation
 
-- Estimation is a standalone activity, not a step of implementation.
-  `/estimate` takes a supplied artifact and follows `workflows/estimation.md`,
-  which is the canonical definition of the accepted artifacts, the procedure,
-  and the report. Estimation never modifies application source, configuration,
-  a branch, or remote state.
+- Estimation is a standalone activity, not a step of implementation, and it
+  is scoped to **complete projects from start to finish** — not to tickets,
+  stories, or individual tasks. `/estimate` takes a supplied project artifact
+  and follows `workflows/estimation.md`, which is the canonical definition of
+  the accepted artifacts, the procedure, and the report. Estimation never
+  modifies application source, configuration, a branch, or remote state.
 
 ## Codex CLI setup
 

@@ -468,8 +468,10 @@ Identify:
 - `workflows/estimation.md` and `commands/estimate.md` exist and are
   referenced consistently by `AGENTS.md`, `agents/orchestrator.md`,
   `workflows/task-to-code.md`, and `README.md`; estimation is described as a
-  standalone activity that never implements, and `commands/estimate.md`
-  delegates to the workflow instead of restating its procedure
+  standalone activity scoped to complete projects from start to finish (never
+  to tickets, stories, or tasks) that never implements, and
+  `commands/estimate.md` delegates to the workflow instead of restating its
+  procedure
 - `skills/internationalization/SKILL.md` exists and is referenced
   consistently by `agents/orchestrator.md`, `workflows/task-to-code.md`,
   `commands/task.md`, `skills/implementation-recipes/SKILL.md`, and
@@ -647,8 +649,8 @@ lightweight reference and not a competing procedure:
   recovery safety, contract-before-implementation, the quality-not-proportional
   baseline, database safety and destructive-operation gates, delivery pipeline
   authoring with environments and pre-deploy gates, provider-neutral
-  self-learning with promotion gates, bounded context spend, standalone and
-  ranged estimation, early localization with correct implementation, mobile
+  self-learning with promotion gates, bounded context spend, standalone,
+  project-scoped, and ranged estimation, early localization with correct implementation, mobile
   analysis and implementation, and proportional decision records
 - REAL, SIMULATED, and STATIC evidence are defined and never conflated
 - it does not duplicate the decision policy of the task, dependency,
@@ -1146,12 +1148,23 @@ Verify that estimation is standalone, honest, and non-invasive:
 - estimation is described as a standalone activity that does not start the
   task lifecycle and does not modify application source, configuration,
   branches, or remote state
+- estimation is scoped to a complete project from start to finish and states
+  that individual tickets, stories, and tasks are out of scope; `AGENTS.md`,
+  `agents/orchestrator.md`, `commands/estimate.md`, and `README.md` reflect
+  that project scope consistently
 - `commands/estimate.md` is a thin adapter that delegates to
   `workflows/estimation.md`; the accepted artifacts, the procedure, and the
   report are defined only in the workflow and are not restated in the command
 - the document is written to the current working directory as
-  `<slug>-estimation.md` with a relative, cross-platform-safe path, and the
+  `<slug>-estimation.<ext>` with a relative, cross-platform-safe path, and the
   command reports the saved location (relative and absolute)
+- before writing, the workflow asks the user for the document language and
+  format, offering a short list of suggested options, and uses exactly what
+  the user states; the language is not inferred from the request; a choice
+  the current client or model cannot produce is flagged and a supported
+  alternative is offered instead of being produced silently (Markdown
+  recommended, HTML dependency-free, PDF/DOCX only with an existing converter
+  and no dependency added); the chosen language and format are reported
 - the slug normalization rejects path separators, `.`/`..`, characters
   illegal on Windows, reserved device names, and case-collision risk, and
   never uses an absolute or machine-specific path
