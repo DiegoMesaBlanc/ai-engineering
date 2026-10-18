@@ -468,7 +468,8 @@ Identify:
 - `workflows/estimation.md` and `commands/estimate.md` exist and are
   referenced consistently by `AGENTS.md`, `agents/orchestrator.md`,
   `workflows/task-to-code.md`, and `README.md`; estimation is described as a
-  standalone activity that never implements
+  standalone activity that never implements, and `commands/estimate.md`
+  delegates to the workflow instead of restating its procedure
 - `skills/internationalization/SKILL.md` exists and is referenced
   consistently by `agents/orchestrator.md`, `workflows/task-to-code.md`,
   `commands/task.md`, `skills/implementation-recipes/SKILL.md`, and
@@ -1145,6 +1146,9 @@ Verify that estimation is standalone, honest, and non-invasive:
 - estimation is described as a standalone activity that does not start the
   task lifecycle and does not modify application source, configuration,
   branches, or remote state
+- `commands/estimate.md` is a thin adapter that delegates to
+  `workflows/estimation.md`; the accepted artifacts, the procedure, and the
+  report are defined only in the workflow and are not restated in the command
 - the document is written to the current working directory as
   `<slug>-estimation.md` with a relative, cross-platform-safe path, and the
   command reports the saved location (relative and absolute)
@@ -1156,6 +1160,10 @@ Verify that estimation is standalone, honest, and non-invasive:
   is supplied, and is otherwise reported as not determined
 - the workflow states that it never fabricates effort, duration, cost, or
   rates and never presents an unread artifact as a low estimate
+- Phase 1 accepts an image supplied as a local path or as an attachment to the
+  session, interpreted with `skills/design-analysis/SKILL.md`; when the client
+  or model cannot read the image, it is reported as not estimated, never
+  fabricated
 - `AGENTS.md`, `agents/orchestrator.md`, `workflows/task-to-code.md`, and
   `README.md` reference the estimation workflow consistently and keep
   estimation-only requests free of branch preparation
