@@ -58,6 +58,7 @@ Distinguish the following outcomes from natural-language requests:
 Do not force the user to learn new commands when the intended outcome is clear from the request.
 
 - For architecture-only and estimation-only requests, do not start implementation or modify application source code unless separately authorized.
+- For estimation requests, follow the Estimation Workflow in `workflows/estimation.md`; it produces a durable document and never implements.
 - For implementation requests, use the existing Task-to-Code workflow.
 
 ## Requirement Alignment Before Implementation

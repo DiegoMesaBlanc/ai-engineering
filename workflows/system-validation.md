@@ -37,6 +37,7 @@ Check for the existence of:
 - commands/resume-work.md
 - commands/provider-check.md
 - commands/delivery-check.md
+- commands/estimate.md
 - contracts/task-provider.md
 - contracts/design-provider.md
 - contracts/git-provider.md
@@ -57,6 +58,7 @@ Check for the existence of:
 - workflows/secure-delivery.md
 - workflows/dependency-assessment.md
 - workflows/task-planning.md
+- workflows/estimation.md
 
 Check that CLAUDE.md references AGENTS.md rather than duplicating
 the complete shared instructions.
@@ -462,6 +464,10 @@ Identify:
   `AGENTS.md`, `agents/orchestrator.md`, and `README.md`; it defines the
   neutral state root once and never duplicates the handoff path or a
   client-specific directory
+- `workflows/estimation.md` and `commands/estimate.md` exist and are
+  referenced consistently by `AGENTS.md`, `agents/orchestrator.md`,
+  `workflows/task-to-code.md`, and `README.md`; estimation is described as a
+  standalone activity that never implements
 
 Do not flag a reference as broken merely because a file is intentionally
 provided by the client rather than by the canonical repository.
@@ -634,8 +640,8 @@ lightweight reference and not a competing procedure:
   recovery safety, contract-before-implementation, the quality-not-proportional
   baseline, database safety and destructive-operation gates, delivery pipeline
   authoring with environments and pre-deploy gates, provider-neutral
-  self-learning with promotion gates, bounded context spend, and proportional
-  decision records
+  self-learning with promotion gates, bounded context spend, standalone and
+  ranged estimation, and proportional decision records
 - REAL, SIMULATED, and STATIC evidence are defined and never conflated
 - it does not duplicate the decision policy of the task, dependency,
   validation, provider, delivery, review, or session-resilience workflows,
@@ -682,6 +688,7 @@ Return:
 - V2.16 database engineering checks:
 - V2.17 delivery pipeline authoring checks:
 - V2.18 self-learning, maturity, and context efficiency checks:
+- V2.19 estimation checks:
 - External Skill readiness:
 
 ### Findings
@@ -1119,3 +1126,31 @@ spend stays proportional:
   self-learning and context-efficiency scenarios (R-37, R-38)
 - no new command, skill, package.json, dependency, or competing orchestrator
   was introduced
+
+## V2.19 Regression — Standalone Estimation
+
+Verify that estimation is standalone, honest, and non-invasive:
+
+- `workflows/estimation.md` and `commands/estimate.md` exist at their
+  canonical paths and are listed in the required-file inventory of this
+  workflow
+- estimation is described as a standalone activity that does not start the
+  task lifecycle and does not modify application source, configuration,
+  branches, or remote state
+- the document is written to the current working directory as
+  `<slug>-estimation.md` with a relative, cross-platform-safe path, and the
+  command reports the saved location (relative and absolute)
+- the slug normalization rejects path separators, `.`/`..`, characters
+  illegal on Windows, reserved device names, and case-collision risk, and
+  never uses an absolute or machine-specific path
+- effort is reported as a low/likely/high range per discipline with stated
+  assumptions and a confidence level; monetary cost appears only when a rate
+  is supplied, and is otherwise reported as not determined
+- the workflow states that it never fabricates effort, duration, cost, or
+  rates and never presents an unread artifact as a low estimate
+- `AGENTS.md`, `agents/orchestrator.md`, `workflows/task-to-code.md`, and
+  `README.md` reference the estimation workflow consistently and keep
+  estimation-only requests free of branch preparation
+- `references/system-workflow-regression-matrix.md` includes the estimation
+  scenario (R-39)
+- no package.json, dependency, or competing orchestrator was introduced
