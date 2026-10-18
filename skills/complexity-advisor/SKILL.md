@@ -113,6 +113,17 @@ high-impact operations, security or data impact, cost, scope or
 backward-compatibility changes, shared or production resources, and
 project rules.
 
+## Quality is not proportional
+
+Complexity and rigor govern only the depth of planning and testing. They
+never lower the quality of the delivered code.
+
+Trivial and Low tasks still require professional implementation: existing
+conventions, clean and cohesive code, explicit error handling, boundary
+validation, type safety, security, and tests for changed behavior. Prefer a
+direct implementation, not a careless one. Never implement a task in a
+junior way because it looks simple.
+
 ## Core question
 
 Before introducing abstraction, ask:

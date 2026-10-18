@@ -139,6 +139,22 @@ repository's `commands/` directory.
   imposed. Routine technical details remain autonomous; only significant
   product or architecture decisions reach a human decision gate.
 
+### Contracts, recipes, and decisions
+
+- When a task changes a boundary, interface, or integration, the API and
+  integration contract is defined before implementation following
+  `skills/api-contract-design/SKILL.md`; the contract covers schemas, error
+  model, authorization, versioning, and compatibility.
+- Concrete, stack-appropriate implementation guidance lives in
+  `skills/implementation-recipes/SKILL.md`. It defines the non-negotiable
+  quality baseline: quality is never proportional to task size, so even
+  trivial changes follow the project's conventions, typing, error handling,
+  security, and tests. Only planning rigor and test depth are proportional.
+- Significant, hard-to-reverse decisions are recorded briefly only when they
+  meet the threshold, following the Decision Records guidance in
+  `skills/architecture-advisor/SKILL.md`. Trivial or easily reversible
+  decisions are not documented.
+
 ### Proportional planning (SDD)
 
 - `/task` plans proportionally to the change. Complexity is classified and a

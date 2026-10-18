@@ -157,6 +157,14 @@ contracts separately from their consumers.
 
 Use only the analyses relevant to this task.
 
+When the task changes a boundary, interface, or integration, load
+`skills/api-contract-design/SKILL.md` and include the contract in the
+proposal. Use `skills/implementation-recipes/SKILL.md` for
+stack-appropriate implementation guidance, and record a significant,
+hard-to-reverse decision following the Decision Records guidance in
+`skills/architecture-advisor/SKILL.md` only when it meets the recording
+threshold.
+
 This is the single phase that performs the technical complexity and
 architecture evaluation. When it has already been completed for the current
 task and repository state, reuse the result instead of repeating it. Extend
@@ -225,6 +233,11 @@ libraries.
 Implement on the requested branch.
 
 Preserve existing conventions.
+
+Follow `skills/implementation-recipes/SKILL.md` for the detected stack and
+apply its non-negotiable quality baseline: quality is never proportional to
+task size. A trivial change is implemented carefully, not quickly at the
+expense of conventions, error handling, typing, security, or tests.
 
 Proceed autonomously for routine work after alignment. Do not pause for user approval for each file edit, test, formatting change, local refactoring, or ordinary corrective adjustment within the approved scope. Do not weaken quality, security, testing, or validation standards.
 

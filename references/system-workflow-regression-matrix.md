@@ -37,6 +37,9 @@ Use selectively when a change touches one of these areas:
   provenance or license
 - planning rigor, specification depth, or the planning and clarification
   boundary
+- interface or API contract design, or the pre-implementation contract step
+- the implementation quality baseline or stack implementation guidance
+- the architecture decision-record recording threshold
 
 For an ordinary localized implementation that touches none of these, this
 reference requires no action.
@@ -94,6 +97,8 @@ with the concrete reason.
 | R-30 | Conflict-aware tooling selection and configuration | `workflows/project-validation.md`, `skills/stack-detection/SKILL.md`, `AGENTS.md` | Missing tooling yields an explicit proposal aligned with the AGENTS.md defaults; existing working configuration is preserved; overlapping formatter/linter rules are disabled instead of left to disagree; no redundant second tool is added | Recorded proposal and configuration diff |
 | R-31 | Monorepo-scoped tooling setup | `workflows/project-validation.md` | Configuration, scripts, and dependencies are limited to the affected packages; unrelated packages are not reconfigured or reformatted | Diff scope |
 | R-32 | Tooling setup authorization without redundant approval | `workflows/project-validation.md`, `AGENTS.md`, `workflows/dependency-assessment.md` | The standard mandatory formatter/linter setup is authorized by policy without a redundant prompt; a paid tool, a non-standard dependency, or replacing a working configuration still hits a gate; a real restriction is reported as BLOCKED, never as success | Recorded outcome |
+| R-33 | Contract defined before implementation | `skills/api-contract-design/SKILL.md`, `workflows/task-to-code.md` (Phase 8), `skills/architecture-advisor/SKILL.md` | When a task changes a boundary, interface, or integration, the contract (schemas, error model, authorization, versioning, compatibility) is defined before implementation; the existing contract style is reused, and a new style or breaking change requires approval | Recorded contract |
+| R-34 | Quality is not proportional to task size | `AGENTS.md`, `skills/complexity-advisor/SKILL.md`, `skills/implementation-recipes/SKILL.md`, `workflows/task-to-code.md` (Phase 10) | Only planning rigor and test depth are proportional; a trivial change still follows conventions, typing, error handling, security, and tests, and is never implemented in a junior way | Review report |
 
 ## Broader Integral Validation
 

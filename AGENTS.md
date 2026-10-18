@@ -22,6 +22,10 @@ Do not duplicate Skills, workflows, or architecture definitions.
 - Detect the actual stack, repository topology, and architecture.
 - Reuse existing project abstractions when appropriate.
 - Prefer the simplest solution that correctly solves the task.
+- Treat code and engineering quality as non-negotiable: every task,
+  however small, follows professional best practices, clean code, typing,
+  error handling, security, and appropriate tests. Only process rigor and
+  test depth are proportional to the task; implementation quality never is.
 - Evaluate monorepos, microfrontends, Atomic Design, and design patterns
   only when evidence justifies them.
 - Require human approval for significant architectural changes.

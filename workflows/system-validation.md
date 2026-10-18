@@ -78,6 +78,8 @@ At minimum inspect:
 - design-analysis
 - complexity-advisor
 - architecture-advisor
+- implementation-recipes
+- api-contract-design
 - testing-strategy
 - engineering-review
 - git-workflow
@@ -444,6 +446,11 @@ Identify:
 - `references/system-workflow-regression-matrix.md` references only
   existing workflows, commands, and policies and does not restate a
   duplicated literal handoff path
+- `skills/implementation-recipes/SKILL.md` and
+  `skills/api-contract-design/SKILL.md` exist and are referenced
+  consistently by `agents/orchestrator.md`, `workflows/task-to-code.md`, and
+  `README.md`; they do not duplicate the architecture decision policy owned
+  by `skills/architecture-advisor/SKILL.md`
 
 Do not flag a reference as broken merely because a file is intentionally
 provided by the client rather than by the canonical repository.
@@ -605,8 +612,9 @@ lightweight reference and not a competing procedure:
   preservation of uncommitted work, the dependency approval gate and refusal
   path, the mandatory formatter and linter scope together with its tool
   lifecycle states, honest validation reporting, provider and delivery
-  read-only boundaries, PR and review copy-only character, and checkpoint
-  and recovery safety
+  read-only boundaries, PR and review copy-only character, checkpoint and
+  recovery safety, contract-before-implementation, the quality-not-proportional
+  baseline, and proportional decision records
 - REAL, SIMULATED, and STATIC evidence are defined and never conflated
 - it does not duplicate the decision policy of the task, dependency,
   validation, provider, delivery, review, or session-resilience workflows,
@@ -649,6 +657,7 @@ Return:
 - V2.12 web quality checks:
 - V2.13 proportional planning checks:
 - V2.14 formatter/linter setup checks:
+- V2.15 contract and recipe checks:
 - External Skill readiness:
 
 ### Findings
@@ -963,3 +972,40 @@ once:
   and was not duplicated by the procedure
 - a documentation-only repository such as this one is not given an
   application formatter, linter, `package.json`, or dependencies
+
+## V2.15 Regression — Contracts and Implementation Recipes
+
+Verify that implementation guidance and interface contracts are concrete,
+non-duplicative, and proportional:
+
+- `skills/implementation-recipes/SKILL.md` and
+  `skills/api-contract-design/SKILL.md` exist at their canonical paths and
+  are listed in the Skill inventory of this workflow
+- `agents/orchestrator.md`, `workflows/task-to-code.md`, and `README.md`
+  reference both Skills consistently, and none restates a competing
+  lifecycle order or a duplicate decision policy
+- both Skills defer architecture decisions to
+  `skills/architecture-advisor/SKILL.md` instead of duplicating them
+- `skills/implementation-recipes/SKILL.md` states the non-negotiable
+  quality baseline: quality is never proportional to task size, and only
+  planning rigor and test depth are proportional
+- `AGENTS.md` carries the quality-not-proportional principle, and
+  `skills/complexity-advisor/SKILL.md` clarifies that complexity and rigor
+  govern planning and testing depth only, never code quality
+- `skills/api-contract-design/SKILL.md` requires defining the contract
+  before implementation when a boundary, interface, or integration changes,
+  reuses the existing contract style, treats breaking changes as approval
+  gates, and never exposes secrets in the contract
+- no separate architecture-decisions Skill exists; the Decision Records
+  guidance lives in `skills/architecture-advisor/SKILL.md` and records only
+  significant, hard-to-reverse decisions without fabricated rationale
+- `workflows/task-to-code.md` loads the contract Skill in the architecture
+  phase when boundaries change and loads the implementation recipes in the
+  implement phase
+- `references/system-workflow-regression-matrix.md` includes the
+  contract-before-implementation and quality-not-proportional scenarios
+  (R-33, R-34)
+- `integrations/skill-catalog.md` lists the internal authored Skills and
+  does not present them as external import candidates
+- no new command, package.json, dependency, or competing orchestrator was
+  introduced

@@ -269,6 +269,17 @@ Resolve routine technical details autonomously.
 Consult the user only for an important product or architecture decision that
 cannot be reasonably inferred from evidence and existing conventions.
 
+### Decision Records
+
+When a decision is significant, hard to reverse, or selects between
+meaningful alternatives with real trade-offs, record it briefly: context,
+decision, alternatives, and consequences. Reuse the project's existing
+convention for storing such records; do not create a new documentation
+location or a diagram unless it adds value.
+
+Do not record trivial or easily reversible decisions, and never fabricate
+rationale. Progressive over-documentation is a defect, not thoroughness.
+
 ### Post-Implementation Architectural Validation
 
 After implementation, compare the real architecture with the proposal and

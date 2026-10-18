@@ -138,6 +138,34 @@ The upstream `web-quality-audit` orchestration Skill and its
 `scripts/analyze.sh` are intentionally not imported; no second orchestrator
 is added. See `integrations/external-skill-registry.md`.
 
+## Internal Engineering Skills (not external candidates)
+
+Some engineering knowledge is authored directly in this repository and is
+never an external import candidate. These Skills are maintained as internal
+canonical content and are not evaluated for source, license, or upstream
+commit; they are evaluated for consistency and policy alignment through
+`workflows/system-validation.md`.
+
+- `architecture-advisor`
+- `repository-strategy`
+- `complexity-advisor`
+- `implementation-recipes`
+- `api-contract-design`
+- `task-context`
+- `design-analysis`
+- `testing-strategy`
+- `engineering-review`
+- `git-workflow`
+- `discovery`
+- `project-analysis`
+- `stack-detection`
+- `pull-request`
+- `pull-request-review`
+- `review-memory`
+
+The technology families below describe external Skills and official
+documentation; they do not replace the internal Skills above.
+
 ## Languages
 
 ### TypeScript
