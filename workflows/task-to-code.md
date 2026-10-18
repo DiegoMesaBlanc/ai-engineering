@@ -159,9 +159,12 @@ Use only the analyses relevant to this task.
 
 When the task changes a boundary, interface, or integration, load
 `skills/api-contract-design/SKILL.md` and include the contract in the
-proposal. Use `skills/implementation-recipes/SKILL.md` for
-stack-appropriate implementation guidance, and record a significant,
-hard-to-reverse decision following the Decision Records guidance in
+proposal. When the task touches the database — schema, migration, query,
+index, or transaction — load `skills/database-engineering/SKILL.md` and
+include the database plan in the proposal. Use
+`skills/implementation-recipes/SKILL.md` for stack-appropriate
+implementation guidance, and record a significant, hard-to-reverse decision
+following the Decision Records guidance in
 `skills/architecture-advisor/SKILL.md` only when it meets the recording
 threshold.
 

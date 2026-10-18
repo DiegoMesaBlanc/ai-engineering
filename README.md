@@ -150,6 +150,10 @@ repository's `commands/` directory.
   quality baseline: quality is never proportional to task size, so even
   trivial changes follow the project's conventions, typing, error handling,
   security, and tests. Only planning rigor and test depth are proportional.
+- When a task touches the database — schema, migration, query, index, or
+  transaction — `skills/database-engineering/SKILL.md` guides safe,
+  backward-compatible changes that protect integrity, performance, and
+  production data. It is not loaded for ordinary feature work.
 - Significant, hard-to-reverse decisions are recorded briefly only when they
   meet the threshold, following the Decision Records guidance in
   `skills/architecture-advisor/SKILL.md`. Trivial or easily reversible

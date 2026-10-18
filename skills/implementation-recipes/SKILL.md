@@ -118,8 +118,9 @@ Apply these consistently regardless of stack:
 - Use the existing ORM/ODM or driver and its conventions.
 - Keep queries parameterized; never build queries by string concatenation.
 - Keep persistence concerns out of presentation and domain logic.
-- Coordinate schema changes through the project's migration tooling; deeper
-  database engineering is handled as separate scoped work.
+- Coordinate schema changes through the project's migration tooling; when a
+  change touches the schema, migrations, queries, indexes, or transactions,
+  load `database-engineering` for the safe, backward-compatible procedure.
 
 ## Mobile
 
@@ -132,6 +133,8 @@ Apply these consistently regardless of stack:
 - `architecture-advisor` decides structure, boundaries, and patterns.
 - `api-contract-design` defines interfaces; this Skill implements both
   sides.
+- `database-engineering` governs schema, migration, query, and transaction
+  changes.
 - `test-driven-development` and `testing-strategy` guide tests.
 - `engineering-review` verifies the result.
 

@@ -151,6 +151,7 @@ commit; they are evaluated for consistency and policy alignment through
 - `complexity-advisor`
 - `implementation-recipes`
 - `api-contract-design`
+- `database-engineering`
 - `task-context`
 - `design-analysis`
 - `testing-strategy`

@@ -80,6 +80,7 @@ At minimum inspect:
 - architecture-advisor
 - implementation-recipes
 - api-contract-design
+- database-engineering
 - testing-strategy
 - engineering-review
 - git-workflow
@@ -446,8 +447,9 @@ Identify:
 - `references/system-workflow-regression-matrix.md` references only
   existing workflows, commands, and policies and does not restate a
   duplicated literal handoff path
-- `skills/implementation-recipes/SKILL.md` and
-  `skills/api-contract-design/SKILL.md` exist and are referenced
+- `skills/implementation-recipes/SKILL.md`,
+  `skills/api-contract-design/SKILL.md`, and
+  `skills/database-engineering/SKILL.md` exist and are referenced
   consistently by `agents/orchestrator.md`, `workflows/task-to-code.md`, and
   `README.md`; they do not duplicate the architecture decision policy owned
   by `skills/architecture-advisor/SKILL.md`
@@ -614,7 +616,8 @@ lightweight reference and not a competing procedure:
   lifecycle states, honest validation reporting, provider and delivery
   read-only boundaries, PR and review copy-only character, checkpoint and
   recovery safety, contract-before-implementation, the quality-not-proportional
-  baseline, and proportional decision records
+  baseline, database safety and destructive-operation gates, and proportional
+  decision records
 - REAL, SIMULATED, and STATIC evidence are defined and never conflated
 - it does not duplicate the decision policy of the task, dependency,
   validation, provider, delivery, review, or session-resilience workflows,
@@ -658,6 +661,7 @@ Return:
 - V2.13 proportional planning checks:
 - V2.14 formatter/linter setup checks:
 - V2.15 contract and recipe checks:
+- V2.16 database engineering checks:
 - External Skill readiness:
 
 ### Findings
@@ -1007,5 +1011,30 @@ non-duplicative, and proportional:
   (R-33, R-34)
 - `integrations/skill-catalog.md` lists the internal authored Skills and
   does not present them as external import candidates
+- no new command, package.json, dependency, or competing orchestrator was
+  introduced
+
+## V2.16 Regression — Database Engineering
+
+Verify that database work is gated, safe, and non-duplicative:
+
+- `skills/database-engineering/SKILL.md` exists at its canonical path and is
+  listed in the Skill inventory of this workflow
+- `agents/orchestrator.md`, `workflows/task-to-code.md`, and `README.md`
+  reference the Skill consistently and state that it loads only when a task
+  touches the schema, migrations, queries, indexes, or transactions
+- `skills/database-engineering/SKILL.md` requires backward-compatible
+  expand/contract migrations applied through the project's tooling, forbids
+  editing applied migrations, and requires parameterized queries and
+  N+1 awareness
+- it requires explicit human approval for destructive or production data
+  operations and never permits bypassing the migration tooling
+- `skills/implementation-recipes/SKILL.md` defers schema, migration, query,
+  and transaction changes to the database Skill instead of duplicating them
+- the Skill does not duplicate the architecture decision policy owned by
+  `skills/architecture-advisor/SKILL.md` or the contract policy owned by
+  `skills/api-contract-design/SKILL.md`
+- `references/system-workflow-regression-matrix.md` includes the database
+  safety scenario (R-35)
 - no new command, package.json, dependency, or competing orchestrator was
   introduced

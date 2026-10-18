@@ -175,10 +175,12 @@ Do not introduce new architecture for small changes.
 
 When the task changes a boundary, interface, or integration, load
 `skills/api-contract-design/SKILL.md` to define the contract before
-implementing. For concrete guidance on building the agreed design in the
-detected stack, load `skills/implementation-recipes/SKILL.md`. Record a
-significant, hard-to-reverse decision only when it meets the recording
-threshold, following the Decision Records guidance in
+implementing. When the task touches the database — schema, migration,
+query, index, or transaction — load `skills/database-engineering/SKILL.md`
+before making the change. For concrete guidance on building the agreed
+design in the detected stack, load `skills/implementation-recipes/SKILL.md`.
+Record a significant, hard-to-reverse decision only when it meets the
+recording threshold, following the Decision Records guidance in
 `skills/architecture-advisor/SKILL.md`.
 
 After implementation, the result is validated against the proposed design
@@ -195,6 +197,7 @@ Select only Skills relevant to:
 - architecture
 - implementation recipes for the detected stack
 - API and integration contracts
+- database changes
 - testing
 - security
 - design

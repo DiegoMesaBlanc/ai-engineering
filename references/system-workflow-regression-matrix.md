@@ -39,6 +39,7 @@ Use selectively when a change touches one of these areas:
   boundary
 - interface or API contract design, or the pre-implementation contract step
 - the implementation quality baseline or stack implementation guidance
+- schema, migration, query, index, or transaction changes
 - the architecture decision-record recording threshold
 
 For an ordinary localized implementation that touches none of these, this
@@ -99,6 +100,7 @@ with the concrete reason.
 | R-32 | Tooling setup authorization without redundant approval | `workflows/project-validation.md`, `AGENTS.md`, `workflows/dependency-assessment.md` | The standard mandatory formatter/linter setup is authorized by policy without a redundant prompt; a paid tool, a non-standard dependency, or replacing a working configuration still hits a gate; a real restriction is reported as BLOCKED, never as success | Recorded outcome |
 | R-33 | Contract defined before implementation | `skills/api-contract-design/SKILL.md`, `workflows/task-to-code.md` (Phase 8), `skills/architecture-advisor/SKILL.md` | When a task changes a boundary, interface, or integration, the contract (schemas, error model, authorization, versioning, compatibility) is defined before implementation; the existing contract style is reused, and a new style or breaking change requires approval | Recorded contract |
 | R-34 | Quality is not proportional to task size | `AGENTS.md`, `skills/complexity-advisor/SKILL.md`, `skills/implementation-recipes/SKILL.md`, `workflows/task-to-code.md` (Phase 10) | Only planning rigor and test depth are proportional; a trivial change still follows conventions, typing, error handling, security, and tests, and is never implemented in a junior way | Review report |
+| R-35 | Database changes are safe and gated | `skills/database-engineering/SKILL.md`, `workflows/task-to-code.md` (Phase 8), `agents/orchestrator.md` | The Skill loads only when a task touches the schema, migrations, queries, indexes, or transactions; migrations are backward-compatible and applied through project tooling; queries are parameterized and avoid N+1; destructive or production data operations require explicit human approval | Database plan |
 
 ## Broader Integral Validation
 
