@@ -177,8 +177,10 @@ When the task changes a boundary, interface, or integration, load
 `skills/api-contract-design/SKILL.md` to define the contract before
 implementing. When the task touches the database — schema, migration,
 query, index, or transaction — load `skills/database-engineering/SKILL.md`
-before making the change. For concrete guidance on building the agreed
-design in the detected stack, load `skills/implementation-recipes/SKILL.md`.
+before making the change. When the task has user-facing text and must support
+multiple locales, RTL, or locale-aware formatting, load
+`skills/internationalization/SKILL.md`. For concrete guidance on building the
+agreed design in the detected stack, load `skills/implementation-recipes/SKILL.md`.
 Record a significant, hard-to-reverse decision only when it meets the
 recording threshold, following the Decision Records guidance in
 `skills/architecture-advisor/SKILL.md`.
@@ -198,6 +200,7 @@ Select only Skills relevant to:
 - implementation recipes for the detected stack
 - API and integration contracts
 - database changes
+- internationalization and localization
 - CI/CD and delivery pipeline authoring
 - testing
 - security
@@ -284,6 +287,12 @@ A new project does NOT terminate after initialization.
 Initialization covers the minimum viable architecture, repository structure,
 and the mandatory formatter and linter setup. After initialization, a new
 project follows the canonical Task-to-Code sequence.
+
+Early alignment also settles user-facing requirements that are expensive to
+change later, including whether the product needs localization — supported
+locales, RTL, and locale-aware formatting. Load
+`skills/internationalization/SKILL.md` when it applies; do not impose it on
+work without user-facing text.
 
 The detailed, ordered sequence is defined once in
 `workflows/task-to-code.md`. Do not maintain a parallel sequence here; read

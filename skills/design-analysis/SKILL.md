@@ -253,6 +253,25 @@ Identify:
 
 Do not assume that desktop behavior automatically defines mobile behavior.
 
+### Mobile Analysis
+
+When the interface runs on mobile (native, React Native, Ionic, or a mobile
+web view), analyze specifically:
+
+- navigation: platform patterns, back behavior, tabs, drawers, and deep links
+- touch: minimum touch targets, spacing between targets, and gesture affordances
+- layout: safe areas, notches, status and navigation bars, keyboard overlap,
+  and orientation changes
+- reachability: primary actions within thumb reach and above the keyboard
+- inputs: correct keyboards, autofill, validation timing, and focus order
+- platform components: native pickers, modals, and transitions instead of
+  desktop substitutes
+- states: loading, empty, error, and offline behavior on mobile networks
+- performance: first interaction on mid-range devices, not only desktop
+- accessibility: mobile screen readers and dynamic text sizing
+
+Report mobile-specific gaps separately from desktop gaps.
+
 ---
 
 ## 9. Accessibility Analysis

@@ -168,6 +168,14 @@ repository's `commands/` directory.
   meet the threshold, following the Decision Records guidance in
   `skills/architecture-advisor/SKILL.md`. Trivial or easily reversible
   decisions are not documented.
+- For work with user-facing text, localization is settled early (required
+  locales, RTL, locale-aware formatting); `skills/internationalization/SKILL.md`
+  then guides correct externalization, pluralization, formatting, direction,
+  and translation workflow. It is not loaded for work without user-facing text.
+- Mobile interfaces get mobile-specific analysis and implementation guidance
+  from the Mobile Analysis section of `skills/design-analysis/SKILL.md` and the
+  Mobile section of `skills/implementation-recipes/SKILL.md`, instead of
+  reusing desktop assumptions.
 
 ### Proportional planning (SDD)
 

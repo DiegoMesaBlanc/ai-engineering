@@ -182,6 +182,20 @@ Select documentation for the actual Oracle Database version when known.
 Use the UI library already present in the project unless a change is
 explicitly justified.
 
+## Internationalization
+
+### Unicode CLDR
+
+- Project: https://cldr.unicode.org/
+
+### ICU MessageFormat
+
+- User guide: https://unicode-org.github.io/icu/userguide/format_parse/messages/
+
+### ECMAScript Intl
+
+- Reference: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl
+
 ## Testing and Validation
 
 ### Vitest

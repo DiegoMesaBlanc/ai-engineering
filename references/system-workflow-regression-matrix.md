@@ -45,6 +45,8 @@ Use selectively when a change touches one of these areas:
 - the implementation quality baseline or stack implementation guidance
 - schema, migration, query, index, or transaction changes
 - the architecture decision-record recording threshold
+- localization decisions, string externalization, or locale-aware formatting
+- mobile-specific design analysis or implementation guidance
 
 For an ordinary localized implementation that touches none of these, this
 reference requires no action.
@@ -109,6 +111,8 @@ with the concrete reason.
 | R-37 | Self-learning is provider-neutral and promotion-gated | `workflows/self-learning.md`, `AGENTS.md`, `workflows/session-resilience.md`, `agents/orchestrator.md` | Lessons are captured and consolidated in the provider-neutral state root outside every project and the canonical repository, with no secrets or personal data; promotion to the canonical layer is always a proposal requiring human approval and never an automatic edit; maturity is descriptive and evidence-based, never self-declared | Learning entry and promotion proposal |
 | R-38 | Token and context spend stay proportional | `AGENTS.md`, `workflows/session-resilience.md`, `agents/orchestrator.md` | Context spend is bounded by targeted reads, bounded tool output, subagent summaries, no re-reading of established information, and on-demand Skill loading; the client's state root is provider-neutral; correctness, safety, or validation are never traded for token savings | Static inspection |
 | R-39 | Estimation is standalone, ranged, and honest | `workflows/estimation.md`, `commands/estimate.md`, `AGENTS.md`, `agents/orchestrator.md` | Estimation runs from a supplied artifact without starting implementation; it writes only `<slug>-estimation.md` to the current working directory with a relative, cross-platform-safe path and reports the saved location; effort is a low/likely/high range per discipline with stated assumptions and confidence; monetary cost appears only when a rate is supplied; it never fabricates numbers and never modifies source, branches, or remote state | Estimation document and reported path |
+| R-40 | Internationalization is decided early and implemented correctly | `workflows/task-to-code.md` (Phase 5), `agents/orchestrator.md`, `commands/task.md`, `skills/internationalization/SKILL.md` | For work with user-facing text, localization is settled early (required locales, RTL, locale-aware formatting) before implementation; the Skill loads only when it applies and never for work without user-facing text; user-facing strings are externalized, plurals and formatting are locale-aware, direction and translation workflow are handled, and any new i18n library goes through the dependency assessment | I18N PLAN |
+| R-41 | Mobile interfaces are analyzed and built for mobile | `skills/design-analysis/SKILL.md`, `skills/implementation-recipes/SKILL.md` | Mobile work gets mobile-specific analysis (navigation, touch targets, safe areas, keyboard, orientation, reachability, inputs, platform components, offline, mobile performance, mobile accessibility) and implementation guidance, instead of reusing desktop assumptions; mobile-specific gaps are reported separately from desktop gaps | Design analysis output and mobile implementation notes |
 
 ## Broader Integral Validation
 

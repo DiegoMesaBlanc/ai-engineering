@@ -84,6 +84,7 @@ At minimum inspect:
 - implementation-recipes
 - api-contract-design
 - database-engineering
+- internationalization
 - testing-strategy
 - engineering-review
 - git-workflow
@@ -468,6 +469,11 @@ Identify:
   referenced consistently by `AGENTS.md`, `agents/orchestrator.md`,
   `workflows/task-to-code.md`, and `README.md`; estimation is described as a
   standalone activity that never implements
+- `skills/internationalization/SKILL.md` exists and is referenced
+  consistently by `agents/orchestrator.md`, `workflows/task-to-code.md`,
+  `commands/task.md`, `skills/implementation-recipes/SKILL.md`, and
+  `README.md`; localization is settled early for work with user-facing text
+  and the Skill is not loaded for work without it
 
 Do not flag a reference as broken merely because a file is intentionally
 provided by the client rather than by the canonical repository.
@@ -641,7 +647,8 @@ lightweight reference and not a competing procedure:
   baseline, database safety and destructive-operation gates, delivery pipeline
   authoring with environments and pre-deploy gates, provider-neutral
   self-learning with promotion gates, bounded context spend, standalone and
-  ranged estimation, and proportional decision records
+  ranged estimation, early localization with correct implementation, mobile
+  analysis and implementation, and proportional decision records
 - REAL, SIMULATED, and STATIC evidence are defined and never conflated
 - it does not duplicate the decision policy of the task, dependency,
   validation, provider, delivery, review, or session-resilience workflows,
@@ -689,6 +696,7 @@ Return:
 - V2.17 delivery pipeline authoring checks:
 - V2.18 self-learning, maturity, and context efficiency checks:
 - V2.19 estimation checks:
+- V2.20 internationalization and mobile UI checks:
 - External Skill readiness:
 
 ### Findings
@@ -1154,3 +1162,32 @@ Verify that estimation is standalone, honest, and non-invasive:
 - `references/system-workflow-regression-matrix.md` includes the estimation
   scenario (R-39)
 - no package.json, dependency, or competing orchestrator was introduced
+
+## V2.20 Regression — Internationalization and Mobile UI
+
+Verify that localization is decided early and implemented correctly, and that
+mobile interfaces are analyzed and built for mobile:
+
+- `skills/internationalization/SKILL.md` exists at its canonical path and is
+  listed in the required-file inventory of this workflow
+- the Skill is scoped to user-facing work and is explicitly not loaded for
+  work without user-facing text
+- localization is settled early (required locales, RTL, and locale-aware
+  formatting) in `workflows/task-to-code.md` (Phase 5), `agents/orchestrator.md`
+  (§11), and `commands/task.md`, without duplicating a competing sequence
+- the Skill requires user-facing strings to be externalized, forbids
+  concatenating translated fragments, requires pluralization and locale-aware
+  formatting, and covers direction/RTL, translation workflow, testing, and
+  accessibility/SEO (`lang`, `dir`, `hreflang`)
+- a new i18n library is subject to `workflows/dependency-assessment.md` and
+  human authorization
+- `skills/design-analysis/SKILL.md` provides a Mobile Analysis section and
+  `skills/implementation-recipes/SKILL.md` provides concrete mobile
+  implementation guidance, without introducing a separate mobile Skill
+- `agents/orchestrator.md`, `integrations/skill-catalog.md`, `README.md`, and
+  `references/official-documentation.md` reference internationalization and
+  mobile consistently
+- `references/system-workflow-regression-matrix.md` includes the
+  internationalization and mobile scenarios (R-40, R-41)
+- no new command, package.json, dependency, or competing orchestrator was
+  introduced

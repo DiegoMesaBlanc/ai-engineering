@@ -127,6 +127,11 @@ Apply these consistently regardless of stack:
 - Follow the detected navigation, state, and platform conventions.
 - Separate shared logic from platform-specific code.
 - Respect offline, permission, and lifecycle patterns of the platform.
+- Use the platform's safe-area insets, keyboard handling, and touch targets;
+  never reuse desktop interaction patterns unchanged.
+- Keep startup and first interaction fast on mid-range devices.
+- Load `skills/design-analysis/SKILL.md` for mobile-specific analysis and
+  `skills/internationalization/SKILL.md` when locales or RTL apply.
 
 ## Relation to Other Components
 

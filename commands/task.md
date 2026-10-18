@@ -107,6 +107,9 @@ Key required behaviors within that workflow:
   inferred, or absent), and when no coherent architecture is detected,
   conventions conflict, or a new architecture must be chosen, present the
   options and wait for the user's decision before implementing
+- for work with user-facing text, settle localization early (required
+  locales, RTL, locale-aware formatting) and follow
+  `skills/internationalization/SKILL.md` when it applies
 - implement following current conventions, then validate and review
 - present the Git diff and commit proposal
 

@@ -101,6 +101,13 @@ If software implementation:
 5. Present concise summary of agreed behavior and proposed approach.
 6. Confirm alignment before implementation.
 
+For projects or features with user-facing text, decide localization early:
+whether more than one language is required, which locales, whether RTL is
+needed, and whether locale-aware date, number, or currency formatting applies.
+Load `skills/internationalization/SKILL.md` when it does, and include it in the
+agreed behavior. Do not impose internationalization on work without
+user-facing text.
+
 A preliminary complexity estimate may be recorded here as tentative. It
 does not fix the rigor level. The definitive complexity classification is
 produced in Phase 8 and the rigor level is derived in Phase 9.
