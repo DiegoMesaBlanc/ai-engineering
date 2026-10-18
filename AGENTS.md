@@ -142,6 +142,12 @@ close and reopen the terminal.
 - Prune or discard old tool output where the client supports it, instead of
   disabling compaction.
 - Do not introduce undocumented context-threshold configuration keys.
+- Keep token and context spend proportional to the task: prefer targeted
+  reads and searches over loading whole files, bound tool output, consume
+  subagent summaries instead of full transcripts, avoid re-reading or
+  re-deriving established information, and load only relevant Skills and
+  references. Never trade correctness, safety, or validation for token
+  savings.
 - Checkpoint at logical phase boundaries, before expensive validations, and
   before a context reset when needed.
 - Do not depend solely on a displayed context percentage to decide when to
@@ -155,10 +161,10 @@ The checkpoint and recovery behavior is defined canonically in
 `workflows/session-resilience.md`, using the existing command conventions in
 `commands/checkpoint.md` and `commands/resume-work.md`.
 
-A checkpoint is written to the user-level handoff directory outside the
-target project's source tree. Never store credentials, tokens, or secrets in
-a checkpoint. Never overwrite a different task's checkpoint. Checkpointing
-must not modify source files as a side effect.
+A checkpoint is written to the provider-neutral user-level handoff directory
+outside the target project's source tree. Never store credentials, tokens,
+or secrets in a checkpoint. Never overwrite a different task's checkpoint.
+Checkpointing must not modify source files as a side effect.
 
 Recovery treats a checkpoint as a guide, not as proof that the described
 state still exists. Verify the actual repository, branch, HEAD, and
@@ -166,6 +172,24 @@ working-tree state, detect divergence, preserve current work, and continue
 from the first incomplete action instead of repeating completed phases.
 Never claim a prior validation passed without recorded evidence or
 re-executing the relevant check.
+
+## Self-Learning and Maturity
+
+The system improves itself by capturing lessons from real work, consolidating
+them, and promoting the stable, general ones into the canonical knowledge
+layer. This is provider-neutral and is not a retrospective of people or
+teams.
+
+- The behavior is defined canonically in `workflows/self-learning.md`.
+- Learnings are stored in the provider-neutral user-level state root
+  (`${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}`), outside every
+  target project and the canonical repository. Never store credentials,
+  tokens, secrets, or personal data.
+- Promotion to the canonical layer (Skills, workflows, AGENTS.md, or a
+  reference) is always a proposal that requires human approval; the system
+  never edits the canonical repository automatically.
+- Maturity is descriptive and evidence-based, never self-declared authority,
+  and never a reason to weaken safety, quality, or cost guardrails.
 
 ## Formatting and Linting Policy
 

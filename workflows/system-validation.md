@@ -52,6 +52,7 @@ Check for the existence of:
 - workflows/system-validation.md
 - workflows/project-validation.md
 - workflows/session-resilience.md
+- workflows/self-learning.md
 - workflows/provider-integration-proof.md
 - workflows/secure-delivery.md
 - workflows/dependency-assessment.md
@@ -368,8 +369,9 @@ safe:
 - `workflows/session-resilience.md` is the single canonical definition
 - `/checkpoint` and `/resume-work` delegate to that workflow instead of
   duplicating its logic
-- checkpoints are written to a user-level handoff directory outside the
-  target project's source tree
+- checkpoints are written to a provider-neutral user-level handoff directory
+  outside the target project's source tree, using the same state root as
+  self-learning and no single-client path
 - checkpointing does not modify source files, commits, branches, or remote
   state
 - a checkpoint never overwrites a different task's checkpoint
@@ -398,6 +400,9 @@ Verify checkpoint slug and overwrite rules statically:
 
 - the literal handoff directory path is defined in exactly one place,
   `workflows/session-resilience.md`
+- the provider-neutral state root is used by both the handoff directory and
+  the self-learning store, with no client-specific path such as a fixed
+  OpenCode, Claude, Codex, or Aider directory
 - AGENTS.md delegates to that workflow instead of repeating the literal
   path, and `/checkpoint` and `/resume-work` reference the workflow's path
   without duplicating it
@@ -453,6 +458,10 @@ Identify:
   consistently by `agents/orchestrator.md`, `workflows/task-to-code.md`, and
   `README.md`; they do not duplicate the architecture decision policy owned
   by `skills/architecture-advisor/SKILL.md`
+- `workflows/self-learning.md` exists and is referenced consistently by
+  `AGENTS.md`, `agents/orchestrator.md`, and `README.md`; it defines the
+  neutral state root once and never duplicates the handoff path or a
+  client-specific directory
 
 Do not flag a reference as broken merely because a file is intentionally
 provided by the client rather than by the canonical repository.
@@ -624,7 +633,8 @@ lightweight reference and not a competing procedure:
   read-only boundaries, PR and review copy-only character, checkpoint and
   recovery safety, contract-before-implementation, the quality-not-proportional
   baseline, database safety and destructive-operation gates, delivery pipeline
-  authoring with environments and pre-deploy gates, and proportional
+  authoring with environments and pre-deploy gates, provider-neutral
+  self-learning with promotion gates, bounded context spend, and proportional
   decision records
 - REAL, SIMULATED, and STATIC evidence are defined and never conflated
 - it does not duplicate the decision policy of the task, dependency,
@@ -671,6 +681,7 @@ Return:
 - V2.15 contract and recipe checks:
 - V2.16 database engineering checks:
 - V2.17 delivery pipeline authoring checks:
+- V2.18 self-learning, maturity, and context efficiency checks:
 - External Skill readiness:
 
 ### Findings
@@ -1074,5 +1085,37 @@ gate-enforced, without weakening the read-only assessment:
   and authorization
 - `references/system-workflow-regression-matrix.md` includes the pipeline
   authoring scenario (R-36)
+- no new command, skill, package.json, dependency, or competing orchestrator
+  was introduced
+
+## V2.18 Regression — Self-Learning, Maturity, and Context Efficiency
+
+Verify that learning is provider-neutral, promotion-gated, and that context
+spend stays proportional:
+
+- `workflows/self-learning.md` exists at its canonical path and is listed in
+  the required-file inventory of this workflow
+- the learning store uses the provider-neutral state root
+  (`${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}`) with no
+  client-specific path, and never writes inside a target project's source
+  tree or the canonical repository's tracked files
+- learnings never store credentials, tokens, secrets, or personal data, and
+  identifiers that become path components are normalized against traversal
+- promotion to the canonical layer is always a proposal that requires human
+  approval; no instruction allows the system to edit the canonical
+  repository automatically
+- the maturity model is descriptive and evidence-based, is never
+  self-declared authority, and is never a reason to weaken safety, quality,
+  or cost guardrails
+- `workflows/session-resilience.md` writes checkpoints to the same
+  provider-neutral state root and defines the handoff path in exactly one
+  place; `AGENTS.md` and the commands reference it without duplicating the
+  literal path
+- `workflows/session-resilience.md` states that token and context spend stay
+  proportional to the task and that correctness, safety, or validation are
+  never traded for token savings; `AGENTS.md` and `agents/orchestrator.md`
+  agree
+- `references/system-workflow-regression-matrix.md` includes the
+  self-learning and context-efficiency scenarios (R-37, R-38)
 - no new command, skill, package.json, dependency, or competing orchestrator
   was introduced

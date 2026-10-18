@@ -32,6 +32,8 @@ Use selectively when a change touches one of these areas:
 - mandatory formatting and linting, or validation reporting
 - provider or delivery read-only boundaries
 - pipeline authoring, environment promotion, or deployment gates
+- self-learning capture, consolidation, promotion, or the maturity model
+- token or context efficiency behavior
 - PR preparation or review character
 - checkpoint identity, preservation, or recovery behavior
 - importing, adapting, or recording external web quality Skills and their
@@ -103,6 +105,8 @@ with the concrete reason.
 | R-34 | Quality is not proportional to task size | `AGENTS.md`, `skills/complexity-advisor/SKILL.md`, `skills/implementation-recipes/SKILL.md`, `workflows/task-to-code.md` (Phase 10) | Only planning rigor and test depth are proportional; a trivial change still follows conventions, typing, error handling, security, and tests, and is never implemented in a junior way | Review report |
 | R-35 | Database changes are safe and gated | `skills/database-engineering/SKILL.md`, `workflows/task-to-code.md` (Phase 8), `agents/orchestrator.md` | The Skill loads only when a task touches the schema, migrations, queries, indexes, or transactions; migrations are backward-compatible and applied through project tooling; queries are parameterized and avoid N+1; destructive or production data operations require explicit human approval | Database plan |
 | R-36 | Delivery pipeline is authored with environments and pre-deploy gates | `workflows/secure-delivery.md`, `workflows/task-to-code.md`, `agents/orchestrator.md`, `commands/delivery-check.md` | Authoring is an authorized mode distinct from the read-only `/delivery-check`; one artifact is promoted across environments with differences kept out of the artifact; the same validation gates run before every deployment and are never weakened; production requires an explicit approval gate; a failing pipeline is met with a proposed fix or rollback, never a bypass | Proposed pipeline configuration and environment/gate summary |
+| R-37 | Self-learning is provider-neutral and promotion-gated | `workflows/self-learning.md`, `AGENTS.md`, `workflows/session-resilience.md`, `agents/orchestrator.md` | Lessons are captured and consolidated in the provider-neutral state root outside every project and the canonical repository, with no secrets or personal data; promotion to the canonical layer is always a proposal requiring human approval and never an automatic edit; maturity is descriptive and evidence-based, never self-declared | Learning entry and promotion proposal |
+| R-38 | Token and context spend stay proportional | `AGENTS.md`, `workflows/session-resilience.md`, `agents/orchestrator.md` | Context spend is bounded by targeted reads, bounded tool output, subagent summaries, no re-reading of established information, and on-demand Skill loading; the client's state root is provider-neutral; correctness, safety, or validation are never traded for token savings | Static inspection |
 
 ## Broader Integral Validation
 

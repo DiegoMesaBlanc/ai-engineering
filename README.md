@@ -196,6 +196,22 @@ repository's `commands/` directory.
   conflated. The matrix requires no new command, no package.json, and no
   testing framework in the canonical documentation repository.
 
+### Self-learning and maturity
+
+- The system improves itself by capturing lessons from real work,
+  consolidating them, and proposing the stable, general ones into the
+  canonical knowledge layer. The procedure is
+  `workflows/self-learning.md`, and it is not a retrospective of people or
+  teams.
+- Learnings and checkpoints live in a provider-neutral user-level state root,
+  `${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}`, outside every target
+  project and the canonical repository. The same root is used by OpenCode,
+  Claude, Codex, and Aider; no client has a hardcoded path.
+- Promotion to a Skill, workflow, `AGENTS.md`, or a reference is always a
+  proposal that requires human approval; the system never edits the canonical
+  repository automatically. Maturity (L1 Guided to L5 Adaptive) is
+  evidence-based and descriptive, never self-declared authority.
+
 ## Codex CLI setup
 
 Codex CLI reads `AGENTS.md` files in the working project and supports Skills

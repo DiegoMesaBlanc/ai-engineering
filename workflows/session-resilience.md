@@ -38,14 +38,17 @@ information instead of guessing.
 ## Phase 2 — Handoff Location
 
 The checkpoint is written to the user-level handoff directory **outside the
-target project's source tree**:
+target project's source tree**, using a provider-neutral root that is not
+tied to any single client:
 
 ```
-$HOME/.config/opencode/handoffs/<repo-slug>/<task-slug>.md
+${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}/handoffs/<repo-slug>/<task-slug>.md
 ```
 
 Rules:
 
+- `AI_ENGINEERING_STATE_HOME` overrides the root when configured and valid;
+  otherwise the default `$HOME/.ai-engineering` is used.
 - Derive `<repo-slug>` from the repository root directory name.
 - Derive `<task-slug>` from the task identifier. When no task identifier
   exists, `/checkpoint` generates a unique checkpoint identifier and uses it
@@ -170,6 +173,24 @@ ask which to resume instead of guessing.
   path.
 - Do not add an experimental compaction plugin unless a demonstrated
   requirement cannot be met with stable built-in functionality.
+
+### Token and Context Efficiency
+
+Keep context spend proportional to the task, independently of the client:
+
+- Prefer targeted reads and searches over loading whole files or whole
+  sites; read only the sections needed to resolve the question.
+- Keep tool output bounded; summarize large results instead of pasting them
+  back, and discard or prune stale tool output where the client supports it.
+- Delegate broad or exploratory search to subagents and consume their
+  concise summary rather than their full transcript.
+- Do not re-read or re-derive information already established earlier in the
+  session; reuse prior analysis when the task state has not changed.
+- Load only the Skills, references, and documentation relevant to the
+  current task; never preload the entire knowledge base.
+- Checkpoint before a large expansion or an expensive validation so progress
+  survives a context reset instead of being repeated.
+- Do not trade correctness, safety, or validation for token savings.
 
 ---
 

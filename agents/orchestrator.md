@@ -391,6 +391,22 @@ Architecture change
 
 Never introduce complexity merely because it is technically possible.
 
+---
+
+# 18. Learning and Maturity
+
+When a task produces a reusable lesson, follow `workflows/self-learning.md`:
+capture it in the provider-neutral state store
+(`${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}`), consolidate it, and,
+only when it is stable and evidenced, propose a canonical change for human
+approval. Never edit the canonical repository automatically.
+
+Keep token and context spend proportional to the task as described in
+`workflows/session-resilience.md`; never trade correctness, safety, or
+validation for token savings.
+
+---
+
 ## PR Preparation and Review Policy
 
 Pull Request preparation and Pull Request review are separate workflows.
