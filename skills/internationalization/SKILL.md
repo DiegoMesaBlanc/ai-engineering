@@ -119,6 +119,29 @@ message format without a justified reason and human approval.
 - Cache catalogs and avoid refetching on every navigation.
 - Prefer the project's existing loading and caching strategy.
 
+## Module Layout
+
+Separate i18n concerns into distinct files within the module:
+
+- **Types/Contracts** (`types.ts`): `Locale`, `LocaleMeta`, message shape
+  interfaces (`PaymentSelectorTranslations`).
+- **Configuration** (`config.ts`): `SUPPORTED_LOCALES`, `LOCALE_META`,
+  accessor functions (`getLocaleMeta`, `getCurrencyForLocale`,
+  `getDirectionForLocale`).
+- **Message Catalogs** (`messages/<locale>.ts`): one file per locale
+  (`en.ts`, `es.ts`, `ar.ts`) containing the translation dictionary.
+  This enables lazy loading and independent translation workflows.
+  If lazy loading is not required, a single `messages.ts` is acceptable.
+- **Formatters** (`format.ts`): `formatExpiry`, `formatCurrency`,
+  `formatNumber`, `formatPercent`, and other locale-aware formatters.
+- **Public API** (`index.ts`): re-exports `getTranslations`, formatters,
+  and types; justified when the module has multiple entry points.
+
+Do not mix contracts, catalogs, config, and formatters in one file
+(e.g., a monolithic `i18n.ts`). Split when the file would change for
+unrelated reasons (translations vs. formatting vs. locale config) or a
+consumer cannot import the contract without pulling in data/runtime.
+
 ## Relation to Other Components
 
 - `architecture-advisor` decides where localization belongs in the structure.

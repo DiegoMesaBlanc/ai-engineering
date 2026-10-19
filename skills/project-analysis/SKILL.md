@@ -115,6 +115,29 @@ Detect and report the **Folder Architecture Map** when present:
 
 Do not classify from directory names alone; base on implementation evidence (imports, boundaries, configuration). If no coherent map exists, report "no identifiable folder architecture."
 
+## Internal Module Layout Detection
+
+For each significant module (feature, shared lib, domain), detect and
+report the internal file structure:
+
+- Whether contracts/types are in a dedicated `types.ts`/`contracts.ts`
+  or mixed with implementation.
+- Whether static data/catalogs (i18n messages, config maps, lookup
+  tables) are in separate files (`messages/`, `catalogs/`, `data/`) or
+  inline with logic.
+- Whether formatters, helpers, and behavior are in dedicated files
+  (`format.ts`, `utils.ts`, `helpers.ts`, `services/`).
+- Whether a public API barrel (`index.ts`) exists and is justified.
+- Language-specific conventions (e.g., Java one-public-type-per-file,
+  Python `domain/contracts.py`, Go consumer-side interfaces).
+
+Record the observed conventions. Do not refactor automatically; use
+this to align generation and audit with the project's actual patterns.
+If the project has monolithic module files (e.g., `lib/i18n.ts` with
+contracts, data, and behavior), note it as the existing convention but
+flag new code for separation per `architecture-advisor` File Cohesion
+rules.
+
 ## Output
 
 Report:

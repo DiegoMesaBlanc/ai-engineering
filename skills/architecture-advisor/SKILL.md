@@ -159,6 +159,7 @@ Default rule:
 - **Contract ownership**: the type/contract lives in the folder of the layer or module that owns it. Consumers import from the contract module, never from an implementation module solely for types.
 - **Shared across ≥2 modules/layers or public API** → dedicated contract/type module in the owning layer/domain (`domain/`, `shared/types/`, feature `types.ts`). One module per domain/feature; avoid a global `types.ts` dumping ground.
 - **Single-consumer implementation detail** (props, local view models, private helpers) → co-locate with the consumer; do not extract (R-42).
+- **A type used by ≥2 consumers or forming part of a module's public API is shared**, even if it lives in the same module as its implementation. It belongs in the module's `types.ts`/`contracts.ts`, not inside the runtime implementation file. `lib/`, `util/`, `services/`, and similar folders with runtime code count as implementation folders.
 - **Import direction**: type-only imports follow the same dependency direction as runtime imports. No presentation → infrastructure type imports when a contract module exists.
 - **Language/framework conventions prevail**: do not impose the same physical structure on TypeScript, Java, Python, Go, Rust, etc. (see ecosystem matrix below).
 
@@ -190,6 +191,37 @@ interfaces belong.
 - Separate elements with distinct responsibilities or that need reuse.
 - Avoid monolithic files and unnecessary fragmentation.
 - Do not impose a universal folder structure or a fixed number of files.
+
+### File Cohesion and Responsibility Separation
+
+A file should have one primary responsibility and one primary reason to
+change. Separate these concerns into distinct files when they coexist:
+
+- **Contracts/Types** (public API surface): interfaces, types, enums shared
+  across modules or forming the module's public API.
+- **Static Data / Catalogs** (declarative data): message catalogs, locale
+  metadata, configuration maps, lookup tables.
+- **Configuration** (settings): constants, environment-derived values,
+  feature flags.
+- **Behavior** (pure functions, services): formatters, calculators,
+  accessors, business logic.
+- **Wiring / Composition** (glue): re-exports, factory functions,
+  dependency injection setup.
+
+Co-location is allowed only for small, single-consumer units with the
+same responsibility (e.g., props + component, private helper + owner,
+nested/private types). Do not bundle shared contracts, catalogs, and
+behavior in the same file.
+
+**Ownership determines folder/module, not file bundling.** A type
+owned by a module goes in that module's folder, but in its own
+`types.ts`/`contracts.ts` file — not inside the implementation file
+that contains runtime behavior.
+
+**Operational test**: if a file would change for unrelated reasons
+(translations change vs. formatting logic vs. locale config), or if a
+consumer cannot import the contract without pulling in data/runtime,
+split it. This is not fragmentation (R-42); it is correct separation.
 
 ### Folder Architecture and Contracts
 

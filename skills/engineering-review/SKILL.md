@@ -35,6 +35,11 @@ Review the actual changes, not the entire repository unless required.
   the owning layer; consumers import from the contract, not from an
   implementation module; language idiom respected (Go consumer-side interfaces,
   Java one-public-type-per-file, Python Protocols, etc.).
+- **File cohesion and responsibility separation**: each changed file should
+  have one primary responsibility. Flag files mixing contracts/types with
+  static data/catalogs, configuration, behavior, or wiring. i18n modules
+  must separate contracts, catalogs (`messages/<locale>.ts`), config, and
+  formatters. Single-consumer props/local view models are exempt.
 - **Unnecessary abstraction or fragmentation is a finding that must be
   resolved: revert the change or justify it with evidence against the
   thresholds in `skills/complexity-advisor/SKILL.md` (Refactoring and

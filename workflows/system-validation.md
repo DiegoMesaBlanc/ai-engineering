@@ -1320,3 +1320,43 @@ quality gates and atomic commits:
 - `references/system-workflow-regression-matrix.md` includes R-45.
 - No new Skill, agent, package.json, dependency, or competing orchestrator
   introduced.
+
+## V2.25 Regression — File Cohesion and Responsibility Separation
+
+Verify that file-level cohesion is defined, generated, reviewed, and
+audited:
+
+- `skills/architecture-advisor/SKILL.md` defines the **File Cohesion**
+  rule: one file = one primary responsibility and reason to change.
+  Separate contracts/types, static data/catalogs, configuration,
+  behavior/formatters, and wiring. Ownership determines folder, not file
+  bundling. A type used by ≥2 consumers or part of a module's public API
+  is shared and belongs in `types.ts`/`contracts.ts`, not in the
+  implementation file.
+- `skills/implementation-recipes/SKILL.md` includes the **Internal
+  Module Layout** table and an explicit **i18n layout** with per-locale
+  `messages/<locale>.ts`, `types.ts`, `config.ts`, `format.ts`,
+  `index.ts`.
+- `skills/internationalization/SKILL.md` adds a **Module Layout** section
+  with the same split; per-locale files for lazy loading, single
+  `messages.ts` if not needed.
+- `skills/engineering-review/SKILL.md` adds explicit file cohesion check:
+  flags files mixing contracts with data/behavior; i18n modules must
+  separate contracts, catalogs, config, and formatters.
+- `skills/project-analysis/SKILL.md` adds **Internal Module Layout
+  Detection** to report observed conventions (monolithic vs. split).
+- `workflows/code-audit.md` adds **File Cohesion check** (check 3 in
+  Dimension 1): detects contracts + data/behavior mixing, i18n inline
+  catalogs; `FILE_COHESION` tag; P2/P3; exempts single-responsibility
+  files and single-consumer props.
+- `workflows/task-to-code.md` Phase 8 requires a **File Responsibility
+  Map** per new/changed module: types, catalogs, config, behavior,
+  public API.
+- `references/system-workflow-regression-matrix.md` includes R-46 with
+  documented cases:
+  - TS i18n: monolithic `lib/i18n.ts` with contracts, catalogs, config,
+    formatters → P2 `FILE_COHESION`; split into `types.ts`, `config.ts`,
+    `messages/en.ts`, `format.ts`, `index.ts` → PASS.
+  - Single-consumer props inline → exempt.
+- No new Skill, agent, package.json, dependency, or competing orchestrator
+  introduced.

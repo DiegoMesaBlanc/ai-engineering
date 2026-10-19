@@ -75,6 +75,42 @@ Apply these consistently regardless of stack:
   existing mechanisms.
 - **Testing**: test changed behavior at the level that protects it.
 
+## Internal Module Layout (File-Level)
+
+A module (feature, shared lib, domain) should split its internal
+responsibilities across files, not bundle them in one file. Use this
+pattern as the default; adapt to the project's existing conventions.
+
+| Responsibility | File(s) | Notes |
+|---|---|---|
+| Contracts / Types (public API) | `types.ts` / `contracts.ts` / `domain/*.ts` | Shared interfaces, types, enums, DTOs. |
+| Static Data / Catalogs | `messages/`, `catalogs/`, `data/` | Message catalogs, locale data, lookup tables. Per-locale files enable lazy loading. |
+| Configuration | `config.ts` / `constants.ts` / `settings.ts` | Locale metadata, feature flags, constants. |
+| Behavior / Formatters | `format.ts` / `utils.ts` / `helpers.ts` / `services/` | Pure functions, formatters, accessors, business logic. |
+| Public API (barrel) | `index.ts` | Re-exports only; justified when module has multiple entry points. |
+
+**i18n-specific layout** (per locale files recommended for lazy loading):
+
+```text
+src/lib/i18n/
+  types.ts           # Locale, LocaleMeta, PaymentSelectorTranslations
+  config.ts          # SUPPORTED_LOCALES, LOCALE_META, getLocaleMeta, ...
+  messages/
+    en.ts
+    es.ts
+    ar.ts
+  format.ts          # formatExpiry, formatCurrency, formatNumber, ...
+  index.ts           # Public API: getTranslations, formatters, types
+```
+
+If per-locale lazy loading is not needed, a single `messages.ts` is
+acceptable; catalogs must still be separate from config and formatters.
+
+Do not mix contracts, catalogs, config, and formatters in one file
+(e.g., a monolithic `i18n.ts`). Split when the file would change for
+unrelated reasons or a consumer cannot import the contract without
+pulling in data/runtime.
+
 ## Frontend Recipes
 
 ### React and Next.js

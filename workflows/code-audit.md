@@ -116,8 +116,17 @@ For each applicable dimension:
    - Follow declaration sites outside the change set **only as read-only context** to judge import correctness; do not expand the audit scope.
    - Flag: shared contract in implementation folder; consumer importing contract from implementation folder solely for types; duplicated/divergent contracts; type-only cycles; language-idiom violations (e.g., forcing provider-side interface in Go).
    - **Do not flag**: single-consumer props/local view models (co-location per `architecture-advisor`); Go consumer-side interfaces; nested/private helper types; Ruby RBS signatures.
+   - **A type used by ≥2 consumers or forming part of a module's public API is shared**, even if it lives in the same module as its implementation; `lib/`, `util/`, `services/`, and similar folders with runtime code count as implementation folders. Such types must be in a dedicated `types.ts`/`contracts.ts`.
    - Evidence: declaration `folder/file:line` + each consumer `folder/file:line` + import statement.
    - Severity: P1 if cycle/layer violation with build/runtime risk; P2 for layering/maintainability; P3 for style/consistency. Tag findings with `TYPE_OWNERSHIP` or `FOLDER_ARCHITECTURE`.
+
+3. **File Cohesion and Responsibility Separation check**
+   - Detect files that mix multiple responsibilities: contracts/types, static data/catalogs, configuration, behavior/formatters, wiring.
+   - Patterns: exported contracts in the same file as static data (i18n catalogs, config maps), runtime behavior, or wiring; locale metadata + translations + formatters in one file; large static data inline with logic.
+   - i18n-specific: inline translation dictionaries in config/logic files; catalogs must be in dedicated `messages/` or `messages.ts` files separate from config and formatters.
+   - Exempt: small single-responsibility files (types-only, config-only, behavior-only, wiring-only, generated files); single-consumer props/local view models per `architecture-advisor`.
+   - Severity: P2 for mixing contracts with data/behavior; P3 for config + behavior or minor mixing. Tag findings with `FILE_COHESION`.
+   - Evidence: file with responsibility breakdown + reason to change analysis + consumer import paths.
 
 ### Phase 6 — Validate Findings Against Context
 

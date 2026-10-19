@@ -168,6 +168,16 @@ per module, co-location rules, public module API) and the **contract/type
 placement** per folder, following the ownership principle from
 `architecture-advisor`.
 
+**The proposal must also include a File Responsibility Map for each new
+or significantly changed module**: which file owns contracts/types
+(`types.ts`), which owns static data/catalogs (`messages/`, `catalogs/`),
+which owns configuration (`config.ts`), which owns behavior/formatters
+(`format.ts`, `utils.ts`), and which serves as the public API
+(`index.ts`). For i18n modules, this means separating types, locale
+config, per-locale catalogs, and formatters. Single-consumer props/local
+view models are co-located with their consumer and do not require a
+separate types file.
+
 Use only the analyses relevant to this task.
 
 When the task changes a boundary, interface, or integration, load
