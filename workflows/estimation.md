@@ -79,6 +79,7 @@ Detect the context the estimate depends on:
 - whether a software project is present in the current directory, and its
   detected stack and conventions (see `stack-detection`,
   `project-analysis`)
+- **Consult `references/official-documentation.md`** for the detected stack to retrieve authoritative guidance on framework conventions, ecosystem maturity, and typical effort ranges for common patterns.
 - reuse a complexity classification when one already exists (see
   `complexity-advisor`); estimate complexity only when needed, and do not
   duplicate the architecture evaluation

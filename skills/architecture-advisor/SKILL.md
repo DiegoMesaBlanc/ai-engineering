@@ -244,6 +244,24 @@ The type/contract placement rule derives from the folder map: **the type lives i
 | Medium, multiple domains | Feature-first: `src/features/<feature>/{api,domain,server,components,hooks,contracts}` + `src/shared/` |
 | Large, multiple teams | Feature modules with explicit public APIs and boundaries; packages only when justified |
 
+**Architectural style alternatives** (select based on domain complexity, team structure, deployment needs):
+
+| Style | When to use | Structure hint |
+|---|---|---|
+| Layered | Simple domains, single team, low coupling | `src/{api,services,domain,infrastructure}/` |
+| Feature-first | Multiple domains, independent features | `src/features/<feature>/{api,domain,ui,contracts}/` |
+| Hexagonal / Ports & Adapters | Multiple external integrations, testability critical | `src/{domain,application,adapters}/` with ports in domain |
+| DDD (Domain-Driven Design) | Complex domain logic, ubiquitous language | `src/{domain,application,infrastructure,interfaces}/` with aggregates, entities, value objects |
+| Modular Monolith | Multiple bounded contexts, single deployable | `src/modules/<context>/{domain,application,api}/` + `src/shared/` |
+
+**Evolution guidance**: As the project grows (e.g., adding auth, payments, notifications), **re-evaluate at each significant boundary change**. Indicators to migrate:
+- Multiple domains with independent lifecycles → Feature-first
+- Multiple external systems (DB, APIs, queues) → Hexagonal
+- Complex domain rules with invariants → DDD
+- Team ownership boundaries → Modular monolith
+
+Migration follows R-42: only when a concrete threshold is met (reuse, size/complexity, required change, testability). Document the decision in the Folder Architecture Map.
+
 Framework-specific route handlers (`app/api/...`, `routes/...`) remain in the framework's conventional location; they are thin and delegate to the domain/service layer.
 
 **Universal responsibility rules** (apply regardless of chosen structure):
@@ -319,6 +337,7 @@ is not sufficient.
 
 Use these sources to inform decisions, not as universal templates:
 
+- **Official Documentation Index**: `references/official-documentation.md` — authoritative, version-aware documentation references for every supported technology. **Consult this first** for the detected stack.
 - Feature-Sliced Design:
   https://feature-sliced.design/docs/get-started/overview
 - Hexagonal Architecture:
@@ -331,8 +350,9 @@ Use these sources to inform decisions, not as universal templates:
   https://fastapi.tiangolo.com/tutorial/bigger-applications/
 
 Prioritize proven repository conventions and official language/framework
-documentation; use recognized architectural methodologies to guide
-decisions rather than copying universal templates.
+documentation (via `references/official-documentation.md`); use recognized
+architectural methodologies to guide decisions rather than copying universal
+templates.
 
 ### Autonomy and Decision Gates
 

@@ -86,7 +86,7 @@ Interpret the task automatically:
 6. Identify testable acceptance criteria, affected modules, constraints,
    risks, and non-goals.
 7. Resolve details autonomously through existing code, conventions,
-   official documentation, and engineering policy.
+   **`references/official-documentation.md`** (for the detected stack), and engineering policy.
 8. Identify only the material ambiguities that cannot safely be inferred.
 
 When a provider is unavailable, use the available task text or artifact.

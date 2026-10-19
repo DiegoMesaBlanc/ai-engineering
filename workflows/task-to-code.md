@@ -78,6 +78,19 @@ For a new project:
 
 Do not introduce a monorepo or microfrontends without evidence.
 
+**Official documentation consultation (mandatory after stack detection):**
+
+Once the stack is detected (language, framework, runtime, versions), **consult `references/official-documentation.md`** for the detected technologies to retrieve authoritative guidance on:
+
+- Framework-specific architecture conventions (e.g., Next.js App Router patterns, React Server Components)
+- Official style guides and conventions (e.g., React Rules, Angular Style Guide)
+- Version-specific APIs, deprecations, and migration paths
+- Security best practices for the detected stack
+- Testing strategies recommended by the framework
+
+**When to consult:** After Phase 4 completes stack detection, before Phase 8 (architecture evaluation).
+**Scope:** Only the sections relevant to the detected stack and the current task. Do not load entire documentation sites.
+
 ## Phase 5 — Intent and Alignment
 
 Identify the engineering intent from the request:
@@ -155,6 +168,18 @@ Perform the architecture-first evaluation defined in
 the real project architecture and conventions, placement and cohesion,
 reuse and module conventions, design patterns only when justified, and
 existing dependencies, tools, and styling conventions.
+
+**Official documentation consultation (mandatory for architecture evaluation):**
+
+Before proposing architecture, **consult `references/official-documentation.md`** for the detected stack to retrieve:
+
+- Official architecture recommendations for the framework (e.g., Next.js App Router architecture, React component patterns)
+- Official guidance on architectural styles (Clean Architecture, Hexagonal, Feature-Sliced, Modular Monolith)
+- Framework-specific conventions for folder structure, module boundaries, and dependency direction
+- Version-specific constraints and capabilities
+
+**When to consult:** At the start of Phase 8, before evaluating architecture alternatives.
+**Scope:** Architecture-relevant sections only. Cross-reference with `skills/architecture-advisor/SKILL.md` catalog.
 
 Base the diagnosis on implementation evidence and classify it as detected
 with evidence, inferred with uncertainty, or no identifiable architecture.
@@ -273,6 +298,22 @@ Follow `skills/implementation-recipes/SKILL.md` for the detected stack and
 apply its non-negotiable quality baseline: quality is never proportional to
 task size. A trivial change is implemented carefully, not quickly at the
 expense of conventions, error handling, typing, security, or tests.
+
+**Official documentation consultation (on-demand during implementation):**
+
+During implementation, **consult `references/official-documentation.md` on-demand** when encountering:
+
+- Unfamiliar APIs or framework-specific behavior (e.g., Next.js Server Actions, React Server Components, Zod refinements)
+- Framework-specific implementation decisions (e.g., Next.js App Router data fetching, React Server Components patterns)
+- Deprecated or experimental features
+- Version compatibility issues
+- Security-sensitive behavior (auth, encryption, headers)
+- Migration and upgrade guidance
+- Uncertain performance or rendering behavior
+
+**When to consult:** On-demand, only when the implementation hits a technical question not resolved by existing code, conventions, or internal rules.
+**Do NOT consult:** For routine implementation (boilerplate, wiring, standard patterns already established in the codebase).
+**Scope:** Only the specific section needed to resolve the question. Do not browse entire documentation sites.
 
 Proceed autonomously for routine work after alignment. Do not pause for user approval for each file edit, test, formatting change, local refactoring, or ordinary corrective adjustment within the approved scope. Do not weaken quality, security, testing, or validation standards.
 

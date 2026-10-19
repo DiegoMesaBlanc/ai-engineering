@@ -295,17 +295,79 @@ Detect the platform actually used by the project and consult the
 corresponding documentation. CI/CD and delivery decisions follow
 `workflows/secure-delivery.md`.
 
+## Architecture, Design Patterns & Clean Code (Foundational)
+
+These are the authoritative sources that inform our internal rules. Consult when making architectural decisions, evaluating patterns, or establishing conventions.
+
+### Clean Architecture & SOLID Principles
+
+- **Robert C. Martin (Uncle Bob) - Clean Architecture**: https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html
+- **Clean Architecture Book**: https://www.oreilly.com/library/view/clean-architecture-a/9780134494272/
+- **SOLID Principles**: https://en.wikipedia.org/wiki/SOLID
+- **The Dependency Rule**: https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html#the-dependency-rule
+
+### Domain-Driven Design (DDD)
+
+- **Eric Evans - Domain-Driven Design (Blue Book)**: https://domainlanguage.com/ddd/
+- **DDD Reference (Vaughn Vernon)**: https://domainlanguage.com/ddd/reference/
+- **Implementing DDD (Vaughn Vernon)**: https://vaughnvernon.co/?page_id=168
+- **DDD Tactical Patterns**: https://martinfowler.com/bliki/DomainDrivenDesign.html
+
+### Hexagonal Architecture (Ports & Adapters)
+
+- **Alistair Cockburn - Hexagonal Architecture**: https://alistaircockburn.com/Articles/Hexagonal-Architecture/
+- **Ports and Adapters**: https://herbertograca.com/2017/11/16/hexagonal-architecture-ports-adapters/
+
+### Feature-Sliced Design (Frontend Architecture)
+
+- **Official Methodology**: https://feature-sliced.design/docs/get-started/overview
+- **Layers & Slices**: https://feature-sliced.design/docs/reference/layers
+- **Public API**: https://feature-sliced.design/docs/reference/public-api
+
+### Modular Monolith & Bounded Contexts
+
+- **Modular Monolith (Kamil Grzybek)**: https://github.com/kgrzybek/modular-monolith-with-ddd
+- **Modular Monolith vs Microservices**: https://www.martinfowler.com/articles/modular-monolith.html
+- **Context Mapping (DDD Strategic Design)**: https://martinfowler.com/bliki/BoundedContext.html
+
+### Clean Code & Code Quality
+
+- **Robert C. Martin - Clean Code**: https://www.oreilly.com/library/view/clean-code/9780136083238/
+- **Clean Code Principles**: https://github.com/ryanmcdermott/clean-code-javascript
+- **Code Smells & Refactoring (Martin Fowler)**: https://martinfowler.com/books/refactoring.html
+- **Refactoring Catalog**: https://refactoring.com/catalog/
+
+### Software Architecture Patterns
+
+- **Patterns of Enterprise Application Architecture (Martin Fowler)**: https://martinfowler.com/books/eaa.html
+- **Enterprise Integration Patterns**: https://www.enterpriseintegrationpatterns.com/
+- **CQRS (Greg Young)**: https://martinfowler.com/bliki/CQRS.html
+- **Event Sourcing**: https://martinfowler.com/eaaDev/EventSourcing.html
+
+### Design Principles & Laws
+
+- **Conway's Law**: https://www.melconway.com/Home/Conways_Law.html
+- **Law of Demeter**: https://en.wikipedia.org/wiki/Law_of_Demeter
+- **DRY / KISS / YAGNI**: https://en.wikipedia.org/wiki/Don%27t_repeat_yourself
+- **Twelve-Factor App**: https://12factor.net/
+
+### SDLC & Engineering Practices
+
+- **Continuous Delivery (Jez Humble, Dave Farley)**: https://continuousdelivery.com/
+- **Trunk-Based Development**: https://trunkbaseddevelopment.com/
+- **GitHub Flow / Git Flow**: https://nvie.com/posts/a-successful-git-branching-model/
+- **Semantic Versioning**: https://semver.org/
+- **Conventional Commits**: https://www.conventionalcommits.org/
+
+### Testing Principles
+
+- **Test Pyramid (Martin Fowler)**: https://martinfowler.com/bliki/TestPyramid.html
+- **Testing Trophy (Kent C. Dodds)**: https://kentcdodds.com/blog/the-testing-trophy-and-testing-classifications
+- **Property-Based Testing**: https://github.com/leanprover-community/mathlib4/blob/master/docs/contribute/property-based-testing.md
+
+---
+
 ## Selection Workflow
-
-For every task:
-
-1. Detect the technology and version.
-2. Identify the specific technical question or implementation concern.
-3. Select one or more relevant documentation references.
-4. Retrieve only the sections needed to resolve the question.
-5. Compare the guidance against existing code and project conventions.
-6. Implement the smallest suitable change.
-7. Validate the result with available project tooling.
 
 ## External Skills
 

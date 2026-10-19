@@ -127,6 +127,7 @@ For each applicable dimension:
     - Patterns: exported contracts in the same file as static data (i18n catalogs, config maps), runtime behavior, or wiring; locale metadata + translations + formatters in one file; large static data inline with logic; schemas + inferred types + validators + converters + HTTP client in one file.
     - i18n-specific: inline translation dictionaries in config/logic files; catalogs must be in dedicated `messages/` or `messages.ts` files separate from config and formatters.
     - API-specific: Zod schemas + inferred types + validation functions + converters + fetch client in one file → must separate `contracts.ts` (schemas + types) from `client.ts` (validators, converters, fetch).
+    - **React/Next.js function style**: flag `function` keyword in `.tsx`/`.jsx` files (except `function*` generators). Arrow functions required for components, hooks, callbacks. Severity: P3. Tag: `REACT_FUNCTION_STYLE`.
     - Exempt: small single-responsibility files (types-only, config-only, behavior-only, wiring-only, generated files); single-consumer props/local view models per `architecture-advisor`.
     - Severity: P2 for mixing contracts with data/behavior or schema+validators+client; P3 for config + behavior or minor mixing. Tag findings with `FILE_COHESION`.
     - Evidence: file with responsibility breakdown + reason to change analysis + consumer import paths.

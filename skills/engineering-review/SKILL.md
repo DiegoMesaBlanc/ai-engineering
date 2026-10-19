@@ -53,6 +53,7 @@ Review the actual changes, not the entire repository unless required.
   formatters. API modules must separate schemas + types (`contracts.ts`) from
   validators, converters, and clients (`client.ts`). Single-consumer props/local
   view models are exempt.
+- **React/Next.js function style**: flag `function` keyword in `.tsx`/`.jsx` files (except `function*` generators). Arrow functions required for components, hooks, callbacks. Severity: P3.
 - **Unnecessary abstraction or fragmentation is a finding that must be
   resolved: revert the change or justify it with evidence against the
   thresholds in `skills/complexity-advisor/SKILL.md` (Refactoring and

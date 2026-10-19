@@ -35,13 +35,16 @@ because it looks simple.
 
 1. Detect the stack, versions, and existing conventions (see
    `stack-detection`, `project-analysis`).
-2. Reuse existing abstractions, utilities, and patterns (see
+2. **Consult `references/official-documentation.md`** for the detected stack to retrieve authoritative guidance on framework conventions, APIs, and best practices.
+3. Reuse existing abstractions, utilities, and patterns (see
    `architecture-advisor`).
-3. Identify the cross-cutting concerns the change touches (validation,
+4. Identify the cross-cutting concerns the change touches (validation,
    errors, auth, config, logging, testing).
-4. Implement in the smallest cohesive unit that satisfies the design.
-5. Validate with the project's formatter, linter, type checker, and tests.
-6. Review the result against the agreed design and conventions.
+5. Implement in the smallest cohesive unit that satisfies the design.
+6. Validate with the project's formatter, linter, type checker, and tests.
+7. Review the result against the agreed design and conventions.
+
+**Official documentation consultation:** Step 2 is mandatory after stack detection. Consult only the sections relevant to the detected stack and current task. Do not load entire documentation sites.
 
 ## Folder Architecture and Contract Placement
 
@@ -150,6 +153,10 @@ src/server/<domain>/        # or src/features/<feature>/server/
 - Manage state with the project's existing solution; avoid introducing a new one without justification.
 - Handle loading, empty, and error states in data access.
 - Follow the framework's data-fetching and caching conventions.
+- **Function style**: Use **arrow functions** (`const fn = () => {}`) for all function declarations. Do not use `function` keyword. This applies to components, hooks, utilities, and callbacks. Exception: `function` keyword allowed only for `function*` generators or when `this` binding is explicitly required (rare in React).
+- **Component style**: Prefer `const Component = ({ props }) => {}` over `function Component({ props }) {}`.
+- **Hook style**: `const useHook = () => {}` not `function useHook() {}`.
+- **Callback style**: `const handleClick = () => {}` not `function handleClick() {}`.
 
 ### Angular
 
