@@ -14,8 +14,12 @@ Run the Code Audit Workflow:
 Optional arguments in `$ARGUMENTS`:
 
 - File or directory paths to audit (relative to project root).
-- If omitted, audit the current change set (Git status + diff); if the working tree is clean, audit the whole project.
-- **For architecture/folder structure and type/contract ownership, consider passing the containing module or `src/` to include declaration sites outside the diff.**
+- `--all` to audit the entire project (explicit opt-in).
+- If omitted, audit only uncommitted changes:
+  - Staged + unstaged tracked changes (`git diff HEAD`)
+  - Untracked files (`git ls-files --others --exclude-standard`)
+  - If the working tree is clean: `NOTHING TO AUDIT` (no fallback to whole project).
+- **Default scope is the change set only; declaration sites outside the diff are not audited.**
 
 ## Behavior
 

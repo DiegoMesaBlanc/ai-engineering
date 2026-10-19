@@ -53,10 +53,21 @@ Each dimension maps to an existing Skill. Only applicable dimensions are audited
 ### Phase 2 — Identify Scope
 
 - If `$ARGUMENTS` provides paths, use those.
-- Else inspect Git status + diff; audit the current change set.
-- If the working tree is clean, audit the whole project (all application source files).
-- **For architecture/folder structure and type/contract ownership, consider auditing the containing module or whole `src/` when the change set imports shared types; declaration sites may be outside the diff.**
-- Record the exact scope (paths, branch, commit).
+- If `$ARGUMENTS` includes `--all`, audit the entire project (all application source files).
+- Else inspect Git status + diff; audit only uncommitted changes:
+  - Staged + unstaged tracked changes (`git diff HEAD`).
+  - Untracked files (`git ls-files --others --exclude-standard`).
+  - If the working tree is clean: report `NOTHING TO AUDIT` and exit (no fallback to whole project).
+- **Default scope is the change set only; declaration sites outside the diff are not audited.**
+- Build a **Scope Manifest** recording:
+  - `git status --porcelain=v1`
+  - `git diff --name-status -M HEAD`
+  - `git diff --unified=0 HEAD`
+  - `git ls-files --others --exclude-standard`
+- Exclude by default: `node_modules`, `dist`, `.next`, `build`, `coverage`, lockfiles, binaries, minified assets.
+  - Migrations and config files are included.
+- Deleted files: record as context only (no code audit).
+- Record the exact scope (paths, branch, commit, changed line ranges).
 
 ### Phase 3 — Detect Stack and Architecture
 
@@ -85,13 +96,13 @@ For each applicable dimension:
 
 1. **Folder Architecture check**
    - Build the Folder Architecture Map from the project (detected) or the approved proposal (if available): layers/modules, responsibility→folder, allowed dependency directions, contract/type location per module, co-location rules, public module API.
-   - Map declarations to folders/layers.
+   - Map declarations to folders/layers **within the audited scope**.
    - Verify allowed import directions; flag layer-skipping imports (e.g., UI → service implementation for types), mixed-responsibility folders, cross-feature private imports, global `types.ts`/`utils.ts` dumping grounds, circular layer dependencies.
    - Do not impose a universal template; audit conformance to the detected/declared structure. If no structure exists, report "no identifiable architecture" and evaluate whether new code created a coherent one.
    - Language-specific idioms: Go consumer-side interfaces, Java one-public-type-per-file, Python Protocols, Ruby RBS/Sorbet.
 
 2. **Type and Contract Ownership check**
-   - Enumerate contract/type declarations in scope using language-aware patterns:
+   - Enumerate contract/type declarations **in the audited scope** using language-aware patterns:
      - TS/JS: `interface`, `type`, `enum`, `class` (contract-like), `import type`.
      - Java/Kotlin: `interface`, `record`, `enum`, `class`, `data class`.
      - Python: `class` with `Protocol`/`TypedDict`/`dataclass`, `TypeAlias`.
@@ -101,8 +112,8 @@ For each applicable dimension:
      - PHP: `interface`, `class`, `enum`.
      - Ruby: Sorbet `sig`, RBS files.
      - SQL: schema/table types (N/A for code interfaces).
-   - Map consumers via imports/references/implementations.
-   - Follow declaration sites even outside the change set when the scope imports them.
+   - Map consumers via imports/references/implementations **within the audited scope**.
+   - Follow declaration sites outside the change set **only as read-only context** to judge import correctness; do not expand the audit scope.
    - Flag: shared contract in implementation folder; consumer importing contract from implementation folder solely for types; duplicated/divergent contracts; type-only cycles; language-idiom violations (e.g., forcing provider-side interface in Go).
    - **Do not flag**: single-consumer props/local view models (co-location per `architecture-advisor`); Go consumer-side interfaces; nested/private helper types; Ruby RBS signatures.
    - Evidence: declaration `folder/file:line` + each consumer `folder/file:line` + import statement.
@@ -115,7 +126,7 @@ Before finalizing each finding:
 - Inspect applicable tests and error-handling behavior.
 - Verify whether the alleged issue is already fixed or intentional.
 - Ensure the finding was introduced by the audited scope.
-- **If the declaration site is outside the audited scope (e.g., a shared type declared in a prior commit), label the finding as `pre-existing` and do not attribute it to the change; still report it if it affects the audited scope.**
+- **If the declaration site is outside the audited scope (e.g., a shared type declared in a prior commit), do not report the finding; pre-existing issues outside the diff are out of scope.**
 - Avoid duplicate findings for the same root cause.
 
 ### Phase 7 — Report
@@ -127,14 +138,18 @@ Produce the report in this order:
 - Project root, classification.
 - Audited scope (paths, branch, commit).
 - Detected stack + architecture with confidence.
+- **Scope Manifest** (files + changed line ranges, exclusions declared).
 - **Folder Architecture Map** (layers/modules, responsibility→folder, allowed dependency directions, contract/type location, co-location rules, public module API).
+- **Out of scope**: pre-existing issues outside the diff, excluded files, and declaration sites outside the audited change set.
 
 #### 2. Dimension Matrix
 
 | Dimension | Status | N/A Reason (if applicable) |
 |---|---|---|
-| Architecture & folder structure | PASS/WARN/FAIL/N/A | ... |
+| Architecture & folder structure | PASS/WARN/FAIL/N/A | *e.g., "change does not touch architecture"* |
 | ... | ... | ... |
+
+**Note**: Dimension 1 evaluates conformance of the changed code to the Folder Architecture Map; if the change set does not allow assessment of global architecture, report `N/A` with reason.
 
 #### 3. Findings
 

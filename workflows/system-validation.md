@@ -1266,6 +1266,7 @@ Verify that the code-creation audit is a standalone, read-only, non-duplicative 
   (R-43)
 - no new Skill, agent, package.json, dependency, or competing orchestrator
   was introduced
+- **default scope is the uncommitted change set; clean tree = NOTHING TO AUDIT; no fallback to whole project**
 
 ## V2.23 Regression — Folder Architecture, Dependency Direction, and Type/Contract Ownership
 
@@ -1285,3 +1286,4 @@ Verify that folder architecture and type/contract ownership are defined once, en
   - Folder: UI → concrete repo; cross-feature private import; global `types.ts` dump.
 - No new Skill, agent, command, package.json, dependency, or competing orchestrator introduced.
 - No blanket "all inline types are defects" rule; no universal folder template imposed.
+- **default scope is the uncommitted change set; checks operate only on modified files; declaration sites outside the diff are context only; pre-existing issues outside the diff are not reported; clean tree = NOTHING TO AUDIT**
