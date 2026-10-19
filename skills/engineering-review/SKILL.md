@@ -26,6 +26,11 @@ Review the actual changes, not the entire repository unless required.
   `skills/architecture-advisor/SKILL.md`: contrast the result with the
   proposed design and the project's conventions, including placement,
   cohesion, reuse, module conventions, and unnecessary fragmentation.
+- **Unnecessary abstraction or fragmentation is a finding that must be
+  resolved: revert the change or justify it with evidence against the
+  thresholds in `skills/complexity-advisor/SKILL.md` (Refactoring and
+  Abstraction Justification). A conditional PASS without resolution is not
+  acceptable.**
 
 ### Code quality
 

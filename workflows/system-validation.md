@@ -1212,3 +1212,26 @@ mobile interfaces are analyzed and built for mobile:
   internationalization and mobile scenarios (R-40, R-41)
 - no new command, package.json, dependency, or competing orchestrator was
   introduced
+
+## V2.21 Regression — Refactoring and Abstraction Justification
+
+Verify that unsolicited refactoring and unnecessary fragmentation are prohibited:
+
+- `skills/complexity-advisor/SKILL.md` defines the Refactoring and Abstraction
+  Justification gate with thresholds (reuse, project size/complexity, required
+  change, testability) and negative triggers (single use, no threshold,
+  aesthetic, barrel without utility)
+- `skills/architecture-advisor/SKILL.md` defines the Fragmentation Gate
+  requiring the same justification for component/module extraction, barrels,
+  and reorganization
+- `AGENTS.md` scopes localized refactoring to what the task requires; unsolicited
+  restructuring is out of scope and becomes an Engineering Insight
+- `workflows/task-to-code.md` Phase 9 references the justification gate for
+  proposed new components; Phase 10 enforces it and requires resolution of
+  over-engineering findings (revert or justify with evidence), not waiver
+- `skills/engineering-review/SKILL.md` classifies unnecessary abstraction/
+  fragmentation as a finding that must be resolved, not a conditional PASS
+- `references/system-workflow-regression-matrix.md` includes the scenario
+  (R-42)
+- no new command, package.json, dependency, or competing orchestrator was
+  introduced

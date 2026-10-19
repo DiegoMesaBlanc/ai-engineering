@@ -218,7 +218,7 @@ Provide a concise implementation plan including:
 - existing abstractions to reuse
 - the dependency outcome (`NO_NEW_DEPENDENCY`, `REUSE_EXISTING`,
   `NEW_DEPENDENCY_PROPOSED`, or `BLOCKED`) with its evidence
-- proposed new components only when justified
+- proposed new components only when justified per the Refactoring and Abstraction Justification gate in `skills/complexity-advisor/SKILL.md`
 - formatting and linting setup when the project lacks it
 - the Secure Delivery Workflow selected when the task involves CI/CD,
   security, or delivery controls, including authoring a delivery pipeline
@@ -258,7 +258,7 @@ If new evidence changes a material requirement or approved design, pause and exp
 
 Use checkpoints according to `workflows/session-resilience.md`. Do not require restarting the terminal.
 
-Do not expand the scope silently.
+Do not expand the scope silently. Any new component, module, or abstraction must satisfy the Refactoring and Abstraction Justification gate in `skills/complexity-advisor/SKILL.md`; an over-engineering finding from review must be resolved (revert or justify with evidence), not waived.
 
 ## Phase 11 — Validate
 

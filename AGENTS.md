@@ -89,7 +89,7 @@ Once the task scope and approach are aligned, independently carry out routine im
 - Consult official documentation for version-sensitive or unfamiliar behavior.
 - Configure and run the existing formatter, linter, type checker, tests, and build as appropriate.
 - Fix routine defects discovered during implementation and validation.
-- Perform localized refactoring necessary to maintain code quality.
+- Perform localized refactoring necessary to maintain code quality **only when required by the task**; unsolicited restructuring, component extraction, splitting, or new abstractions are out of scope and become Engineering Insights.
 - Choose the smallest maintainable solution consistent with project conventions.
 
 - Do not pause for user approval for each file edit, test, formatting change, local refactoring, or ordinary corrective adjustment within the approved scope.

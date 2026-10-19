@@ -202,6 +202,16 @@ conventions.
 - Do not introduce barrels, aliases, or new module conventions
   automatically; justify their utility and compatibility first.
 
+### Fragmentation Gate
+
+Extracting components, modules, or types; introducing barrels or aliases;
+or reorganizing working code requires the same justification as
+`skills/complexity-advisor/SKILL.md` (Refactoring and Abstraction
+Justification): at least one threshold must be met with evidence
+(reuse, size/complexity, required change, testability). If no threshold is
+met, do not fragment. Record the observation as an Engineering Insight
+instead of implementing.
+
 ### Design Patterns
 
 Select a design pattern only when it solves a real need.

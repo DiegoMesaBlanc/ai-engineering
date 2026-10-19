@@ -145,3 +145,20 @@ Prefer:
 Do not expand the task merely because an improvement is visible.
 
 Record unrelated improvements as Engineering Insights instead.
+
+## Refactoring and Abstraction Justification
+
+Before extracting a new component, module, function, or abstraction, verify that at least one justification threshold is met with evidence:
+
+1. **Reuse** — the extracted unit is used in ≥2 real call sites now (not hypothetically).
+2. **Size/complexity** — the unit exceeds the **project's own** established threshold (e.g., a component >300 lines, a function >50 lines when the project has no convention, a module exceeding the project's typical size).
+3. **Required change** — the task itself changes the unit, and the change is cleaner with the split.
+4. **Testability** — the original cannot be adequately tested without the split (evidence required).
+
+Negative triggers (do NOT extract/split):
+- Single call site or no reuse.
+- No threshold exceeded; purely aesthetic or "clean code" rationale.
+- Barrel export or alias introduced solely for import tidiness with no consumer benefit.
+- The working unit is cohesive and used in one place.
+
+If no threshold is met, do not perform the refactor. Record the observation as an Engineering Insight instead.
