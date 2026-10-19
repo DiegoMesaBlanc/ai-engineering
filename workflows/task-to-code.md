@@ -162,21 +162,26 @@ Separate the architectural style, the organization strategy, and the
 language/framework conventions, and address reusable types, interfaces, and
 contracts separately from their consumers.
 
-**The proposal must include a Folder Architecture Map** (layers/modules,
+**The proposal must include a Folder Architecture Decision and Map** (layers/modules,
 responsibility→folder, allowed dependency directions, contract/type location
 per module, co-location rules, public module API) and the **contract/type
 placement** per folder, following the ownership principle from
-`architecture-advisor`.
+`architecture-advisor`. If no coherent architecture exists, apply the
+complexity-based decision (small→layer-first, medium→feature-first,
+large→feature modules with boundaries) and document the rationale.
 
 **The proposal must also include a File Responsibility Map for each new
 or significantly changed module**: which file owns contracts/types
-(`types.ts`), which owns static data/catalogs (`messages/`, `catalogs/`),
-which owns configuration (`config.ts`), which owns behavior/formatters
-(`format.ts`, `utils.ts`), and which serves as the public API
-(`index.ts`). For i18n modules, this means separating types, locale
-config, per-locale catalogs, and formatters. Single-consumer props/local
+(`types.ts`/`contracts.ts`/`schemas.ts`), which owns static data/catalogs
+(`messages/`, `catalogs/`), which owns configuration (`config.ts`),
+which owns behavior/formatters (`format.ts`, `utils.ts`), and which serves
+as the public API (`index.ts`). For i18n modules, this means separating
+types, locale config, per-locale catalogs, and formatters. For API modules,
+separate schemas + inferred types (`contracts.ts`) from validators,
+converters, and clients (`client.ts`). Single-consumer props/local
 view models are co-located with their consumer and do not require a
-separate types file.
+separate types file. A type is extracted only when **actually reused from
+another file**; mere export without reuse is a WARN/observation.
 
 Use only the analyses relevant to this task.
 
@@ -199,11 +204,14 @@ material unresolved question justifies it.
 
 Mandatory decision gate. Before implementing:
 
-- If the project has a coherent architecture, continue it unless there is
-  an important incompatibility.
-- If no clear architecture is detected, conventions conflict, or the task
-  requires choosing a new architecture, present the diagnosis and a
-  recommendation with concrete alternatives and trade-offs, then ask the
+- If the project has a **coherent** architecture (detected structure with
+  clear boundaries and consistent import directions), continue it unless
+  there is an important incompatibility.
+- If no clear architecture is detected, the detected structure is
+  incoherent (e.g., flat `lib/` mixing domains), or conventions conflict,
+  present the diagnosis and a recommendation with concrete alternatives and
+  trade-offs, **including the complexity-based decision** from the table
+  in `architecture-advisor`, then ask the
   user whether to preserve the existing organization or adopt the
   recommended alternative.
 - Wait for the answer before implementing. Do not silently turn a

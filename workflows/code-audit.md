@@ -95,38 +95,41 @@ For each applicable dimension:
 **Dimension 1 — Architecture & folder structure: explicit checks**
 
 1. **Folder Architecture check**
-   - Build the Folder Architecture Map from the project (detected) or the approved proposal (if available): layers/modules, responsibility→folder, allowed dependency directions, contract/type location per module, co-location rules, public module API.
-   - Map declarations to folders/layers **within the audited scope**.
-   - Verify allowed import directions; flag layer-skipping imports (e.g., UI → service implementation for types), mixed-responsibility folders, cross-feature private imports, global `types.ts`/`utils.ts` dumping grounds, circular layer dependencies.
-   - Do not impose a universal template; audit conformance to the detected/declared structure. If no structure exists, report "no identifiable architecture" and evaluate whether new code created a coherent one.
-   - Language-specific idioms: Go consumer-side interfaces, Java one-public-type-per-file, Python Protocols, Ruby RBS/Sorbet.
+    - Build the Folder Architecture Map from the project (detected) or the approved proposal (if available): layers/modules, responsibility→folder, allowed dependency directions, contract/type location per module, co-location rules, public module API.
+    - Map declarations to folders/layers **within the audited scope**.
+    - Verify allowed import directions; flag layer-skipping imports (e.g., UI → service implementation for types), mixed-responsibility folders, cross-feature private imports, global `types.ts`/`utils.ts` dumping grounds, circular layer dependencies.
+    - **Dumping ground check**: flag `lib/`, `utils/`, `services/` folders that contain domain-specific code (API clients, contracts, storage, i18n catalogs) mixed with generic utilities. These are anti-patterns, not conventions to preserve.
+    - Do not impose a universal template; audit conformance to the detected/declared structure. If no structure exists, report "no identifiable architecture" and evaluate whether new code created a coherent one per the complexity-based decision (small→layer-first, medium→feature-first).
+    - Language-specific idioms: Go consumer-side interfaces, Java one-public-type-per-file, Python Protocols, Ruby RBS/Sorbet.
 
 2. **Type and Contract Ownership check**
-   - Enumerate contract/type declarations **in the audited scope** using language-aware patterns:
-     - TS/JS: `interface`, `type`, `enum`, `class` (contract-like), `import type`.
-     - Java/Kotlin: `interface`, `record`, `enum`, `class`, `data class`.
-     - Python: `class` with `Protocol`/`TypedDict`/`dataclass`, `TypeAlias`.
-     - C#: `interface`, `record`, `class`, `struct`.
-     - Go: `type ... interface`, `type ... struct`.
-     - Rust: `trait`, `struct`, `enum`, `type`.
-     - PHP: `interface`, `class`, `enum`.
-     - Ruby: Sorbet `sig`, RBS files.
-     - SQL: schema/table types (N/A for code interfaces).
-   - Map consumers via imports/references/implementations **within the audited scope**.
-   - Follow declaration sites outside the change set **only as read-only context** to judge import correctness; do not expand the audit scope.
-   - Flag: shared contract in implementation folder; consumer importing contract from implementation folder solely for types; duplicated/divergent contracts; type-only cycles; language-idiom violations (e.g., forcing provider-side interface in Go).
-   - **Do not flag**: single-consumer props/local view models (co-location per `architecture-advisor`); Go consumer-side interfaces; nested/private helper types; Ruby RBS signatures.
-   - **A type used by ≥2 consumers or forming part of a module's public API is shared**, even if it lives in the same module as its implementation; `lib/`, `util/`, `services/`, and similar folders with runtime code count as implementation folders. Such types must be in a dedicated `types.ts`/`contracts.ts`.
-   - Evidence: declaration `folder/file:line` + each consumer `folder/file:line` + import statement.
-   - Severity: P1 if cycle/layer violation with build/runtime risk; P2 for layering/maintainability; P3 for style/consistency. Tag findings with `TYPE_OWNERSHIP` or `FOLDER_ARCHITECTURE`.
+    - Enumerate contract/type declarations **in the audited scope** using language-aware patterns:
+      - TS/JS: `interface`, `type`, `enum`, `class` (contract-like), `import type`.
+      - Java/Kotlin: `interface`, `record`, `enum`, `class`, `data class`.
+      - Python: `class` with `Protocol`/`TypedDict`/`dataclass`, `TypeAlias`.
+      - C#: `interface`, `record`, `class`, `struct`.
+      - Go: `type ... interface`, `type ... struct`.
+      - Rust: `trait`, `struct`, `enum`, `type`.
+      - PHP: `interface`, `class`, `enum`.
+      - Ruby: Sorbet `sig`, RBS files.
+      - SQL: schema/table types (N/A for code interfaces).
+    - Map consumers via imports/references/implementations **within the audited scope**.
+    - Follow declaration sites outside the change set **only as read-only context** to judge import correctness; do not expand the audit scope.
+    - Flag: shared contract in implementation folder; consumer importing contract from implementation folder solely for types; duplicated/divergent contracts; type-only cycles; language-idiom violations (e.g., forcing provider-side interface in Go).
+    - **Do not flag**: single-consumer props/local view models (co-location per `architecture-advisor`); Go consumer-side interfaces; nested/private helper types; Ruby RBS signatures.
+    - **A type is shared when it is imported/referenced from another file**. It must then live in a dedicated `types.ts`/`contracts.ts`/`schemas.ts`, not in a file that also exports runtime behavior. Mere export without external reuse is WARN/observation, not a defect.
+    - **Schema + inferred type pair**: Zod/Joi/Yup schemas and their `infer` types must stay together in `schemas.ts`/`contracts.ts`; validators, converters, and HTTP clients must be in a separate file.
+    - Evidence: declaration `folder/file:line` + each consumer `folder/file:line` + import statement.
+    - Severity: P1 if cycle/layer violation with build/runtime risk; P2 for layering/maintainability (shared type in implementation file); P3 for style/consistency (exported but not reused). Tag findings with `TYPE_OWNERSHIP` or `FOLDER_ARCHITECTURE`.
 
 3. **File Cohesion and Responsibility Separation check**
-   - Detect files that mix multiple responsibilities: contracts/types, static data/catalogs, configuration, behavior/formatters, wiring.
-   - Patterns: exported contracts in the same file as static data (i18n catalogs, config maps), runtime behavior, or wiring; locale metadata + translations + formatters in one file; large static data inline with logic.
-   - i18n-specific: inline translation dictionaries in config/logic files; catalogs must be in dedicated `messages/` or `messages.ts` files separate from config and formatters.
-   - Exempt: small single-responsibility files (types-only, config-only, behavior-only, wiring-only, generated files); single-consumer props/local view models per `architecture-advisor`.
-   - Severity: P2 for mixing contracts with data/behavior; P3 for config + behavior or minor mixing. Tag findings with `FILE_COHESION`.
-   - Evidence: file with responsibility breakdown + reason to change analysis + consumer import paths.
+    - Detect files that mix multiple responsibilities: contracts/types, static data/catalogs, configuration, behavior/formatters, wiring.
+    - Patterns: exported contracts in the same file as static data (i18n catalogs, config maps), runtime behavior, or wiring; locale metadata + translations + formatters in one file; large static data inline with logic; schemas + inferred types + validators + converters + HTTP client in one file.
+    - i18n-specific: inline translation dictionaries in config/logic files; catalogs must be in dedicated `messages/` or `messages.ts` files separate from config and formatters.
+    - API-specific: Zod schemas + inferred types + validation functions + converters + fetch client in one file → must separate `contracts.ts` (schemas + types) from `client.ts` (validators, converters, fetch).
+    - Exempt: small single-responsibility files (types-only, config-only, behavior-only, wiring-only, generated files); single-consumer props/local view models per `architecture-advisor`.
+    - Severity: P2 for mixing contracts with data/behavior or schema+validators+client; P3 for config + behavior or minor mixing. Tag findings with `FILE_COHESION`.
+    - Evidence: file with responsibility breakdown + reason to change analysis + consumer import paths.
 
 ### Phase 6 — Validate Findings Against Context
 

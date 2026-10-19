@@ -702,6 +702,12 @@ Return:
 - V2.18 self-learning, maturity, and context efficiency checks:
 - V2.19 estimation checks:
 - V2.20 internationalization and mobile UI checks:
+- V2.21 refactoring and abstraction justification checks:
+- V2.22 code audit checks:
+- V2.23 folder architecture and type ownership checks:
+- V2.24 commit generation checks:
+- V2.25 file cohesion checks:
+- V2.26 folder architecture by complexity, dumping ground prohibition, and reuse-based type ownership checks:
 - External Skill readiness:
 
 ### Findings
@@ -1321,42 +1327,20 @@ quality gates and atomic commits:
 - No new Skill, agent, package.json, dependency, or competing orchestrator
   introduced.
 
-## V2.25 Regression — File Cohesion and Responsibility Separation
-
-Verify that file-level cohesion is defined, generated, reviewed, and
-audited:
-
-- `skills/architecture-advisor/SKILL.md` defines the **File Cohesion**
-  rule: one file = one primary responsibility and reason to change.
-  Separate contracts/types, static data/catalogs, configuration,
-  behavior/formatters, and wiring. Ownership determines folder, not file
-  bundling. A type used by ≥2 consumers or part of a module's public API
-  is shared and belongs in `types.ts`/`contracts.ts`, not in the
-  implementation file.
-- `skills/implementation-recipes/SKILL.md` includes the **Internal
-  Module Layout** table and an explicit **i18n layout** with per-locale
-  `messages/<locale>.ts`, `types.ts`, `config.ts`, `format.ts`,
-  `index.ts`.
-- `skills/internationalization/SKILL.md` adds a **Module Layout** section
-  with the same split; per-locale files for lazy loading, single
-  `messages.ts` if not needed.
-- `skills/engineering-review/SKILL.md` adds explicit file cohesion check:
-  flags files mixing contracts with data/behavior; i18n modules must
-  separate contracts, catalogs, config, and formatters.
-- `skills/project-analysis/SKILL.md` adds **Internal Module Layout
-  Detection** to report observed conventions (monolithic vs. split).
-- `workflows/code-audit.md` adds **File Cohesion check** (check 3 in
-  Dimension 1): detects contracts + data/behavior mixing, i18n inline
-  catalogs; `FILE_COHESION` tag; P2/P3; exempts single-responsibility
-  files and single-consumer props.
-- `workflows/task-to-code.md` Phase 8 requires a **File Responsibility
-  Map** per new/changed module: types, catalogs, config, behavior,
-  public API.
-- `references/system-workflow-regression-matrix.md` includes R-46 with
-  documented cases:
-  - TS i18n: monolithic `lib/i18n.ts` with contracts, catalogs, config,
-    formatters → P2 `FILE_COHESION`; split into `types.ts`, `config.ts`,
-    `messages/en.ts`, `format.ts`, `index.ts` → PASS.
-  - Single-consumer props inline → exempt.
 - No new Skill, agent, package.json, dependency, or competing orchestrator
   introduced.
+
+## V2.26 Regression — Folder Architecture by Complexity, Dumping Ground Prohibition, and Reuse-Based Type Ownership
+
+Verify that folder architecture is decided by complexity, `lib/`/`utils/` dumping grounds are prohibited, and type extraction is reuse-based:
+
+- `skills/architecture-advisor/SKILL.md` replaces "detected and preserved" with **detect first, decide by complexity if absent**: small→layer-first (`src/api/<domain>`, `src/services/<domain>`, `src/server/<domain>`, `src/shared/`, `src/components/`, `src/hooks/`); medium→feature-first (`src/features/<feature>/{api,domain,server,components,hooks,contracts}` + `src/shared/`); large→feature modules with explicit public APIs and boundaries. **Universal responsibility rules**: `lib/`/`utils/` are generic utilities only; API has its own folder (`contracts.ts` + `client.ts`); services in `services/` or `domain/`; storage in `server/`/`infrastructure/`; i18n in `shared/` or top-level. A mixed `lib/` is an anti-pattern, not a convention to preserve. New code uses correct folders; existing moves only when touched (R-42).
+- `skills/implementation-recipes/SKILL.md` adds the **complexity-based structure decision table** and an **API module recipe** (`contracts.ts` for schemas + inferred types, `client.ts` for validators/converters/fetch, `service.ts` for domain logic, `storage.ts` for persistence); i18n example moved to `src/shared/i18n/`.
+- `skills/project-analysis/SKILL.md` adds **Dumping Ground Detection**: classifies `lib/` files; flags domain-specific code in `lib/` as "legacy; do not replicate".
+- `skills/engineering-review/SKILL.md` adds dumping ground check, reuse-based type extraction (only when imported from another file), schema + inferred type pair stays in `contracts.ts`/`schemas.ts`, API file cohesion (contracts separate from client).
+- `workflows/code-audit.md` Dimension 1: **Folder Architecture check** adds dumping ground detection; **Type/Contract Ownership check** is reuse-based (P2 when imported from another file, WARN when only exported); **File Cohesion check** adds API-specific pattern (schemas + validators + client in one file → P2).
+- `references/system-workflow-regression-matrix.md` includes R-47 with documented cases:
+  - Demo counterexample: `src/lib` with i18n, payments service, storage, API contracts, API client mixed → P2 `FOLDER_ARCHITECTURE` + `TYPE_OWNERSHIP`.
+  - Correct for small app: layer-first `src/api/payments/{contracts,client}`, `src/services/payments`, `src/server/payments/storage`, `src/shared/i18n/`.
+- No new Skill, agent, package.json, dependency, or competing orchestrator introduced.
+- `/commit` does **not** block on architecture/type placement; behaves like Husky (objective gates only). Architecture is in code-audit/review/task-to-code.

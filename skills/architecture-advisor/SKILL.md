@@ -157,9 +157,10 @@ technology-specific architecture Skill solely to extend this catalog.
 Default rule:
 
 - **Contract ownership**: the type/contract lives in the folder of the layer or module that owns it. Consumers import from the contract module, never from an implementation module solely for types.
-- **Shared across ≥2 modules/layers or public API** → dedicated contract/type module in the owning layer/domain (`domain/`, `shared/types/`, feature `types.ts`). One module per domain/feature; avoid a global `types.ts` dumping ground.
+- **Shared by actual reuse**: a type is extracted to `types.ts`/`contracts.ts` when it is **imported/referenced from another file**. Mere export without external reuse is a WARN/observation, not a violation.
 - **Single-consumer implementation detail** (props, local view models, private helpers) → co-locate with the consumer; do not extract (R-42).
-- **A type used by ≥2 consumers or forming part of a module's public API is shared**, even if it lives in the same module as its implementation. It belongs in the module's `types.ts`/`contracts.ts`, not inside the runtime implementation file. `lib/`, `util/`, `services/`, and similar folders with runtime code count as implementation folders.
+- **When a type is reused across files**, it belongs in the module's `types.ts`/`contracts.ts`, not inside the runtime implementation file. `lib/`, `util/`, `services/`, and similar folders with runtime code count as implementation folders.
+- **Schema + inferred type pair**: Zod/Joi/Yup schemas and their `infer` types stay together in `schemas.ts`/`contracts.ts`; validators, converters, and clients go in a separate file.
 - **Import direction**: type-only imports follow the same dependency direction as runtime imports. No presentation → infrastructure type imports when a contract module exists.
 - **Language/framework conventions prevail**: do not impose the same physical structure on TypeScript, Java, Python, Go, Rust, etc. (see ecosystem matrix below).
 
@@ -225,7 +226,7 @@ split it. This is not fragmentation (R-42); it is correct separation.
 
 ### Folder Architecture and Contracts
 
-The folder structure is **detected and preserved**; no universal template is imposed. Every architecture proposal must include a **Folder Architecture Map**:
+The folder structure is **detected first**. If a coherent architecture exists, it is preserved and documented. If no clear architecture is detected, or the existing structure is incoherent (e.g., a flat `lib/` mixing unrelated responsibilities), **a project-appropriate structure is decided based on complexity** and documented in a **Folder Architecture Map**:
 
 - **Layers/modules** and their responsibilities.
 - **Responsibility → folder** mapping (components, hooks, services, domain, adapters, contracts/types, configuration).
@@ -235,23 +236,25 @@ The folder structure is **detected and preserved**; no universal template is imp
 
 The type/contract placement rule derives from the folder map: **the type lives in the folder of the layer that owns the contract**.
 
-Typical folder structures by ecosystem (not mandatory; preserve detected conventions):
+**Complexity-based structure decision** (when no coherent architecture exists):
 
-| Ecosystem | Typical layers/folders | Contract location | Allowed import direction |
-|---|---|---|---|
-| TS/JS (React/Next.js, Angular, Vue) | `src/app`, `src/features/<f>/{components,hooks,services,types.ts}`, `src/shared/{components,hooks,lib,types}` | Feature `types.ts` or `shared/types` | UI → feature/domain contract; never UI → `services` for types |
-| Java/Kotlin (Spring) | `api`, `application`, `domain`, `infrastructure` | `domain` | `api → application → domain`; infra implements domain ports |
-| Python (Django/FastAPI/Flask) | `api`, `application`, `domain`, `infrastructure` | `domain/contracts.py` | router → application/domain; not → infra |
-| C#/.NET | `Api`, `Application`, `Domain`, `Infrastructure` | `Domain`/`Application` | `Api → Application → Domain` |
-| Go | `cmd`, `internal/domain`, `internal/app`, `internal/infra` | structs in `domain`; **interfaces in consumer** | no cycles; no provider-side interface |
-| Rust | `domain`, `application`, `infrastructure`, `api` | traits near type or `contracts`; DTOs in common crate | respect orphan rules |
-| PHP | `Domain`, `Application`, `Infrastructure`, `Http` | `Domain`/`Contracts` | PSR-4, one type per file |
-| Ruby | `app/domain`, `app/services`, `app/controllers` | Sorbet/RBS in `sig/`/`rbi/` | no invented static types |
-| SQL/database | schema/migrations | DTOs in application layer | data contracts in schema |
+| Complexity | Recommended structure |
+|---|---|
+| Small, single domain | Layer-first: `src/api/<domain>/`, `src/services/<domain>/`, `src/server/<domain>/`, `src/shared/`, `src/components/`, `src/hooks/` |
+| Medium, multiple domains | Feature-first: `src/features/<feature>/{api,domain,server,components,hooks,contracts}` + `src/shared/` |
+| Large, multiple teams | Feature modules with explicit public APIs and boundaries; packages only when justified |
 
-For ecosystems not listed, derive from official documentation and project conventions; apply the ownership principle.
+Framework-specific route handlers (`app/api/...`, `routes/...`) remain in the framework's conventional location; they are thin and delegate to the domain/service layer.
 
-**R-42 applies to folder reorganizations**: do not restructure working code without justification (reuse, size/complexity, required change, testability). Record observations as Engineering Insights instead.
+**Universal responsibility rules** (apply regardless of chosen structure):
+
+- `lib/` and `utils/` are for **generic, domain-agnostic utilities only**. Domain services, API clients, contracts, storage, and i18n catalogs do not belong there.
+- **API has its own folder**: contracts/schemas and HTTP client together (`api/contracts.ts`, `api/client.ts` or feature `api/`), separate from services and storage.
+- **Services/domain logic** in `services/` or `domain/`; **persistence** in `server/`, `storage/`, or `infrastructure/`.
+- **Cross-cutting modules** (i18n, auth, config) live in `shared/` or a dedicated top-level folder, not flat in `lib/`.
+- Route handlers delegate to services; they do not contain business logic.
+
+A mixed `lib/` with unrelated responsibilities is an anti-pattern, not a convention to preserve. New code uses the correct folders; existing code moves only when touched (R-42).
 
 ### Module Conventions and Reuse
 
@@ -294,11 +297,10 @@ existing policies.
 
 Establish an explicit checkpoint before writing code:
 
-- If the project has a coherent architecture, continue it unless there is
+- If the project has a **coherent** architecture (detected structure with clear boundaries and consistent import directions), continue it unless there is
   an important incompatibility.
-- If no clear architecture is detected, conventions conflict, or the task
-  requires choosing a new architecture, present the diagnosis and a
-  recommendation with concrete alternatives and trade-offs.
+- If no clear architecture is detected, the detected structure is incoherent (e.g., flat `lib/` mixing domains), or conventions conflict, present the diagnosis and a
+  recommendation with concrete alternatives and trade-offs, **including the complexity-based decision** from the table above.
 - In that case, ask the user whether to preserve the existing organization
   or adopt the recommended alternative, adapting the options to the
   language and the project.

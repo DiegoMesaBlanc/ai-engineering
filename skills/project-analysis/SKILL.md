@@ -113,7 +113,21 @@ Detect and report the **Folder Architecture Map** when present:
 - **Public module API** (barrels, explicit exports) and co-location conventions.
 - **Language-specific idioms** observed (e.g., Go consumer-side interfaces, Java one-public-type-per-file, Python Protocols, Ruby RBS/Sorbet).
 
-Do not classify from directory names alone; base on implementation evidence (imports, boundaries, configuration). If no coherent map exists, report "no identifiable folder architecture."
+Do not classify from directory names alone; base on implementation evidence (imports, boundaries, configuration). If no coherent map exists, report "no identifiable folder architecture" and **assess project complexity** to recommend a structure per `architecture-advisor`:
+
+- **Small, single domain** → layer-first (dedicated `api/`, `services/`, `server/`, `shared/` folders).
+- **Medium, multiple domains** → feature-first (`src/features/<feature>/{api,domain,server,components,hooks,contracts}` + `src/shared/`).
+- **Large, multiple teams** → feature modules with explicit public APIs and boundaries.
+
+### Dumping Ground Detection
+
+Inspect `lib/`, `utils/`, `services/`, and similar flat folders for **mixed responsibilities**:
+
+- Domain services, API clients, contracts, storage, and i18n catalogs co-located in one folder.
+- Files in `lib/` imported by only one feature/domain (not genuinely shared).
+- No clear responsibility → folder mapping.
+
+If found, report as **"legacy dumping ground; do not replicate for new code"**. New code must follow the correct structure per the complexity decision above.
 
 ## Internal Module Layout Detection
 
@@ -130,13 +144,15 @@ report the internal file structure:
 - Whether a public API barrel (`index.ts`) exists and is justified.
 - Language-specific conventions (e.g., Java one-public-type-per-file,
   Python `domain/contracts.py`, Go consumer-side interfaces).
+- Whether schema + inferred types (Zod/Joi/Yup) are co-located with validators/converters (should be separated).
 
 Record the observed conventions. Do not refactor automatically; use
 this to align generation and audit with the project's actual patterns.
 If the project has monolithic module files (e.g., `lib/i18n.ts` with
-contracts, data, and behavior), note it as the existing convention but
+contracts, data, and behavior, or `lib/payment-api.ts` with schemas,
+types, validators, and converters in one file), note it as the existing convention but
 flag new code for separation per `architecture-advisor` File Cohesion
-rules.
+rules and the reuse-based type ownership rule.
 
 ## Output
 

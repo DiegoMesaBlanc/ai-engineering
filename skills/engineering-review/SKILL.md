@@ -31,15 +31,28 @@ Review the actual changes, not the entire repository unless required.
   dependency directions, contract/type location per module). Flag layer-skipping
   imports, contracts in implementation folders, mixed-responsibility folders,
   and global `types.ts`/`utils.ts` dumping grounds.
+- **Dumping ground check**: flag `lib/`, `utils/`, `services/` folders that
+  contain domain-specific code (API clients, contracts, storage, i18n catalogs)
+  mixed with generic utilities. These are anti-patterns; new code must not
+  extend them.
 - **Type/contract ownership and import direction**: types live in the folder of
   the owning layer; consumers import from the contract, not from an
   implementation module; language idiom respected (Go consumer-side interfaces,
   Java one-public-type-per-file, Python Protocols, etc.).
+- **Reuse-based type extraction**: a type is extracted to `types.ts`/
+  `contracts.ts`/`schemas.ts` only when it is **actually imported from another
+  file**. Mere export without external reuse is a WARN/observation, not a
+  defect.
+- **Schema + inferred type pair**: Zod/Joi/Yup schemas and their `infer` types
+  must stay together in `schemas.ts`/`contracts.ts`; validators, converters,
+  and HTTP clients must be in a separate file.
 - **File cohesion and responsibility separation**: each changed file should
   have one primary responsibility. Flag files mixing contracts/types with
   static data/catalogs, configuration, behavior, or wiring. i18n modules
   must separate contracts, catalogs (`messages/<locale>.ts`), config, and
-  formatters. Single-consumer props/local view models are exempt.
+  formatters. API modules must separate schemas + types (`contracts.ts`) from
+  validators, converters, and clients (`client.ts`). Single-consumer props/local
+  view models are exempt.
 - **Unnecessary abstraction or fragmentation is a finding that must be
   resolved: revert the change or justify it with evidence against the
   thresholds in `skills/complexity-advisor/SKILL.md` (Refactoring and

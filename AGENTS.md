@@ -30,6 +30,7 @@ Do not duplicate Skills, workflows, or architecture definitions.
   only when evidence justifies them.
 - Require human approval for significant architectural changes.
 - Load only relevant Skills and supporting references.
+- Place code by responsibility; `lib/` and `utils/` are not dumping grounds for domain services, API clients, contracts, or storage. Folder structure follows project complexity, not a universal template.
 
 ## Task Branch Policy
 

@@ -47,6 +47,14 @@ because it looks simple.
 
 Follow the **Folder Architecture Map** from `architecture-advisor`. Place contracts/types in the folder of the owning layer; keep single-consumer types co-located. Respect language idiom.
 
+**Complexity-based structure decision** (when no coherent architecture exists):
+
+| Complexity | Recommended structure |
+|---|---|
+| Small, single domain | Layer-first: `src/api/<domain>/`, `src/services/<domain>/`, `src/server/<domain>/`, `src/shared/`, `src/components/`, `src/hooks/` |
+| Medium, multiple domains | Feature-first: `src/features/<feature>/{api,domain,server,components,hooks,contracts}` + `src/shared/` |
+| Large, multiple teams | Feature modules with explicit public APIs and boundaries; packages only when justified |
+
 | Ecosystem | Contract/type location | Single-consumer types | Import direction |
 |---|---|---|---|
 | TS/JS (React/Next.js) | Feature `types.ts` or `src/shared/types/<domain>.ts` | Props/view models in component file | UI → feature/shared contract; never UI → `services` for types |
@@ -58,7 +66,7 @@ Follow the **Folder Architecture Map** from `architecture-advisor`. Place contra
 | PHP | `Domain/` or `Contracts/` | Private in same file | PSR-4, one type per file |
 | Ruby | Sorbet/RBS in `sig/` or `rbi/` | N/A | no invented interfaces |
 
-Do not impose a universal template; preserve the project's detected conventions.
+Do not impose a universal template; preserve the project's detected conventions **when coherent**. A mixed `lib/` is not a convention to preserve.
 
 ## Cross-Cutting Concerns
 
@@ -92,7 +100,7 @@ pattern as the default; adapt to the project's existing conventions.
 **i18n-specific layout** (per locale files recommended for lazy loading):
 
 ```text
-src/lib/i18n/
+src/shared/i18n/
   types.ts           # Locale, LocaleMeta, PaymentSelectorTranslations
   config.ts          # SUPPORTED_LOCALES, LOCALE_META, getLocaleMeta, ...
   messages/
@@ -110,6 +118,24 @@ Do not mix contracts, catalogs, config, and formatters in one file
 (e.g., a monolithic `i18n.ts`). Split when the file would change for
 unrelated reasons or a consumer cannot import the contract without
 pulling in data/runtime.
+
+**API module recipe** (contracts + client + service + storage separation):
+
+```text
+src/api/<domain>/           # or src/features/<feature>/api/
+  contracts.ts              # Zod schemas + inferred types (shared)
+  client.ts                 # HTTP calls, validation, converters
+src/services/<domain>/      # or src/features/<feature>/domain/
+  service.ts                # Business logic, domain rules
+  types.ts                  # Domain types if not in contracts
+src/server/<domain>/        # or src/features/<feature>/server/
+  storage.ts                # Persistence, DB access (server-only)
+```
+
+- Route handlers (`app/api/...`, `routes/...`) are thin; they import from `client`/`service`, not from implementation files directly.
+- UI imports contracts from `contracts.ts`, never from `service.ts` or `storage.ts`.
+- Schema + inferred type pair stays in `contracts.ts`; validators/converters in `client.ts`.
+- Shared constants (`SUPPORTED_*`) go in `config.ts`/`constants.ts`, not in service or contract files.
 
 ## Frontend Recipes
 
