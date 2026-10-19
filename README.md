@@ -22,7 +22,7 @@ A provider-agnostic, free-first engineering workflow with shared engineering gui
 ## Current top-level structure
 
 - `agents/`: OpenCode agents and orchestration.
-- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, `/validate`, `/code-audit`, `/checkpoint`, `/resume-work`, `/provider-check`, and `/delivery-check`.
+- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, `/validate`, `/code-audit`, `/commit`, `/checkpoint`, `/resume-work`, `/provider-check`, and `/delivery-check`.
 - `contracts/`: provider-neutral task, design, and Git contracts.
 - `integrations/`: provider access, security, cost, and compatibility policy.
 - `references/`: official documentation indexes and technical references.
@@ -58,6 +58,10 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
 - `/code-audit`: read-only senior/staff whole-cycle audit of generated
   code for architecture, patterns, quality, security, data, tests,
   performance, a11y, i18n, SEO, UI, and mobile.
+- `/commit`: generate and validate commits from the current change set using
+  project-native quality gates (format, lint, typecheck, tests, build,
+  security, AI sanity review), creating atomic commits with English
+  messages. Never pushes or deploys.
 - `/estimate`: estimate effort, duration, and optional cost for a complete
   project from start to finish, from a supplied project artifact (brief,
   document, text, link, file, or image), producing a durable document in the
@@ -86,6 +90,18 @@ repository's `commands/` directory.
   accessibility, i18n, SEO, UI, and mobile — in read-only mode.
 - It is distinct from `/system-check` (system config), `/validate` (tool
   execution), and `/review-pr` (colleague's PR feedback).
+
+### Commit generation
+
+- `/commit` generates and validates commits from the current change set
+  using project-native quality gates (format, lint, typecheck, tests,
+  build, security, AI sanity review), creating atomic commits with
+  English messages. It creates commits; it does not push or deploy.
+- It is distinct from `/validate` (read-only validation without commit
+  creation), `/code-audit` (senior/staff architecture and patterns audit),
+  and `/pr` (copy-ready PR content).
+- Documentation-only repositories skip application gates; only Git hygiene
+  and commit message rules apply.
 
 ### Provider verification
 

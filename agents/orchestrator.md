@@ -366,7 +366,9 @@ Never claim successful execution without evidence.
 A completed change may end with:
 
 - commit proposal
-- commit
+- commit (using `workflows/commit.md` for automated generation with
+  project-native quality gates: format, lint, typecheck, tests, build,
+  security, AI sanity review; English messages; no push/deploy)
 - PR proposal
 - copy-ready review feedback
 - task branch verification

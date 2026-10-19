@@ -89,6 +89,25 @@ chore(ci): update test pipeline
 8. Show the proposed commit message.
 9. Create the commit only when authorized by the user or project workflow.
 
+## Automated Commit Generation
+
+For automated commit generation with project-native quality gates
+(format, lint, typecheck, tests, build, security, AI sanity review),
+see `workflows/commit.md` and the `/commit` command. That workflow:
+
+- Validates the change set against the project's actual tooling.
+- Runs secrets scan, format check, lint, typecheck, tests, build,
+  security audit, and a lightweight AI correctness review.
+- Groups changes into atomic commits with English Conventional Commit
+  messages.
+- Creates commits only after all gates pass.
+- Never pushes or deploys.
+- Documentation-only repositories skip application gates.
+
+The rules in this Skill (English messages, Conventional Commits,
+atomic grouping, no AI mentions, no unverified claims) remain the
+canonical message standards.
+
 ## Commit grouping
 
 If changes contain multiple logical units, propose multiple commits.

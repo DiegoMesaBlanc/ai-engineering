@@ -1287,3 +1287,36 @@ Verify that folder architecture and type/contract ownership are defined once, en
 - No new Skill, agent, command, package.json, dependency, or competing orchestrator introduced.
 - No blanket "all inline types are defects" rule; no universal folder template imposed.
 - **default scope is the uncommitted change set; checks operate only on modified files; declaration sites outside the diff are context only; pre-existing issues outside the diff are not reported; clean tree = NOTHING TO AUDIT**
+
+## V2.24 Regression — Commit Generation with Project-Native Gates
+
+Verify that commit generation is a standalone workflow with project-native
+quality gates and atomic commits:
+
+- `commands/commit.md` exists and delegates to `workflows/commit.md`
+  without restating the procedure; it specifies the agent (`orchestrator`)
+  and allows `--dry-run`, `--staged`, `--full`, and path arguments.
+- `workflows/commit.md` defines the gate sequence: secrets scan → format
+  check → lint → typecheck → unit tests → integration/e2e (`--full`) →
+  build → security audit → AI sanity review.
+- The workflow detects actual tooling from the project (package manager,
+  scripts, lockfiles); it does not invent commands or install tools.
+- Missing mandatory tooling (formatter, linter for software projects)
+  reports `SETUP_REQUIRED` and blocks commits; no silent omission.
+- Secrets scan blocks on common patterns; no external dependency required.
+- AI sanity review is lightweight: obvious correctness/security defects
+  only; no architecture, patterns, or over-engineering evaluation.
+- Commits are atomic, English, Conventional Commits unless project
+  convention differs; no AI mentions; no unverified test claims.
+- Same gates for AI and human changes; no authorship-based bypass.
+- Never pushes, deploys, or bypasses gates (`--no-verify` not supported).
+- Clean tree = `NOTHING TO COMMIT`.
+- Documentation-only repositories skip application gates.
+- `skills/git-workflow/SKILL.md` references the workflow without
+  duplicating rules.
+- `agents/orchestrator.md` references the workflow in the Delivery phase.
+- `README.md` distinguishes `/commit` from `/validate`, `/code-audit`,
+  and `/pr`.
+- `references/system-workflow-regression-matrix.md` includes R-45.
+- No new Skill, agent, package.json, dependency, or competing orchestrator
+  introduced.
