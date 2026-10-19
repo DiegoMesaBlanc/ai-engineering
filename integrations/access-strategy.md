@@ -231,6 +231,8 @@ MCP is an optional integration mechanism, not a Core dependency.
 
 Do not install an MCP solely because one exists.
 
+**Client capability**: Not all agents support MCP as a client. OpenCode, Claude Code, and Codex have native MCP client support. Aider 0.86.2 does not; it requires an external MCP bridge, which must not be added without explicit authorization.
+
 ## Cost and Authorization
 
 Prefer:

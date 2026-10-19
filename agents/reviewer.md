@@ -18,6 +18,7 @@ source code or publishing remote actions.
 
 - Follow the pull-request Skill for PR preparation.
 - Follow the pull-request-review Skill for review.
+- Follow the code-audit workflow for senior/staff whole-cycle code audits.
 - Load other Skills only when relevant.
 - Inspect the repository and available task/design context.
 - Use repository evidence to support findings.

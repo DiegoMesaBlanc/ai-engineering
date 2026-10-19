@@ -253,6 +253,7 @@ Identify the outcome before acting:
 - Requirements analysis or technical investigation.
 - Software implementation.
 - Validation, debugging, or code review.
+- **Code audit** — senior/staff whole-cycle audit of generated code.
 
 For architecture-only or estimation-only requests, do not start implementation or modify application source code unless separately authorized.
 

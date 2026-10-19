@@ -33,6 +33,7 @@ Check for the existence of:
 - commands/review-pr.md
 - commands/system-check.md
 - commands/validate.md
+- commands/code-audit.md
 - commands/checkpoint.md
 - commands/resume-work.md
 - commands/provider-check.md
@@ -50,6 +51,7 @@ Check for the existence of:
 - references/system-workflow-regression-matrix.md
 - workflows/task-to-code.md
 - workflows/pull-request-review.md
+- workflows/code-audit.md
 - workflows/system-validation.md
 - workflows/project-validation.md
 - workflows/session-resilience.md
@@ -1235,3 +1237,51 @@ Verify that unsolicited refactoring and unnecessary fragmentation are prohibited
   (R-42)
 - no new command, package.json, dependency, or competing orchestrator was
   introduced
+
+## V2.22 Regression — Code Audit
+
+Verify that the code-creation audit is a standalone, read-only, non-duplicative workflow:
+
+- `commands/code-audit.md` exists and delegates to `workflows/code-audit.md`
+  without restating the procedure; it specifies the agent (`reviewer`) and
+  read-only behavior
+- `workflows/code-audit.md` defines the 14 applicability-gated dimensions,
+  the senior/staff bar, the dimension matrix (PASS/WARN/FAIL/N/A), findings
+  format (P0–P3, evidence, severity, confidence), and the verdict
+- the workflow loads only applicable Skills and does not duplicate their
+  checklists; it references `architecture-advisor`, `complexity-advisor`,
+  `implementation-recipes`, `engineering-review`, `api-contract-design`,
+  `database-engineering`, `best-practices`, `testing-strategy`,
+  `test-driven-development`, `performance`, `core-web-vitals`,
+  `accessibility`, `seo`, `internationalization`, `frontend-design`,
+  `design-analysis`, `repository-strategy`
+- it audits code only (no process compliance: branch policy, dependency
+  gate, evidence honesty, git hygiene are out of scope)
+- it is read-only: no edits, commits, pushes, or remote writes
+- `agents/reviewer.md` and `agents/orchestrator.md` reference the code-audit
+  workflow and intent
+- `README.md` distinguishes `/code-audit` from `/system-check`, `/validate`,
+  and `/review-pr`
+- `references/system-workflow-regression-matrix.md` includes the scenario
+  (R-43)
+- no new Skill, agent, package.json, dependency, or competing orchestrator
+  was introduced
+
+## V2.23 Regression — Folder Architecture, Dependency Direction, and Type/Contract Ownership
+
+Verify that folder architecture and type/contract ownership are defined once, enforced in generation/review/audit, and reconciled with R-42:
+
+- `skills/architecture-advisor/SKILL.md` defines the **Folder Architecture Map** (layers/modules, responsibility→folder, allowed dependency directions, contract/type location per module, co-location rules) and the **ownership principle** (type lives in the folder of the owning layer); includes the per-ecosystem matrix (TS/JS, Java/Kotlin, Python, C#/.NET, Go, Rust, PHP, Ruby, SQL) with typical folders, contract location, and import direction; explicitly states "not mandatory; preserve detected conventions."
+- `skills/complexity-advisor/SKILL.md` reconciles R-42: shared contract extraction meets reuse threshold; single-consumer props/local types do not; language idiom overrides file-count aesthetics.
+- `skills/implementation-recipes/SKILL.md` includes the **Folder Architecture and Contract Placement** section with the cross-ecosystem table and per-stack examples (React/Next.js feature `types.ts`, Java `domain`, Python `domain/contracts.py`, Go consumer-side interfaces).
+- `skills/engineering-review/SKILL.md` checks folder conformance, dependency direction, and contract ownership in Architecture.
+- `workflows/code-audit.md` Dimension 1 renamed to "Architecture & folder structure"; adds explicit **Folder Architecture check** (build map, map declarations, verify imports, flag layer-skipping/mixed-responsibility/global buckets) and **Type/Contract Ownership check** (language-aware declaration patterns, consumer mapping, follow declaration sites, flag shared-in-impl/import-from-impl/duplicates/cycles/idiom violations; exempt single-consumer props, Go consumer interfaces, private types, RBS); severity P1/P2/P3 with tags `TYPE_OWNERSHIP`/`FOLDER_ARCHITECTURE`; pre-existing labeling for declarations outside scope; no universal template imposed.
+- `commands/code-audit.md` notes scope expansion for architecture/type ownership.
+- `references/system-workflow-regression-matrix.md` includes R-44 with documented cases:
+  - TS: shared type in `lib/payment-service.ts` imported by UI/hook → P2; `MethodOptionProps`/`Product` inline → OK.
+  - Java: contract in `service/impl` imported by controller → defect; DTO in `domain` → OK.
+  - Python: `TypedDict` in `services/stripe.py` imported by router → defect; `Protocol` in `domain/contracts.py` → OK.
+  - Go: interface in consumer package → OK; forced in provider → defect anti-idiomatic.
+  - Folder: UI → concrete repo; cross-feature private import; global `types.ts` dump.
+- No new Skill, agent, command, package.json, dependency, or competing orchestrator introduced.
+- No blanket "all inline types are defects" rule; no universal folder template imposed.

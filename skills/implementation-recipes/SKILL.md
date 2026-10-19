@@ -43,6 +43,23 @@ because it looks simple.
 5. Validate with the project's formatter, linter, type checker, and tests.
 6. Review the result against the agreed design and conventions.
 
+## Folder Architecture and Contract Placement
+
+Follow the **Folder Architecture Map** from `architecture-advisor`. Place contracts/types in the folder of the owning layer; keep single-consumer types co-located. Respect language idiom.
+
+| Ecosystem | Contract/type location | Single-consumer types | Import direction |
+|---|---|---|---|
+| TS/JS (React/Next.js) | Feature `types.ts` or `src/shared/types/<domain>.ts` | Props/view models in component file | UI → feature/shared contract; never UI → `services` for types |
+| Java/Kotlin (Spring) | `domain/` or `application/` package | Private/nested types in same file | `api → application → domain`; no UI → infra |
+| Python (FastAPI/Flask/Django) | `domain/contracts.py` or `domain/types.py` | Local models in same module | router → application/domain; not → infra |
+| C#/.NET | `Domain/` or `Application/` | Private/nested in same file | `Api → Application → Domain` |
+| Go | structs in `internal/domain`; **interfaces in consumer package** | Local types in same file | no cycles; no provider-side interface |
+| Rust | traits near type or `contracts/`; DTOs in common crate | Local types in same module | respect orphan rules |
+| PHP | `Domain/` or `Contracts/` | Private in same file | PSR-4, one type per file |
+| Ruby | Sorbet/RBS in `sig/` or `rbi/` | N/A | no invented interfaces |
+
+Do not impose a universal template; preserve the project's detected conventions.
+
 ## Cross-Cutting Concerns
 
 Apply these consistently regardless of stack:
@@ -64,26 +81,28 @@ Apply these consistently regardless of stack:
 
 - Match the detected router (App Router or Pages Router) and rendering
   model (server/client components).
-- Place components, hooks, services, adapters, and types by cohesion,
-  following the project's organization.
-- Keep server and client boundaries explicit; do not leak server-only code
-  to the client.
-- Manage state with the project's existing solution; avoid introducing a
-  new one without justification.
+- Follow the project's **Folder Architecture Map**: feature folders with `components/`, `hooks/`, `services/`, `types.ts`; shared code in `src/shared/{components,hooks,lib,types}`.
+- **Contracts**: shared domain types in feature `types.ts` or `src/shared/types/<domain>.ts`; props/view models co-located in the component.
+- **Imports**: UI imports contracts from feature/shared types, never from `services` or `lib` implementation modules.
+- Keep server and client boundaries explicit; do not leak server-only code to the client.
+- Manage state with the project's existing solution; avoid introducing a new one without justification.
 - Handle loading, empty, and error states in data access.
 - Follow the framework's data-fetching and caching conventions.
 
 ### Angular
 
 - Follow the standalone-component or NgModule organization actually used.
-- Use the framework's dependency injection and services; keep components
-  thin.
+- **Contracts**: shared types in feature `types.ts` or shared `types/` barrel; component inputs/outputs co-located.
+- **Imports**: components import from feature/shared types, not from service implementation files.
+- Use the framework's dependency injection and services; keep components thin.
 - Respect RxJS conventions and unsubscribe/cleanup patterns.
 - Use the detected state, routing, and form libraries consistently.
 
 ### Vue / Nuxt
 
 - Use the detected composition/options style and component conventions.
+- **Contracts**: shared types in feature `types.ts` or `composables/types.ts`; props co-located.
+- **Imports**: components import from feature/shared types, not from service files.
 - Place composables, stores, and services by cohesion.
 - Respect Nuxt server/client boundaries when present.
 
@@ -91,25 +110,27 @@ Apply these consistently regardless of stack:
 
 ### Node.js (Express, Fastify, NestJS)
 
-- Keep routing, controllers, services, and data access separated per the
-  project's structure.
+- Follow the project's **Folder Architecture Map**: `src/routes`, `src/controllers`, `src/services`, `src/domain`, `src/infrastructure`, `src/shared/types`.
+- **Contracts**: shared DTOs/contracts in `src/domain` or `src/shared/types`; route/request types co-located with handlers.
+- **Imports**: controllers import contracts from domain/shared, not from service implementation.
 - Validate inputs at the boundary; centralize error handling.
 - Use the detected validation, ORM, and configuration libraries.
-- For NestJS, respect modules/providers/controllers; for Express/Fastify,
-  keep handlers thin and logic in services.
+- For NestJS, respect modules/providers/controllers; for Express/Fastify, keep handlers thin and logic in services.
 
 ### Python (Django, FastAPI, Flask)
 
-- Follow framework conventions: Django apps and models, FastAPI routers and
-  dependencies, Flask blueprints.
+- Follow framework conventions: Django apps and models, FastAPI routers and dependencies, Flask blueprints.
+- **Contracts**: shared `Protocol`/`TypedDict`/`dataclass` in `domain/contracts.py` or `domain/types.py`; request/response models co-located with routers.
+- **Imports**: routers/views import from `domain`, not from service implementation modules.
 - Keep business logic out of views and routers.
 - Use the project's validation and serialization approach.
 - Apply migrations and schema changes through the project's tooling.
 
 ### Java (Spring Boot)
 
-- Respect package and module boundaries; keep controllers, services, and
-  repositories separated.
+- Respect package and module boundaries: `api`, `application`, `domain`, `infrastructure`.
+- **Contracts**: interfaces/DTOs in `domain` or `application`; one public type per file (Java); private/nested types may stay.
+- **Imports**: controllers import from `domain`/`application`, not from `infrastructure` implementation.
 - Use dependency injection and configuration conventions.
 - Handle exceptions centrally and consistently.
 

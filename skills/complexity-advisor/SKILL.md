@@ -155,6 +155,11 @@ Before extracting a new component, module, function, or abstraction, verify that
 3. **Required change** — the task itself changes the unit, and the change is cleaner with the split.
 4. **Testability** — the original cannot be adequately tested without the split (evidence required).
 
+**Type/contract extraction**:
+- Extracting a shared contract/type used across ≥2 modules/layers meets the reuse threshold.
+- Extracting single-consumer props, local view models, or private helper types does **not** meet the threshold; keep co-located.
+- Language idiom overrides file-count aesthetics (e.g., Go consumer-side interfaces, Java one-public-type-per-file, Python Protocols).
+
 Negative triggers (do NOT extract/split):
 - Single call site or no reuse.
 - No threshold exceeded; purely aesthetic or "clean code" rationale.

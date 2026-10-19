@@ -102,6 +102,19 @@ Detect the conventions actually used, when present:
 Report the conventions found. Do not introduce new conventions during
 analysis.
 
+## Folder Architecture Map
+
+Detect and report the **Folder Architecture Map** when present:
+
+- **Layers/modules** and their responsibilities.
+- **Responsibility → folder** mapping (components, hooks, services, domain, adapters, contracts/types, configuration).
+- **Allowed dependency directions** between layers/modules (evidence from imports).
+- **Contract/type location per module**: where shared contracts/types live; whether single-consumer types are co-located.
+- **Public module API** (barrels, explicit exports) and co-location conventions.
+- **Language-specific idioms** observed (e.g., Go consumer-side interfaces, Java one-public-type-per-file, Python Protocols, Ruby RBS/Sorbet).
+
+Do not classify from directory names alone; base on implementation evidence (imports, boundaries, configuration). If no coherent map exists, report "no identifiable folder architecture."
+
 ## Output
 
 Report:

@@ -156,13 +156,11 @@ technology-specific architecture Skill solely to extend this catalog.
 
 Default rule:
 
-- Separate reusable types, interfaces, and contracts from the
-  implementations that consume them.
-- Organize them by feature, domain, or module and group them by cohesion.
-- Avoid a single global file that accumulates unrelated types, and avoid
-  business interfaces hidden inside monolithic components.
-- Respect language conventions; do not impose the same physical structure
-  on TypeScript, Java, and Python.
+- **Contract ownership**: the type/contract lives in the folder of the layer or module that owns it. Consumers import from the contract module, never from an implementation module solely for types.
+- **Shared across ≥2 modules/layers or public API** → dedicated contract/type module in the owning layer/domain (`domain/`, `shared/types/`, feature `types.ts`). One module per domain/feature; avoid a global `types.ts` dumping ground.
+- **Single-consumer implementation detail** (props, local view models, private helpers) → co-locate with the consumer; do not extract (R-42).
+- **Import direction**: type-only imports follow the same dependency direction as runtime imports. No presentation → infrastructure type imports when a contract module exists.
+- **Language/framework conventions prevail**: do not impose the same physical structure on TypeScript, Java, Python, Go, Rust, etc. (see ecosystem matrix below).
 
 Any exception must follow the project's conventions and be justified.
 
@@ -192,6 +190,36 @@ interfaces belong.
 - Separate elements with distinct responsibilities or that need reuse.
 - Avoid monolithic files and unnecessary fragmentation.
 - Do not impose a universal folder structure or a fixed number of files.
+
+### Folder Architecture and Contracts
+
+The folder structure is **detected and preserved**; no universal template is imposed. Every architecture proposal must include a **Folder Architecture Map**:
+
+- **Layers/modules** and their responsibilities.
+- **Responsibility → folder** mapping (components, hooks, services, domain, adapters, contracts/types, configuration).
+- **Allowed dependency directions** between layers/modules.
+- **Contract/type location per module**: shared contracts live in the owning layer's folder; single-consumer types co-locate.
+- **Co-location rules** and **public module API** (barrels only when justified).
+
+The type/contract placement rule derives from the folder map: **the type lives in the folder of the layer that owns the contract**.
+
+Typical folder structures by ecosystem (not mandatory; preserve detected conventions):
+
+| Ecosystem | Typical layers/folders | Contract location | Allowed import direction |
+|---|---|---|---|
+| TS/JS (React/Next.js, Angular, Vue) | `src/app`, `src/features/<f>/{components,hooks,services,types.ts}`, `src/shared/{components,hooks,lib,types}` | Feature `types.ts` or `shared/types` | UI → feature/domain contract; never UI → `services` for types |
+| Java/Kotlin (Spring) | `api`, `application`, `domain`, `infrastructure` | `domain` | `api → application → domain`; infra implements domain ports |
+| Python (Django/FastAPI/Flask) | `api`, `application`, `domain`, `infrastructure` | `domain/contracts.py` | router → application/domain; not → infra |
+| C#/.NET | `Api`, `Application`, `Domain`, `Infrastructure` | `Domain`/`Application` | `Api → Application → Domain` |
+| Go | `cmd`, `internal/domain`, `internal/app`, `internal/infra` | structs in `domain`; **interfaces in consumer** | no cycles; no provider-side interface |
+| Rust | `domain`, `application`, `infrastructure`, `api` | traits near type or `contracts`; DTOs in common crate | respect orphan rules |
+| PHP | `Domain`, `Application`, `Infrastructure`, `Http` | `Domain`/`Contracts` | PSR-4, one type per file |
+| Ruby | `app/domain`, `app/services`, `app/controllers` | Sorbet/RBS in `sig/`/`rbi/` | no invented static types |
+| SQL/database | schema/migrations | DTOs in application layer | data contracts in schema |
+
+For ecosystems not listed, derive from official documentation and project conventions; apply the ownership principle.
+
+**R-42 applies to folder reorganizations**: do not restructure working code without justification (reuse, size/complexity, required change, testability). Record observations as Engineering Insights instead.
 
 ### Module Conventions and Reuse
 
@@ -302,7 +330,7 @@ Verify:
   placed consistently with the project's organization
 - cohesive elements are grouped and distinct responsibilities are separated
 - existing abstractions and conventions were reused where appropriate
-- types, interfaces, and contracts are separated from their consumers
+- types, interfaces, and contracts are owned by the correct module; consumers import from the contract, not from an implementation module; language idiom respected
 - no unnecessary abstraction, pattern, or fragmentation was introduced
 - public exports, barrels, aliases, and module conventions remain consistent
 - relevant configuration is consistent with the organization

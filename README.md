@@ -22,7 +22,7 @@ A provider-agnostic, free-first engineering workflow with shared engineering gui
 ## Current top-level structure
 
 - `agents/`: OpenCode agents and orchestration.
-- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, `/validate`, `/checkpoint`, `/resume-work`, `/provider-check`, and `/delivery-check`.
+- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, `/validate`, `/code-audit`, `/checkpoint`, `/resume-work`, `/provider-check`, and `/delivery-check`.
 - `contracts/`: provider-neutral task, design, and Git contracts.
 - `integrations/`: provider access, security, cost, and compatibility policy.
 - `references/`: official documentation indexes and technical references.
@@ -55,6 +55,9 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
 - `/delivery-check`: read-only assessment of the current project's
   CI/CD, security, and delivery readiness, with evidence-based statuses
   and without modifying the project or performing remote writes.
+- `/code-audit`: read-only senior/staff whole-cycle audit of generated
+  code for architecture, patterns, quality, security, data, tests,
+  performance, a11y, i18n, SEO, UI, and mobile.
 - `/estimate`: estimate effort, duration, and optional cost for a complete
   project from start to finish, from a supplied project artifact (brief,
   document, text, link, file, or image), producing a durable document in the
@@ -75,6 +78,14 @@ repository's `commands/` directory.
   and configures the mandatory formatter and linter when they are missing.
 - `/delivery-check` assesses CI/CD, security, and delivery readiness of
   the target project in read-only mode; it does not change the project.
+
+### Code audit
+
+- `/code-audit` performs a senior/staff whole-cycle audit of generated code:
+  architecture, patterns, quality, security, data, tests, performance,
+  accessibility, i18n, SEO, UI, and mobile — in read-only mode.
+- It is distinct from `/system-check` (system config), `/validate` (tool
+  execution), and `/review-pr` (colleague's PR feedback).
 
 ### Provider verification
 

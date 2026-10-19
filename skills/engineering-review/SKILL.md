@@ -26,6 +26,15 @@ Review the actual changes, not the entire repository unless required.
   `skills/architecture-advisor/SKILL.md`: contrast the result with the
   proposed design and the project's conventions, including placement,
   cohesion, reuse, module conventions, and unnecessary fragmentation.
+- **Folder architecture & contract ownership**: verify conformance with the
+  Folder Architecture Map (layers/modules, responsibility→folder, allowed
+  dependency directions, contract/type location per module). Flag layer-skipping
+  imports, contracts in implementation folders, mixed-responsibility folders,
+  and global `types.ts`/`utils.ts` dumping grounds.
+- **Type/contract ownership and import direction**: types live in the folder of
+  the owning layer; consumers import from the contract, not from an
+  implementation module; language idiom respected (Go consumer-side interfaces,
+  Java one-public-type-per-file, Python Protocols, etc.).
 - **Unnecessary abstraction or fragmentation is a finding that must be
   resolved: revert the change or justify it with evidence against the
   thresholds in `skills/complexity-advisor/SKILL.md` (Refactoring and

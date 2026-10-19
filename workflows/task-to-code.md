@@ -162,6 +162,12 @@ Separate the architectural style, the organization strategy, and the
 language/framework conventions, and address reusable types, interfaces, and
 contracts separately from their consumers.
 
+**The proposal must include a Folder Architecture Map** (layers/modules,
+responsibility→folder, allowed dependency directions, contract/type location
+per module, co-location rules, public module API) and the **contract/type
+placement** per folder, following the ownership principle from
+`architecture-advisor`.
+
 Use only the analyses relevant to this task.
 
 When the task changes a boundary, interface, or integration, load
@@ -197,9 +203,9 @@ Mandatory decision gate. Before implementing:
   significant incompatibility before implementing it.
 
 The proposal must include a sufficiently concrete target structure, the
-location of relevant files, the contracts and types, the direction of
-dependencies, and the pending decisions; stating "architecture evaluated"
-is not sufficient.
+location of relevant files, the **Folder Architecture Map**, the contracts
+and types, the direction of dependencies, and the pending decisions; stating
+"architecture evaluated" is not sufficient.
 
 Require human approval for significant architectural changes per the Human Decision Gates in AGENTS.md. Do not treat routine component choices as significant architectural decisions. Consult the user when a styling-system decision significantly affects architecture, dependencies, or the visual experience.
 

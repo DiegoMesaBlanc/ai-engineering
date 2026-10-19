@@ -128,6 +128,12 @@ consult `workflows/secure-delivery.md` for delivery checks. `/delivery-check`
 owns that scope; `/validate` validates the current change set and must not
 silently install CI tooling or security scanners.
 
+`/code-audit` is distinct from `/validate`: `/validate` executes tooling
+(formatter, linter, tests, build) for the current change set; `/code-audit`
+performs a senior/staff whole-cycle audit of generated code for architecture,
+patterns, quality, security, data, tests, performance, a11y, i18n, SEO, UI,
+and mobile — without running tools and without modifying code.
+
 ## Phase 5 — Configure Mandatory Formatting and Linting
 
 When Phase 2 found that a required formatter or linter is missing,
