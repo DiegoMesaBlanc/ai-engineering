@@ -330,6 +330,14 @@ libraries.
 
 Implement on the requested branch and only within the target project.
 
+**Mandatory compliance check:** run `workflows/output-compliance.md` over the
+change set before the task is considered implemented. It mechanically detects
+`function` declarations where an arrow function applies, files that mix type
+declarations with runtime behavior, contract files whose types have different
+consumers, and unit-folder/test co-location violations. A `FAIL` result is
+the task's own defect: fix it and re-run. Do not report completion with an
+unresolved `FAIL`.
+
 Apply the minimum sufficient context policy and stop rules from
 `workflows/session-resilience.md`. Do not keep exploring after two
 consecutive searches add no new evidence, and record any budget expansion

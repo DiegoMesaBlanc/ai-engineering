@@ -169,6 +169,12 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
 - Code, identifiers, comments, JSDoc, and TSDoc must be in English.
 - Human interaction may be in Spanish or English.
 - Test and validate changes using available project tooling.
+- Run the structural compliance check in `workflows/output-compliance.md` over
+  the change set before reporting a task as implemented. It verifies the
+  mechanical rules that prose cannot enforce: arrow functions over `function`
+  declarations, type declarations separated from runtime behavior, contract
+  files grouped by consumer, and unit-folder test co-location. A `FAIL`
+  result is a defect of the task, not a finding to defer.
 - Format and lint changes with the project's configured tools.
 - Report checks that were not run.
 - Never claim a test or build passed without evidence.

@@ -62,6 +62,7 @@ Check for the existence of:
 - workflows/dependency-assessment.md
 - workflows/task-planning.md
 - workflows/estimation.md
+- workflows/output-compliance.md
 
 Check that CLAUDE.md references AGENTS.md rather than duplicating
 the complete shared instructions.
@@ -713,6 +714,7 @@ Return:
 - V2.28 primary unit per file, unit folder, and test co-location checks:
 - V2.29 target project and evidence-only path checks:
 - V2.30 minimum sufficient context and token-efficiency checks:
+- V2.31 structural compliance enforcement checks:
 - External Skill readiness:
 
 ### Findings
@@ -1410,3 +1412,26 @@ correctness:
   build, validation, and security checks remain mandatory.
 - No hard token cap, compaction plugin, or reduction of required evidence is
   introduced.
+
+## V2.31 Regression — Structural Compliance Enforcement
+
+Verify that the structural rules are enforced mechanically and not only
+documented in prose:
+
+- `workflows/output-compliance.md` exists at its canonical path and is listed
+  in the required-file inventory of this workflow.
+- It defines deterministic checks with executable detection patterns and
+  `file:line` evidence: `FUNC-001`, `TYPE-001`, `TYPE-002`, `FILE-001`.
+- It is read-only and never modifies code.
+- `AGENTS.md` **Implementation and Validation** makes the check mandatory
+  before a task is reported as implemented and states that a `FAIL` is a
+  defect of the task, not a finding to defer.
+- `workflows/task-to-code.md` Phase 10 runs it and forbids reporting
+  completion with an unresolved `FAIL`.
+- `workflows/project-validation.md` includes it as a mandatory check, and
+  `commands/validate.md` runs it.
+- `workflows/code-audit.md` requires the executed detection as evidence for
+  `TS_FUNCTION_STYLE` and `TYPE_OWNERSHIP` findings.
+- `references/system-workflow-regression-matrix.md` includes R-52.
+- The checks cover TypeScript/JavaScript, Python, Java/Kotlin, Go, Rust,
+  C#/.NET, PHP, and Ruby.

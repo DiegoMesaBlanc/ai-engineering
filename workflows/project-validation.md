@@ -105,18 +105,23 @@ Determine:
 Prefer:
 
 1. mandatory formatting verification and linting
-2. focused tests for changed behavior
-3. relevant static checks
-4. tests for affected boundaries
-5. integration tests when warranted
-6. full test suites or builds when justified
-7. configured security and coverage checks when relevant
+2. the structural compliance check in `workflows/output-compliance.md`
+3. focused tests for changed behavior
+4. relevant static checks
+5. tests for affected boundaries
+6. integration tests when warranted
+7. full test suites or builds when justified
+8. configured security and coverage checks when relevant
 
 Use existing tooling and project conventions.
 
 Formatting and linting are mandatory for the application code of every
-relevant software project, language, and framework in scope. Tests, type
-checking, and builds remain risk-based.
+relevant software project, language, and framework in scope. The structural
+compliance check in `workflows/output-compliance.md` is also mandatory for
+software projects with source code: it verifies that generated code does not
+declare functions where an arrow function applies, does not mix type
+declarations with runtime behavior in the same file, and keeps contract files
+grouped by consumer. Tests, type checking, and builds remain risk-based.
 
 Do not add dependencies, change configuration, or install frameworks
 merely to satisfy a generic checklist. The mandatory formatter and linter

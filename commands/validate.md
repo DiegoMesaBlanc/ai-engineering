@@ -41,8 +41,11 @@ relevant current task or change set.
    repository), report that determination as out of scope and do not
    create a package.json or install tooling solely to comply.
 6. Select relevant checks according to risk.
-7. Execute safe, available validation commands.
-8. Report actual outcomes and limitations.
+7. Run the structural compliance check in `workflows/output-compliance.md`
+   over the change set. It is mandatory for software projects with source
+   code.
+8. Execute safe, available validation commands.
+9. Report actual outcomes and limitations.
 
 Formatting and linting are mandatory within the scope defined in
 `AGENTS.md`: the application code of the software project, per its
