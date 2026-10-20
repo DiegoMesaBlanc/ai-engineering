@@ -11,6 +11,11 @@ No remote writes are allowed.
 
 The workflow reviews the change; it does not implement fixes.
 
+This workflow is **not** the post-implementation review of your own change.
+That one is `skills/engineering-review/SKILL.md`, used by
+`workflows/task-to-code.md` Phase 10 to validate a change the agent just
+implemented. A review of someone else's pull request uses this workflow.
+
 ---
 
 ## Phase 1 — Identify
@@ -182,20 +187,8 @@ rule or requirement supports them.
 
 ## Phase 10 — Validate Findings Against Context
 
-Before reporting a finding:
-
-1. Read the surrounding implementation and relevant callers.
-2. Inspect applicable task acceptance criteria and design references.
-3. Check existing tests and relevant error-handling behavior.
-4. Verify whether the alleged defect is already fixed elsewhere.
-5. Consider whether the behavior is intentional and consistent with the
-   project.
-6. Ensure the finding was introduced by the reviewed change, unless the
-   user explicitly requests a broader audit.
-7. Avoid duplicating findings that describe the same underlying cause.
-
-If evidence is insufficient, omit the finding or place the concern in a
-separately marked section requiring human verification.
+Apply the canonical procedure in `skills/engineering-review/SKILL.md`
+("Validate Findings Against Context"). It is not restated here.
 
 ## Phase 11 — Severity and Confidence
 

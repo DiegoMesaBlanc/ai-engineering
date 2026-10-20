@@ -71,7 +71,7 @@ Review the actual changes, not the entire repository unless required.
   `./types`, a service re-exporting the contracts it imports from
   `./contracts`. The owning file is the single public path; a barrel that
   aggregates several modules is exempt.
-- **React/Next.js function style**: flag `function` keyword in `.tsx`/`.jsx` files (except `function*` generators). Arrow functions required for components, hooks, callbacks. Severity: P3.
+- **TypeScript/JavaScript function style**: prefer arrow functions; flag the `function` keyword when an arrow function would work equally well, in `.ts`, `.tsx`, `.js`, and `.jsx` files. Allow `function` for a generator, a `this` binding that arrow syntax cannot provide, the `arguments` object, or `new.target`, with the reason stated in a comment. Severity: P3. Tag: `TS_FUNCTION_STYLE`.
 - **Unnecessary abstraction or fragmentation is a finding that must be
   resolved: revert the change or justify it with evidence against the
   thresholds in `skills/complexity-advisor/SKILL.md` (Refactoring and
@@ -113,6 +113,31 @@ conformance or as a ranking prediction.
 ### Scope
 
 Identify unrelated changes.
+
+## Validate Findings Against Context
+
+This is the canonical procedure for validating a finding before reporting
+it. `workflows/code-audit.md` (Phase 6), `workflows/pull-request-review.md`
+(Phase 10), and `workflows/task-to-code.md` (Phase 12) all use it; they do
+not restate it.
+
+Before finalizing a finding:
+
+1. Read the surrounding implementation and relevant callers.
+2. Inspect the applicable acceptance criteria, task requirements, and design
+   references.
+3. Check existing tests and relevant error-handling behavior.
+4. Verify whether the alleged defect is already fixed elsewhere, or is
+   intentional and consistent with the project.
+5. Ensure the finding was introduced by the reviewed change. A declaration
+   site outside the audited scope, such as a shared type declared in a prior
+   commit, is out of scope.
+6. Avoid duplicating findings that describe the same root cause.
+
+If the evidence is insufficient, omit the finding or place the concern in a
+separately marked section requiring human verification. Do not invent line
+numbers, test results, runtime behavior, requirements, or design
+specifications, and verify every line number against the reviewed revision.
 
 ## Output
 

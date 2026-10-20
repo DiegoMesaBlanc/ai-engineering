@@ -17,11 +17,15 @@ It exists to prevent two failures observed in practice:
 
 - The **canonical wording** of an always-active rule lives in `AGENTS.md`,
   which is the shared entry point and is loaded in every session.
+- `AGENTS.md` is the universal entry point for every client: OpenCode loads
+  it as shared instructions, Claude Code through `CLAUDE.md`, and Codex from
+  the repository root. A rule that lives only in a Skill does not reach a
+  client without Skills, nor an agent that never loads that Skill.
 - Every other surface **references** the rule and states the operational
   instruction. Surfaces do not restate the normative wording.
 - The **anchor** is a short, stable phrase used to verify mechanically that
   the rule is present on a surface. The check in
-  `workflows/system-validation.md` (V2.33) verifies every row of this
+  `workflows/system-validation.md` (V2.32) verifies every row of this
   registry.
 
 ## Surfaces

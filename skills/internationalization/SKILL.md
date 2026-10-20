@@ -141,7 +141,8 @@ message format without a justified reason and human approval.
 Do not mix contracts, catalogs, config, and formatters in one file
 (e.g., a monolithic `i18n.ts`). Split when the file would change for
 unrelated reasons (translations vs. formatting vs. locale config) or a
-consumer cannot import the contract without pulling in data/runtime.
+consumer cannot import the contract without pulling in data/runtime. The
+canonical separation rule is in `skills/implementation-recipes/SKILL.md`.
 
 ## Relation to Other Components
 

@@ -480,12 +480,9 @@ List failures, blocked checks, and relevant warnings with evidence.
 
 ### Recommendation
 
-Choose:
-
-- VALIDATION PASSED
-- VALIDATION PASSED WITH LIMITATIONS
-- VALIDATION FAILED
-- VALIDATION BLOCKED
+Choose the validation status defined in `workflows/project-validation.md`
+(`VALIDATION PASSED`, `VALIDATION PASSED WITH LIMITATIONS`,
+`VALIDATION FAILED`, `VALIDATION BLOCKED`).
 
 Explain the smallest necessary next step.
 

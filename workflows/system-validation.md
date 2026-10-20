@@ -31,6 +31,7 @@ Check for the existence of:
 - commands/task.md
 - commands/pr.md
 - commands/review-pr.md
+- commands/commit.md
 - commands/system-check.md
 - commands/validate.md
 - commands/code-audit.md
@@ -55,6 +56,7 @@ Check for the existence of:
 - workflows/task-to-code.md
 - workflows/pull-request-review.md
 - workflows/code-audit.md
+- workflows/commit.md
 - workflows/system-validation.md
 - workflows/project-validation.md
 - workflows/session-resilience.md
@@ -693,10 +695,10 @@ Return:
 - Upstream commit verification:
 - External Skill policy conflicts:
 - System workflow regression matrix:
-- V2.5 interactive autonomy checks:
-- V2.5 automatic task interpretation checks:
+- V2.5 interactive autonomy and automatic task interpretation checks:
 - V2.6 architecture-first checks:
 - V2.7 architecture decision gate checks:
+- V2.8 architecture catalog and evidence boundary checks:
 - V2.12 web quality checks:
 - V2.13 proportional planning checks:
 - V2.14 formatter/linter setup checks:
@@ -710,7 +712,6 @@ Return:
 - V2.22 code audit checks:
 - V2.23 folder architecture and type ownership checks:
 - V2.24 commit generation checks:
-- V2.25 file cohesion and primary-unit checks:
 - V2.26 folder architecture by complexity, dumping ground prohibition, and reuse-based type ownership checks:
 - V2.27 commit approval checks:
 - V2.28 primary unit per file, unit folder, and test co-location checks:
@@ -719,6 +720,11 @@ Return:
 - V2.31 structural compliance enforcement checks:
 - V2.32 mandatory rule reachability checks:
 - External Skill readiness:
+
+The numbering skips V2.9 to V2.11: those identifiers were never used, and
+no rule, section, or reference depends on them. V2.25 was removed when its
+checks were folded into V2.26 and V2.28; its index entry was left behind
+and has been removed.
 
 ### Findings
 
@@ -1469,42 +1475,65 @@ and the required surfaces of every mandatory rule.
 For each row of the registry, verify the anchor is present on every required
 surface. The comparison is normalized — lowercase, `-` and space treated as
 equivalent, and whitespace collapsed — so that a line wrap or a hyphen does
-not produce a false failure:
+not produce a false failure.
 
-```python
-import pathlib, re, sys
+The check uses only `grep`, `sed`, and `tr`, so it runs on any client and in
+any environment without an interpreter dependency:
 
-registry = pathlib.Path("references/mandatory-rules.md").read_text()
-rows = re.findall(
-    r"^\| (M-\d+) \| ([^|]+) \| ([^|]+) \| `([^`]+)` \| ([^|]+) \|$",
-    registry, re.M)
+```sh
+normalize() {
+  tr '\n' ' ' | tr 'A-Z' 'a-z' | tr '-' ' ' | tr -s ' ' ' '
+}
 
-def normalize(text):
-    text = text.lower().replace("-", " ").replace("`", "")
-    return re.sub(r"\s+", " ", text)
+trim() {
+  sed 's/`//g; s/^[[:space:]]*//; s/[[:space:]]*$//'
+}
 
-failures = 0
-for rule_id, rule, canonical, anchor, surfaces in rows:
-    normalized_anchor = normalize(anchor)
-    missing = []
-    for surface in (s.strip().strip("`") for s in surfaces.split(",")):
-        path = pathlib.Path(surface)
-        if not path.exists():
-            missing.append(f"{surface} (missing file)")
-        elif normalized_anchor not in normalize(path.read_text()):
-            missing.append(surface)
-    if missing:
-        failures += 1
-        print(f"FAIL {rule_id} [{anchor}] not reachable in: {', '.join(missing)}")
-    else:
-        print(f"OK   {rule_id} [{anchor}]")
+grep -E '^\| M-[0-9]+ \|' references/mandatory-rules.md |
+while IFS='|' read -r _ id _ _ anchor surfaces; do
+  id="$(printf '%s' "$id" | trim)"
+  anchor="$(printf '%s' "$anchor" | trim)"
+  normalized_anchor="$(printf '%s' "$anchor" | normalize)"
+  missing=""
 
-print(f"rules: {len(rows)}  failures: {failures}")
-sys.exit(1 if failures else 0)
+  printf '%s' "$surfaces" | tr ',' '\n' | while read -r surface; do
+    surface="$(printf '%s' "$surface" | trim)"
+    [ -z "$surface" ] && continue
+    if [ ! -f "$surface" ]; then
+      echo "FAIL $id [$anchor] surface missing: $surface"
+      continue
+    fi
+    if ! normalize < "$surface" | grep -qF "$normalized_anchor"; then
+      echo "FAIL $id [$anchor] not reachable in: $surface"
+    fi
+  done
+done
 ```
 
 A missing anchor on any required surface is a `FAIL`: the rule is not
 reachable by an agent that reads only that surface.
+
+### Cross-client check
+
+`AGENTS.md` is the only file every supported client reads: OpenCode loads it
+as shared instructions, Claude Code loads it through `CLAUDE.md`, and Codex
+loads it from the repository root. A rule that exists only inside a Skill is
+invisible to a client without Skills, and to any agent that never loads
+that Skill.
+
+Verify that the anchor of every mandatory rule is present in `AGENTS.md`:
+
+```sh
+grep -E '^\| M-[0-9]+ \|' references/mandatory-rules.md |
+  cut -d'|' -f5 | trim | while read -r anchor; do
+    [ -z "$anchor" ] && continue
+    grep -qF "$anchor" AGENTS.md ||
+      echo "FAIL canonical wording for [$anchor] is not in AGENTS.md"
+  done
+```
+
+A rule whose canonical wording is missing from `AGENTS.md` is a `FAIL`: it
+would not reach every client.
 
 ### Single-source check
 

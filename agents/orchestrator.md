@@ -287,15 +287,9 @@ For software implementation requests, follow the Task-to-Code workflow with requ
 
 # 10. Human Interaction
 
-Ask only when the answer cannot be safely inferred and a human decision gate applies:
-
-- Ambiguous or conflicting business requirements that cannot be resolved from available evidence.
-- Significant architectural choices with meaningful long-term consequences.
-- A proposed new runtime or development dependency under the canonical dependency policy.
-- Changes that materially affect scope, backward compatibility, security, sensitive data, or production behavior.
-- Destructive actions or changes to shared or production resources.
-- New paid services, billable usage, or additional cost requiring approval.
-- A material departure from the agreed approach.
+Ask only when the answer cannot be safely inferred and a human decision gate
+applies. The canonical list of gates is the **Human Decision Gates** section
+of `AGENTS.md`; it is not restated here.
 
 Do not ask for decisions already governed by a clear repository policy.
 

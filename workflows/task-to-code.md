@@ -106,12 +106,8 @@ Once the stack is detected (language, framework, runtime, versions), **consult `
 
 ## Phase 5 — Intent and Alignment
 
-Identify the engineering intent from the request:
-- Architecture or solution design.
-- Time and cost estimation.
-- Requirements analysis or technical investigation.
-- Software implementation.
-- Validation, debugging, or code review.
+Identify the engineering intent from the request. The intent modes are the
+ones defined in `AGENTS.md`; this workflow routes each of them as follows:
 
 Apply intent-specific behavior:
 - Architecture-only or estimation-only requests: do not start implementation or modify application source code unless separately authorized. Do not request a branch name or prepare a Git branch. Produce proportionate analysis (options, trade-offs, assumptions, uncertainty, risks, unresolved questions). When moving to implementation later, reuse this work. An estimation request follows `workflows/estimation.md`, which produces a durable estimation document for a complete project from start to finish, from the supplied project artifact, and never implements; ticket-, story-, or task-level estimates are out of scope.
@@ -395,7 +391,7 @@ Proceed autonomously for routine work after alignment. Do not pause for user app
 
 Provide concise status updates at meaningful milestones (alignment complete, milestone completed, important new finding or decision required, validation results, final diff/summary). Each update must explain what changed, the evidence available, and the next step. An update is not a request for approval unless a decision gate applies.
 
-If new evidence changes a material requirement or approved design, pause and explain the reason before continuing beyond the approved scope. Otherwise, proceed autonomously.
+Material changes to an approved requirement or design pause the workflow and are explained to the user before continuing beyond the approved scope, as required by the Progress Updates rule in `AGENTS.md`. Otherwise, proceed autonomously.
 
 Use checkpoints according to `workflows/session-resilience.md`. Do not require restarting the terminal.
 
@@ -456,6 +452,9 @@ A passing build alone does not establish completion.
 ## Phase 12 — Review
 
 Load `skills/engineering-review/SKILL.md`.
+
+Validate every finding with the canonical procedure in that Skill ("Validate
+Findings Against Context").
 
 Review the resulting implementation for:
 

@@ -413,6 +413,15 @@ or Codex.
 Client-specific commands and agent configuration must delegate to the
 shared Skills and workflows instead of duplicating their logic.
 
+`AGENTS.md` is the universal entry point. Every mandatory rule keeps its
+canonical wording here, so it reaches every client: OpenCode loads it as
+shared instructions, Claude Code loads it through `CLAUDE.md`, and Codex
+loads it from the repository root. A rule that exists only inside a Skill
+does not reach a client without Skills, nor an agent that never loads that
+Skill. The registry in `references/mandatory-rules.md` records the canonical
+wording, the anchor, and the required surfaces of every mandatory rule, and
+the reachability check in `workflows/system-validation.md` verifies it.
+
 ## Official Documentation Grounding
 
 Use references/official-documentation.md when framework-specific or

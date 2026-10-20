@@ -228,8 +228,8 @@ Do not execute untrusted scripts without evaluating the risk.
 Never claim a check passed unless it was executed or reliable results
 were retrieved.
 
-When execution is not permitted or feasible, state that the conclusion is
-based on static inspection.
+The evidence rules of the canonical procedure are defined in
+`workflows/pull-request-review.md`; this Skill does not restate them.
 
 ## 8. Target Branch and Integration
 
@@ -272,33 +272,20 @@ Every actionable finding must include:
 - A practical suggested correction.
 - Confidence: High, Medium, or Low.
 
-Do not invent line numbers, test results, runtime behavior, requirements,
-or design specifications.
-
-Line numbers must be verified against the actual reviewed revision. If the
-diff lacks context, inspect the relevant file and surrounding
-implementation.
+The evidence rules of the canonical procedure are defined in
+`workflows/pull-request-review.md`; this Skill does not restate them.
 
 Do not confuse severity with code-style preference. Do not assign Critical
 or High solely because the code handles a sensitive domain; base severity
 on demonstrated impact.
-
 ## 11. Validate Findings Against Context
 
-Before reporting a finding:
+Before reporting a finding, follow the validation phase of
+`workflows/pull-request-review.md` ("Phase 10 — Validate Findings Against
+Context"). It is the canonical procedure; this Skill does not restate it.
 
-1. Read the surrounding implementation and relevant callers.
-2. Inspect applicable task acceptance criteria and design references.
-3. Check existing tests and relevant error-handling behavior.
-4. Verify whether the alleged defect is already fixed elsewhere.
-5. Consider whether the behavior is intentional and consistent with the
-   project.
-6. Ensure the finding was introduced by the reviewed change, unless the
-   user explicitly requests a broader audit.
-7. Avoid duplicating findings that describe the same underlying cause.
-
-If evidence is insufficient, omit the finding or place the concern in a
-separately marked human-verification section.
+Follow the finding-validation phase of the canonical procedure in
+`workflows/pull-request-review.md`.
 
 ## 12. Copy-Ready Feedback
 

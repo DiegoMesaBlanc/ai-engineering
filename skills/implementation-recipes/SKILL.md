@@ -215,7 +215,7 @@ src/server/<domain>/        # or src/features/<feature>/server/
 - Manage state with the project's existing solution; avoid introducing a new one without justification.
 - Handle loading, empty, and error states in data access.
 - Follow the framework's data-fetching and caching conventions.
-- **Function style**: Use **arrow functions** (`const fn = () => {}`) for all function declarations. Do not use `function` keyword. This applies to components, hooks, utilities, and callbacks. Exception: `function` keyword allowed only for `function*` generators or when `this` binding is explicitly required (rare in React).
+- **Function style**: use **arrow functions** (`const fn = () => {}`) for components, hooks, utilities, and callbacks. The `function` keyword is reserved for the legitimate reasons listed in `AGENTS.md` (a generator, a `this` binding that arrow syntax cannot provide, the `arguments` object, or `new.target`). This applies to `.ts`, `.tsx`, `.js`, and `.jsx`.
 - **Component style**: Prefer `const Component = ({ props }) => {}` over `function Component({ props }) {}`.
 - **Hook style**: `const useHook = () => {}` not `function useHook() {}`.
 - **Callback style**: `const handleClick = () => {}` not `function handleClick() {}`.

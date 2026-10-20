@@ -41,15 +41,13 @@ configuration.
 
 ## Output
 
-1. Project type and detected stack.
-2. Existing CI/CD platform and relevant workflow files.
-3. Configured quality gates and their actual execution status.
-4. Security controls detected and the scope of checks actually executed.
-5. Delivery, artifact, environment, and deployment safeguards where
-   relevant.
-6. Missing controls, evidence-supported findings, and prioritized
-   recommendations.
-7. What could not be verified and why.
+Produce the report defined by the workflow, including the detected stack and
+CI/CD platform, the configured quality gates and their execution status, the
+security controls detected, the missing controls, and what could not be
+verified.
+
+Do not restate the report structure or the status vocabulary here. The
+workflow is the authoritative source; a copy in this adapter drifts from it.
 
 Use the statuses: PASS, FAIL, BASELINE_FAILURE, BLOCKED, NOT_CONFIGURED,
 NOT_RUN, NOT_VERIFIED, SIMULATED, and NOT_APPLICABLE only when a control

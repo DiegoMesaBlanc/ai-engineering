@@ -55,60 +55,13 @@ format defined in `workflows/pull-request-review.md`.
 
 ## Output
 
-Produce the required report:
+Produce the report defined by the workflow, including the review context,
+the findings ordered by severity, the verification gaps, the non-blocking
+observations, and the summary recommendation.
 
-### Review context
-
-- PR or change identifier.
-- Reviewed branch/revision and base, when known.
-- Task or acceptance criteria used.
-- Scope and evidence sources.
-- Checks actually executed.
-
-### Findings
-
-Order findings by severity, then confidence. For each:
-
-- `[Severity] Short title` (Critical / High / Medium / Low)
-- `File:line` verified against the reviewed revision
-- **Evidence:** verified code path, requirement, or execution result.
-- **Impact:** concrete failure mode.
-- **Recommendation:** actionable correction.
-- **Confidence:** High / Medium / Low.
-
-If no actionable defects are found, state that explicitly. Do not claim
-the change is bug-free.
-
-### Verification gaps
-
-Record checks that could not be performed and why.
-
-### Non-blocking observations
-
-Include only observations that do not meet the bar for a confirmed defect.
-
-### Summary
-
-Choose one evidence-supported recommendation:
-
-- Request changes.
-- Review comments / follow-up recommended.
-- No actionable findings identified.
-
-Do not say "Approved" or imply that a remote PR state was changed.
-
-## Evidence Rules
-
-Do not invent line numbers, test results, runtime behavior, requirements,
-or design specifications.
-
-Verify line numbers against the reviewed revision; inspect the file when
-the diff lacks context.
-
-Separate confirmed defects from concerns that require human verification.
-
-Do not report stylistic preferences as defects unless an explicit project
-rule or requirement supports them.
+Do not restate the report format, the evidence rules, or the verdict list
+here. The workflow is the authoritative source; a copy in this adapter
+drifts from it.
 
 ## Strict Read-Only Policy
 

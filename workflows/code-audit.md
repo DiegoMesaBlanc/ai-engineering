@@ -138,13 +138,8 @@ For each applicable dimension:
 
 ### Phase 6 — Validate Findings Against Context
 
-Before finalizing each finding:
-- Read the surrounding implementation and relevant callers.
-- Inspect applicable tests and error-handling behavior.
-- Verify whether the alleged issue is already fixed or intentional.
-- Ensure the finding was introduced by the audited scope.
-- **If the declaration site is outside the audited scope (e.g., a shared type declared in a prior commit), do not report the finding; pre-existing issues outside the diff are out of scope.**
-- Avoid duplicate findings for the same root cause.
+Apply the canonical procedure in `skills/engineering-review/SKILL.md`
+("Validate Findings Against Context"). It is not restated here.
 
 ### Phase 7 — Report
 
