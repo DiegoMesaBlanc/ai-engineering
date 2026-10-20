@@ -111,7 +111,9 @@ Key required behaviors within that workflow:
   locales, RTL, locale-aware formatting) and follow
   `skills/internationalization/SKILL.md` when it applies
 - implement following the structural policy in AGENTS.md and the detected
-  conventions that do not conflict with it, then validate and review
+  conventions that do not conflict with it, then validate and review; the
+  structural policy takes **precedence over a detected project convention
+  that violates it**
 - write arrow functions and keep every interface, type, enum, and contract
   in a dedicated file in the folder of the layer or module that owns it,
   following `skills/implementation-recipes/SKILL.md`

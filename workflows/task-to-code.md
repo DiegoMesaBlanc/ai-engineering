@@ -11,7 +11,8 @@ Determine:
 
 - project state
 - repository
-- target project root and writable scope
+- target project root and writable scope; the target project is the **only
+  writable scope**
 - evidence-only paths supplied as reference, comparison, or context
 - task provider
 - design provider

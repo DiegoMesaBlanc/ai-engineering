@@ -51,6 +51,7 @@ Check for the existence of:
 - references/linter-rules.md
 - references/system-workflow-regression-matrix.md
 - references/token-efficiency.md
+- references/mandatory-rules.md
 - workflows/task-to-code.md
 - workflows/pull-request-review.md
 - workflows/code-audit.md
@@ -716,6 +717,7 @@ Return:
 - V2.29 target project and evidence-only path checks:
 - V2.30 minimum sufficient context and token-efficiency checks:
 - V2.31 structural compliance enforcement checks:
+- V2.32 mandatory rule reachability checks:
 - External Skill readiness:
 
 ### Findings
@@ -1450,3 +1452,98 @@ documented in prose:
 - `references/system-workflow-regression-matrix.md` includes R-52.
 - The checks cover TypeScript/JavaScript, Python, Java/Kotlin, Go, Rust,
   C#/.NET, PHP, and Ruby.
+
+## V2.32 Regression — Mandatory Rule Reachability
+
+Verify that every mandatory rule is reachable from every surface an agent
+may read, and that the canonical wording lives in exactly one place.
+
+`ai-engineering` is the single source of truth. A rule that exists only in
+an optional Skill is invisible to an agent that never loads it. A rule
+restated in many files drifts apart. The registry in
+`references/mandatory-rules.md` records the canonical wording, the anchor,
+and the required surfaces of every mandatory rule.
+
+### Reachability check
+
+For each row of the registry, verify the anchor is present on every required
+surface. The comparison is normalized — lowercase, `-` and space treated as
+equivalent, and whitespace collapsed — so that a line wrap or a hyphen does
+not produce a false failure:
+
+```python
+import pathlib, re, sys
+
+registry = pathlib.Path("references/mandatory-rules.md").read_text()
+rows = re.findall(
+    r"^\| (M-\d+) \| ([^|]+) \| ([^|]+) \| `([^`]+)` \| ([^|]+) \|$",
+    registry, re.M)
+
+def normalize(text):
+    text = text.lower().replace("-", " ").replace("`", "")
+    return re.sub(r"\s+", " ", text)
+
+failures = 0
+for rule_id, rule, canonical, anchor, surfaces in rows:
+    normalized_anchor = normalize(anchor)
+    missing = []
+    for surface in (s.strip().strip("`") for s in surfaces.split(",")):
+        path = pathlib.Path(surface)
+        if not path.exists():
+            missing.append(f"{surface} (missing file)")
+        elif normalized_anchor not in normalize(path.read_text()):
+            missing.append(surface)
+    if missing:
+        failures += 1
+        print(f"FAIL {rule_id} [{anchor}] not reachable in: {', '.join(missing)}")
+    else:
+        print(f"OK   {rule_id} [{anchor}]")
+
+print(f"rules: {len(rows)}  failures: {failures}")
+sys.exit(1 if failures else 0)
+```
+
+A missing anchor on any required surface is a `FAIL`: the rule is not
+reachable by an agent that reads only that surface.
+
+### Single-source check
+
+Verify the canonical wording is not copied into other files. The anchor of a
+rule whose canonical wording is in `AGENTS.md` must appear in `AGENTS.md`,
+and the surfaces listed in the registry must reference the rule rather than
+restate its normative wording:
+
+```sh
+# The canonical wording of an always-active rule lives in AGENTS.md.
+# Count the files that carry the anchor: more than the canonical file plus
+# the registry means a copy that can drift.
+grep -rlF "arrow functions" --include="*.md" . | grep -v node_modules
+```
+
+Review the result. A surface that restates the normative wording instead of
+referencing `AGENTS.md` is a drift risk: convert it into a reference.
+
+### Trigger check
+
+Verify that every Skill description names the concrete triggers that make an
+agent load it. A description that only states an abstract purpose does not
+match a concrete task and the Skill is never loaded:
+
+```sh
+for skill in skills/*/SKILL.md; do
+  printf '%s -> ' "$skill"
+  sed -n '3p' "$skill" | cut -c14-
+done
+```
+
+A description that omits the nouns of the task it supports is a `FAIL`.
+
+### Consistency checks
+
+- `references/mandatory-rules.md` exists at its canonical path and is listed
+  in the required-file inventory of this workflow.
+- Every registry row has an ID, a canonical wording, an anchor, and at least
+  one required surface.
+- Every required surface exists in the repository.
+- The canonical wording of every always-active rule is in `AGENTS.md`.
+- `references/system-workflow-regression-matrix.md` includes R-53.

@@ -145,6 +145,8 @@ When Phase 2 found that a required formatter or linter is missing,
 incomplete, or not yet installed, configure it. This is mandatory, not
 optional, and is established by the policy in AGENTS.md; do not request a
 redundant approval for the standard setup that policy already authorizes.
+The policy requires a **configured linter** for every language and framework
+in scope; a project without one is not validated.
 
 Before configuring anything, confirm the repository is a software project
 within scope. Never create a package.json, install formatter or linter

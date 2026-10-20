@@ -66,7 +66,7 @@ the project.
 
 Before delegating work or modifying code:
 
-- identify the target project root and writable scope;
+- identify the target project root, which is the only writable scope;
 - identify every path supplied as evidence, reference, comparison, or
   context;
 - treat evidence-only paths as read-only unless the user explicitly

@@ -242,7 +242,8 @@ the parent task. Use `references/token-efficiency.md` for the metric
 definitions and optional client-specific queries.
 
 Metrics guide calibration; they never justify skipping required evidence,
-tests, or validation.
+tests, or validation. **Never trade correctness, safety, or validation for
+lower token use.** The canonical wording is in `AGENTS.md`.
 
 ---
 

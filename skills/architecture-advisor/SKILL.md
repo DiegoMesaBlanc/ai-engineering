@@ -154,7 +154,7 @@ technology-specific architecture Skill solely to extend this catalog.
 
 ### Types, Interfaces, and Contracts
 
-**Rule: one interface/type per file in its owning layer's folder.** Exception: when multiple interfaces/types are **exclusively consumed by the same component/service/logical unit**, they are grouped in a single file (e.g., `ComponentTypes.ts`, `ServiceTypes.ts`, or co-located with the unit). Do not create separate files for types that always travel together.
+**Rule: one interface/type per file in its owning layer's folder.** Exception: when multiple interfaces/types are **exclusively consumed by the same component/service/logical unit**, they are grouped in a single file (e.g., `ComponentTypes.ts`, `ServiceTypes.ts`, or co-located with the unit). Do not create separate files for types that always travel together. Each type lives in a **dedicated file** in the folder of the layer or module that owns it, never mixed with runtime behavior. The canonical wording is in `AGENTS.md`.
 
 - **Contract ownership**: the type/contract lives in the folder of the layer or module that owns it. Consumers import from the contract module, never from an implementation module solely for types.
 - **Shared by actual reuse**: a type is extracted to `types.ts`/`contracts.ts` when it is **imported/referenced from another file**. Mere export without external reuse is a WARN/observation, not a violation.
@@ -163,7 +163,11 @@ technology-specific architecture Skill solely to extend this catalog.
 - **Import direction**: type-only imports follow the same dependency direction as runtime imports. No presentation → infrastructure type imports when a contract module exists.
 - **Language/framework conventions prevail**: do not impose the same physical structure on TypeScript, Java, Python, Go, Rust, etc. (see ecosystem matrix below).
 
-Any exception must follow the project's conventions and be justified.
+Any exception must follow the project's conventions and be justified. The
+architecture decision gate is the **Human Decision Gates** section in
+`AGENTS.md`: when no coherent architecture is detected, when conventions
+conflict, or when a new architecture must be chosen, present the options
+and wait for the user's decision before implementing.
 
 ### Separation of Responsibilities
 

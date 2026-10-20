@@ -26,10 +26,11 @@ feature are both held to professional standards:
   as runtime behavior; one type per file is the default, and several types
   are grouped in one file only when they are consumed by the same
   component, service, or logical unit
-- follow the project's existing conventions and style **except** where a
-  convention conflicts with the rules above: a convention that produces
-  `function` declarations or mixed type/runtime files is a defect to
-  correct in the code you write, not a convention to copy
+- follow the project's existing conventions and style, **except** that the
+  rules above take **precedence over a detected project convention that
+  violates them**: a convention that produces `function` declarations or
+  mixed type/runtime files is a defect to correct in the code you write,
+  not a convention to copy
 - keep functions and modules cohesive and single-purpose
 - name things clearly and consistently
 - handle errors explicitly; never swallow them silently

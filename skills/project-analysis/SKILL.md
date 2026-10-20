@@ -106,8 +106,9 @@ analysis.
 not as a convention to follow.** When the repository uses `function`
 declarations, or mixes type declarations with runtime behavior in the same
 file, report it explicitly as an existing defect in the detected code. The
-code written from now on follows the policy in AGENTS.md and does not
-reproduce it.
+structural policy takes **precedence over a detected project convention
+that violates it**: the code written from now on follows the policy in
+`AGENTS.md` and does not reproduce it.
 
 ## Folder Architecture Map
 
