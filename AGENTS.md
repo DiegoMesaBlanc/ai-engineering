@@ -310,6 +310,17 @@ Default tool choices by ecosystem:
   `structural/no-mixed-types-and-runtime` rule, plus the contract consumer
   script. A linter that runs without these rules does not enforce the
   structural policy of this system and is not a complete setup.
+- Every supported ecosystem installs the **type-per-file rule** when its
+  linter can express it: Checkstyle `OneTopLevelClass` for Java, StyleCop
+  `SA1402` for C#/.NET, and PHP_CodeSniffer
+  `PSR1.Classes.ClassDeclaration` for PHP. The rule is language agnostic
+  and applies to every supported ecosystem. When an ecosystem linter cannot
+  express it, the rule is covered by the structural compliance check and the
+  report states that it is covered by verification rather than by an
+  installed rule.
+- The **arrow function preference** is a TypeScript and JavaScript
+  convention. Never impose it on an ecosystem that has no arrow syntax; the
+  detected ecosystem's own convention prevails.
 - Angular: Prettier and Angular ESLint, preserving Angular template and
   TypeScript linting.
 - Ionic: the tooling of its underlying Angular or React stack, including

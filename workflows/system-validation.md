@@ -1438,12 +1438,15 @@ documented in prose:
   ESLint flat configuration, the local `structural/no-mixed-types-and-runtime`
   rule, and the contract consumer script.
 - `AGENTS.md` **Formatting and Linting Policy** requires the structural
-  compliance rules for JavaScript and TypeScript, and states that a linter
-  without them is not a complete setup.
+  compliance rules for JavaScript and TypeScript, requires the type-per-file
+  rule in every ecosystem whose linter can express it, and states that a
+  linter without them is not a complete setup.
 - `workflows/project-validation.md` Phase 5 installs the structural rules
   when configuring the linter, and Phase 7 verifies that the resolved
   configuration actually contains them, reporting a missing rule as
-  `SETUP_REQUIRED` even when the lint command exits successfully.
+  `SETUP_REQUIRED` even when the lint command exits successfully. The
+  verification covers every supported ecosystem, and states explicitly when
+  a rule is covered by verification rather than by an installed rule.
 - `references/system-workflow-regression-matrix.md` includes R-52.
 - The checks cover TypeScript/JavaScript, Python, Java/Kotlin, Go, Rust,
   C#/.NET, PHP, and Ruby.

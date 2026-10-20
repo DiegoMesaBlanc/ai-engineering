@@ -16,13 +16,20 @@ Authority: `skills/implementation-recipes/SKILL.md` (rules),
 
 ## What each rule enforces
 
-| Rule | Enforces |
-|---|---|
-| `func-style: ["error", "expression"]` | No `function` declarations; arrow functions preferred |
-| `no-restricted-syntax` (`VariableDeclarator > FunctionExpression`) | No `function` expression assigned to a variable |
-| `structural/no-mixed-types-and-runtime` (local rule) | A file declares types **or** runtime behavior, never both |
-| `structural/one-contract-file-per-consumer` (local script) | Contract files group types by consumer |
-| `react/no-multi-comp` | One component per file, only when `eslint-plugin-react` is already installed |
+| Rule | Enforces | Applies to |
+|---|---|---|
+| `func-style: ["error", "expression"]` | No `function` declarations; arrow functions preferred | TypeScript, JavaScript |
+| `no-restricted-syntax` (`VariableDeclarator > FunctionExpression`) | No `function` expression assigned to a variable | TypeScript, JavaScript |
+| `structural/no-mixed-types-and-runtime` (local rule) | A file declares types **or** runtime behavior, never both | TypeScript, JavaScript |
+| `structural/one-contract-file-per-consumer` (local script) | Contract files group types by consumer | TypeScript, JavaScript |
+| `react/no-multi-comp` | One component per file, only when `eslint-plugin-react` is already installed | React, Next.js |
+| Checkstyle `OneTopLevelClass` | One top-level type per file | Java |
+| StyleCop `SA1402` | One type per file | C#, .NET |
+| PHP_CodeSniffer `PSR1.Classes.ClassDeclaration` | One class per file | PHP |
+
+The type-per-file rule is language agnostic. The arrow function rule is a
+TypeScript and JavaScript convention and has no counterpart elsewhere. See
+**Rule applicability by ecosystem** for the full coverage matrix.
 
 ## TypeScript / JavaScript
 
@@ -392,22 +399,101 @@ Add it to the project scripts and run it from the lint pipeline:
 }
 ```
 
-## Other ecosystems
+## Rule applicability by ecosystem
 
-| Ecosystem | Enforceable now | Mechanism |
-|---|---|---|
-| Python | Partial | Ruff `D` rules for docstrings; type/runtime separation is not expressible in Ruff — verify with the compliance check |
-| Java | Partial | Checkstyle `OneTopLevelClass` enforces one public type per file; the contract/runtime split is verified by the compliance check |
-| Kotlin | No | Kotlin allows multiple declarations per file by design |
-| Go | Partial | `golint`/`revive` `type-name`; the interface location rule is verified by the compliance check |
-| Rust | Partial | `clippy::module_inception`, `clippy::self_named_module_files`; the contract split is verified by the compliance check |
-| C#/.NET | Partial | Roslyn analyzers `SA1402` (one type per file) |
-| PHP | Partial | PSR-4 already enforces one class per file |
-| Ruby | No | Sorbet/RBS carry the types; no lint rule separates them |
+Two rules are involved, and they do not apply to the same ecosystems.
 
-Where the ecosystem linter cannot express the rule, the structural
-compliance check in `workflows/output-compliance.md` remains the
-verification mechanism.
+**Rule A — one type per file, separated from runtime behavior.** Language
+agnostic. It applies to every supported ecosystem, and it is *installed* in
+the ones whose linter can express it.
+
+**Rule B — prefer arrow functions.** A TypeScript and JavaScript
+convention. It has no counterpart in Python, Java, Kotlin, Go, Rust, C#, PHP,
+or Ruby, because those languages have no arrow syntax and their own
+conventions govern function declarations. The system never imposes an alien
+convention on an ecosystem that has its own. Where an ecosystem does define
+a function-style convention, the project convention prevails.
+
+### Coverage matrix
+
+| Ecosystem | Rule A installed | Rule A verified | Rule B |
+|---|---|---|---|
+| TypeScript / JavaScript | Yes — ESLint `structural/no-mixed-types-and-runtime` + `func-style` | Yes | Yes |
+| Java | Yes — Checkstyle `OneTopLevelClass` | Yes | Not applicable |
+| C# / .NET | Yes — StyleCop `SA1402` | Yes | Not applicable |
+| PHP | Yes — PHP_CodeSniffer `PSR1.Classes.ClassDeclaration` | Yes | Not applicable |
+| Python | No — Ruff cannot express it | Yes | Not applicable |
+| Go | No — `golangci-lint` has no equivalent | Yes | Not applicable |
+| Rust | No — `clippy` has no equivalent | Yes | Not applicable |
+| Kotlin | No — multiple declarations per file are idiomatic | Yes | Not applicable |
+| Ruby | No — Sorbet/RBS carry the types | Yes | Not applicable |
+
+"Verified" means the rule is checked by the deterministic compliance check in
+`workflows/output-compliance.md`, which runs over the change set and reports
+`file:line` evidence. It is enforced by the agent and the audit, not by the
+project's linter, because the ecosystem offers no rule to install.
+
+### Java — Checkstyle
+
+`OneTopLevelClass` enforces one top-level type per file, so an interface and
+a class in the same file are a violation.
+
+```xml
+<?xml version="1.0"?>
+<!-- config/checkstyle/checkstyle.xml -->
+<!DOCTYPE module PUBLIC
+  "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+  "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<module name="Checker">
+  <module name="TreeWalker">
+    <module name="OneTopLevelClass">
+      <property name="severity" value="error"/>
+    </module>
+    <module name="OuterTypeFilename">
+      <property name="severity" value="error"/>
+    </module>
+  </module>
+</module>
+```
+
+### C# / .NET — StyleCop analyzers
+
+`SA1402` (FileMayOnlyContainOneType) and `SA1401` (fields must be private)
+enforce the type-per-file rule.
+
+```ini
+; .editorconfig
+dotnet_diagnostic.SA1402.severity = error
+dotnet_diagnostic.SA1401.severity = error
+dotnet_diagnostic.SA1201.severity = error
+```
+
+`SA1201` requires elements to appear in the correct order, which keeps
+types before members and supports the separation of contract declarations
+from behavior.
+
+### PHP — PHP_CodeSniffer with the PSR-12 standard
+
+`PSR1.Classes.ClassDeclaration` enforces one class per file, and PSR-4
+autoloading already depends on it.
+
+```xml
+<?xml version="1.0"?>
+<!-- phpcs.xml -->
+<ruleset name="Project">
+  <rule ref="PSR12"/>
+  <rule ref="PSR1.Classes.ClassDeclaration">
+    <severity>5</severity>
+  </rule>
+</ruleset>
+```
+
+### Python, Go, Rust, Kotlin, Ruby
+
+No linter in these ecosystems can express the rule, so the deterministic
+compliance check is the mechanism. Do not invent a custom linter plugin for
+them, and do not report the rule as unenforced without stating that the
+compliance check covers it.
 
 ## Installation requirements
 
@@ -416,3 +502,9 @@ verification mechanism.
 - `eslint-plugin-react` is used only when it is already installed.
 - The local rule file and the script are plain project files under the
   existing source tree.
+- Checkstyle, StyleCop analyzers, PHP_CodeSniffer, Ruff, and
+  `golangci-lint` are the linters already mandated by the formatting and
+  linting policy in `AGENTS.md`. They are added as project-local development
+  dependencies, never globally.
+- When the ecosystem linter cannot express a rule, the compliance check
+  covers it and the report states that fact explicitly.

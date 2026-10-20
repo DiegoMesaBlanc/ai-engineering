@@ -171,6 +171,13 @@ solely to satisfy this policy.
      local `structural/no-mixed-types-and-runtime` rule, plus the contract
      consumer script. A linter that runs without these rules is incomplete
      even when it reports no error.
+   - **Other ecosystems: install the type-per-file rule when the ecosystem
+     linter can express it**, per the coverage matrix in
+     `references/linter-rules.md`: Checkstyle `OneTopLevelClass` for Java,
+     StyleCop `SA1402` for C# and .NET, and PHP_CodeSniffer
+     `PSR1.Classes.ClassDeclaration` for PHP. When the ecosystem has no
+     equivalent rule, do not invent a plugin: the rule stays covered by the
+     structural compliance check and the report states that explicitly.
    - Angular: Angular ESLint together with Prettier; do not add a generic
      ESLint configuration that conflicts with the Angular one.
    - Ionic: the tooling of its underlying Angular or React stack.
@@ -254,12 +261,23 @@ Record:
 
 **Verify that the linter is actually enforcing the structural rules.** A
 successful lint run proves nothing when the configuration is empty or lacks
-the structural rules. For a JavaScript or TypeScript project, confirm that
-the resolved ESLint configuration contains `func-style`, the
-`no-restricted-syntax` selector for function expressions, and the local
-`structural/no-mixed-types-and-runtime` rule, and that the contract consumer
-script exists and is wired into the project scripts. Report a missing rule
-as `SETUP_REQUIRED` even when the lint command exits successfully.
+the structural rules. Confirm, per the coverage matrix in
+`references/linter-rules.md`:
+
+- JavaScript and TypeScript: the resolved ESLint configuration contains
+  `func-style`, the `no-restricted-syntax` selector for function
+  expressions, and the local `structural/no-mixed-types-and-runtime` rule,
+  and the contract consumer script exists and is wired into the project
+  scripts.
+- Java: the Checkstyle configuration enables `OneTopLevelClass`.
+- C# and .NET: the analyzer configuration sets `SA1402` to error.
+- PHP: the PHP_CodeSniffer ruleset references `PSR1.Classes.ClassDeclaration`.
+- Python, Go, Rust, Kotlin, and Ruby: the ecosystem linter cannot express
+  the rule. Confirm that the structural compliance check covers it and
+  report it as covered by verification rather than as an installed rule.
+
+Report a missing rule as `SETUP_REQUIRED` even when the lint command exits
+successfully.
 
 Do not claim success without execution evidence.
 
