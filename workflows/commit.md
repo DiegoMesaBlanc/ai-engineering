@@ -2,10 +2,15 @@
 
 ## Purpose
 
-Generate and validate commits from the current change set using project-native
-quality gates, without pushing or deploying. Commits are created only after
-all gates pass. This workflow is the canonical procedure for local commit
-generation; `commands/commit.md` is the OpenCode adapter that delegates here.
+Generate and validate a commit proposal from the current change set using
+project-native quality gates, without pushing or deploying. Commits are
+created only after all gates pass **and the user explicitly approves the
+proposed commit groups and messages in the current conversation**. This
+workflow is the canonical procedure for local commit generation;
+`commands/commit.md` is the OpenCode adapter that delegates here.
+
+Invoking `/commit` authorizes preparing and validating the proposal, not
+creating commits. There is no implicit or standing commit authorization.
 
 This workflow is **not** a code architecture audit; it validates project
 correctness (format, lint, typecheck, tests, build, security) at the level
@@ -174,19 +179,54 @@ For each commit group, generate a commit message:
 If the project uses a different convention (e.g., Jira ticket prefix),
 respect it but keep the message in English.
 
-## Phase 13 — Create Commits
+## Phase 13 — Proposal and Approval Gate
 
-For each group:
+Do not create any commit in this phase.
 
-1. Stage the group's files/hunks.
+Present the complete proposal:
+
+- Scope Manifest: files, line ranges, exclusions.
+- Tooling lifecycle states and gate results.
+- Each proposed commit group: files/hunks, message, and rationale.
+- Warnings, skipped checks, and anything that could not be verified.
+
+Then ask explicitly:
+
+> Do you approve creating these commits? Reply with an explicit approval
+> (for example: "yes, create the commits").
+
+Rules:
+
+- Invoking `/commit` is authorization to prepare this proposal, not to
+  create commits.
+- Silence, a general request to implement the task, or a previous approval
+  of the implementation is **not** commit approval.
+- Do not run `git commit` or `git commit --amend` until the user replies
+  affirmatively in the current conversation.
+- If the user declines or requests changes, do not commit; adjust the
+  proposal and ask again.
+- If the approved scope, grouping, or message differs from what was
+  presented, re-present the proposal and ask again before creating anything.
+- If any gate failed in Phases 3–10, do not request approval to commit;
+  report the failures and stop.
+
+## Phase 14 — Create Approved Commits
+
+Only after explicit approval in Phase 13, for each approved group:
+
+1. Stage exactly the approved files/hunks.
 2. Verify no secrets in the staged diff.
-3. Create the commit with the generated message.
+3. Create the commit with the approved message.
 4. Never push.
 
-If any gate failed in Phases 3–10: **do not create any commits**; report
-all failures.
+If the working tree or the staged diff changed since the proposal, stop,
+re-run the affected gates, and re-present the proposal before creating any
+commit.
 
-## Phase 14 — Report
+If any gate fails at this point: **do not create any commits**; report the
+failure.
+
+## Phase 15 — Report
 
 Produce a summary:
 
@@ -194,10 +234,11 @@ Produce a summary:
 - Tooling lifecycle states.
 - Gate results: command, status (PASS/FAIL/BLOCKED/SETUP_REQUIRED/
   NOT_CONFIGURED), duration.
+- Approval status and the approved scope.
 - Commits created (hash, message, files).
 - Warnings from AI sanity review.
 - Checks skipped and why.
-- Next steps if blocked.
+- Next steps if blocked or not approved.
 
 ## Read-only Policy (for dry-run)
 
@@ -205,5 +246,6 @@ When `--dry-run` is passed:
 
 - Execute all gates.
 - Show proposed commit groups and messages.
+- Stop after the Phase 13 proposal; do not request commit approval.
 - Do not stage, commit, or modify the working tree.
 - Report everything as if committing, but with "DRY RUN" prefix.

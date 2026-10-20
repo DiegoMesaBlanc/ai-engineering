@@ -71,6 +71,49 @@ Follow the **Folder Architecture Map** from `architecture-advisor`. Place contra
 
 Do not impose a universal template; preserve the project's detected conventions **when coherent**. A mixed `lib/` is not a convention to preserve.
 
+### Unit Organization and Test Co-location
+
+When a unit has more than one related artifact — implementation, test,
+styles, stories, fixtures, or subcomponents — use a folder per unit and put
+the test next to the unit where the ecosystem supports it. Do not leave
+`X.tsx`, `X.test.tsx`, and `X/` as siblings.
+
+**Primary unit per file — canonical applicability matrix:**
+
+| Ecosystem | Primary unit per file | Test location | Authority / applicability |
+|---|---|---|---|
+| React / Next.js | One React component per file when the project accepts Airbnb + ESLint `react/no-multi-comp`; multiple stateless/pure components allowed. React documentation and Next.js do not mandate this. | Vitest/Jest next to the unit or project convention | Airbnb, ESLint; Next.js is unopinionated |
+| Angular | One concept per file; official exception for small related components/directives | `*.spec.ts` in the same directory | Angular Style Guide |
+| Vue | One component per `.vue`; at most one `<template>`/`<script>` | Vitest next to the unit | Vue SFC specification |
+| Svelte / SvelteKit | A `.svelte` file is one component | Vitest or project convention | Svelte documentation |
+| Solid | Multiple components per file are explicitly allowed; do not enforce one per file | Vitest or project convention | Solid documentation |
+| Java | At most one public top-level class/interface referenced by other compilation units per file; one public type per file is the common convention | Mirrored `src/test/java` package | Java Language Specification §7.6 |
+| Kotlin | Multiple related declarations per file are allowed and encouraged; do not enforce one per file | Mirrored test source set | Kotlin coding conventions |
+| Python | No one-class-per-file rule | `test_*.py` co-located or in a tests tree | PEP 8, pytest |
+| Go | No one-type-per-file rule; package per directory | `_test.go` in the same package | Go documentation |
+| Rust | No one-type-per-file rule | `#[cfg(test)]` module or `tests/` | Rust Book, Cargo |
+| C#/.NET | No one-class-per-file mandate | Mirrored test project | .NET documentation |
+| PHP | One autoloaded class per file (PSR-4) | Mirrored tests directory | PSR-4, PHPUnit |
+| Ruby | No one-class-per-file mandate | `spec/` mirroring `lib/` | RSpec |
+
+**Layout:** component folders for front-end units; Angular's conventional
+`name.component.ts`/`.html`/`.css`/`.spec.ts` set; mirrored test source sets
+for Java/Kotlin; `test_*.py` for Python; `_test.go` for Go; `tests/` for
+Rust; mirrored test projects for C#/.NET; and mirrored test directories for
+PHP/Ruby.
+
+**Barrels:** `index.ts` is optional and is not part of the default layout.
+Add one only for multiple public exports or consumers, a stable module
+boundary, a substantially populated folder, or an existing project
+convention. Never add one solely to re-export a single file. Barrels are a
+JS/TS module convention; do not invent equivalents in other ecosystems.
+
+Consult `references/official-documentation.md` ("Project Structure and Test
+Co-location") and the project's coherent conventions before choosing the
+layout. A single trivial file with no test, styles, or subcomponents may
+remain a single file. Do not impose a rule the detected ecosystem does not
+support.
+
 ## Cross-Cutting Concerns
 
 Apply these consistently regardless of stack:
@@ -98,7 +141,7 @@ pattern as the default; adapt to the project's existing conventions.
 | Static Data / Catalogs | `messages/`, `catalogs/`, `data/` | Message catalogs, locale data, lookup tables. Per-locale files enable lazy loading. |
 | Configuration | `config.ts` / `constants.ts` / `settings.ts` | Locale metadata, feature flags, constants. |
 | Behavior / Formatters | `format.ts` / `utils.ts` / `helpers.ts` / `services/` | Pure functions, formatters, accessors, business logic. |
-| Public API (barrel) | `index.ts` | Re-exports only; justified when module has multiple entry points. |
+| Public API (barrel, optional) | `index.ts` | Re-exports only; use only when multiple entry points or consumers justify it, never to re-export a single file. |
 
 **i18n-specific layout** (per locale files recommended for lazy loading):
 
@@ -111,7 +154,7 @@ src/shared/i18n/
     es.ts
     ar.ts
   format.ts          # formatExpiry, formatCurrency, formatNumber, ...
-  index.ts           # Public API: getTranslations, formatters, types
+  index.ts           # Optional public API: getTranslations, formatters, types
 ```
 
 If per-locale lazy loading is not needed, a single `messages.ts` is
@@ -161,7 +204,7 @@ src/server/<domain>/        # or src/features/<feature>/server/
 ### Angular
 
 - Follow the standalone-component or NgModule organization actually used.
-- **Contracts**: shared types in feature `types.ts` or shared `types/` barrel; component inputs/outputs co-located.
+- **Contracts**: shared types in feature `types.ts` or a shared types module; component inputs/outputs co-located. Use a barrel only when justified.
 - **Imports**: components import from feature/shared types, not from service implementation files.
 - Use the framework's dependency injection and services; keep components thin.
 - Respect RxJS conventions and unsubscribe/cleanup patterns.
@@ -198,7 +241,7 @@ src/server/<domain>/        # or src/features/<feature>/server/
 ### Java (Spring Boot)
 
 - Respect package and module boundaries: `api`, `application`, `domain`, `infrastructure`.
-- **Contracts**: interfaces/DTOs in `domain` or `application`; one public type per file (Java); private/nested types may stay.
+- **Contracts**: interfaces/DTOs in `domain` or `application`; Java public types conventionally one per file (JLS §7.6); private/nested types may stay.
 - **Imports**: controllers import from `domain`/`application`, not from `infrastructure` implementation.
 - Use dependency injection and configuration conventions.
 - Handle exceptions centrally and consistently.

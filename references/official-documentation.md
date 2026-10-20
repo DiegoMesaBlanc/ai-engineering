@@ -365,6 +365,82 @@ These are the authoritative sources that inform our internal rules. Consult when
 - **Testing Trophy (Kent C. Dodds)**: https://kentcdodds.com/blog/the-testing-trophy-and-testing-classifications
 - **Property-Based Testing**: https://github.com/leanprover-community/mathlib4/blob/master/docs/contribute/property-based-testing.md
 
+## Project Structure and Test Co-location
+
+These sources are used only for the properties they actually support.
+Framework documentation may be unopinionated about file layout; a style
+guide from one ecosystem is not evidence for a universal rule. Use the
+canonical applicability matrix in
+`skills/implementation-recipes/SKILL.md` before making a finding.
+
+### Primary Unit per File
+
+- **React — Thinking in React**: https://react.dev/learn/thinking-in-react
+  — component decomposition by responsibility; does **not** mandate one
+  component per file.
+- **Next.js — Project structure**: https://nextjs.org/docs/app/getting-started/project-structure
+  — documents folder conventions; does **not** mandate one component per
+  file or a barrel per folder.
+- **Airbnb React/JSX Style Guide**: https://airbnb.io/javascript/react/
+  — “Only include one React component per file”, with an exception for
+  multiple stateless/pure components. This is an authoritative community
+  style guide, not React official documentation.
+- **ESLint `react/no-multi-comp`**: https://github.com/jsx-eslint/eslint-plugin-react/blob/master/docs/rules/no-multi-comp.md
+  — enforces one component per file by default; can be disabled.
+- **Angular — Style Guide**: https://angular.dev/style-guide
+  — “One concept per file”; one component, directive, or service per file
+  is usual, but small related components/directives may share a file when
+  they form one concept. Unit tests live in the same directory as the
+  code under test.
+- **Vue — Single-File Components**: https://vuejs.org/guide/scaling-up/sfc.html
+  — a `.vue` file encapsulates one Vue component (template, logic, and
+  styles); the SFC format is inherently one component per file.
+- **Svelte — `.svelte` files**: https://svelte.dev/docs/svelte/svelte-files
+  — components are written into `.svelte` files; the file is the component.
+- **Solid — Components basics**: https://docs.solidjs.com/concepts/components/basics
+  — named exports allow multiple components to be exported from a single
+  file; do **not** impose one component per file.
+- **Java — JLS §7.6**: https://docs.oracle.com/javase/specs/jls/se21/html/jls-7.html#jls-7.6
+  — at most one public top-level class/interface that is referenced by
+  other compilation units per compilation unit; putting each class or
+  interface in its own file is the common convention.
+- **Kotlin — Coding conventions**: https://kotlinlang.org/docs/coding-conventions.html
+  — placing multiple closely related declarations in one source file is
+  encouraged; do **not** impose one class per file.
+- **PHP — PSR-4 autoloading**: https://www.php-fig.org/psr/psr-4/
+  — a fully qualified class name maps to a file path; autoloaded classes
+  are one per file in practice. **PSR-12** (https://www.php-fig.org/psr/psr-12/)
+  covers coding style, not a one-class-per-file rule beyond autoloading.
+- **Python, Go, Rust, C#/.NET, Ruby**: no official one-class/type-per-file
+  mandate. Apply only test organization and project conventions.
+
+### Unit Folders and Test Placement
+
+- **Angular — Style Guide**: https://angular.dev/style-guide
+  — group closely related component files in the same directory; unit
+  tests live with the code under test.
+- **Java/Maven — Standard directory layout**: https://maven.apache.org/guides/introduction/introduction-to-the-standard-directory-layout.html
+- **Gradle — Java plugin layout**: https://docs.gradle.org/current/userguide/java_plugin.html
+- **Python/pytest — Test discovery and good practices**: https://docs.pytest.org/en/stable/explanation/goodpractices.html
+- **Go — Add a test (package layout)**: https://go.dev/doc/tutorial/add-a-test
+- **Rust — Test organization**: https://doc.rust-lang.org/book/ch11-03-test-organization.html
+- **Cargo — Tests**: https://doc.rust-lang.org/cargo/guide/tests.html
+- **.NET — Unit testing best practices**: https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices
+- **PHPUnit — Organizing tests**: https://docs.phpunit.de/en/11.5/organizing-tests.html
+- **RSpec — Core**: https://rspec.info/documentation/3.13/rspec-core/
+
+### Test File Conventions
+
+- **Vitest — Include patterns**: https://vitest.dev/config/#include
+- **Jest — testMatch**: https://jestjs.io/docs/configuration#testmatch-arraystring
+- **Playwright — Test configuration**: https://playwright.dev/docs/test-configuration
+
+**Invariant:** group a unit's related artifacts in one folder/module and
+co-locate its test when the ecosystem permits. Keep one primary unit per
+file only where the ecosystem's documentation or authoritative style guide
+supports it. The exact layout follows the official convention and the
+project's coherent conventions; do not impose one universal template.
+
 ---
 
 ## Selection Workflow

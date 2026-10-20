@@ -176,21 +176,73 @@ ask which to resume instead of guessing.
 
 ### Token and Context Efficiency
 
-Keep context spend proportional to the task, independently of the client:
+Use the smallest context that is sufficient for a correct, validated result,
+not the absolute minimum token count. Keep context spend proportional to the
+task, independently of the client.
 
-- Prefer targeted reads and searches over loading whole files or whole
-  sites; read only the sections needed to resolve the question.
+Before broad exploration, record a **Context Manifest** covering:
+
+- target project root and evidence-only paths;
+- task type and provisional rigor;
+- Skills and references expected to be needed;
+- likely files, modules, or documentation sections;
+- exploration budget and stop condition.
+
+#### Soft exploration budgets
+
+These are initial defaults, calibrated from measured tasks rather than
+intuition. They apply to **exploration before implementation** and exclude
+mandatory edits, tests, formatting, build, and validation.
+
+| Rigor | Exploration tool calls | Unique files read | Skills loaded |
+|---|---:|---:|---:|
+| R1 | 4 | 3 | 1 |
+| R2 | 10 | 8 | 2 |
+| R3 | 20 | 15 | 3 |
+| R4 | explicit plan | explicit plan | explicit plan |
+
+A budget is a soft stop-and-report threshold, not a hard failure. If
+correctness, safety, or required validation needs more context, record the
+reason in the working interpretation and continue. If the expansion changes
+the task scope, stop and ask before proceeding.
+
+#### Retrieval rules
+
+- Prefer targeted searches and ranged reads over loading whole files or
+  whole sites.
 - Keep tool output bounded; summarize large results instead of pasting them
-  back, and discard or prune stale tool output where the client supports it.
+  back, and discard or prune stale output where the client supports it.
 - Delegate broad or exploratory search to subagents and consume their
   concise summary rather than their full transcript.
 - Do not re-read or re-derive information already established earlier in the
   session; reuse prior analysis when the task state has not changed.
 - Load only the Skills, references, and documentation relevant to the
   current task; never preload the entire knowledge base.
+- For review and audit work, inspect the diff first and expand only where
+  the diff requires repository context.
 - Checkpoint before a large expansion or an expensive validation so progress
   survives a context reset instead of being repeated.
-- Do not trade correctness, safety, or validation for token savings.
+
+#### Stop rules
+
+- Two consecutive searches add no new evidence: summarize and decide.
+- The exploration budget is reached: report what is known, what is missing,
+  and the proposed next step.
+- A new repository area is needed: update the Context Manifest before
+  exploring it.
+- Token savings would reduce correctness, safety, or validation: stop
+  optimizing.
+
+#### Measurement
+
+Where the client exposes per-session or per-message usage, record input,
+output, reasoning, cache reads and writes, tool calls, unique and repeated
+file reads, Skills loaded, and compactions. Aggregate subagent sessions into
+the parent task. Use `references/token-efficiency.md` for the metric
+definitions and optional client-specific queries.
+
+Metrics guide calibration; they never justify skipping required evidence,
+tests, or validation.
 
 ---
 

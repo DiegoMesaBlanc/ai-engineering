@@ -36,6 +36,13 @@ Before implementing a task:
 19. Determine which Skills are relevant to the task.
 20. Load only the Skills that are relevant.
 
+## Scope and evidence
+
+Identify the target project root and every path supplied only as evidence,
+reference, comparison, or context. Evidence-only paths are read-only unless
+the user explicitly authorizes changes. Never treat a reference example as
+an implicit task.
+
 ## Existing projects
 
 Do not ask the user to provide information that can be reliably detected from the repository.
@@ -91,6 +98,8 @@ Do not translate source code requirements into non-English identifiers.
 Before implementation, provide a concise discovery summary:
 
 PROJECT STATE
+TARGET PROJECT
+EVIDENCE-ONLY PATHS
 STACK
 ARCHITECTURE
 CONVENTIONS

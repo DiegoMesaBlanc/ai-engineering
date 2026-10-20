@@ -49,6 +49,7 @@ Check for the existence of:
 - integrations/skill-catalog.md
 - references/official-documentation.md
 - references/system-workflow-regression-matrix.md
+- references/token-efficiency.md
 - workflows/task-to-code.md
 - workflows/pull-request-review.md
 - workflows/code-audit.md
@@ -706,8 +707,12 @@ Return:
 - V2.22 code audit checks:
 - V2.23 folder architecture and type ownership checks:
 - V2.24 commit generation checks:
-- V2.25 file cohesion checks:
+- V2.25 file cohesion and primary-unit checks:
 - V2.26 folder architecture by complexity, dumping ground prohibition, and reuse-based type ownership checks:
+- V2.27 commit approval checks:
+- V2.28 primary unit per file, unit folder, and test co-location checks:
+- V2.29 target project and evidence-only path checks:
+- V2.30 minimum sufficient context and token-efficiency checks:
 - External Skill readiness:
 
 ### Findings
@@ -1340,7 +1345,68 @@ Verify that folder architecture is decided by complexity, `lib/`/`utils/` dumpin
 - `skills/engineering-review/SKILL.md` adds dumping ground check, reuse-based type extraction (only when imported from another file), schema + inferred type pair stays in `contracts.ts`/`schemas.ts`, API file cohesion (contracts separate from client).
 - `workflows/code-audit.md` Dimension 1: **Folder Architecture check** adds dumping ground detection; **Type/Contract Ownership check** is reuse-based (P2 when imported from another file, WARN when only exported); **File Cohesion check** adds API-specific pattern (schemas + validators + client in one file → P2).
 - `references/system-workflow-regression-matrix.md` includes R-47 with documented cases:
-  - Demo counterexample: `src/lib` with i18n, payments service, storage, API contracts, API client mixed → P2 `FOLDER_ARCHITECTURE` + `TYPE_OWNERSHIP`.
-  - Correct for small app: layer-first `src/api/payments/{contracts,client}`, `src/services/payments`, `src/server/payments/storage`, `src/shared/i18n/`.
+  - Counterexample: a `lib/` containing i18n, payments service, storage, API contracts, and API client mixed → P2 `FOLDER_ARCHITECTURE` + `TYPE_OWNERSHIP`.
+  - Correct for a small app: layer-first `src/api/payments/{contracts,client}`, `src/services/payments`, `src/server/payments/storage`, `src/shared/i18n/`.
 - No new Skill, agent, package.json, dependency, or competing orchestrator introduced.
 - `/commit` does **not** block on architecture/type placement; behaves like Husky (objective gates only). Architecture is in code-audit/review/task-to-code.
+
+## V2.27 Regression — Commit Approval Gate
+
+Verify that no commit is created without explicit human approval:
+
+- `AGENTS.md` includes "Creating a commit" in Human Decision Gates and a **Commit Approval Policy**: never run `git commit`/`--amend` without explicit approval of the proposed scope and message; invoking `/commit` or `/task` authorizes preparing a proposal, not creating commits; a general request to implement is not approval; a changed scope or message requires re-approval.
+- `workflows/commit.md`: Phase 13 is a **Proposal and Approval Gate**; Phase 14 creates only approved commits; Phase 15 reports approval status; a dry run stops at the proposal.
+- `commands/commit.md`: states that the command prepares and validates a proposal and does not create commits by itself; includes the approval gate.
+- `skills/git-workflow/SKILL.md`: "Before commit" asks for explicit approval and creates only after an affirmative answer.
+- `agents/orchestrator.md` and `workflows/task-to-code.md`: delivery requires explicit approval and rejects command invocation or implementation request as commit approval.
+- `references/system-workflow-regression-matrix.md` includes R-48.
+- No commit is created during validation; the validation itself is read-only.
+
+## V2.28 Regression — Primary Unit per File, Unit Folders, and Co-located Tests
+
+Verify that file/unit organization is applied according to ecosystem support, not as a universal rule:
+
+- `skills/architecture-advisor/SKILL.md`: **Primary Unit per File and Stack Applicability** defines the rule, the dumping-ground anti-pattern, the Angular exception, and optional barrels; **Unit Folders and Co-located Tests** defines the sibling anti-pattern, ecosystem-appropriate layouts, R-42 scope, and the official documentation reference.
+- `skills/implementation-recipes/SKILL.md`: the canonical applicability matrix covers React/Next.js, Angular, Vue, Svelte, Solid, Java, Kotlin, Python, Go, Rust, C#/.NET, PHP, and Ruby, with the primary-unit rule and test location per ecosystem. Barrels are optional and not part of the default layout.
+- `skills/project-analysis/SKILL.md`: Folder Architecture Map and Internal Module Layout Detection report primary-unit violations, unit grouping, test co-location, and barrel justification where supported.
+- `skills/engineering-review/SKILL.md`: review flags multi-unit files and `X`, `X.test`, and `X/` siblings only where the ecosystem supports the rule; it does not impose React/Angular conventions on Solid, Kotlin, Python, Go, Rust, C#/.NET, or Ruby.
+- `workflows/code-audit.md`: Dimension 1 includes the **Primary unit per file check**, **Unit folder and test co-location check**, and **Barrel check**, with `FILE_COHESION`/`FOLDER_ARCHITECTURE` tagging and P2/P3 severity.
+- `workflows/task-to-code.md` Phase 8: the proposal must include a File Responsibility Map, respect the applicability matrix, and use a unit folder with a co-located test where the ecosystem supports it.
+- `references/official-documentation.md`: **Project Structure and Test Co-location** records what each source supports: React/Next.js do not mandate one component per file; Airbnb/ESLint do; Angular supports “one concept per file” with an exception; Vue/Svelte are inherently one component per file; Solid and Kotlin allow multiple related declarations; Java public API types are conventionally one per file, and PHP autoloaded classes are one per file; the remaining ecosystems have no one-unit-per-file mandate.
+- `references/system-workflow-regression-matrix.md` includes R-46 and R-49.
+- No demo-specific assertion is part of this validation; the demo and other reference paths are read-only.
+
+## V2.29 Regression — Target Project and Evidence-Only Paths
+
+Verify that scope is explicit and reference paths are never modified:
+
+- `AGENTS.md`: **Scope and Evidence Boundaries** states that the target project is the only writable scope, evidence-only paths are read-only without explicit authorization, reference examples are not implicit tasks, and out-of-target changes require a stop-and-ask decision.
+- `workflows/task-to-code.md`: Phase 1 records the target project root and evidence-only paths; Phase 2 preserves the boundary; Phase 3 treats design artifacts as evidence; Phase 10 forbids modifying evidence-only paths, reference projects, design artifacts, or external repositories.
+- `agents/orchestrator.md`: **Scope and Evidence Boundaries** requires identifying the target and evidence-only paths before delegating and passing the boundary to every delegated agent.
+- `skills/discovery/SKILL.md`: discovery identifies the target project and evidence-only paths and reports them in its output.
+- `references/system-workflow-regression-matrix.md` includes R-50.
+- A path supplied only as evidence, comparison, or context is never modified without explicit authorization, even when it demonstrates a real defect.
+
+## V2.30 Regression — Minimum Sufficient Context and Token Efficiency
+
+Verify that context efficiency is bounded, measured, and subordinate to
+correctness:
+
+- `AGENTS.md`: **Minimum Sufficient Context** requires a Context Manifest,
+  soft exploration budgets, stop rules, measurement, and no correctness
+  tradeoff.
+- `workflows/session-resilience.md`: **Token and Context Efficiency** defines
+  the Context Manifest, soft exploration budgets for R1–R4, retrieval rules,
+  stop rules, and measurement; budgets exclude implementation and validation.
+- `workflows/task-to-code.md`: Phase 1 records the manifest and provisional
+  rigor; Phase 2 refines it without unrelated paths; Phase 9 includes the
+  final budget; Phase 10 enforces the stop rules and records expansions.
+- `skills/task-context/SKILL.md`: the working interpretation contains the
+  Context Manifest and the rule not to broaden it without evidence.
+- `references/token-efficiency.md`: defines metrics, baseline and
+  calibration, optional read-only queries, and the no-hard-cap principle.
+- `references/system-workflow-regression-matrix.md` includes R-51.
+- The policy applies to exploration only; implementation, tests, formatting,
+  build, validation, and security checks remain mandatory.
+- No hard token cap, compaction plugin, or reduction of required evidence is
+  introduced.

@@ -31,6 +31,20 @@ Review the actual changes, not the entire repository unless required.
   dependency directions, contract/type location per module). Flag layer-skipping
   imports, contracts in implementation folders, mixed-responsibility folders,
   and global `types.ts`/`utils.ts` dumping grounds.
+- **Primary unit per file**: where the detected ecosystem supports it, flag
+  files that export several independent components, classes, or other units
+  with their own behavior. Use the applicability matrix in
+  `skills/implementation-recipes/SKILL.md`; do not impose a rule the
+  ecosystem does not support. Small private non-exported helpers are exempt.
+- **Unit folders and co-located tests**: when a unit has multiple related
+  artifacts (implementation, test, styles, stories, subcomponents), its
+  implementation and test should live in the unit folder where the
+  ecosystem supports it; flag `X`, `X.test`, and `X/` siblings, or a test
+  detached from the unit against the ecosystem convention. Do not apply the
+  folder convention to ecosystems that organize tests differently.
+- **Barrel check**: a barrel (`index.ts`) is optional. Flag a barrel that
+  only re-exports one file or has no real public-API role as a P3
+  observation; do not require barrels by default.
 - **Dumping ground check**: flag `lib/`, `utils/`, `services/` folders that
   contain domain-specific code (API clients, contracts, storage, i18n catalogs)
   mixed with generic utilities. These are anti-patterns; new code must not

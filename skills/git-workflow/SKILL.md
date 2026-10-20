@@ -86,8 +86,13 @@ chore(ci): update test pipeline
 5. Verify type checking when available.
 6. Verify linting when available.
 7. Stage only the intended files.
-8. Show the proposed commit message.
-9. Create the commit only when authorized by the user or project workflow.
+8. Show the proposed commit groups, messages, and files.
+9. Ask for explicit approval in the current conversation.
+10. Create the commit only after the user replies affirmatively.
+
+Invoking `/commit` or a general request to implement a task is not commit
+approval. If the user declines or requests changes, do not commit; adjust
+the proposal and ask again.
 
 ## Automated Commit Generation
 
@@ -100,7 +105,8 @@ see `workflows/commit.md` and the `/commit` command. That workflow:
   security audit, and a lightweight AI correctness review.
 - Groups changes into atomic commits with English Conventional Commit
   messages.
-- Creates commits only after all gates pass.
+- Creates commits only after all gates pass **and the user explicitly
+  approves the proposed commit groups and messages**.
 - Never pushes or deploys.
 - Documentation-only repositories skip application gates.
 

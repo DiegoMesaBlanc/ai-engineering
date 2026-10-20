@@ -62,6 +62,24 @@ the project.
 
 ---
 
+# 1a. Scope and Evidence Boundaries
+
+Before delegating work or modifying code:
+
+- identify the target project root and writable scope;
+- identify every path supplied as evidence, reference, comparison, or
+  context;
+- treat evidence-only paths as read-only unless the user explicitly
+  authorizes changes to them;
+- include this boundary in the task context and pass it to every delegated
+  agent;
+- never treat a reference example as an implicit task.
+
+If a change outside the target project appears necessary, stop and request
+explicit authorization.
+
+---
+
 # 2. Task Detection
 
 Determine whether the work comes from:
@@ -366,7 +384,8 @@ Never claim successful execution without evidence.
 A completed change may end with:
 
 - commit proposal
-- commit (using `workflows/commit.md` for automated generation with
+- commit only after explicit approval of the proposed commit groups and
+  messages in the current conversation (using `workflows/commit.md` for
   project-native quality gates: format, lint, typecheck, tests, build,
   security, AI sanity review; English messages; no push/deploy)
 - PR proposal
@@ -374,8 +393,11 @@ A completed change may end with:
 - task branch verification
 - validated implementation
 
-Write actions require explicit authorization unless an explicit automation
-policy exists.
+Write actions require explicit authorization. Invoking `/commit`, `/task`,
+or any other command authorizes preparing and validating a proposal, not
+creating commits. Never run `git commit` or `git commit --amend` without
+explicit approval of the proposed scope and message. A general request to
+implement a task is not commit approval.
 
 When a task touches CI/CD or delivery, follow
 `workflows/secure-delivery.md`. Its read-only assessment mode never

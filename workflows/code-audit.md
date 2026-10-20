@@ -99,6 +99,9 @@ For each applicable dimension:
     - Map declarations to folders/layers **within the audited scope**.
     - Verify allowed import directions; flag layer-skipping imports (e.g., UI → service implementation for types), mixed-responsibility folders, cross-feature private imports, global `types.ts`/`utils.ts` dumping grounds, circular layer dependencies.
     - **Dumping ground check**: flag `lib/`, `utils/`, `services/` folders that contain domain-specific code (API clients, contracts, storage, i18n catalogs) mixed with generic utilities. These are anti-patterns, not conventions to preserve.
+    - **Primary unit per file check**: where the detected ecosystem supports it, flag files that export multiple independent components, classes, modules, or other units with their own behavior. Use the applicability matrix in `skills/implementation-recipes/SKILL.md`; never impose React/Angular conventions on Solid, Kotlin, Python, Go, Rust, C#/.NET, or Ruby, which do not support a one-unit-per-file rule. Small private non-exported helpers are exempt. Tag `FILE_COHESION`; severity P2 for independent exported units, P3 for minor related helpers.
+    - **Unit folder and test co-location check**: for units with multiple related artifacts (implementation, test, styles, stories, subcomponents), verify they live in a dedicated unit folder (or the ecosystem's equivalent package/module) with the test next to the unit, where the ecosystem supports it. Flag `Component.tsx` + `Component.test.tsx` + `Component/` as siblings, or a test detached from the unit against the ecosystem convention. Tag `FOLDER_ARCHITECTURE`; severity P2 when the unit has multiple artifacts, P3 for a single trivial unit.
+    - **Barrel check**: a barrel (`index.ts`) is optional. Flag a barrel that only re-exports one file or lacks a real public-API role as P3 `FOLDER_ARCHITECTURE`. Do not require barrels by default or invent equivalents in ecosystems that do not use them.
     - Do not impose a universal template; audit conformance to the detected/declared structure. If no structure exists, report "no identifiable architecture" and evaluate whether new code created a coherent one per the complexity-based decision (small→layer-first, medium→feature-first).
     - Language-specific idioms: Go consumer-side interfaces, Java one-public-type-per-file, Python Protocols, Ruby RBS/Sorbet.
 
@@ -125,11 +128,12 @@ For each applicable dimension:
 3. **File Cohesion and Responsibility Separation check**
     - Detect files that mix multiple responsibilities: contracts/types, static data/catalogs, configuration, behavior/formatters, wiring.
     - Patterns: exported contracts in the same file as static data (i18n catalogs, config maps), runtime behavior, or wiring; locale metadata + translations + formatters in one file; large static data inline with logic; schemas + inferred types + validators + converters + HTTP client in one file.
+    - Multi-unit files: several exported components, classes, or modules with independent state, behavior, or lifecycle in one file, where the detected ecosystem supports a primary-unit-per-file rule. Do not flag multiple related declarations where the ecosystem explicitly allows them (e.g., Solid, Kotlin).
     - i18n-specific: inline translation dictionaries in config/logic files; catalogs must be in dedicated `messages/` or `messages.ts` files separate from config and formatters.
     - API-specific: Zod schemas + inferred types + validation functions + converters + fetch client in one file → must separate `contracts.ts` (schemas + types) from `client.ts` (validators, converters, fetch).
     - **React/Next.js function style**: flag `function` keyword in `.tsx`/`.jsx` files (except `function*` generators). Arrow functions required for components, hooks, callbacks. Severity: P3. Tag: `REACT_FUNCTION_STYLE`.
     - Exempt: small single-responsibility files (types-only, config-only, behavior-only, wiring-only, generated files); single-consumer props/local view models per `architecture-advisor`.
-    - Severity: P2 for mixing contracts with data/behavior or schema+validators+client; P3 for config + behavior or minor mixing. Tag findings with `FILE_COHESION`.
+    - Severity: P2 for mixing contracts with data/behavior, schema+validators+client, or multiple independent exported units where the ecosystem supports one unit per file; P3 for config + behavior or minor mixing. Tag findings with `FILE_COHESION`.
     - Evidence: file with responsibility breakdown + reason to change analysis + consumer import paths.
 
 ### Phase 6 — Validate Findings Against Context

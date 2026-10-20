@@ -11,11 +11,16 @@ Determine:
 
 - project state
 - repository
+- target project root and writable scope
+- evidence-only paths supplied as reference, comparison, or context
 - task provider
 - design provider
 - Git provider
 - current branch
 - working-tree status
+- task type and provisional rigor
+- provisional Context Manifest: required Skills and references, likely
+  files, exploration budget, and stop condition
 
 ## Phase 2 — Understand the Task
 
@@ -34,9 +39,13 @@ When a task exists:
 - identify acceptance criteria
 - inspect dependencies and comments
 - identify design references
+- distinguish the target project from evidence-only paths and preserve
+  that boundary throughout the task
 - infer requirements and acceptance criteria supported by repository,
   design, and policy evidence, and mark them as inferred
 - identify only the material ambiguities that cannot safely be inferred
+- refine the Context Manifest and do not add unrelated paths, Skills, or
+  documentation to it
 
 Maintain the result as a concise working interpretation inside the
 session, as defined in `skills/task-context/SKILL.md`. Do not create a
@@ -52,6 +61,9 @@ When design context exists:
 - retrieve the smallest useful design context
 - map design requirements to existing components
 - identify missing information
+
+Treat design artifacts as evidence. Never edit the source design artifact or
+an external reference project.
 
 Do not assume Figma.
 
@@ -199,14 +211,41 @@ large→feature modules with boundaries) and document the rationale.
 or significantly changed module**: which file owns contracts/types
 (`types.ts`/`contracts.ts`/`schemas.ts`), which owns static data/catalogs
 (`messages/`, `catalogs/`), which owns configuration (`config.ts`),
-which owns behavior/formatters (`format.ts`, `utils.ts`), and which serves
-as the public API (`index.ts`). For i18n modules, this means separating
+which owns behavior/formatters (`format.ts`, `utils.ts`), and which file,
+if any, exposes the module's public API. A barrel (`index.ts`) is optional
+and justified only by multiple public exports or consumers, a stable module
+boundary, a substantially populated folder, or an existing project
+convention; never add one merely to re-export a single file. For i18n modules, this means separating
 types, locale config, per-locale catalogs, and formatters. For API modules,
 separate schemas + inferred types (`contracts.ts`) from validators,
 converters, and clients (`client.ts`). Single-consumer props/local
 view models are co-located with their consumer and do not require a
 separate types file. A type is extracted only when **actually reused from
 another file**; mere export without reuse is a WARN/observation.
+
+**File cohesion:** where the detected ecosystem supports it, keep one
+primary component, class, module, or other unit per file. Follow the
+applicability matrix in `skills/implementation-recipes/SKILL.md` and the
+evidence in `references/official-documentation.md`; never impose a rule an
+ecosystem does not support. A component file that exports several
+independent components with their own behavior is a dumping ground, not a
+cohesive unit. Small private non-exported helpers may stay with their unit.
+Angular follows its official "one concept per file" rule, including its
+documented exception for small related components or directives.
+
+**For every unit with multiple related artifacts — implementation, test,
+styles, stories, fixtures, or subcomponents — use a unit folder and
+co-locate the test with the unit, as the ecosystem supports.** Do not leave
+`X`, `X.test`, and `X/` as siblings. Apply the rule according to the
+detected ecosystem's official convention (component folders for
+React/Vue/Svelte/Angular/Solid; mirrored test packages for Java/Kotlin;
+`test_<module>.py` for Python; `_test.go` for Go; `tests/` for Rust;
+mirrored test projects for C#/.NET; and so on).
+
+A single trivial file with no test, styles, or subcomponents may remain a
+single file. Consult `references/official-documentation.md` ("Project
+Structure and Test Co-location") and the applicability matrix in
+`skills/implementation-recipes/SKILL.md` before deciding the layout.
 
 Use only the analyses relevant to this task.
 
@@ -269,6 +308,7 @@ Provide a concise implementation plan including:
   `NEW_DEPENDENCY_PROPOSED`, or `BLOCKED`) with its evidence
 - proposed new components only when justified per the Refactoring and Abstraction Justification gate in `skills/complexity-advisor/SKILL.md`
 - formatting and linting setup when the project lacks it
+- the final Context Manifest and exploration budget for the selected rigor
 - the Secure Delivery Workflow selected when the task involves CI/CD,
   security, or delivery controls, including authoring a delivery pipeline
   with its environments, gates, and deployment stages
@@ -290,7 +330,16 @@ libraries.
 
 ## Phase 10 — Implement
 
-Implement on the requested branch.
+Implement on the requested branch and only within the target project.
+
+Apply the minimum sufficient context policy and stop rules from
+`workflows/session-resilience.md`. Do not keep exploring after two
+consecutive searches add no new evidence, and record any budget expansion
+with its reason.
+
+Do not modify evidence-only paths, reference projects, design artifacts, or
+external repositories. If a required change appears to fall outside the
+target project, stop and request explicit authorization.
 
 Preserve existing conventions.
 
@@ -411,9 +460,15 @@ Inspect:
 - changed files
 - unrelated changes
 
-Propose a commit message.
+Propose the commit groups, messages, and files.
 
-Create a commit only under the established human-approval policy.
+Present the proposal and ask for explicit approval in the current
+conversation. Invoking `/task` or a general request to implement the task is
+not commit approval.
+
+Create the commit only after the user replies affirmatively. If the user
+declines or requests changes, do not commit; adjust the proposal and ask
+again. If the approved scope or message changes, re-present the proposal.
 
 Do not push automatically.
 

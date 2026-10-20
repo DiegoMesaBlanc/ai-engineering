@@ -224,6 +224,30 @@ that contains runtime behavior.
 consumer cannot import the contract without pulling in data/runtime,
 split it. This is not fragmentation (R-42); it is correct separation.
 
+### Primary Unit per File and Stack Applicability
+
+A file must not become a dumping ground for independent units. Where the
+detected ecosystem supports it, keep one primary component, class, module,
+or other unit per file. The rule is not universal: React official
+documentation and Next.js do not mandate it, Solid and Kotlin explicitly
+allow multiple related declarations, and several ecosystems have no
+one-unit-per-file rule. Apply only the rules supported by the ecosystem's
+official documentation or a recognized authoritative style guide, using the
+applicability matrix in `skills/implementation-recipes/SKILL.md`.
+
+- A file exporting several independent components with their own state,
+  behavior, or lifecycle is a dumping ground and a File Cohesion finding,
+  not a cohesive unit.
+- Small private, non-exported helpers may remain with the unit they serve.
+- Angular follows its official "one concept per file" rule, including the
+  documented exception for small related components or directives; do not
+  reduce it to a mechanical one-component rule.
+- Barrels (`index.ts`) are a JS/TS module convention, optional and
+  justified only by multiple public exports or consumers, a stable module
+  boundary, a substantially populated folder, or an existing project
+  convention. Never add one solely to re-export a single file. Do not
+  invent barrel equivalents in ecosystems that do not use them.
+
 ### Folder Architecture and Contracts
 
 The folder structure is **detected first**. If a coherent architecture exists, it is preserved and documented. If no clear architecture is detected, or the existing structure is incoherent (e.g., a flat `lib/` mixing unrelated responsibilities), **a project-appropriate structure is decided based on complexity** and documented in a **Folder Architecture Map**:
@@ -233,6 +257,7 @@ The folder structure is **detected first**. If a coherent architecture exists, i
 - **Allowed dependency directions** between layers/modules.
 - **Contract/type location per module**: shared contracts live in the owning layer's folder; single-consumer types co-locate.
 - **Co-location rules** and **public module API** (barrels only when justified).
+- **Unit-level grouping and test co-location**: where the ecosystem supports it, a unit with multiple related artifacts lives in its own folder with its test.
 
 The type/contract placement rule derives from the folder map: **the type lives in the folder of the layer that owns the contract**.
 
@@ -273,6 +298,50 @@ Framework-specific route handlers (`app/api/...`, `routes/...`) remain in the fr
 - Route handlers delegate to services; they do not contain business logic.
 
 A mixed `lib/` with unrelated responsibilities is an anti-pattern, not a convention to preserve. New code uses the correct folders; existing code moves only when touched (R-42).
+
+### Unit Folders and Co-located Tests
+
+When a unit has more than one related artifact — implementation, test,
+styles, stories, fixtures, or subcomponents — group them in a dedicated
+folder named after the unit, and keep the test next to the unit it tests
+where the ecosystem supports it.
+
+- Do not leave `Component.tsx`, `Component.test.tsx`, and `Component/` as
+  siblings. A unit folder plus the implementation and test outside it is a
+  mixed structure and a finding, not a convention to preserve.
+- A single trivial file with no test, styles, stories, or subcomponents may
+  remain a single file. Create the folder when the unit has multiple related
+  artifacts.
+- The exact layout follows the ecosystem's official convention and the
+  project's coherent conventions; the invariant is grouping by unit and
+  co-locating tests when the ecosystem permits.
+- Ecosystem examples:
+  - React/Next.js: `Component/` containing `Component.tsx`,
+    `Component.test.tsx`, styles, stories, and subcomponents. A barrel is
+    optional, not part of the default layout. Solid may keep multiple
+    related components in one file and still use a component folder for
+    tests and assets.
+  - Vue: `Component/` containing `Component.vue`, `Component.test.ts`,
+    styles, and stories. A barrel is optional.
+  - Svelte/SvelteKit: `Component/` containing `Component.svelte`,
+    `Component.test.ts`, styles, and stories. A barrel is optional.
+  - Angular: a component folder with `name.component.ts`,
+    `name.component.html`, `name.component.css`, and `name.component.spec.ts`.
+  - Java/Kotlin: one package per unit; tests in the mirrored test source
+    set and package.
+  - Python: `module.py` with `test_module.py` co-located or in a mirrored
+    `tests/` tree, per project convention.
+  - Go: package directory with `unit_test.go` in the same package.
+  - Rust: module directory with a `#[cfg(test)]` module or a crate-level
+    `tests/` directory.
+  - C#/.NET: folder per unit; tests in the mirrored test project.
+  - PHP: PSR-4 directory per class; tests in a mirrored directory.
+  - Ruby: `lib/unit.rb` with `spec/unit_spec.rb` mirroring `lib/`.
+- If the existing project deviates and the task touches the unit, migrate
+  that unit within the touched scope (R-42). Do not reorganize untouched
+  units.
+- Consult `references/official-documentation.md` ("Project Structure and
+  Test Co-location") before deciding the layout for the detected stack.
 
 ### Module Conventions and Reuse
 

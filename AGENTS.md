@@ -31,6 +31,24 @@ Do not duplicate Skills, workflows, or architecture definitions.
 - Require human approval for significant architectural changes.
 - Load only relevant Skills and supporting references.
 - Place code by responsibility; `lib/` and `utils/` are not dumping grounds for domain services, API clients, contracts, or storage. Folder structure follows project complexity, not a universal template.
+- Ground stack-specific structure and test conventions in that stack's
+  official documentation or a recognized authoritative style guide. Never
+  extrapolate one ecosystem's rule to another.
+
+## Scope and Evidence Boundaries
+
+The target project is the only writable scope for a task.
+
+- A path, repository, folder, artifact, or example supplied as evidence,
+  reference, comparison, or context is read-only unless the user explicitly
+  authorizes changes to it.
+- Before modifying code, identify the target project and any evidence-only
+  paths in the task context or scope manifest.
+- Never treat a reference path as an implicit task, and never "fix" an
+  example merely because it demonstrates a problem.
+- If a change outside the target project appears necessary, stop and ask
+  for explicit authorization before touching it.
+- This applies to every client, agent, workflow, and automation.
 
 ## Task Branch Policy
 
@@ -108,11 +126,34 @@ Ask the user before proceeding only when the decision materially requires human 
 - Destructive actions or changes to shared or production resources.
 - New paid services, billable usage, or additional cost requiring approval.
 - A material departure from the agreed approach.
+- Creating a commit, including `git commit` and `git commit --amend`.
 
 Present the recommended option, relevant alternatives, concrete trade-offs, and the reason a human decision is needed.
 
 - Do not ask for decisions already governed by a clear repository policy.
 - For architecture changes, follow the existing architecture approval rules. Do not classify every component or function choice as a significant architectural decision.
+
+## Commit Approval Policy
+
+Creating a commit always requires explicit human approval in the current
+conversation.
+
+- Never run `git commit`, `git commit --amend`, or any command that creates
+  a commit without explicit approval of the proposed scope and message.
+- Invoking `/commit`, `/task`, or any other command authorizes **preparing and
+  validating a commit proposal**, not creating commits.
+- A general request to implement a task is not authorization to commit.
+- The required sequence is: inspect the change set → run the project's gates
+  → present the proposed commit groups, messages, and files → ask for explicit
+  approval → create the commits only after an affirmative answer.
+- If the user declines or requests changes, do not commit; adjust the proposal
+  and ask again.
+- If the approved scope or message changes after approval, re-present the
+  proposal and ask again.
+- This policy applies to every client, agent, and workflow, including
+  automation. There is no implicit or standing commit authorization.
+- Preparation commands that never create commits, such as a dry run or a
+  commit proposal, remain available without this gate.
 
 ## Progress Updates Without Approval Fatigue
 
@@ -158,6 +199,24 @@ close and reopen the terminal.
   path.
 - Do not add an experimental compaction plugin unless a demonstrated
   requirement cannot be met with stable built-in functionality.
+
+### Minimum Sufficient Context
+
+Use the smallest context that is sufficient to produce a correct, validated
+result. "Minimum tokens" is not a license to skip required evidence.
+
+- Before broad exploration, record a Context Manifest: target project,
+  evidence-only paths, task type, provisional rigor, required Skills and
+  references, likely files, and an exploration budget.
+- Use the soft exploration budgets and stop rules in
+  `workflows/session-resilience.md`. They cover exploration only, not
+  mandatory implementation, tests, formatting, build, or validation.
+- If the budget is exceeded or two consecutive searches add no new evidence,
+  summarize what is known and either continue with a recorded reason or ask
+  before expanding scope.
+- Measure token use after the task where the client exposes it, and calibrate
+  budgets from evidence. Do not invent token targets.
+- Never trade correctness, safety, or validation for lower token use.
 
 The checkpoint and recovery behavior is defined canonically in
 `workflows/session-resilience.md`, using the existing command conventions in

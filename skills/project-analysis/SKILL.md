@@ -111,6 +111,7 @@ Detect and report the **Folder Architecture Map** when present:
 - **Allowed dependency directions** between layers/modules (evidence from imports).
 - **Contract/type location per module**: where shared contracts/types live; whether single-consumer types are co-located.
 - **Public module API** (barrels, explicit exports) and co-location conventions.
+- **Unit-level grouping and test co-location**: whether a unit with multiple artifacts (implementation, test, styles, stories, subcomponents) lives in its own folder with its test, or whether `X`, `X.test`, and `X/` are siblings, where the ecosystem supports that grouping.
 - **Language-specific idioms** observed (e.g., Go consumer-side interfaces, Java one-public-type-per-file, Python Protocols, Ruby RBS/Sorbet).
 
 Do not classify from directory names alone; base on implementation evidence (imports, boundaries, configuration). If no coherent map exists, report "no identifiable folder architecture" and **assess project complexity** to recommend a structure per `architecture-advisor`:
@@ -141,7 +142,18 @@ report the internal file structure:
   inline with logic.
 - Whether formatters, helpers, and behavior are in dedicated files
   (`format.ts`, `utils.ts`, `helpers.ts`, `services/`).
-- Whether a public API barrel (`index.ts`) exists and is justified.
+- Whether a public API barrel (`index.ts`) exists and is justified; barrels
+  are optional and a single re-export is not sufficient justification.
+- Whether tests are co-located with the unit they test, following the
+  ecosystem convention (React/Vue/Svelte/Angular component folder,
+  Java/Kotlin mirrored test package, Python `test_<module>.py`,
+  Go `_test.go`, Rust `tests/`, etc.).
+- Whether a unit with multiple artifacts uses a dedicated folder or leaves
+  `X`, `X.test`, and `X/` as siblings, where the ecosystem supports it.
+- Whether a file exports multiple independent components/units with their
+  own behavior, and whether the detected ecosystem supports a primary-unit-
+  per-file rule (see the applicability matrix in
+  `skills/implementation-recipes/SKILL.md`).
 - Language-specific conventions (e.g., Java one-public-type-per-file,
   Python `domain/contracts.py`, Go consumer-side interfaces).
 - Whether schema + inferred types (Zod/Joi/Yup) are co-located with validators/converters (should be separated).

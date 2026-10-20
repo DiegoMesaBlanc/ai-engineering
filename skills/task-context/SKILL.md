@@ -110,6 +110,9 @@ agent session. It contains:
 - inferred requirements supported by repository or design evidence
 - proposed acceptance criteria
 - assumptions and material unknowns
+- Context Manifest: target and evidence-only paths, provisional rigor,
+  required Skills and references, likely files, exploration budget, and stop
+  condition
 - affected components and architectural implications
 - dependency assessment outcome
 - proportional rigor level and the plan artifact decision, recorded after
@@ -119,6 +122,8 @@ agent session. It contains:
 
 Rules:
 
+- Record the Context Manifest before broad exploration and refine it as
+  evidence arrives; do not add unrelated paths, Skills, or references.
 - Do not create a Markdown file for the working interpretation by default.
 - Do not ask the user to author or complete it.
 - Persist information only through existing checkpoint mechanisms when

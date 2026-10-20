@@ -134,8 +134,9 @@ Separate i18n concerns into distinct files within the module:
   If lazy loading is not required, a single `messages.ts` is acceptable.
 - **Formatters** (`format.ts`): `formatExpiry`, `formatCurrency`,
   `formatNumber`, `formatPercent`, and other locale-aware formatters.
-- **Public API** (`index.ts`): re-exports `getTranslations`, formatters,
-  and types; justified when the module has multiple entry points.
+- **Public API (optional)** (`index.ts`): re-exports `getTranslations`,
+  formatters, and types only when multiple entry points or consumers
+  justify a barrel; never add one to re-export a single file.
 
 Do not mix contracts, catalogs, config, and formatters in one file
 (e.g., a monolithic `i18n.ts`). Split when the file would change for
