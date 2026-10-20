@@ -226,6 +226,22 @@ explicitly justified.
 - Custom rules in flat config: https://eslint.org/docs/latest/extend/custom-rules
 - Flat config configuration files: https://eslint.org/docs/latest/use/configure/configuration-files
 
+### Contract Forwarding Mechanisms
+
+Mechanisms that give a consumed contract a second public path, per ecosystem.
+
+- **TypeScript / JavaScript**: `export … from` — https://typescriptlang.org/docs/handbook/modules/reference.html
+- **React, Next.js, Angular, Vue, Svelte, Solid, React Native, Ionic, Capacitor, Node.js, Express, NestJS**: inherited from TypeScript and JavaScript
+- **Go**: type alias — https://go.dev/ref/spec#Type_declarations
+- **Rust**: `pub use` — https://doc.rust-lang.org/book/ch07-02-defining-modules-to-control-scope-and-privacy.html#re-exporting-public-items-with-pub-use
+- **Python, Django, FastAPI**: `__all__` re-export — https://docs.python.org/3/tutorial/modules.html#importing-all-names-from-a-module
+- **Ruby**: constant assignment alias — https://docs.ruby-lang.org/en/master/syntax/literals_rdoc.html
+- **Kotlin, Spring**: `typealias` — https://kotlinlang.org/docs/type-aliases.html
+- **PHP**: `class_alias()` — https://www.php.net/manual/en/function.class-alias.php
+- **C# / .NET**: `TypeForwardedToAttribute` — https://learn.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.typeforwardedtoattribute
+- **Java, Spring**: none. An import declaration makes a type available by its simple name only within the compilation unit that contains it — https://docs.oracle.com/javase/specs/jls/se21/html/jls-7.html#jls-7.5
+- **SQL (PostgreSQL, MySQL, Oracle, MongoDB)**: none. There are no type or module declarations to forward.
+
 ### Prettier
 
 - Official documentation: https://prettier.io/docs/

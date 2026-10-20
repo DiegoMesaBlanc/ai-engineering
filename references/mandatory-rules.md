@@ -51,6 +51,7 @@ It exists to prevent two failures observed in practice:
 | M-10 | Stack-specific decisions consult the official documentation for the detected stack and version | `AGENTS.md` — Official Documentation Grounding | `official documentation` | `AGENTS.md`, `workflows/task-to-code.md`, `skills/implementation-recipes/SKILL.md`, `skills/architecture-advisor/SKILL.md` |
 | M-11 | A Context Manifest is recorded before broad exploration | `AGENTS.md` — Minimum Sufficient Context | `Context Manifest` | `AGENTS.md`, `workflows/session-resilience.md`, `workflows/task-to-code.md`, `skills/task-context/SKILL.md` |
 | M-12 | A detected architecture that is absent or incoherent requires options and a human decision before implementing | `AGENTS.md` — Human Decision Gates | `Human Decision Gates` | `AGENTS.md`, `workflows/task-to-code.md`, `skills/architecture-advisor/SKILL.md` |
+| M-13 | A module that consumes a contract does not re-export it; the owning file is the single public path, and a pass-through re-export is removed — in every supported ecosystem and in every form it forwards a contract | `AGENTS.md` — Engineering Principles | `pass-through re-export` | `AGENTS.md`, `skills/implementation-recipes/SKILL.md`, `skills/architecture-advisor/SKILL.md`, `workflows/task-to-code.md`, `workflows/code-audit.md`, `skills/engineering-review/SKILL.md` |
 
 ## Adding a rule
 

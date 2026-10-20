@@ -169,6 +169,36 @@ architecture decision gate is the **Human Decision Gates** section in
 conflict, or when a new architecture must be chosen, present the options
 and wait for the user's decision before implementing.
 
+### Pass-Through Re-Exports
+
+A module that consumes a contract does not re-export it. The owning file is
+the single public path of the contract. This holds in every supported
+ecosystem, in whatever form it forwards a contract.
+
+- A component that imports its props from `./types` does not add
+  `export type { XProps } from "./types";`. Consumers import from `./types`.
+- A service that imports contracts from `./contracts` does not re-export
+  them. Consumers import from `./contracts`.
+- The same rule applies to the other forms of forwarding: a Go type alias
+  (`type T = pkg.T`), a Rust `pub use` of a sibling, a Python `__all__`
+  entry that only re-exposes an imported name, a Kotlin `typealias`, a PHP
+  `class_alias()`, a C#/.NET `TypeForwardedTo`, a Ruby constant alias.
+- A **pass-through re-export** gives one contract two public paths. It
+  duplicates the contract surface, makes the owner ambiguous, and turns
+  every rename into a coordination problem. It is removed.
+- A barrel (`index.ts`) that aggregates **several** modules is a public API
+  surface and may re-export them. A barrel that re-exports from a single
+  source is a pass-through.
+- Java is the only supported ecosystem with no forwarding mechanism: an
+  import makes a type available by its simple name only inside its own
+  compilation unit, and the language has no type alias. The rule does not
+  apply there.
+- A forwarding mechanism used with a documented purpose — an assembly
+  migration in C#/.NET, a conditional class alias in PHP — is not a
+  pass-through.
+
+The canonical wording is in `AGENTS.md`.
+
 ### Separation of Responsibilities
 
 Identify and correctly place the responsibilities relevant to the stack.

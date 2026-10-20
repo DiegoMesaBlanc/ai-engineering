@@ -66,6 +66,11 @@ Review the actual changes, not the entire repository unless required.
   must separate contracts, catalogs (`messages/<locale>.ts`), config, and
   formatters. API modules must separate schemas + types (`contracts.ts`) from
   validators, converters, and clients (`client.ts`).
+- **Pass-through re-export**: flag a module that re-exports a contract it
+  only consumes — a component re-exporting the props it imports from
+  `./types`, a service re-exporting the contracts it imports from
+  `./contracts`. The owning file is the single public path; a barrel that
+  aggregates several modules is exempt.
 - **React/Next.js function style**: flag `function` keyword in `.tsx`/`.jsx` files (except `function*` generators). Arrow functions required for components, hooks, callbacks. Severity: P3.
 - **Unnecessary abstraction or fragmentation is a finding that must be
   resolved: revert the change or justify it with evidence against the

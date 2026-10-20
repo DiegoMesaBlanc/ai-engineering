@@ -133,6 +133,76 @@ module that owns each contract.
 3. A type with no external consumer that lives in a file with runtime
    behavior is already covered by `TYPE-001`.
 
+### TYPE-003 — No pass-through re-export of a consumed contract
+
+A module that consumes a contract does not re-export it. The owning file is
+the single public path of the contract. A second path — a component that
+re-exports the props type it imports from `./types`, a service that
+re-exports the contracts it imports from `./contracts` — is ambiguity, not
+convenience, and it is removed.
+
+A barrel that aggregates several modules (`index.ts` re-exporting from more
+than one source) is a public API surface and is exempt.
+
+**Detection per ecosystem:**
+
+| Ecosystem | Pass-through form | Pattern |
+|---|---|---|
+| TypeScript / JavaScript | `export … from "./x"` | `^export (type )?\{[^}]+\} from "\./` |
+| Go | type alias | `^type [A-Za-z_][A-Za-z0-9_]* = [A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_]` |
+| Rust | `pub use` of a sibling | `^pub use (super\|crate\|self)::` |
+| Python | sibling import forwarded through `__all__` | `^from \.[A-Za-z0-9_.]+ import` together with `__all__` containing the name |
+| Ruby | constant alias of an imported constant | `^[A-Z][A-Za-z0-9_]* = [A-Z][A-Za-z0-9_:]*` |
+| Kotlin | `typealias` | `^typealias [A-Za-z_][A-Za-z0-9_]* = ` |
+| PHP | `class_alias()` | `class_alias\(\s*['"]` |
+| C# / .NET | `TypeForwardedTo` | `\[assembly:\s*TypeForwardedTo` |
+| Java | none — the language has no forwarding mechanism | Not applicable |
+
+**Detection (TypeScript/JavaScript):**
+
+```sh
+# Re-exports from a single source: a pass-through
+grep -rnE "^export (type )?\{[^}]+\} from \"\./" <changed-paths> \
+  --include='*.ts' --include='*.tsx' \
+  --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build
+```
+
+For each match, check whether the file also imports from the same source,
+or whether the source is a contract file (`types`, `contracts`, `schemas`,
+`interfaces`). Either one makes it a `FAIL` (P2). A file that re-exports
+from two or more distinct sources is an aggregating barrel and is exempt.
+
+**Detection (other ecosystems):**
+
+```sh
+# Go: type alias
+grep -rnE "^type [A-Za-z_][A-Za-z0-9_]* = [A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_]" \
+  <changed-paths> --include='*.go'
+
+# Rust: pub use forwarding a sibling module
+grep -rnE "^pub use (super|crate|self)::" <changed-paths> --include='*.rs'
+
+# Python: sibling import forwarded through __all__
+grep -rnE "^from \.[A-Za-z0-9_.]+ import" <changed-paths> --include='*.py'
+
+# Kotlin: type alias
+grep -rnE "^typealias [A-Za-z_][A-Za-z0-9_]* = " <changed-paths> --include='*.kt'
+
+# PHP: class alias
+grep -rnE "class_alias\(\s*['\"]" <changed-paths> --include='*.php'
+
+# C#/.NET: assembly type forwarding
+grep -rnE "\[assembly:\s*TypeForwardedTo" <changed-paths> --include='*.cs'
+
+# Ruby: constant alias
+grep -rnE "^[A-Z][A-Za-z0-9_]* = [A-Z][A-Za-z0-9_:]*" <changed-paths> --include='*.rb'
+```
+
+For Python, Ruby, and Kotlin, confirm the forwarded name is only
+re-exposed and not part of that module's own API surface. A forwarding
+mechanism used with a documented purpose — an assembly migration in C#/.NET,
+a conditional class alias in PHP — is not a pass-through.
+
 ### FILE-001 — Unit folder and test co-location
 
 Where the ecosystem supports it, a unit with multiple related artifacts
@@ -146,11 +216,14 @@ unit folder with the test next to the unit. `Component.tsx` +
    untracked).
 2. Exclude generated output, dependencies, and build artifacts.
 3. Run `FUNC-001` over the change set.
+3. Run `FUNC-001` over the change set.
 4. Run `TYPE-001` over the change set.
 5. Run `TYPE-002` over the contract files identified in `TYPE-001`.
-6. Run `FILE-001` over the change set.
-7. Review each match against the allowed reasons before reporting it.
-8. Report every finding with `file:line`, the rule id, the severity, and the
+6. Run `TYPE-003` over the change set, in the form the detected ecosystem
+   uses to forward a contract.
+7. Run `FILE-001` over the change set.
+8. Review each match against the allowed reasons before reporting it.
+9. Report every finding with `file:line`, the rule id, the severity, and the
    concrete fix.
 
 ## Reporting
@@ -159,7 +232,7 @@ unit folder with the test next to the unit. `Component.tsx` +
 ### OUTPUT COMPLIANCE
 
 - Scope: <paths, branch, commit>
-- Checks executed: FUNC-001, TYPE-001, TYPE-002, FILE-001
+- Checks executed: FUNC-001, TYPE-001, TYPE-002, TYPE-003, FILE-001
 - Result: PASS | FAIL
 - Findings:
   - <file>:<line> — <RULE> — <severity> — <reason> — <fix>

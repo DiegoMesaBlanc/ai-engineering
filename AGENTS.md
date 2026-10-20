@@ -44,6 +44,14 @@ Do not duplicate Skills, workflows, or architecture definitions.
   declarations, or files that mix type declarations with runtime behavior,
   is a defect to correct in the code you write — not a convention to
   preserve and copy.
+- A module that consumes a contract does not re-export it. The owning file
+  is the single public path of the contract. A **pass-through re-export** —
+  a component re-exporting the props it imports from `./types`, a service
+  re-exporting the contracts it imports from `./contracts` — gives one
+  contract two public paths and is removed. This applies to every supported
+  ecosystem, in whatever form it forwards a contract: an `export … from`,
+  a type alias, a `pub use`, or an `__all__` entry that only re-exports.
+  A barrel that aggregates several modules may re-export them.
 - Place code by responsibility; `lib/` and `utils/` are not dumping grounds for domain services, API clients, contracts, or storage. Folder structure follows project complexity, not a universal template.
 - Ground stack-specific structure and test conventions in that stack's
   official documentation or a recognized authoritative style guide. Never

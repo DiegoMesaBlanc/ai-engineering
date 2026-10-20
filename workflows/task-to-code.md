@@ -216,7 +216,9 @@ or significantly changed module**: which file owns contracts/types
 (`types.ts`/`contracts.ts`/`schemas.ts`), which owns static data/catalogs
 (`messages/`, `catalogs/`), which owns configuration (`config.ts`),
 which owns behavior/formatters (`format.ts`, `utils.ts`), and which file,
-if any, exposes the module's public API. **Rule: one interface/type per file in its owning layer's folder.** Exception: multiple types with the **same exclusive consumer** are grouped in one file. A barrel (`index.ts`) is optional
+if any, exposes the module's public API. **Rule: one interface/type per file in its owning layer's folder.** Exception: multiple types with the **same exclusive consumer** are grouped in one file. A module that consumes a contract
+does not re-export it: no pass-through re-export of the props or contracts
+it imports from `./types` or `./contracts`. A barrel (`index.ts`) is optional
 and justified only by multiple public exports or consumers, a stable module
 boundary, a substantially populated folder, or an existing project
 convention; never add one merely to re-export a single file. For i18n modules, this means separating

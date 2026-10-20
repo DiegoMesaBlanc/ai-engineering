@@ -118,7 +118,7 @@ Detect and report the **Folder Architecture Map** when present:
 - **Responsibility → folder** mapping (components, hooks, services, domain, adapters, contracts/types, configuration).
 - **Allowed dependency directions** between layers/modules (evidence from imports).
 - **Contract/type location per module**: where shared contracts/types live (**rule: one per file in the owning layer's folder**; types with the **same exclusive consumer** are grouped in one file).
-- **Public module API** (barrels, explicit exports) and co-location conventions.
+- **Public module API** (barrels, explicit exports) and co-location conventions. Report a pass-through re-export — a module that re-exports a contract it only consumes — as a finding, not as an API convention.
 - **Unit-level grouping and test co-location**: whether a unit with multiple artifacts (implementation, test, styles, stories, subcomponents) lives in its own folder with its test, or whether `X`, `X.test`, and `X/` are siblings, where the ecosystem supports that grouping.
 - **Language-specific idioms** observed (e.g., Go consumer-side interfaces, Java one-public-type-per-file, Python Protocols, Ruby RBS/Sorbet).
 

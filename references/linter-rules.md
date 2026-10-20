@@ -21,6 +21,7 @@ Authority: `skills/implementation-recipes/SKILL.md` (rules),
 | `func-style: ["error", "expression"]` | No `function` declarations; arrow functions preferred | TypeScript, JavaScript |
 | `no-restricted-syntax` (`VariableDeclarator > FunctionExpression`) | No `function` expression assigned to a variable | TypeScript, JavaScript |
 | `structural/no-mixed-types-and-runtime` (local rule) | A file declares types **or** runtime behavior, never both | TypeScript, JavaScript |
+| `structural/no-pass-through-re-export` (local rule) | A module does not re-export a contract it only consumes; the owning file is the single public path | TypeScript, JavaScript |
 | `structural/one-contract-file-per-consumer` (local script) | Contract files group types by consumer | TypeScript, JavaScript |
 | `react/no-multi-comp` | One component per file, only when `eslint-plugin-react` is already installed | React, Next.js |
 | Checkstyle `OneTopLevelClass` | One top-level type per file | Java |
@@ -225,9 +226,76 @@ const noMixedTypesAndRuntime = {
   },
 };
 
+const CONTRACT_FILE_NAMES = new Set([
+  "types",
+  "contracts",
+  "schemas",
+  "interfaces",
+  "model",
+  "models",
+]);
+
+const noPassThroughReExport = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Disallow re-exporting a contract that the module only consumes.",
+    },
+    schema: [],
+    messages: {
+      passThrough:
+        "Pass-through re-export. The contract is already exported by its owning file; consumers import it from there. A second public path for the same contract is ambiguity, not convenience.",
+    },
+  },
+  create(context) {
+    const importedSources = new Set();
+    const reExports = [];
+    const reExportSources = new Set();
+
+    return {
+      ImportDeclaration(node) {
+        if (node.source && node.source.value) {
+          importedSources.add(node.source.value);
+        }
+      },
+      ExportNamedDeclaration(node) {
+        if (!node.source) {
+          return;
+        }
+        const source = node.source.value;
+        reExportSources.add(source);
+        for (const specifier of node.specifiers) {
+          reExports.push({ node, specifier, source });
+        }
+      },
+      "Program:exit"(program) {
+        // A barrel that aggregates several modules is a public API surface
+        // and is exempt. A module that re-exports from a single source is
+        // a pass-through.
+        const aggregatingBarrel = reExportSources.size > 1;
+
+        for (const { node, specifier, source } of reExports) {
+          if (aggregatingBarrel) {
+            continue;
+          }
+          const importedToo = importedSources.has(source);
+          const baseName = source.split("/").pop().split(".")[0];
+          const isContractFile = CONTRACT_FILE_NAMES.has(baseName);
+
+          if (importedToo || isContractFile) {
+            context.report({ node: specifier, messageId: "passThrough" });
+          }
+        }
+      },
+    };
+  },
+};
+
 export default {
   rules: {
     "no-mixed-types-and-runtime": noMixedTypesAndRuntime,
+    "no-pass-through-re-export": noPassThroughReExport,
   },
 };
 ```
@@ -254,6 +322,7 @@ export default defineConfig([
         },
       ],
       "structural/no-mixed-types-and-runtime": "error",
+      "structural/no-pass-through-re-export": "error",
     },
   },
   globalIgnores([".next/**", "dist/**", "build/**", "coverage/**"]),
@@ -416,17 +485,37 @@ a function-style convention, the project convention prevails.
 
 ### Coverage matrix
 
-| Ecosystem | Rule A installed | Rule A verified | Rule B |
+Rule A is the type-per-file rule, Rule B the arrow function preference, and
+Rule C the pass-through re-export rule.
+
+| Ecosystem | Rule A | Rule B | Rule C — forwarding form |
 |---|---|---|---|
-| TypeScript / JavaScript | Yes — ESLint `structural/no-mixed-types-and-runtime` + `func-style` | Yes | Yes |
-| Java | Yes — Checkstyle `OneTopLevelClass` | Yes | Not applicable |
-| C# / .NET | Yes — StyleCop `SA1402` | Yes | Not applicable |
-| PHP | Yes — PHP_CodeSniffer `PSR1.Classes.ClassDeclaration` | Yes | Not applicable |
-| Python | No — Ruff cannot express it | Yes | Not applicable |
-| Go | No — `golangci-lint` has no equivalent | Yes | Not applicable |
-| Rust | No — `clippy` has no equivalent | Yes | Not applicable |
-| Kotlin | No — multiple declarations per file are idiomatic | Yes | Not applicable |
-| Ruby | No — Sorbet/RBS carry the types | Yes | Not applicable |
+| TypeScript / JavaScript | Installed — ESLint `structural/no-mixed-types-and-runtime` | Installed — `func-style` + `no-restricted-syntax` | Installed — ESLint `structural/no-pass-through-re-export` (`export … from`) |
+| React, Next.js, Angular, Vue, Svelte, Solid, React Native, Ionic, Capacitor, Node.js, Express, NestJS | Inherited from TypeScript / JavaScript | Inherited | Inherited — `export … from` |
+| Go | Verified — `golangci-lint` has no equivalent | Not applicable | Verified — type alias (`type T = pkg.T`) |
+| Rust | Verified — `clippy` has no equivalent | Not applicable | Verified — `pub use` |
+| Python, Django, FastAPI | Verified — Ruff cannot express it | Not applicable | Verified — `__all__` forwarding |
+| Ruby | Verified — Sorbet/RBS carry the types | Not applicable | Verified — constant alias |
+| Kotlin, Spring (Kotlin) | Verified — multiple declarations per file are idiomatic | Not applicable | Verified — `typealias` (public by default) |
+| PHP | Installed — PHP_CodeSniffer `PSR1.Classes.ClassDeclaration` | Not applicable | Verified — `class_alias()` |
+| C# / .NET | Installed — StyleCop `SA1402` | Not applicable | Verified — `TypeForwardedToAttribute` |
+| Java, Spring (Java) | Installed — Checkstyle `OneTopLevelClass` | Not applicable | **Not applicable — the language has no forwarding mechanism** |
+| SQL (PostgreSQL, MySQL, Oracle, MongoDB) | Not applicable — no type or module declarations | Not applicable | Not applicable |
+
+"Installed" means the ecosystem linter enforces the rule. "Verified" means
+the rule is checked by the deterministic compliance check in
+`workflows/output-compliance.md`, which runs over the change set and reports
+`file:line` evidence. "Not applicable" means the ecosystem has no mechanism
+that can express the anti-pattern.
+
+The pass-through re-export rule applies to every ecosystem that has a
+forwarding mechanism, and to no other. Java is the only supported language
+without one, confirmed three ways: an import declaration makes a type
+available by its simple name **only within the compilation unit that
+contains it** (JLS §7.5), the language has no type alias, and the compiled
+public signature of a consumer that imports a type is still the canonical
+name. The forwarding mechanisms of the other ecosystems are documented in
+`references/official-documentation.md`.
 
 "Verified" means the rule is checked by the deterministic compliance check in
 `workflows/output-compliance.md`, which runs over the change set and reports

@@ -26,6 +26,10 @@ feature are both held to professional standards:
   as runtime behavior; one type per file is the default, and several types
   are grouped in one file only when they are consumed by the same
   component, service, or logical unit
+- **never re-export a contract you only consume**: no **pass-through
+  re-export** of the props or contracts a module imports from `./types` or
+  `./contracts`; the owning file is the single public path, in every
+  supported ecosystem and in every form it forwards a contract
 - follow the project's existing conventions and style, **except** that the
   rules above take **precedence over a detected project convention that
   violates them**: a convention that produces `function` declarations or
