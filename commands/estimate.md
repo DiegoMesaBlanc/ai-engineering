@@ -27,6 +27,11 @@ tickets, stories, tasks, or isolated changes; the boundary is defined in
 supplied as a local path or as an attachment to the session — are defined in
 `workflows/estimation.md` (Phase 1).
 
+If the client rejects a dragged attachment — for example a PDF when the
+model does not accept PDF input — ask for the local file path instead. The
+workflow can extract the document's text or rasterize its pages, so a
+native attachment is not required.
+
 If no argument is supplied, ask for the artifact instead of guessing one.
 
 ## Output

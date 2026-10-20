@@ -61,6 +61,14 @@ estimated and ask for a textual description or an accessible export; never
 fabricate content from an image that was not read, and never claim that an
 unread image was inspected.
 
+**Model modality fallback.** A client may accept images while rejecting a
+PDF because the model's input modality does not include PDF. Do not stop
+when a dragged attachment is rejected: ask for the local file path, then
+extract the document's text with the operating system's PDF engine or
+rasterize its pages to images the model accepts, following
+`integrations/access-strategy.md` ("PDF and Binary Document Fallback").
+Report the method actually used and any content that could not be recovered.
+
 Extract the raw material for the whole-project estimate:
 
 - the project objective and expected outcome

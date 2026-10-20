@@ -174,6 +174,11 @@ Report which sources were actually inspected.
 Text retrieval may be insufficient for images, PDFs, and other binary
 artifacts.
 
+Images may be supplied by drag-and-drop when the client supports image
+attachments, or by a local path. If drag-and-drop is unavailable or rejected,
+pass the path; do not declare the image unreadable without trying the
+available methods.
+
 When necessary:
 
 - use an artifact accessible to the client's file or image tools
@@ -182,6 +187,28 @@ When necessary:
 
 Do not claim that a binary artifact was inspected merely because its URL
 was retrieved.
+
+### PDF and Binary Document Fallback
+
+A client may accept an image attachment while rejecting a PDF because the
+model's input modality does not include PDF. Treat that as a modality
+limitation to work around, not as proof that the artifact is unreadable.
+
+Attempt, in order:
+
+1. Pass the local file path and use native document reading when the client
+   and model support it.
+2. Extract the text layer locally with the operating system's PDF engine
+   (for example PDFKit on macOS) and read the extracted text.
+3. If the document has no usable text layer (a scan or image-only PDF),
+   rasterize each page to an image format the model accepts and read the
+   images.
+4. Only if none of the above is possible, request a text export, an HTML
+   version, or page screenshots.
+
+Never state that a PDF was read when only its path or attachment was
+received. Report the method actually used and any page or region that could
+not be recovered.
 
 ### Structured Design Data
 
