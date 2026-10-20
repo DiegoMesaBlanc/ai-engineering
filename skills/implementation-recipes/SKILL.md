@@ -46,6 +46,8 @@ because it looks simple.
 
 **Official documentation consultation:** Step 2 is mandatory after stack detection. Consult only the sections relevant to the detected stack and current task. Do not load entire documentation sites.
 
+**Structural rules are installed, not only documented.** For a JavaScript or TypeScript project, the ESLint configuration must include the structural compliance rules from `references/linter-rules.md`: `func-style`, the `no-restricted-syntax` selector for function expressions, and the local `structural/no-mixed-types-and-runtime` rule, plus the contract consumer script. A linter that runs without these rules does not enforce the structural policy of this system.
+
 ## Folder Architecture and Contract Placement
 
 Follow the **Folder Architecture Map** from `architecture-advisor`. Place contracts/types in the folder of the owning layer. **Rule: one interface/type per file in its owning layer's folder.** Exception: when multiple interfaces/types are **exclusively consumed by the same component/service/logical unit**, they are grouped in a single file (e.g., `ComponentTypes.ts`, `ServiceTypes.ts`, or co-located with the unit). Do not create separate files for types that always travel together. Respect language idiom.

@@ -304,6 +304,12 @@ Default tool choices by ecosystem:
 - JavaScript and TypeScript (React, Next.js, Vue, Node.js, React Native):
   Prettier for formatting and ESLint for linting, with the appropriate
   framework plugins.
+- JavaScript and TypeScript additionally install the **structural compliance
+  rules** defined in `references/linter-rules.md`: `func-style`, the
+  `no-restricted-syntax` selector for function expressions, and the local
+  `structural/no-mixed-types-and-runtime` rule, plus the contract consumer
+  script. A linter that runs without these rules does not enforce the
+  structural policy of this system and is not a complete setup.
 - Angular: Prettier and Angular ESLint, preserving Angular template and
   TypeScript linting.
 - Ionic: the tooling of its underlying Angular or React stack, including

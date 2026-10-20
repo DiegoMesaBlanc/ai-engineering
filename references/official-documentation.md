@@ -221,6 +221,10 @@ explicitly justified.
 ### ESLint
 
 - Official documentation: https://eslint.org/docs/latest/
+- `func-style` (arrow functions / no function declarations): https://eslint.org/docs/latest/rules/func-style
+- `no-restricted-syntax` (forbid function expressions assigned to variables): https://eslint.org/docs/latest/rules/no-restricted-syntax
+- Custom rules in flat config: https://eslint.org/docs/latest/extend/custom-rules
+- Flat config configuration files: https://eslint.org/docs/latest/use/configure/configuration-files
 
 ### Prettier
 

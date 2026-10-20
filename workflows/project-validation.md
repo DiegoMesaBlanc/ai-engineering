@@ -164,6 +164,13 @@ solely to satisfy this policy.
      (flat config for the current major, legacy eslintrc only while the
      project still uses it); disable the rules that overlap with Prettier
      instead of letting the two disagree.
+   - **JavaScript and TypeScript: install the structural compliance rules**
+     from `references/linter-rules.md` when configuring or repairing the
+     ESLint configuration. The project must end up with `func-style`,
+     the `no-restricted-syntax` selector for function expressions, and the
+     local `structural/no-mixed-types-and-runtime` rule, plus the contract
+     consumer script. A linter that runs without these rules is incomplete
+     even when it reports no error.
    - Angular: Angular ESLint together with Prettier; do not add a generic
      ESLint configuration that conflicts with the Angular one.
    - Ionic: the tooling of its underlying Angular or React stack.
@@ -244,6 +251,15 @@ Record:
 - result
 - exit code when available
 - useful failure evidence
+
+**Verify that the linter is actually enforcing the structural rules.** A
+successful lint run proves nothing when the configuration is empty or lacks
+the structural rules. For a JavaScript or TypeScript project, confirm that
+the resolved ESLint configuration contains `func-style`, the
+`no-restricted-syntax` selector for function expressions, and the local
+`structural/no-mixed-types-and-runtime` rule, and that the contract consumer
+script exists and is wired into the project scripts. Report a missing rule
+as `SETUP_REQUIRED` even when the lint command exits successfully.
 
 Do not claim success without execution evidence.
 

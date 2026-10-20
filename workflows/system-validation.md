@@ -48,6 +48,7 @@ Check for the existence of:
 - integrations/external-skill-registry.md
 - integrations/skill-catalog.md
 - references/official-documentation.md
+- references/linter-rules.md
 - references/system-workflow-regression-matrix.md
 - references/token-efficiency.md
 - workflows/task-to-code.md
@@ -1432,6 +1433,17 @@ documented in prose:
   `commands/validate.md` runs it.
 - `workflows/code-audit.md` requires the executed detection as evidence for
   `TS_FUNCTION_STYLE` and `TYPE_OWNERSHIP` findings.
+- `references/linter-rules.md` exists at its canonical path and is listed in
+  the required-file inventory of this workflow. It provides the copy-ready
+  ESLint flat configuration, the local `structural/no-mixed-types-and-runtime`
+  rule, and the contract consumer script.
+- `AGENTS.md` **Formatting and Linting Policy** requires the structural
+  compliance rules for JavaScript and TypeScript, and states that a linter
+  without them is not a complete setup.
+- `workflows/project-validation.md` Phase 5 installs the structural rules
+  when configuring the linter, and Phase 7 verifies that the resolved
+  configuration actually contains them, reporting a missing rule as
+  `SETUP_REQUIRED` even when the lint command exits successfully.
 - `references/system-workflow-regression-matrix.md` includes R-52.
 - The checks cover TypeScript/JavaScript, Python, Java/Kotlin, Go, Rust,
   C#/.NET, PHP, and Ruby.
