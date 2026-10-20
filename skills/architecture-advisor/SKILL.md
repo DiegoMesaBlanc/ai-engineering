@@ -154,11 +154,10 @@ technology-specific architecture Skill solely to extend this catalog.
 
 ### Types, Interfaces, and Contracts
 
-Default rule:
+**Rule: one interface/type per file in its owning layer's folder.** Exception: when multiple interfaces/types are **exclusively consumed by the same component/service/logical unit**, they are grouped in a single file (e.g., `ComponentTypes.ts`, `ServiceTypes.ts`, or co-located with the unit). Do not create separate files for types that always travel together.
 
 - **Contract ownership**: the type/contract lives in the folder of the layer or module that owns it. Consumers import from the contract module, never from an implementation module solely for types.
 - **Shared by actual reuse**: a type is extracted to `types.ts`/`contracts.ts` when it is **imported/referenced from another file**. Mere export without external reuse is a WARN/observation, not a violation.
-- **Single-consumer implementation detail** (props, local view models, private helpers) → co-locate with the consumer; do not extract (R-42).
 - **When a type is reused across files**, it belongs in the module's `types.ts`/`contracts.ts`, not inside the runtime implementation file. `lib/`, `util/`, `services/`, and similar folders with runtime code count as implementation folders.
 - **Schema + inferred type pair**: Zod/Joi/Yup schemas and their `infer` types stay together in `schemas.ts`/`contracts.ts`; validators, converters, and clients go in a separate file.
 - **Import direction**: type-only imports follow the same dependency direction as runtime imports. No presentation → infrastructure type imports when a contract module exists.
@@ -199,7 +198,7 @@ A file should have one primary responsibility and one primary reason to
 change. Separate these concerns into distinct files when they coexist:
 
 - **Contracts/Types** (public API surface): interfaces, types, enums shared
-  across modules or forming the module's public API.
+  across modules or forming the module's public API. **Rule: one per file in the owning layer's folder.** Exception: multiple types with the **same exclusive consumer** are grouped in one file.
 - **Static Data / Catalogs** (declarative data): message catalogs, locale
   metadata, configuration maps, lookup tables.
 - **Configuration** (settings): constants, environment-derived values,
@@ -209,15 +208,13 @@ change. Separate these concerns into distinct files when they coexist:
 - **Wiring / Composition** (glue): re-exports, factory functions,
   dependency injection setup.
 
-Co-location is allowed only for small, single-consumer units with the
-same responsibility (e.g., props + component, private helper + owner,
-nested/private types). Do not bundle shared contracts, catalogs, and
-behavior in the same file.
+Do not bundle shared contracts, catalogs, and behavior in the same file.
 
 **Ownership determines folder/module, not file bundling.** A type
 owned by a module goes in that module's folder, but in its own
 `types.ts`/`contracts.ts` file — not inside the implementation file
-that contains runtime behavior.
+that contains runtime behavior. Types with the same exclusive consumer
+may share a file.
 
 **Operational test**: if a file would change for unrelated reasons
 (translations change vs. formatting logic vs. locale config), or if a
@@ -255,7 +252,7 @@ The folder structure is **detected first**. If a coherent architecture exists, i
 - **Layers/modules** and their responsibilities.
 - **Responsibility → folder** mapping (components, hooks, services, domain, adapters, contracts/types, configuration).
 - **Allowed dependency directions** between layers/modules.
-- **Contract/type location per module**: shared contracts live in the owning layer's folder; single-consumer types co-locate.
+- **Contract/type location per module**: shared contracts live in the owning layer's folder, **one per file**; types with the **same exclusive consumer** are grouped in one file.
 - **Co-location rules** and **public module API** (barrels only when justified).
 - **Unit-level grouping and test co-location**: where the ecosystem supports it, a unit with multiple related artifacts lives in its own folder with its test.
 

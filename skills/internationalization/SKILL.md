@@ -121,7 +121,7 @@ message format without a justified reason and human approval.
 
 ## Module Layout
 
-Separate i18n concerns into distinct files within the module:
+**Rule: one interface/type per file in its owning layer's folder.** Exception: multiple types with the **same exclusive consumer** are grouped in one file. Separate i18n concerns into distinct files within the module:
 
 - **Types/Contracts** (`types.ts`): `Locale`, `LocaleMeta`, message shape
   interfaces (`PaymentSelectorTranslations`).

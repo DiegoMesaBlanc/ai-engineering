@@ -48,7 +48,7 @@ because it looks simple.
 
 ## Folder Architecture and Contract Placement
 
-Follow the **Folder Architecture Map** from `architecture-advisor`. Place contracts/types in the folder of the owning layer; keep single-consumer types co-located. Respect language idiom.
+Follow the **Folder Architecture Map** from `architecture-advisor`. Place contracts/types in the folder of the owning layer. **Rule: one interface/type per file in its owning layer's folder.** Exception: when multiple interfaces/types are **exclusively consumed by the same component/service/logical unit**, they are grouped in a single file (e.g., `ComponentTypes.ts`, `ServiceTypes.ts`, or co-located with the unit). Do not create separate files for types that always travel together. Respect language idiom.
 
 **Complexity-based structure decision** (when no coherent architecture exists):
 
@@ -58,16 +58,16 @@ Follow the **Folder Architecture Map** from `architecture-advisor`. Place contra
 | Medium, multiple domains | Feature-first: `src/features/<feature>/{api,domain,server,components,hooks,contracts}` + `src/shared/` |
 | Large, multiple teams | Feature modules with explicit public APIs and boundaries; packages only when justified |
 
-| Ecosystem | Contract/type location | Single-consumer types | Import direction |
-|---|---|---|---|
-| TS/JS (React/Next.js) | Feature `types.ts` or `src/shared/types/<domain>.ts` | Props/view models in component file | UI → feature/shared contract; never UI → `services` for types |
-| Java/Kotlin (Spring) | `domain/` or `application/` package | Private/nested types in same file | `api → application → domain`; no UI → infra |
-| Python (FastAPI/Flask/Django) | `domain/contracts.py` or `domain/types.py` | Local models in same module | router → application/domain; not → infra |
-| C#/.NET | `Domain/` or `Application/` | Private/nested in same file | `Api → Application → Domain` |
-| Go | structs in `internal/domain`; **interfaces in consumer package** | Local types in same file | no cycles; no provider-side interface |
-| Rust | traits near type or `contracts/`; DTOs in common crate | Local types in same module | respect orphan rules |
-| PHP | `Domain/` or `Contracts/` | Private in same file | PSR-4, one type per file |
-| Ruby | Sorbet/RBS in `sig/` or `rbi/` | N/A | no invented interfaces |
+| Ecosystem | Contract/type location (rule: one per file; group if same exclusive consumer) | Import direction |
+|---|---|---|
+| TS/JS (React/Next.js) | Feature `types.ts` or `src/shared/types/<domain>.ts` (one type per export; group same-consumer types) | UI → feature/shared contract; never UI → `services` for types |
+| Java/Kotlin (Spring) | `domain/` or `application/` package (one public type per file; group same-consumer types) | `api → application → domain`; no UI → infra |
+| Python (FastAPI/Flask/Django) | `domain/contracts.py` or `domain/types.py` (one class per module preferred; group same-consumer types) | router → application/domain; not → infra |
+| C#/.NET | `Domain/` or `Application/` (one public type per file; group same-consumer types) | `Api → Application → Domain` |
+| Go | structs in `internal/domain`; **interfaces in consumer package** | no cycles; no provider-side interface |
+| Rust | traits near type or `contracts/`; DTOs in common crate | respect orphan rules |
+| PHP | `Domain/` or `Contracts/` (one class per file, PSR-4; group same-consumer types) | PSR-4, one type per file |
+| Ruby | Sorbet/RBS in `sig/` or `rbi/` | no invented interfaces |
 
 Do not impose a universal template; preserve the project's detected conventions **when coherent**. A mixed `lib/` is not a convention to preserve.
 

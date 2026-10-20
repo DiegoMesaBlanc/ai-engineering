@@ -212,19 +212,17 @@ or significantly changed module**: which file owns contracts/types
 (`types.ts`/`contracts.ts`/`schemas.ts`), which owns static data/catalogs
 (`messages/`, `catalogs/`), which owns configuration (`config.ts`),
 which owns behavior/formatters (`format.ts`, `utils.ts`), and which file,
-if any, exposes the module's public API. A barrel (`index.ts`) is optional
+if any, exposes the module's public API. **Rule: one interface/type per file in its owning layer's folder.** Exception: multiple types with the **same exclusive consumer** are grouped in one file. A barrel (`index.ts`) is optional
 and justified only by multiple public exports or consumers, a stable module
 boundary, a substantially populated folder, or an existing project
 convention; never add one merely to re-export a single file. For i18n modules, this means separating
 types, locale config, per-locale catalogs, and formatters. For API modules,
 separate schemas + inferred types (`contracts.ts`) from validators,
-converters, and clients (`client.ts`). Single-consumer props/local
-view models are co-located with their consumer and do not require a
-separate types file. A type is extracted only when **actually reused from
+converters, and clients (`client.ts`). A type is extracted only when **actually reused from
 another file**; mere export without reuse is a WARN/observation.
 
 **File cohesion:** where the detected ecosystem supports it, keep one
-primary component, class, module, or other unit per file. Follow the
+primary component, class, module, or other unit per file. **Rule: one interface/type per file in its owning layer's folder.** Exception: multiple types with the **same exclusive consumer** are grouped in one file. Follow the
 applicability matrix in `skills/implementation-recipes/SKILL.md` and the
 evidence in `references/official-documentation.md`; never impose a rule an
 ecosystem does not support. A component file that exports several
