@@ -228,6 +228,12 @@ Select only Skills relevant to:
 
 Never load all Skills by default.
 
+**Mandatory for any task that writes or changes code:**
+`skills/implementation-recipes/SKILL.md` is always loaded, whatever the
+stack. It carries the non-negotiable quality baseline, including arrow
+functions and the type-per-file rule. A task that creates or modifies
+source code without it loaded is not aligned with this system.
+
 ---
 
 # 8. Provider Selection

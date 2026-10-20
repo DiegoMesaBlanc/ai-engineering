@@ -1,6 +1,6 @@
 ---
 name: architecture-advisor
-description: Evaluate architecture and design options for a software task while preserving the existing architecture when appropriate and avoiding unnecessary complexity.
+description: Evaluate architecture and design options and decide where code, types, contracts, and files belong — file cohesion, one primary unit per file, type-per-file placement, folder architecture, reuse, and module conventions. Load when deciding where new or changed code goes, or when reviewing file, type, and contract placement.
 ---
 
 # Architecture Advisor

@@ -102,6 +102,13 @@ Detect the conventions actually used, when present:
 Report the conventions found. Do not introduce new conventions during
 analysis.
 
+**A convention that violates the structural policy is reported as a defect,
+not as a convention to follow.** When the repository uses `function`
+declarations, or mixes type declarations with runtime behavior in the same
+file, report it explicitly as an existing defect in the detected code. The
+code written from now on follows the policy in AGENTS.md and does not
+reproduce it.
+
 ## Folder Architecture Map
 
 Detect and report the **Folder Architecture Map** when present:

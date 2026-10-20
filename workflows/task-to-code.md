@@ -160,6 +160,9 @@ Only when a software implementation task has been aligned and code changes are r
 - preserve uncommitted work
 - create the branch or isolated worktree
 - verify the active working location
+- verify that the target project's linter enforces the structural rules from
+  `references/linter-rules.md`; when it does not, install them in the
+  project's own configuration and report the change
 
 Do not implement until the requested branch is ready.
 
@@ -329,6 +332,21 @@ libraries.
 ## Phase 10 — Implement
 
 Implement on the requested branch and only within the target project.
+
+**Structural policy — non-negotiable while writing code.** Follow the
+non-negotiable quality baseline in `skills/implementation-recipes/SKILL.md`:
+
+- TypeScript and JavaScript use **arrow functions**. The `function` keyword
+  is reserved for a generator, a `this` binding that arrow syntax cannot
+  provide, the `arguments` object, or `new.target`, with the reason in a
+  comment.
+- Every interface, type, enum, and contract goes in a **dedicated file** in
+  the folder of the layer or module that owns it, never in the same file as
+  runtime behavior. One type per file is the default; several types are
+  grouped in one file only when they are consumed by the same component,
+  service, or logical unit.
+- A detected project convention that violates either rule is a defect to
+  correct in the code being written, not a convention to reproduce.
 
 **Mandatory compliance check:** run `workflows/output-compliance.md` over the
 change set before the task is considered implemented. It mechanically detects

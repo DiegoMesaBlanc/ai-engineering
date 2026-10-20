@@ -110,7 +110,11 @@ Key required behaviors within that workflow:
 - for work with user-facing text, settle localization early (required
   locales, RTL, locale-aware formatting) and follow
   `skills/internationalization/SKILL.md` when it applies
-- implement following current conventions, then validate and review
+- implement following the structural policy in AGENTS.md and the detected
+  conventions that do not conflict with it, then validate and review
+- write arrow functions and keep every interface, type, enum, and contract
+  in a dedicated file in the folder of the layer or module that owns it,
+  following `skills/implementation-recipes/SKILL.md`
 - present the Git diff and commit proposal
 
 Prefer no new dependency when the existing stack, native APIs, or project

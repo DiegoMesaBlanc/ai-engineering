@@ -30,6 +30,20 @@ Do not duplicate Skills, workflows, or architecture definitions.
   only when evidence justifies them.
 - Require human approval for significant architectural changes.
 - Load only relevant Skills and supporting references.
+- Write TypeScript and JavaScript with **arrow functions**. Use the
+  `function` keyword only when it is genuinely required (a generator, a
+  `this` binding that arrow syntax cannot provide, the `arguments` object,
+  or `new.target`) and state the reason in a comment.
+- Keep interfaces, types, enums, and contracts in a **dedicated file** in
+  the folder of the layer or module that owns them, never in the same file
+  as runtime behavior. One type per file is the default; group several
+  types in one file only when they are consumed by the same component,
+  service, or logical unit.
+- These structural rules take **precedence over a detected project
+  convention that violates them**. A convention that produces `function`
+  declarations, or files that mix type declarations with runtime behavior,
+  is a defect to correct in the code you write — not a convention to
+  preserve and copy.
 - Place code by responsibility; `lib/` and `utils/` are not dumping grounds for domain services, API clients, contracts, or storage. Folder structure follows project complexity, not a universal template.
 - Ground stack-specific structure and test conventions in that stack's
   official documentation or a recognized authoritative style guide. Never

@@ -1,6 +1,6 @@
 ---
 name: implementation-recipes
-description: Practical implementation recipes for the supported stacks so agents build maintainable, professional code rather than the minimum that merely works.
+description: Implementation recipes for the supported stacks — arrow functions and function style, type and contract placement, file cohesion, unit folders, test co-location, error handling, and boundary validation. Load when writing, changing, or reviewing code in any supported stack.
 ---
 
 # Implementation Recipes
@@ -17,7 +17,19 @@ maintainable implementation guidance.
 Quality is not proportional to task size. A one-line change and a large
 feature are both held to professional standards:
 
-- follow the project's existing conventions and style
+- **use arrow functions in TypeScript and JavaScript**; the `function`
+  keyword is reserved for a generator, a `this` binding that arrow syntax
+  cannot provide, the `arguments` object, or `new.target`, and the reason
+  is stated in a comment
+- **keep every interface, type, enum, and contract in a dedicated file**
+  in the folder of the layer or module that owns it, never in the same file
+  as runtime behavior; one type per file is the default, and several types
+  are grouped in one file only when they are consumed by the same
+  component, service, or logical unit
+- follow the project's existing conventions and style **except** where a
+  convention conflicts with the rules above: a convention that produces
+  `function` declarations or mixed type/runtime files is a defect to
+  correct in the code you write, not a convention to copy
 - keep functions and modules cohesive and single-purpose
 - name things clearly and consistently
 - handle errors explicitly; never swallow them silently
