@@ -262,13 +262,37 @@ done
 
 ### 3.6 Duplication and contradiction
 
+**A retired wording must not come back.** The registry lists the superseded
+phrasings in `references/mandatory-rules.md` ("Superseded Phrasings"). Each
+one is a rule that changed, and its previous wording must not reappear in the
+canonical content.
+
+```sh
+awk '/^## Superseded Phrasings/{found=1; next} /^## /{found=0} found' \
+  references/mandatory-rules.md |
+  grep -E '^\| [^-|]' | tail -n +2 | cut -d'|' -f2 |
+  sed 's/^ *//; s/ *$//' |
+  while read -r retired; do
+    [ -z "$retired" ] && continue
+    grep -rqiF "$retired" --include='*.md' . \
+      --exclude='mandatory-rules.md' &&
+      echo "FAIL retired wording is back: $retired"
+  done
+```
+
+The check reads the retired wordings from the registry, so it never drifts
+from it, and it excludes the registry itself, where they are recorded. A retired wording that reappears is a `FAIL`: the system would
+apply a rule that no longer exists.
+
+### 3.7 Duplication and contradiction
+
 - Two files must not carry the same normative wording. A surface that
   restates a rule is a drift risk; it must reference the canonical source.
 - Two files must not carry incompatible wording of the same rule. Search the
   superseded phrasings when a rule changed, and confirm each is gone.
 - A command must not copy a block from the workflow it delegates to.
 
-### 3.7 Coverage
+### 3.8 Coverage
 
 When the adjustment affects a rule that applies to several ecosystems or
 project types, confirm the coverage is complete for all of them, not only

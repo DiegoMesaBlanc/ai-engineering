@@ -68,6 +68,22 @@ It exists to prevent two failures observed in practice:
 | M-23 | In a feature-driven architecture every unit has its own folder with its test, every feature exposes a public API, and no feature imports the internals of another | `AGENTS.md` — Engineering Principles | `public API` | `AGENTS.md`, `skills/architecture-advisor/SKILL.md`, `skills/implementation-recipes/SKILL.md`, `references/project-creation-order.md`, `workflows/output-compliance.md`, `workflows/code-audit.md` |
 | M-24 | The folder structure is a decision asked with the architectural style, and the concrete trees of every style per ecosystem are defined so the user sees the folders before they exist | `AGENTS.md` — Engineering Principles | `Folder Architectures` | `AGENTS.md`, `references/folder-architectures.md`, `references/project-startup-decisions.md`, `workflows/project-initialization.md`, `skills/architecture-advisor/SKILL.md`, `references/project-creation-order.md` |
 
+## Superseded Phrasings
+
+A retired wording is listed here so it cannot come back. When a rule
+changes, its previous wording is registered here and the check in
+`workflows/system-audit.md` fails if it reappears anywhere in the canonical
+content.
+
+| Retired wording | Replaced by |
+|---|---|
+| Single-consumer props/local view models and small private non-exported helpers are exempt | M-02 |
+| single-consumer types co-located | M-02 |
+| one per file by default | M-02 |
+| No exceptions | M-02 |
+| for all function declarations | M-01 |
+| React/Next.js function style | M-01 |
+
 ## Adding a rule
 
 1. Write the canonical wording in `AGENTS.md`, under the section that owns

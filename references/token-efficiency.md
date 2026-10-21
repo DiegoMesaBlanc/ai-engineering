@@ -13,16 +13,14 @@ token cap.
 
 ## Principle
 
-Use the **minimum sufficient context** for a correct, validated result. The
-objective is to remove avoidable exploration, repetition, and preloading
-while preserving the evidence required to do the task properly.
+The policy — the minimum sufficient context, the exploration budgets, the
+retrieval rules, and the stop rules — is defined in
+`workflows/session-resilience.md` ("Token and Context Efficiency"). It is not
+restated here. This reference holds only the measurement: what is measured,
+how it is calibrated, and how it is read.
 
-- Budgets apply to exploration before implementation.
-- Mandatory edits, tests, formatting, build, validation, and security checks
-  are outside the exploration budget.
-- Metrics are evidence for calibration, not a target that overrides task
-  success.
-- Never trade correctness, safety, or validation for lower token use.
+**Never trade correctness, safety, or validation for lower token use.** The
+metrics calibrate the work; they never become the objective.
 
 ## Metrics
 

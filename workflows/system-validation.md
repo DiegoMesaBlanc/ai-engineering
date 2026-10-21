@@ -716,7 +716,7 @@ Return:
 - V2.15 contract and recipe checks:
 - V2.16 database engineering checks:
 - V2.17 delivery pipeline authoring checks:
-- V2.18 self-learning, maturity, and context efficiency checks:
+- V2.18 neutral state root and single orchestrator checks:
 - V2.19 estimation checks:
 - V2.20 internationalization and mobile UI checks:
 - V2.21 refactoring and abstraction justification checks:
@@ -1150,13 +1150,11 @@ gate-enforced, without weakening the read-only assessment:
 - no new command, skill, package.json, dependency, or competing orchestrator
   was introduced
 
-## V2.18 Regression — Self-Learning, Maturity, and Context Efficiency
+## V2.18 Regression — Neutral State Root and Single Orchestrator
 
-Verify that learning is provider-neutral, promotion-gated, and that context
-spend stays proportional:
+Verify the properties that are not covered by a later, more specific
+check:
 
-- `workflows/self-learning.md` exists at its canonical path and is listed in
-  the required-file inventory of this workflow
 - the learning store uses the provider-neutral state root
   (`${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}`) with no
   client-specific path, and never writes inside a target project's source
@@ -1166,21 +1164,15 @@ spend stays proportional:
 - promotion to the canonical layer is always a proposal that requires human
   approval; no instruction allows the system to edit the canonical
   repository automatically
-- the maturity model is descriptive and evidence-based, is never
-  self-declared authority, and is never a reason to weaken safety, quality,
-  or cost guardrails
 - `workflows/session-resilience.md` writes checkpoints to the same
   provider-neutral state root and defines the handoff path in exactly one
   place; `AGENTS.md` and the commands reference it without duplicating the
   literal path
-- `workflows/session-resilience.md` states that token and context spend stay
-  proportional to the task and that correctness, safety, or validation are
-  never traded for token savings; `AGENTS.md` and `agents/orchestrator.md`
-  agree
-- `references/system-workflow-regression-matrix.md` includes the
-  self-learning and context-efficiency scenarios (R-37, R-38)
 - no new command, skill, package.json, dependency, or competing orchestrator
   was introduced
+
+The learning execution, the maturity ladder, and the context-efficiency
+policy are verified in V2.38 and V2.30.
 
 ## V2.19 Regression — Standalone Estimation
 

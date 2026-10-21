@@ -17,24 +17,10 @@ maintainable implementation guidance.
 Quality is not proportional to task size. A one-line change and a large
 feature are both held to professional standards:
 
-- **use arrow functions in TypeScript and JavaScript**; the `function`
-  keyword is reserved for a generator, a `this` binding that arrow syntax
-  cannot provide, the `arguments` object, or `new.target`, and the reason
-  is stated in a comment
-- **keep every interface, type, enum, and contract in a dedicated file**
-  in the folder of the layer or module that owns it, never in the same file
-  as runtime behavior; one type per file is the default, and several types
-  are grouped in one file only when they are consumed by the same
-  component, service, or logical unit
-- **never re-export a contract you only consume**: no **pass-through
-  re-export** of the props or contracts a module imports from `./types` or
-  `./contracts`; the owning file is the single public path, in every
-  supported ecosystem and in every form it forwards a contract
-- follow the project's existing conventions and style, **except** that the
-  rules above take **precedence over a detected project convention that
-  violates them**: a convention that produces `function` declarations or
-  mixed type/runtime files is a defect to correct in the code you write,
-  not a convention to copy
+- the **structural rules** of `AGENTS.md`: arrow functions, every contract
+  in a **dedicated file**, no pass-through re-export, and their precedence
+  over a detected project convention. They are the canonical wording and are
+  not restated here
 - keep functions and modules cohesive and single-purpose
 - name things clearly and consistently
 - handle errors explicitly; never swallow them silently
