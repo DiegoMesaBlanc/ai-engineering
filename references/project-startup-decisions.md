@@ -84,6 +84,7 @@ Applies to every project type.
 | Internationalization | Only when the product has user-facing text in more than one language | The product has user-facing text, and the supported locales or RTL are not stated |
 | Target language and framework version | The version the source analysis assumes, or the current stable release when the analysis is silent | The product targets a specific version, or the ecosystem's support window requires one |
 | Folder architecture | The tree of the agreed architectural style, translated to the detected ecosystem, with one folder per unit and a public API per module | The team has a mandated structure, or the scope suits a different tree |
+| Structural rules installed | The local ESLint rules from `references/linter-rules.md`, including the unit-folder rule | Never; the rules are installed as part of the mandatory tooling setup |
 
 ---
 

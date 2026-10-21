@@ -21,9 +21,12 @@ the architectural style, and both are settled before any file is created.
 
 ## Rules that hold in every tree
 
-- **One folder per unit.** A unit that owns an implementation and a test
-  gets its own folder, with the test and its types next to the
-  implementation. A folder never holds a flat pile of implementations, tests,
+- **One folder per unit.** A unit gets its own folder, with its
+  implementation and its types. The test joins that folder **only where the
+  ecosystem co-locates tests**: TypeScript and JavaScript, Angular, Vue, Go,
+  and Python. Where the ecosystem mirrors the test tree — Java, Kotlin,
+  C#/.NET, PHP, and Ruby — the test belongs to that mirrored tree, not to the
+  unit folder. A folder never holds a flat pile of implementations, tests,
   and types mixed together.
 - **One public API per module.** `index.ts` (or the ecosystem equivalent)
   exports what other modules may use; the rest stays encapsulated.
@@ -138,22 +141,16 @@ src/
 The unit of organization changes with the ecosystem. The tree keeps its
 shape; the names change.
 
-| Ecosystem | Unit of organization | Public API of a module | Unit folder |
-|---|---|---|---|
-| TypeScript / JavaScript | folder | `index.ts` | folder |
-| React / Next.js | folder | `index.ts` | folder |
-| Angular | folder | `index.ts` or a public `NgModule` | folder |
-| Vue | folder | `index.ts` | folder |
-| Svelte / SvelteKit | folder | `index.ts` | folder |
-| Solid | folder | `index.ts` | folder |
-| Java / Kotlin | package | package-level public API | package folder |
-| Python (Django) | app | the app's `urls.py` and `models.py` | package folder |
-| Python (FastAPI / Flask) | package | `__init__.py` | package folder |
-| Go | package | the package's exported identifiers | package folder |
-| Rust | module or crate | `pub use` in `mod.rs` or `lib.rs` | module folder |
-| C# / .NET | project or folder | `public` types | folder |
-| PHP | namespace | the namespace's public classes | folder |
-| Ruby | engine or module | the module's public methods | folder |
+| Ecosystem | Unit of organization | Public API of a module | Unit folder | Test location |
+|---|---|---|---|---|
+| TypeScript, JavaScript, React, Next.js, Angular, Vue, Svelte, Solid | folder | `index.ts` | folder | next to the unit |
+| Java, Kotlin | package | package-level public API | package folder | mirrored test tree |
+| Python | package | `__init__.py` | package folder | next to the unit |
+| Go | package | the package's exported identifiers | package folder | next to the unit, `_test.go` |
+| Rust | module or crate | `pub use` in `mod.rs` or `lib.rs` | module folder | inline module or `tests/` |
+| C# / .NET | project or folder | `public` types | folder | mirrored test project |
+| PHP | namespace | the namespace's public classes | folder | mirrored tests directory |
+| Ruby | engine or module | the module's public methods | folder | `spec/` mirroring `lib/` |
 
 **Concrete variants of the two most distinct trees.**
 

@@ -29,7 +29,12 @@ Do not duplicate Skills, workflows, or architecture definitions.
   error handling, security, and appropriate tests. Only process rigor and
   test depth are proportional to the task; implementation quality never is.
 - Evaluate monorepos, microfrontends, Atomic Design, and design patterns
-  only when evidence justifies them.
+  only when evidence justifies them. A monorepo is justified by a concrete
+  benefit — shared code or types, atomic changes across projects, common
+  tooling, or consistent validation. One team and a shared release train are
+  not that benefit: when the projects share no code and no change spans
+  them, separate repositories are the simpler topology, and the decision is
+  recorded with the reason.
 - Require human approval for significant architectural changes.
 - Load only relevant Skills and supporting references.
 - Write TypeScript and JavaScript with **arrow functions**. Use the
@@ -62,13 +67,17 @@ Do not duplicate Skills, workflows, or architecture definitions.
   hint is not a choice the user can make.
 - In a **feature-driven architecture**, group the code by business capability
   (`app/`, `shared/`, `features/<feature>/`), give **each unit its own folder**
-  with its implementation, its test, and its types, and let each feature
-  expose a **public API** (`index.ts`). A feature imports from `app/` and
-  `shared/` and **never the internals of another feature**; cross-feature
-  interaction goes through the other feature's public API or the global
-  state. A unit that needs a second consumer is promoted to `shared/`, not
-  copied. The system decides the owner, the folder, and the public surface
-  of every unit before creating the files.
+  with its implementation and its types, and let each feature expose a
+  **public API** (`index.ts`). The test joins the unit folder **only where
+  the ecosystem co-locates tests** (TypeScript, JavaScript, Angular, Vue,
+  Go, Python); where the ecosystem mirrors the test tree (Java, Kotlin,
+  C#/.NET, PHP, Ruby) the test belongs to that mirrored tree, not to the unit
+  folder. A feature imports from `app/` and `shared/` and **never the
+  internals of another feature**; cross-feature interaction goes through the
+  other feature's public API or the global state. A unit that needs a second
+  consumer is promoted to `shared/`, not copied. The system decides the
+  owner, the folder, and the public surface of every unit before creating
+  the files.
 - Ground stack-specific structure and test conventions in that stack's
   official documentation or a recognized authoritative style guide. Never
   extrapolate one ecosystem's rule to another.

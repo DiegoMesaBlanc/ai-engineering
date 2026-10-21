@@ -58,6 +58,16 @@ Evaluate:
 A monorepo is not automatically better because an organization has
 multiple applications.
 
+**The counter-case.** One team, several applications, and a shared release
+train do **not** by themselves justify a monorepo. The benefit a monorepo
+exists for is shared code and atomic changes across projects, and when the
+projects share no code and no change spans them, that benefit is absent. A
+coordinated release is a pipeline concern, and it is solved by a release
+process, not by a repository. In that situation the simpler topology is
+separate repositories, and the monorepo must be justified by a concrete
+benefit from the list above, not by the number of applications or the number
+of teams.
+
 ## Multiple Repositories
 
 Consider separate repositories when justified by:

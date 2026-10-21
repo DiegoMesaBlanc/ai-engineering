@@ -739,6 +739,7 @@ Return:
 - V2.39 portability checks:
 - V2.40 feature-driven structure checks:
 - V2.41 folder architecture checks:
+- V2.42 topology decision checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1455,8 +1456,16 @@ documented in prose:
   `TS_FUNCTION_STYLE` and `TYPE_OWNERSHIP` findings.
 - `references/linter-rules.md` exists at its canonical path and is listed in
   the required-file inventory of this workflow. It provides the copy-ready
-  ESLint flat configuration, the local `structural/no-mixed-types-and-runtime`
-  rule, and the contract consumer script.
+  ESLint flat configuration, the local `structural/no-mixed-types-and-runtime`,
+  `structural/no-pass-through-re-export`, and `structural/no-unit-folder`
+  rules, and the contract consumer script.
+- The local rules are version-agnostic: they resolve the file name and the
+  source through the API available in ESLint 8, 9, and 10, so the canonical
+  artifact installs on the major version the target project uses.
+- Every structural rule of the feature-driven architecture is **installed**,
+  not only checked: the unit-folder rule in particular is an ESLint rule, so
+  it fails the lint the project already runs instead of depending on a
+  procedure the agent may skip.
 - `AGENTS.md` **Formatting and Linting Policy** requires the structural
   compliance rules for JavaScript and TypeScript, requires the type-per-file
   rule in every ecosystem whose linter can express it, and states that a
@@ -1837,3 +1846,22 @@ concrete tree for the detected ecosystem:
   matrix: TypeScript and JavaScript, React and Next.js, Angular, Vue, Svelte,
    Solid, Java and Kotlin, Python, Go, Rust, C# and .NET, PHP, and Ruby.
 - `references/system-workflow-regression-matrix.md` includes R-63.
+
+## V2.42 Regression — Topology Decision and the Monorepo Counter-Case
+
+Verify that the repository topology is decided with a reason, and that an
+unjustified monorepo is declined:
+
+- `AGENTS.md` states that a monorepo is justified by a concrete benefit —
+  shared code or types, atomic changes across projects, common tooling, or
+  consistent validation — and that one team and a shared release train are
+  not that benefit.
+- `skills/repository-strategy/SKILL.md` states the counter-case: when the
+  applications share no code and no change spans them, the benefit a
+  monorepo exists for is absent, a coordinated release is a pipeline
+  concern, and the simpler topology is separate repositories.
+- `workflows/project-initialization.md` records the topology decision and
+  its reason as part of the startup decision set.
+- `workflows/output-compliance.md` checks STRUCT-005: a repository with
+  several packages and no recorded concrete benefit is a `FAIL`.
+- `references/system-workflow-regression-matrix.md` includes R-64.

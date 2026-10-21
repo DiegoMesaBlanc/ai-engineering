@@ -278,6 +278,26 @@ A missing or an unexpected top-level folder is a `FAIL` (P2). The check
 does not judge whether the tree is a good one; it verifies that the tree is
 the one that was agreed.
 
+### STRUCT-005 — A monorepo requires a recorded concrete benefit
+
+A monorepo is justified by a concrete benefit: shared code or types,
+atomic changes across projects, common tooling, or consistent validation.
+One team and a shared release train are not that benefit.
+
+When the repository is a monorepo, the decision that created it must name
+the benefit. A repository with several packages and no such record is a
+`FAIL` (P2): the topology was adopted by default.
+
+```sh
+# A monorepo with more than one package and no recorded benefit
+packages=$(find . -maxdepth 3 -name package.json -not -path "*/node_modules/*" | wc -l)
+if [ "$packages" -gt 1 ]; then
+  grep -rqiE "shar(e|es|ed|ing)[^.]*(code|type|librar)|atomic|atomically|common tooling|consistent validation|single commit" \
+    --include='*.md' . --exclude-dir=node_modules ||
+    echo "FAIL monorepo without a recorded concrete benefit"
+fi
+```
+
 ### FILE-001 — Unit folder and test co-location
 
 Where the ecosystem supports it, a unit with multiple related artifacts

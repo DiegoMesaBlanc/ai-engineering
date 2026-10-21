@@ -22,6 +22,7 @@ Authority: `skills/implementation-recipes/SKILL.md` (rules),
 | `no-restricted-syntax` (`VariableDeclarator > FunctionExpression`) | No `function` expression assigned to a variable | TypeScript, JavaScript |
 | `structural/no-mixed-types-and-runtime` (local rule) | A file declares types **or** runtime behavior, never both | TypeScript, JavaScript |
 | `structural/no-pass-through-re-export` (local rule) | A module does not re-export a contract it only consumes; the owning file is the single public path | TypeScript, JavaScript |
+| `structural/no-unit-folder` (local rule) | An implementation and its test are not siblings in a feature folder; a unit with several artifacts gets its own folder | TypeScript, JavaScript |
 | `structural/one-contract-file-per-consumer` (local script) | Contract files group types by consumer | TypeScript, JavaScript |
 | `react/no-multi-comp` | One component per file, only when `eslint-plugin-react` is already installed | React, Next.js |
 | Checkstyle `OneTopLevelClass` | One top-level type per file | Java |
@@ -144,6 +145,9 @@ const SCHEMA_CALLS = [
   "yup.boolean",
 ];
 
+import fs from "node:fs";
+import path from "node:path";
+
 const noMixedTypesAndRuntime = {
   meta: {
     type: "problem",
@@ -158,7 +162,11 @@ const noMixedTypesAndRuntime = {
     },
   },
   create(context) {
-    const sourceCode = context.sourceCode;
+    // ESLint 8 exposes getSourceCode, 9 and 10 expose sourceCode.
+    const sourceCode = context.sourceCode ?? context.getSourceCode?.();
+    if (!sourceCode) {
+      return {};
+    }
 
     const unwrap = (statement) => {
       if (
@@ -292,10 +300,61 @@ const noPassThroughReExport = {
   },
 };
 
+const noUnitFolder = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Disallow an implementation and its test as siblings in a feature folder.",
+    },
+    schema: [],
+    messages: {
+      unitFolder:
+        "The implementation and its test are siblings in the feature folder. A unit with several artifacts gets its own folder, with the test next to the implementation.",
+    },
+  },
+  create(context) {
+    // ESLint 8 exposes getFilename, 9 and 10 expose filename. Support both.
+    const filename =
+      context.filename ?? context.sourceCode?.getFilename?.() ?? "";
+    if (!filename || !/\.(test|spec)\.[cm]?[jt]sx?$/.test(filename)) {
+      return {};
+    }
+
+    const directory = path.dirname(filename);
+    const parts = filename.split(path.sep);
+    const featureIndex = parts.lastIndexOf("features");
+    if (featureIndex < 0) {
+      return {};
+    }
+    // Directly inside features/<feature>/, not inside a unit folder.
+    if (parts.length - featureIndex !== 3) {
+      return {};
+    }
+
+    const base = path.basename(filename).replace(/\.(test|spec)\./, ".");
+    const stem = base.replace(/\.[cm]?[jt]sx?$/, "");
+    const implementation = ["ts", "tsx", "js", "jsx", "mts", "cts"]
+      .map((extension) => path.join(directory, `${stem}.${extension}`))
+      .some((candidate) => fs.existsSync(candidate));
+
+    if (!implementation) {
+      return {};
+    }
+
+    return {
+      Program(node) {
+        context.report({ node, messageId: "unitFolder" });
+      },
+    };
+  },
+};
+
 export default {
   rules: {
     "no-mixed-types-and-runtime": noMixedTypesAndRuntime,
     "no-pass-through-re-export": noPassThroughReExport,
+    "no-unit-folder": noUnitFolder,
   },
 };
 ```
@@ -323,6 +382,7 @@ export default defineConfig([
       ],
       "structural/no-mixed-types-and-runtime": "error",
       "structural/no-pass-through-re-export": "error",
+      "structural/no-unit-folder": "error",
     },
   },
   globalIgnores([".next/**", "dist/**", "build/**", "coverage/**"]),

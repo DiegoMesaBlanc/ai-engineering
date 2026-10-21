@@ -140,14 +140,24 @@ a project with several external integrations, and it is a legitimate choice
 even when a simpler style would also work. It is never filtered out because
 it looks advanced.
 
-### 3.4 Scope agreement
+### 3.4 Topology decision
+
+Decide the repository topology, and record the reason. A monorepo requires a
+**concrete benefit** — shared code or types, atomic changes across projects,
+common tooling, or consistent validation. One team and a shared release
+train are not that benefit: when the applications share no code and no
+change spans them, separate repositories are the simpler topology, and a
+coordinated release is a pipeline concern. See
+`skills/repository-strategy/SKILL.md`.
+
+### 3.5 Scope agreement
 
 Agree the **catalog of what the project will contain** before creating
 anything: the modules, the public surfaces, and the dependencies with their
 reasons. The catalog is a ceiling the creation never exceeds without
 asking. See "Scope Control" in `references/project-creation-order.md`.
 
-### 3.5 Record
+### 3.6 Record
 
 - Record the chosen style, the reason, and the rejected alternatives.
 - Record every decision resolved by categories 1 to 3, with its source.
