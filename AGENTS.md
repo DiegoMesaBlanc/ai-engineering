@@ -12,6 +12,8 @@ System.
 - contracts/: provider-neutral integration definitions.
 - commands/ and agents/: client-specific adapters; currently configured
   primarily for OpenCode.
+- workflows/: provider-neutral engineering procedures. A workflow is the
+  single canonical path of a procedure; a command is only its adapter.
 
 Do not duplicate Skills, workflows, or architecture definitions.
 

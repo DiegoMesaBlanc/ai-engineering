@@ -32,6 +32,7 @@ Check for the existence of:
 - commands/pr.md
 - commands/review-pr.md
 - commands/commit.md
+- commands/audit-e2e.md
 - commands/system-check.md
 - commands/validate.md
 - commands/code-audit.md
@@ -69,6 +70,7 @@ Check for the existence of:
 - workflows/task-planning.md
 - workflows/estimation.md
 - workflows/project-initialization.md
+- workflows/system-audit.md
 - workflows/output-compliance.md
 
 Check that CLAUDE.md references AGENTS.md rather than duplicating
@@ -723,6 +725,7 @@ Return:
 - V2.31 structural compliance enforcement checks:
 - V2.32 mandatory rule reachability checks:
 - V2.33 new project initialization checks:
+- V2.34 end-to-end audit checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1631,3 +1634,37 @@ style before any structure is created:
   the project grows next, so the structure has an extension point instead of
   a parallel structure.
 - `references/system-workflow-regression-matrix.md` includes R-54.
+
+## V2.34 Regression — End-to-End Audit of an Adjustment
+
+Verify that an adjustment can be applied and proved correct in one command,
+driven only by its text:
+
+- `commands/audit-e2e.md` exists at its canonical path and is listed in the
+  required-file inventory of this workflow. It delegates to
+  `workflows/system-audit.md` and copies no block from it.
+- `workflows/system-audit.md` exists at its canonical path and is listed in
+  the required-file inventory of this workflow.
+- The command accepts the adjustment text as its only input. It defines no
+  mode, no flag, and no implicit scope, and it never derives the scope from
+  the Git change set.
+- The adjustment text determines the area, the rules in scope, the required
+  checks, and the artifacts to build, through the area mapping in the
+  workflow.
+- The command implements the adjustment following `workflows/task-to-code.md`,
+  then audits it in the same run.
+- The structural audit always runs: reference integrity, index and
+  inventory, numbering, rule reachability, cross-client reach in
+  `AGENTS.md`, duplication and contradiction, and coverage.
+- The behavioral audit builds a real artifact per affected ecosystem or
+  project type in a temporary directory outside the repository, installs the
+  canonical artifacts, verifies the compliant artifact passes, injects the
+  violation the adjustment was meant to prevent, verifies it is detected
+  with `file:line` evidence, fixes it, re-verifies, and cleans the
+  directory.
+- A check that could not be executed is reported as `NOT VERIFIED` with the
+  reason, never as passed.
+- A defect found in the system's own artifact is reported as a defect with
+  the evidence, and the cycle is repeated after the correction.
+- The command presents the commit text and does not create the commit.
+- `references/system-workflow-regression-matrix.md` includes R-55.

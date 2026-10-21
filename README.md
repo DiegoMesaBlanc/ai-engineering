@@ -22,7 +22,7 @@ A provider-agnostic, free-first engineering workflow with shared engineering gui
 ## Current top-level structure
 
 - `agents/`: OpenCode agents and orchestration.
-- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, `/validate`, `/code-audit`, `/commit`, `/checkpoint`, `/resume-work`, `/provider-check`, and `/delivery-check`.
+- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, `/validate`, `/code-audit`, `/commit`, `/audit-e2e`, `/checkpoint`, `/resume-work`, `/provider-check`, and `/delivery-check`.
 - `contracts/`: provider-neutral task, design, and Git contracts.
 - `integrations/`: provider access, security, cost, and compatibility policy.
 - `references/`: official documentation indexes and technical references.
