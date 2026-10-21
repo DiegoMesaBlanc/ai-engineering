@@ -741,6 +741,7 @@ Return:
 - V2.41 folder architecture checks:
 - V2.42 topology decision checks:
 - V2.43 source grounding checks:
+- V2.44 architecture matrix checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1890,3 +1891,25 @@ Verify that every structural rule and folder tree names its source:
   Feature-Sliced Design layers and public API references.
 - Every URL in that section resolves.
 - `references/system-workflow-regression-matrix.md` includes R-65.
+
+## V2.44 Regression — Architecture Matrix
+
+Verify that every architectural style works in every supported ecosystem:
+
+- `references/folder-architectures.md` contains the **Canonical Matrix** with
+  the top-level folders, the public API, and the core dependency direction of
+  each style, and states that the matrix is machine-checkable and how it is
+  verified.
+- The matrix covers the six styles — layered, feature-driven, hexagonal, DDD,
+  modular monolith, and event-driven — and the fifteen supported ecosystems.
+- A checker derives the expected layout from the matrix, so the trees and the
+  checks cannot drift apart.
+- For every combination it verifies: the folders of the style exist, a unit
+  owns its implementation and keeps its test where the ecosystem places it,
+  the module exposes its public API, and the dependency direction of the style
+  holds.
+- Where the ecosystem has a toolchain available, the generated project is
+  compiled, built, imported, or linted. An ecosystem without a local toolchain
+  is verified structurally and reported as not verified for execution, never
+  as executed.
+- `references/system-workflow-regression-matrix.md` includes R-66.

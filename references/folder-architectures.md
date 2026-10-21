@@ -42,6 +42,36 @@ A tree is never presented as an ecosystem standard when it is not. When the
 detected framework prescribes its own structure, that structure wins and the
 methodology is applied inside it.
 
+## Canonical Matrix
+
+This matrix is the machine-checkable form of the trees below. A checker
+derives the expected folder layout from it, so the trees and the checks
+cannot drift apart.
+
+| Style | Top-level folders | Public API of a module | Core dependency direction |
+|---|---|---|---|
+| Layered | `api/`, `services/`, `domain/`, `infrastructure/` | none required | `infrastructure` → `services` → `domain`; `domain` depends on nothing |
+| Feature-driven | `app/`, `shared/`, `features/<feature>/` | `features/<feature>/index.ts` | a feature → `app` and `shared`; never another feature's internals |
+| Hexagonal | `domain/`, `application/`, `adapters/inbound/`, `adapters/outbound/` | `domain/ports/` holds the ports | `adapters` → `application` → `domain`; `domain` depends on nothing |
+| DDD | `domain/<context>/`, `application/`, `infrastructure/`, `interfaces/` | `domain/<context>/` exports the model | `interfaces` → `application` → `domain`; `domain` depends on nothing |
+| Modular Monolith | `modules/<context>/`, `shared/` | `modules/<context>/index.ts` | a context → `shared`; never another context's internals |
+| Event-driven | `producers/`, `consumers/`, `contracts/`, `messaging/` | `contracts/` holds the schemas | `producers` and `consumers` → `contracts`; `contracts` depend on nothing |
+
+The folder names are translated to the ecosystem by the rules in
+**Per-ecosystem translation** below; the dependency direction is the
+invariant every implementation of that style must satisfy.
+
+**How this matrix is verified.** A checker derives the expected layout from
+this table, so the trees and the checks cannot drift apart. For every
+combination of style and ecosystem it verifies that the folders of the style
+exist, that a unit owns its implementation and keeps its test where the
+ecosystem places it, that the module exposes its public API, and that the
+dependency direction of the style holds. Where the ecosystem has a toolchain
+available, the generated project is compiled, built, imported, or linted. The
+matrix covers the six styles and the fifteen supported ecosystems; the
+ecosystems without a local toolchain are verified structurally and reported
+as not verified for execution, never as executed.
+
 ## Rules that hold in every tree
 
 - **One folder per unit.** A unit gets its own folder, with its
