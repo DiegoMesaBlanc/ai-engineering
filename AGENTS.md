@@ -143,6 +143,25 @@ Ask the user before proceeding only when the decision materially requires human 
 
 - Ambiguous or conflicting business requirements that cannot be resolved from available evidence.
 - Significant architectural choices with meaningful long-term consequences.
+- A **new project**: the user chooses the architectural style. Present the
+  applicable styles with their trade-offs and ask which one to use. A
+  recommendation is not a decision, and the structure is not created before
+  the answer. Use `workflows/project-initialization.md`.
+- A new project settles its **startup decision set** in one pass, before
+  any structure is created: the architectural style, the API surface, the
+  data and persistence layer, identity and access, asynchronous work and
+  integrations, operations, and the decisions of the project type. The
+  catalog is `references/project-startup-decisions.md`. Resolve each
+  decision from the source analysis first, then from the detected
+  conventions, then from a stated default. Ask the user once, grouped by
+  theme, only for the decisions that materially change the outcome and have
+  no defensible default. Do not re-ask what the source analysis already
+  answers, and never decide silently.
+- A new project is then **created step by step**, in the order defined by
+  `references/project-creation-order.md`, and each step is verified before
+  the next one starts. Every step states where the project grows next, so
+  the structure has an extension point instead of a parallel structure. The
+  creation checklist from that reference is completed and reported.
 - A proposed new runtime or development dependency under the canonical dependency policy.
 - Changes that materially affect scope, backward compatibility, security, sensitive data, or production behavior.
 - Destructive actions or changes to shared or production resources.

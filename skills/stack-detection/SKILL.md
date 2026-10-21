@@ -17,12 +17,20 @@ Frontend:
 - Angular
 - Vue
 - Next.js
+- Svelte / SvelteKit
+- Solid
 
 Backend:
 
 - Node.js
 - Python
 - Java
+- Kotlin
+- Go
+- Rust
+- C# / .NET
+- PHP
+- Ruby
 
 Mobile:
 
@@ -145,6 +153,66 @@ version.
 - Detect Ionic version and its React, Angular, or Vue integration.
 - Identify Capacitor or Cordova when present.
 - Detect routing, native plugins, styling, and testing conventions.
+
+### Svelte and SvelteKit
+
+- Detect Svelte and SvelteKit versions and the runes mode in use.
+- Identify the adapter, the build tool, and the routing convention.
+- Detect the test runner and the component testing library.
+
+### Solid
+
+- Detect Solid version, the start and entry files, and the router in use.
+- Identify the build tool, the server-side rendering setup, and the test
+  runner.
+- Solid allows several components per file; do not assume one component per
+  file.
+
+### Kotlin
+
+- Detect the Kotlin version, the JVM target, and the build system.
+- Identify Spring Boot or Quarkus when present, and the package structure.
+- Detect the test framework and the test source set.
+
+### Go
+
+- Detect the Go version from the module directive, the module path, and the
+  build tool.
+- Identify the package layout, the HTTP router or framework, and the ORM or
+  database layer.
+- Detect the test style: standard `testing` with table-driven tests, or a
+  third-party assertion library.
+
+### Rust
+
+- Detect the Rust edition and toolchain, the workspace layout, and the crate
+  names.
+- Identify the web framework or the binary entry point, and the async
+  runtime.
+- Detect the test style: inline `#[cfg(test)]` modules, or a `tests/`
+  directory.
+
+### C# and .NET
+
+- Detect the target framework, the SDK version, and the project kind: web
+  API, worker service, class library, or console application.
+- Identify ASP.NET Core, Entity Framework Core, and the test framework.
+- Detect the solution layout and whether the repository is a multi-project
+  solution.
+
+### PHP
+
+- Detect the PHP version requirement and the Composer manifest.
+- Identify the framework: Laravel, Symfony, or a plain application.
+- Detect the autoloading standard in use, PSR-4 or PSR-0.
+- Detect the test framework and the test directory convention.
+
+### Ruby
+
+- Detect the Ruby version from the gemfile or the version file, and the
+  framework: Rails, Sinatra, or a plain gem.
+- Identify the bundler configuration, the app or gem structure, and the
+  test framework: RSpec or Minitest.
 
 ## Formatter and linter detection
 

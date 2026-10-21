@@ -89,6 +89,11 @@ For a new project:
 - establish a formatter and linter with reproducible commands, following
   the Formatting and Linting Policy in AGENTS.md
 
+A new project is created through `workflows/project-initialization.md`, which
+recovers the source analysis, asks the user to choose the architectural
+style, and installs the mandatory tooling before the first feature. Do not
+create a new project inline in this workflow.
+
 Do not introduce a monorepo or microfrontends without evidence.
 
 **Official documentation consultation (mandatory after stack detection):**
@@ -278,6 +283,12 @@ Mandatory decision gate. Before implementing:
   in `architecture-advisor`, then ask the
   user whether to preserve the existing organization or adopt the
   recommended alternative.
+- **New project**: when the target does not exist yet, there is no existing
+  organization to preserve, so the question is not "preserve or replace" but
+  "which architectural style". Present the applicable styles with their
+  trade-offs and ask which one to use. A recommendation is not a decision:
+  wait for the answer before creating the structure or writing code. Use
+  `workflows/project-initialization.md`.
 - Wait for the answer before implementing. Do not silently turn a
   recommendation into an approved decision.
 - Do not ask about routine decisions that can be inferred from the code.

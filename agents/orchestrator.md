@@ -303,6 +303,12 @@ Do not ask the user to identify technologies that can be detected.
 
 A new project does NOT terminate after initialization.
 
+When the target does not exist yet, use
+`workflows/project-initialization.md`. It recovers the source analysis, asks
+the user to choose the architectural style, establishes the repository
+structure, and installs the mandatory formatter, linter, and structural
+compliance rules before the first feature is written.
+
 Initialization covers the minimum viable architecture, repository structure,
 and the mandatory formatter and linter setup. After initialization, a new
 project follows the canonical Task-to-Code sequence.

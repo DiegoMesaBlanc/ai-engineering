@@ -53,6 +53,8 @@ Check for the existence of:
 - references/system-workflow-regression-matrix.md
 - references/token-efficiency.md
 - references/mandatory-rules.md
+- references/project-startup-decisions.md
+- references/project-creation-order.md
 - workflows/task-to-code.md
 - workflows/pull-request-review.md
 - workflows/code-audit.md
@@ -66,6 +68,7 @@ Check for the existence of:
 - workflows/dependency-assessment.md
 - workflows/task-planning.md
 - workflows/estimation.md
+- workflows/project-initialization.md
 - workflows/output-compliance.md
 
 Check that CLAUDE.md references AGENTS.md rather than duplicating
@@ -719,6 +722,7 @@ Return:
 - V2.30 minimum sufficient context and token-efficiency checks:
 - V2.31 structural compliance enforcement checks:
 - V2.32 mandatory rule reachability checks:
+- V2.33 new project initialization checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1576,3 +1580,54 @@ A description that omits the nouns of the task it supports is a `FAIL`.
 - Every required surface exists in the repository.
 - The canonical wording of every always-active rule is in `AGENTS.md`.
 - `references/system-workflow-regression-matrix.md` includes R-53.
+
+## V2.33 Regression — New Project Initialization
+
+Verify that a new project follows one path and asks for the architectural
+style before any structure is created:
+
+- `workflows/project-initialization.md` exists at its canonical path and is
+  listed in the required-file inventory of this workflow.
+- It recovers the source analysis the task points to and reuses it instead
+  of re-deriving requirements; a requirement the analysis does not cover is
+  treated as unknown, not implied.
+- It confirms the detected stack against `references/official-documentation.md`.
+- Phase 3 presents the applicable architectural styles with their trade-offs
+  and asks the user which one to use. A recommendation is not a decision, and
+  the repository structure is not created before the answer.
+- Phase 5 installs the formatter, the linter, and the structural compliance
+  rules from `references/linter-rules.md`, with reproducible commands, plus a
+  test runner and a first test.
+- `AGENTS.md` **Human Decision Gates** lists the architectural style of a new
+  project as a decision that requires the user.
+- `workflows/task-to-code.md` Phase 4 routes a new project to the
+  initialization workflow instead of creating it inline, and its Phase 8 gate
+  covers the new-project case.
+- `skills/architecture-advisor/SKILL.md` covers the new-project case in its
+  decision gate.
+- `agents/orchestrator.md` and `commands/task.md` route a new project to the
+  initialization workflow.
+- `workflows/estimation.md` defines how the estimation document is reused as
+  the input of implementation.
+- `references/project-startup-decisions.md` exists at its canonical path and
+  is listed in the required-file inventory of this workflow. It covers the
+  universal decisions and the decisions of a backend, a frontend, a library
+  or CLI, and a mobile application, each with a recommended default, the
+  condition that requires the user, and where the answer comes from.
+- Each decision is resolved in order: answered by the source analysis,
+  governed by a detected convention or policy, has a defensible default, or
+  materially changes the outcome with no default. The user is asked once,
+  grouped by theme, only for the last category, with its recommendation and
+  trade-off. Nothing that the source analysis already answers is re-asked,
+  and no decision is left implicit in a default that was never stated.
+- `references/project-creation-order.md` exists at its canonical path and is
+  listed in the required-file inventory of this workflow. It defines the
+  universal creation steps, the backend creation steps, the frontend,
+  library, and mobile creation steps, and the complete creation checklist.
+- `workflows/project-initialization.md` Phase 4 creates the project step by
+  step, verifies each step before the next one starts, applies the growth
+  rule, and copies the creation checklist into the report.
+- Each creation step states what it produces, how to verify it, and where
+  the project grows next, so the structure has an extension point instead of
+  a parallel structure.
+- `references/system-workflow-regression-matrix.md` includes R-54.

@@ -234,6 +234,24 @@ When finished, report:
 - the overall confidence and the most material assumptions
 - what could not be determined from the artifact
 
+## Resuming Into Implementation
+
+The estimation document is the input of the implementation phase. When a
+later task points to it, reuse it instead of re-deriving the requirements.
+
+- The document states the product goal, the scope with its exclusions, the
+  stack assumptions, and the open questions. Treat each as an **explicit**
+  requirement of the project.
+- A requirement the document does not cover is **unknown**, never implied.
+  Do not fill it with an assumption that contradicts the document.
+- The open questions recorded in the document are the material unknowns to
+  raise with the user. They are not questions to re-ask about everything.
+- When the project does not exist yet, the estimation document feeds
+  `workflows/project-initialization.md`, which asks the user to choose the
+  architectural style before the structure is created.
+- The estimate is an input to planning, never a commitment to a schedule.
+  Effort, duration, and cost ranges stay ranges.
+
 ## Honesty Rules
 
 - Never present a hypothesis, a guessed rate, or an unread artifact as a

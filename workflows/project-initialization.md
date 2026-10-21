@@ -1,0 +1,185 @@
+# Project Initialization Workflow
+
+## Purpose
+
+Create a new project from scratch: recover the source analysis, settle the
+architecture **with the user**, establish the repository, and install the
+mandatory quality tooling before the first feature is written.
+
+## When to use
+
+- The target does not exist yet: a new service, application, library, or
+  package.
+- The task is to build a backend, frontend, mobile app, or library from
+  scratch.
+- The task points to an existing analysis, such as an estimation document,
+  and asks to reuse it instead of re-deriving the requirements.
+
+## Boundaries
+
+- Do not invent requirements that the source analysis already settles.
+- Do not implement a feature in this workflow. It ends with an initialized
+  project that the Task-to-Code sequence continues from.
+- Do not choose the architectural style without the user.
+
+## Phase 1 — Recover the Source Analysis
+
+1. Resolve the artifact the task points to: a document path, a link, or a
+   task reference. Treat it as read-only evidence.
+2. Read it completely before designing anything.
+3. Extract, without re-deriving:
+   - the product goal;
+   - the scope, including what is explicitly out of scope;
+   - the stack assumptions;
+   - the open questions.
+4. A requirement stated by the analysis is an **explicit** requirement. A
+   requirement the analysis does not cover is **unknown**, never implied.
+   Never fill a gap with an assumption that contradicts the analysis.
+5. Ask the user only about the unknowns that block the architecture decision
+   or the stack. Do not re-ask what the analysis already answers.
+6. Report what was reused and what remains open, before proposing the
+   architecture.
+
+If the task points to no analysis, state that the requirements are derived
+from the task itself and confirm the scope with the user.
+
+## Phase 2 — Detect the Stack
+
+- Detect the language, runtime, framework, and versions the analysis
+  assumes, and confirm them against the project brief.
+- Consult `references/official-documentation.md` for the detected stack
+  before any stack-specific decision.
+- A stack assumption in the analysis that conflicts with the detected
+  environment is a material question for the user, not a silent correction.
+
+## Phase 3 — Startup Decision Set
+
+Settle every decision that creating this project entails, in one pass, before
+creating the structure. The catalog is
+`references/project-startup-decisions.md`: it lists the decisions per project
+type, with the recommended default, when the user must decide, and where the
+answer comes from.
+
+### 3.1 Resolve each decision
+
+For every decision in the catalog, resolve it in this order:
+
+1. **Already answered by the source analysis**: reuse it. Do not re-ask.
+2. **Governed by a detected convention or an existing policy**: apply it and
+   state which one. Do not ask.
+3. **Has a defensible default**: take the default, state it explicitly, and
+   proceed.
+4. **Materially changes the outcome and has no default**: ask the user.
+
+For a backend, the catalog covers the API surface, the data and persistence
+layer, identity and access, asynchronous work and integrations, and
+operations. For a frontend, the library, a CLI, or a mobile application, it
+covers the decisions of that type. Apply the universal decisions to all of
+them.
+
+### 3.2 Ask once, grouped
+
+- **One message, grouped by theme.** Never one question per decision, and
+  never a sequence of fifteen questions.
+- Each question carries its recommendation and its trade-off. A
+  recommendation is not a decision.
+- Ask only the decisions that reached category 4. State the decisions
+  resolved by categories 1 to 3 in the same message, so the user can
+  correct them.
+- The architectural style is always asked, and is asked first, because it
+  determines the shape of every other decision.
+
+### 3.3 Architectural style
+
+Present the applicable styles with concrete trade-offs, adapted to the
+detected stack and the scope recovered in Phase 1:
+
+| Style | When to use | Structure hint |
+|---|---|---|
+| Layered | Simple domains, single team, low coupling | `src/{api,services,domain,infrastructure}/` |
+| Feature-first | Multiple domains, independent features | `src/features/<feature>/{api,domain,ui,contracts}/` |
+| Hexagonal / Ports & Adapters | Multiple external integrations, testability critical | `src/{domain,application,adapters}/` with ports in domain |
+| DDD (Domain-Driven Design) | Complex domain logic, ubiquitous language | `src/{domain,application,infrastructure,interfaces}/` |
+| Modular Monolith | Multiple bounded contexts, single deployable | `src/modules/<context>/{domain,application,api}/` + `src/shared/` |
+| Event-driven | Asynchronous integration between bounded contexts | `src/{producer,consumer,contracts,messaging}/` |
+
+**Adapt the structure hints to the detected ecosystem.** They are
+TypeScript-shaped. Use the conventions catalog in
+`skills/architecture-advisor/SKILL.md` for the detected stack: a Django
+project uses apps, a Spring project uses packages, a Go project uses
+packages, a Rails project uses engines or modules, and a .NET project uses
+projects or folders.
+
+Microservices are a **deployment** decision, not a code-organization
+default. Do not offer them without evidence that independent deployment is
+a stated requirement.
+
+Then ask explicitly:
+
+> What architecture style should the new project use? I recommend \<style\>
+> because \<reason from the scope and the analysis\>. The alternatives are
+> \<the other applicable styles\> and they differ in \<trade-offs\>.
+
+### 3.4 Record
+
+- Record the chosen style, the reason, and the rejected alternatives.
+- Record every decision resolved by categories 1 to 3, with its source.
+- Record each decision the user answered, with the answer.
+- Do not create the repository structure, and do not write code, before the
+  decision set is settled.
+
+## Phase 4 — Create the Project, Step by Step
+
+Create the project in the order defined by
+`references/project-creation-order.md`. The order matters: each step depends
+on the previous one, and each step leaves a defined extension point, which
+is what makes the project grow well instead of decaying.
+
+### 4.1 Execute the steps
+
+- The **universal steps** apply to every project type.
+- The **backend steps** apply to a backend; the **frontend**, **library**,
+  and **mobile** steps apply to those project types.
+- Each step states what it produces, how to verify it, and the growth rule
+  that tells the project where the next thing goes.
+
+### 4.2 Verify each step before the next
+
+Do not start a step before the previous one is verified. A step that is
+"mostly done" produces a structure that has to be reworked. When a step
+cannot be completed, report it and stop: a project with a missing contract
+layer is worse than a project that has not started.
+
+### 4.3 Apply the growth rule
+
+The creation order exists so the project can grow. When a new piece of code
+does not fit the growth rule of its layer, the structure is wrong, not the
+code. Do not create a parallel structure to avoid changing the agreed one.
+
+### 4.4 Complete the checklist
+
+Copy the checklist from `references/project-creation-order.md` into the
+initialization report and complete it in order. Every unchecked item is an
+unfinished project, not a detail. Report the checklist with the report in
+Phase 8.
+
+## Phase 5 — Report
+
+Report:
+
+- the source analysis that was reused, and the requirements taken from it;
+- the stack, confirmed or corrected;
+- the startup decision set: the decisions the user answered, the decisions
+  resolved by default, and the source of each one;
+- the creation checklist from `references/project-creation-order.md`, with
+  every item completed or explicitly reported as outstanding;
+- the architectural style chosen by the user, and the alternatives rejected;
+- the structure created, step by step, and the extension point each layer
+  leaves for the next feature;
+- the tooling installed and the commands to run it;
+- the Folder Architecture Map;
+- what remains open, and the next phase.
+
+Then continue with `workflows/task-to-code.md` from Phase 1. The project is
+initialized; it is not finished. A new project follows the canonical
+Task-to-Code sequence after this workflow.

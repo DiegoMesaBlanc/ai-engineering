@@ -161,16 +161,23 @@ than one source) is a public API surface and is exempt.
 **Detection (TypeScript/JavaScript):**
 
 ```sh
-# Re-exports from a single source: a pass-through
-grep -rnE "^export (type )?\{[^}]+\} from \"\./" <changed-paths> \
+# Re-export candidates: any module specifier, relative or aliased
+grep -rnE "^export (type )?\{[^}]+\} from \"[^\"]+\"" <changed-paths> \
   --include='*.ts' --include='*.tsx' \
   --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build
 ```
 
-For each match, check whether the file also imports from the same source,
-or whether the source is a contract file (`types`, `contracts`, `schemas`,
-`interfaces`). Either one makes it a `FAIL` (P2). A file that re-exports
-from two or more distinct sources is an aggregating barrel and is exempt.
+This is a **candidate generator**, not a verdict. For each match, classify
+it:
+
+- The module **also imports** from the same source → pass-through.
+- The source is a **contract file** (`types`, `contracts`, `schemas`,
+  `interfaces`) → pass-through.
+- The file re-exports from **two or more** distinct sources → it is an
+  aggregating barrel, which is exempt.
+
+The module specifier may be relative (`./types`) or aliased
+(`@/contracts/types`); both are covered.
 
 **Detection (other ecosystems):**
 

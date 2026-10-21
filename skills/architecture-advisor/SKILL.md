@@ -145,8 +145,16 @@ organization, not as proof of an application architecture.
 | Python with Django | Django app and model/view conventions; modular monolith; domain-oriented app boundaries where useful. |
 | Python with FastAPI or Flask | Router/blueprint and package organization; simple layered modules; feature/domain packages; ports-and-adapters when integrations justify it. |
 | Java with Spring Boot | Existing package and Spring module conventions; layered application; modular monolith; domain-oriented modules or Spring Modulith where boundaries justify it. |
+| Kotlin with Spring Boot or Quarkus | Existing package and module conventions; layered application; feature modules; modular monolith |
 | React Native with Expo or bare React Native | Existing navigation and platform conventions; feature/domain modules; shared versus platform-specific code; modular application. |
 | SQL/database code | Schema and migration organization; bounded ownership by schema/module; procedural or event-driven patterns only when supported by workload needs. |
+| Svelte / SvelteKit | Route and component organization; feature folders; layered application when the app is small |
+| Solid | Component and route organization; feature folders; the ecosystem allows several components per file |
+| Go | Package organization; layered packages, feature packages, or ports-and-adapters with an internal domain package |
+| Rust | Crate and module organization; layered crate, feature modules, or domain/application/adapters modules |
+| C# / .NET | Project and folder organization; layered folders, feature folders, or Clean Architecture projects |
+| PHP | Composer package organization; layered folders, feature folders, or domain-oriented modules |
+| Ruby | Rails app or gem organization; engine or module boundaries for multiple bounded contexts |
 
 For ecosystems not listed, derive alternatives from the detected language,
 framework, official documentation, and project conventions. Do not add a
@@ -309,6 +317,16 @@ The type/contract placement rule derives from the folder map: **the type lives i
 | Hexagonal / Ports & Adapters | Multiple external integrations, testability critical | `src/{domain,application,adapters}/` with ports in domain |
 | DDD (Domain-Driven Design) | Complex domain logic, ubiquitous language | `src/{domain,application,infrastructure,interfaces}/` with aggregates, entities, value objects |
 | Modular Monolith | Multiple bounded contexts, single deployable | `src/modules/<context>/{domain,application,api}/` + `src/shared/` |
+| Event-driven | Asynchronous integration between bounded contexts, queues or sagas required | `src/{producer,consumer,contracts,messaging}/` with events in `contracts/` |
+
+The structure hints are TypeScript-shaped. Adapt them to the detected
+ecosystem using the conventions catalog above: a Django project uses apps,
+a Spring project uses packages, a Go project uses packages, a Rails project
+uses engines or modules, and a .NET project uses projects or folders.
+
+Microservices are a **deployment** decision, not a code-organization
+default. Do not offer them for a new project without evidence that
+independent deployment is a stated requirement.
 
 **Evolution guidance**: As the project grows (e.g., adding auth, payments, notifications), **re-evaluate at each significant boundary change**. Indicators to migrate:
 - Multiple domains with independent lifecycles → Feature-first
@@ -422,6 +440,11 @@ Establish an explicit checkpoint before writing code:
 - In that case, ask the user whether to preserve the existing organization
   or adopt the recommended alternative, adapting the options to the
   language and the project.
+- **New project**: when there is no existing organization, the question is
+  not "preserve or replace" but "which architectural style". Present the
+  applicable styles from the table above with their trade-offs and ask which
+  one to use. A recommendation is not a decision, and the structure is not
+  created before the answer. Use `workflows/project-initialization.md`.
 - Wait for the answer before implementing. Do not silently turn a
   recommendation into an approved decision.
 - Do not ask about routine decisions that can be inferred from the code.
