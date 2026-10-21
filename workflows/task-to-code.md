@@ -280,29 +280,14 @@ task and repository state, reuse the result instead of repeating it. Extend
 the analysis only when new evidence, a changed repository state, or a
 material unresolved question justifies it.
 
-Mandatory decision gate. Before implementing:
+Mandatory decision gate. Before implementing, apply the gate defined in
+`skills/architecture-advisor/SKILL.md` ("Mandatory Decision Before
+Implementing"). It covers a coherent architecture, an incoherent or absent
+one, and a new project. It is not restated here.
 
-- If the project has a **coherent** architecture (detected structure with
-  clear boundaries and consistent import directions), continue it unless
-  there is an important incompatibility.
-- If no clear architecture is detected, the detected structure is
-  incoherent (e.g., flat `lib/` mixing domains), or conventions conflict,
-  present the diagnosis and a recommendation with concrete alternatives and
-  trade-offs, **including the complexity-based decision** from the table
-  in `architecture-advisor`, then ask the
-  user whether to preserve the existing organization or adopt the
-  recommended alternative.
-- **New project**: when the target does not exist yet, there is no existing
-  organization to preserve, so the question is not "preserve or replace" but
-  "which architectural style". Present the applicable styles with their
-  trade-offs and ask which one to use. A recommendation is not a decision:
-  wait for the answer before creating the structure or writing code. Use
-  `workflows/project-initialization.md`.
-- Wait for the answer before implementing. Do not silently turn a
-  recommendation into an approved decision.
-- Do not ask about routine decisions that can be inferred from the code.
-- If the user specifies an architecture, respect it and explain any
-  significant incompatibility before implementing it.
+In this workflow the gate produces the proposal: the target structure, the
+relevant files, the Folder Architecture Map, the contracts and types, the
+direction of dependencies, and the pending decisions.
 
 The proposal must include a sufficiently concrete target structure, the
 location of relevant files, the **Folder Architecture Map**, the contracts

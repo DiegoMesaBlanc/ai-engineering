@@ -34,9 +34,11 @@ the architectural style, and both are settled before any file is created.
 
 ---
 
-## Style 1 — Layered
+Each style is a decision with trade-offs; those live in
+`skills/architecture-advisor/SKILL.md` ("Architectural style
+alternatives"). This reference holds only the **trees** each style produces.
 
-Simple domains, one team, low coupling.
+## Style 1 — Layered
 
 ```
 src/
@@ -55,9 +57,6 @@ src/
 ```
 
 ## Style 2 — Feature-driven
-
-Multiple domains, independent features. The default for a modern web
-application.
 
 ```
 src/
@@ -81,9 +80,6 @@ to `shared/`, in the folder that matches its kind; it is not copied.
 
 ## Style 3 — Hexagonal / Ports and Adapters
 
-Multiple external integrations, testability critical. The domain is
-surrounded by ports; adapters implement them.
-
 ```
 src/
 ├── domain/              # entities, value objects, business rules
@@ -100,8 +96,6 @@ lives on the other side.
 
 ## Style 4 — DDD
 
-Complex domain logic, ubiquitous language.
-
 ```
 src/
 ├── domain/              # aggregates, entities, value objects, domain events
@@ -112,8 +106,6 @@ src/
 ```
 
 ## Style 5 — Modular Monolith
-
-Multiple bounded contexts, one deployable.
 
 ```
 src/
@@ -130,8 +122,6 @@ src/
 context's public API.
 
 ## Style 6 — Event-driven
-
-Asynchronous integration between bounded contexts.
 
 ```
 src/

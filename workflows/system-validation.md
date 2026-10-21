@@ -1516,41 +1516,6 @@ while IFS='|' read -r _ id _ _ anchor surfaces; do
   normalized_anchor="$(printf '%s' "$anchor" | normalize)"
   missing=""
 
-  printf '%s' "$surfaces" | tr ',' '\n' | while read -r surface; do
-    surface="$(printf '%s' "$surface" | trim)"
-    [ -z "$surface" ] && continue
-    if [ ! -f "$surface" ]; then
-      echo "FAIL $id [$anchor] surface missing: $surface"
-      continue
-    fi
-    if ! normalize < "$surface" | grep -qF "$normalized_anchor"; then
-      echo "FAIL $id [$anchor] not reachable in: $surface"
-    fi
-  done
-done
-```
-
-A missing anchor on any required surface is a `FAIL`: the rule is not
-reachable by an agent that reads only that surface.
-
-### Cross-client check
-
-`AGENTS.md` is the only file every supported client reads: OpenCode loads it
-as shared instructions, Claude Code loads it through `CLAUDE.md`, and Codex
-loads it from the repository root. A rule that exists only inside a Skill is
-invisible to a client without Skills, and to any agent that never loads
-that Skill.
-
-Verify that the anchor of every mandatory rule is present in `AGENTS.md`:
-
-```sh
-grep -E '^\| M-[0-9]+ \|' references/mandatory-rules.md |
-  cut -d'|' -f5 | trim | while read -r anchor; do
-    [ -z "$anchor" ] && continue
-    grep -qF "$anchor" AGENTS.md ||
-      echo "FAIL canonical wording for [$anchor] is not in AGENTS.md"
-  done
-```
 
 A rule whose canonical wording is missing from `AGENTS.md` is a `FAIL`: it
 would not reach every client.

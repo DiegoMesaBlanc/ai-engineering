@@ -135,6 +135,10 @@ a complete list of every possible architecture. Include only alternatives
 that fit the project and task, and use framework conventions as evidence for
 organization, not as proof of an application architecture.
 
+The **unit of organization**, the public API of a module, and the unit
+folder for each ecosystem are defined in `references/folder-architectures.md`;
+this table holds the organizational alternatives to consider.
+
 | Detected ecosystem | Architectural and organization alternatives to consider when relevant |
 | --- | --- |
 | JavaScript/TypeScript with React or Next.js | Existing route or component organization; feature/domain modules; layered or modular application; server/client boundaries in Next.js. |
