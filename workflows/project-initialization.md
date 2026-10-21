@@ -8,6 +8,9 @@ mandatory quality tooling before the first feature is written.
 
 ## When to use
 
+- The user invoked `commands/create-project.md`, the explicit signal to create
+  a project from scratch. Without that command, do not create a project from
+  zero: ask the user first.
 - The target does not exist yet: a new service, application, library, or
   package.
 - The task is to build a backend, frontend, mobile app, or library from
@@ -120,7 +123,14 @@ Then ask explicitly:
 > because \<reason from the scope and the analysis\>. The alternatives are
 > \<the other applicable styles\> and they differ in \<trade-offs\>.
 
-### 3.4 Record
+### 3.4 Scope agreement
+
+Agree the **catalog of what the project will contain** before creating
+anything: the modules, the public surfaces, and the dependencies with their
+reasons. The catalog is a ceiling the creation never exceeds without
+asking. See "Scope Control" in `references/project-creation-order.md`.
+
+### 3.5 Record
 
 - Record the chosen style, the reason, and the rejected alternatives.
 - Record every decision resolved by categories 1 to 3, with its source.
@@ -128,40 +138,67 @@ Then ask explicitly:
 - Do not create the repository structure, and do not write code, before the
   decision set is settled.
 
-## Phase 4 — Create the Project, Step by Step
+## Phase 4 — Create the Project, Step by Step, Stopping at Every Checkpoint
 
 Create the project in the order defined by
 `references/project-creation-order.md`. The order matters: each step depends
 on the previous one, and each step leaves a defined extension point, which
 is what makes the project grow well instead of decaying.
 
-### 4.1 Execute the steps
+**The creation is progressive and the user controls where it stops.** It is
+not a single pass that produces a finished project. The **stopping points**
+are the checkpoints of `references/project-creation-order.md`.
 
-- The **universal steps** apply to every project type.
-- The **backend steps** apply to a backend; the **frontend**, **library**,
-  and **mobile** steps apply to those project types.
-- Each step states what it produces, how to verify it, and the growth rule
-  that tells the project where the next thing goes.
+### 4.1 Agree the scope first
 
-### 4.2 Verify each step before the next
+Before creating anything, agree the **catalog of what the project will
+contain**: the modules, the public surfaces, and the dependencies with
+their reasons. The catalog is a ceiling. See "Scope Control" in
+`references/project-creation-order.md`.
 
-Do not start a step before the previous one is verified. A step that is
-"mostly done" produces a structure that has to be reworked. When a step
-cannot be completed, report it and stop: a project with a missing contract
-layer is worse than a project that has not started.
+Never exceed the catalog without asking. A project that ends with five
+endpoints nobody discussed, or twenty dependencies nobody requested, is a
+defect.
 
-### 4.3 Apply the growth rule
+### 4.2 Execute one step, then stop
+
+For each step in order:
+
+1. Execute **only that step**.
+2. Verify it with the verification the step defines.
+3. Update the progress tracker in `references/project-creation-order.md`.
+4. Report: what the step produced, how it was verified, the tracker state,
+   and the next suggested step with exactly what it would add.
+5. **Wait.** The user may continue, stop, or reorder.
+
+Do not start the next step on your own initiative. A step that is "mostly
+done" produces a structure that has to be reworked, and a step the user
+never wanted is work that has to be undone.
+
+### 4.3 Stopping is a normal outcome
+
+When the user stops, the project is left exactly at that checkpoint, with
+the tracker recording it. Report the resume point: the next `pending` step,
+and what the next session needs to confirm before continuing.
+
+A session that ends at a checkpoint is **complete, not broken**. Do not
+generate the remaining steps to "finish" it, and do not treat the pause as a
+defect to fix.
+
+### 4.4 Apply the growth rule
 
 The creation order exists so the project can grow. When a new piece of code
 does not fit the growth rule of its layer, the structure is wrong, not the
 code. Do not create a parallel structure to avoid changing the agreed one.
 
-### 4.4 Complete the checklist
+### 4.5 Never exceed the agreed scope
 
-Copy the checklist from `references/project-creation-order.md` into the
-initialization report and complete it in order. Every unchecked item is an
-unfinished project, not a detail. Report the checklist with the report in
-Phase 8.
+- One vertical slice at a time. The first is complete before the second
+  starts.
+- A new project starts with the ecosystem minimum. Every additional
+  dependency is named, justified, and approved.
+- Do not pre-create contracts, endpoints, or modules for work that is out of
+  scope.
 
 ## Phase 5 — Report
 
@@ -171,8 +208,11 @@ Report:
 - the stack, confirmed or corrected;
 - the startup decision set: the decisions the user answered, the decisions
   resolved by default, and the source of each one;
-- the creation checklist from `references/project-creation-order.md`, with
-  every item completed or explicitly reported as outstanding;
+- the creation progress tracker from `references/project-creation-order.md`,
+  with each step marked `done`, `pending`, or `stopped here`;
+- the scope catalog agreed in Phase 3, and the confirmation that the
+  creation did not exceed it;
+- the resume point: the next `pending` step and what it would add;
 - the architectural style chosen by the user, and the alternatives rejected;
 - the structure created, step by step, and the extension point each layer
   leaves for the next feature;

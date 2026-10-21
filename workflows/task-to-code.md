@@ -89,10 +89,13 @@ For a new project:
 - establish a formatter and linter with reproducible commands, following
   the Formatting and Linting Policy in AGENTS.md
 
-A new project is created through `workflows/project-initialization.md`, which
-recovers the source analysis, asks the user to choose the architectural
-style, and installs the mandatory tooling before the first feature. Do not
-create a new project inline in this workflow.
+A new project is created through `commands/create-project.md` and
+`workflows/project-initialization.md`, which recovers the source analysis,
+agrees the scope catalog, asks the user to choose the architectural style,
+and then creates the project one step at a time, stopping at every
+checkpoint. The command is the explicit signal: without it, do not create a
+project from zero, ask the user first. Do not create a new project inline in
+this workflow.
 
 Do not introduce a monorepo or microfrontends without evidence.
 

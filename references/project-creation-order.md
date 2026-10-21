@@ -13,6 +13,71 @@ be reworked as it grows.
 
 Used by `workflows/project-initialization.md` Phase 4.
 
+## Scope Control
+
+Before creating anything, agree the **catalog of what the project will
+contain**:
+
+- the modules or bounded contexts;
+- the public surfaces, one vertical slice at a time;
+- the dependencies, each with its reason.
+
+The catalog is a **ceiling, not a floor**. The creation never exceeds it
+without asking. A project that ends with five endpoints nobody discussed, or
+twenty dependencies nobody requested, is a defect, not a generous reading of
+the scope.
+
+**Dependency budget**: a new project starts with the ecosystem minimum.
+Every additional dependency is named, justified, and approved like any other
+new dependency. A generated project must never add a library the user cannot
+explain.
+
+**One slice at a time**: the first vertical slice is complete before the
+second one starts. Do not generate the whole surface area and let the user
+discover it afterwards.
+
+## Checkpoints
+
+Every step is a **checkpoint**. The **stopping points** are these
+checkpoints: the user decides where the creation ends. After a step is
+verified, the creation stops and reports:
+
+- what the step produced and how it was verified;
+- the state of the project: the steps done, the next step, and the rest;
+- the next suggested step, and exactly what it would add.
+
+Then it **waits**. The user may continue, stop, or change the order.
+
+**Before continuing, compare what exists against the scope catalog.** Any
+endpoint, module, or dependency that is not in the catalog is reported and
+asked about, never kept silently. This comparison is part of the
+checkpoint, and it is the evidence that the creation stayed inside its
+scope.
+
+**Stopping is a normal outcome, not a failure.** The project is left exactly
+at that checkpoint. The progress tracker records where it stopped, so the
+next session resumes from there instead of restarting or, worse, generating
+the rest.
+
+### Progress tracker
+
+Keep this state alongside the project and report it at every checkpoint.
+
+| Step | State | Note |
+|---|---|---|
+| not started | `pending` | |
+| created and verified | `done` | what it produced |
+| the current point | `stopped here` | why the user stopped, when known |
+
+Rules:
+
+- A step is `done` only when it passed its verification.
+- The tracker is the single record of what exists. It is updated before the
+  next step starts, never at the end.
+- A session that ends with a `stopped here` state is complete, not broken.
+- The next session reads the tracker, confirms the repository still matches
+  it, and continues from the next `pending` step.
+
 ## The growth rule
 
 Every step states where the **next** thing goes. That is what makes a
@@ -42,8 +107,8 @@ Applies to every project type, in this order.
 
 | # | Step | Produces | Verify | Growth rule |
 |---|---|---|---|---|
-| A1 | Repository skeleton | The top-level folders, the ignore file, the license | The tree matches the agreed structure | A new top-level folder appears only when a new responsibility exists, never for a feature of an existing one |
-| A2 | Tooling | Formatter, linter, structural compliance rules, test runner, scripts | The formatter check, the linter, and one test all pass | Tooling changes in one place: the config and the scripts |
+| A1 | Repository skeleton | The top-level folders, the **entry point** of the project, the ignore file, the license | The tree matches the agreed structure, and the entry point compiles | A new top-level folder appears only when a new responsibility exists, never for a feature of an existing one |
+| A2 | Tooling | Formatter, linter, structural compliance rules, test runner, scripts | The formatter check, the linter, and the test runner all run against the entry point from A1 and pass | Tooling changes in one place: the config and the scripts |
 | A3 | Configuration | A typed configuration schema, a local environment example, no secret in the repository | The app starts with only the example file | Every new setting is declared in the schema, never read ad hoc |
 | A4 | Observability baseline | Structured logging, a correlation id, the error shape | A request produces a log line with the correlation id | One logging and one error module; every layer uses them |
 | A5 | Domain or core | The entities, value objects, invariants, domain errors | The core unit tests pass without any infrastructure | Business rules live here and nowhere else |
@@ -59,7 +124,7 @@ Applies to every project type, in this order.
 
 | # | Step | Produces | Verify | Growth rule |
 |---|---|---|---|---|
-| B1 | Repository and package skeleton | The module or package layout implied by the agreed architectural style | The tree matches the style that was chosen | A new bounded context becomes a new module; a new feature inside a context becomes a folder |
+| B1 | Repository and package skeleton | The module or package layout implied by the agreed architectural style, plus the **entry point** of the service | The tree matches the style that was chosen, and the entry point compiles | A new bounded context becomes a new module; a new feature inside a context becomes a folder |
 | B2 | Tooling and scripts | Formatter, linter, structural compliance rules, test runner, type checker | The checks pass on an empty module | One config, one set of scripts |
 | B3 | Configuration schema | Typed settings, environment schema, a local example, secrets documented but not committed | The service refuses to start with an invalid configuration | Every new setting is declared, validated, and documented in one place |
 | B4 | Logging, correlation, and error model | Structured logger, request correlation id, the error response shape, the problem-details mapping | One failing request produces one error response and one correlated log | One error module; the API layer maps errors, the domain never knows HTTP |
@@ -89,7 +154,7 @@ Applies to every project type, in this order.
 
 | # | Step | Produces | Verify | Growth rule |
 |---|---|---|---|---|
-| C1 | Repository, tooling, and scripts | The app skeleton, the formatter, the linter, the structural compliance rules, the test runner | Every check passes on the empty app | A new page is a route, not a new build setup |
+| C1 | Repository, tooling, and scripts | The app skeleton with its entry point, the formatter, the linter, the structural compliance rules, the test runner | Every check passes against the entry point | A new page is a route, not a new build setup |
 | C2 | Design tokens and the styling approach | The tokens, the global styles, the theme, the reset | The lint passes and the tokens are documented | A new color, spacing, or radius is a token, not a literal in a component |
 | C3 | Application shell | The layout, the navigation, the providers, the error boundary, the loading boundary | The shell renders in every state, including the error state | A new provider is added at the shell, once |
 | C4 | Data layer | The API client, the query client, the typed endpoints, the error mapping, the cache policy | A typed endpoint test proves the request and the error path | A new endpoint is a typed function in the data layer, never called from a component |
@@ -106,7 +171,7 @@ Applies to every project type, in this order.
 
 | # | Step | Produces | Verify | Growth rule |
 |---|---|---|---|---|
-| D1 | Package skeleton and manifest | The package name, the entry points, the manifest, the license | The package builds and installs locally | The public API lives behind the entry points |
+| D1 | Package skeleton and manifest | The package name, the entry points, the manifest, the license, plus a minimal entry file | The package builds and installs locally | The public API lives behind the entry points |
 | D2 | Tooling, tests, and the CI pipeline | The formatter, the linter, the structural compliance rules, the test runner, the pipeline | The checks pass and the pipeline is green | One pipeline |
 | D3 | Public API design | The exported types, the error surface, the deprecation policy | The exported surface is documented and type-checked | A public type is added with a deprecation path, never removed silently |
 | D4 | Core implementation | The logic, free of framework and I/O assumptions | The core tests pass with no framework and no I/O | The core stays reusable, so the framework is an adapter |
@@ -118,7 +183,7 @@ Applies to every project type, in this order.
 
 | # | Step | Produces | Verify | Growth rule |
 |---|---|---|---|---|
-| E1 | Project, tooling, and build pipeline | The app skeleton, the formatter, the linter, the structural compliance rules, the test runner | Every check passes on the empty app | A new screen is a route, not a new setup |
+| E1 | Project, tooling, and build pipeline | The app skeleton with its entry point, the formatter, the linter, the structural compliance rules, the test runner | Every check passes against the entry point | A new screen is a route, not a new setup |
 | E2 | Identity and signing | The bundle or package identifier, the signing keys, the version scheme, the build flavors | A release build is signed and installs | The identifier and the signing keys change once, at the start |
 | E3 | Navigation and shell | The navigator, the design system, the providers, the deep link routing | The shell renders in every state | The shell owns the shared providers and the deep link handling |
 | E4 | Permissions and privacy | The declared permissions, the privacy manifest, the runtime permission requests, the rationale | The permission request flow is exercised, and the declaration matches the code | A permission is added only with a user-facing reason, declared once |
@@ -133,10 +198,15 @@ Applies to every project type, in this order.
 | E13 | Store release | The assets, the listing, the privacy policy, the staged rollout, the release notes | The store pre-submission checklist passes | Release is a pipeline step, not a manual action |
 | E14 | Documentation and decisions | The README, the architecture decision records, the contribution guide | A new contributor builds the app from the README | A decision is recorded once, where it is explained |
 
-## Part D — The Creation Checklist
+## Part D — The Creation Checklist and Progress Tracker
 
-Copy this checklist into the initialization report and complete it in order.
-Every unchecked item is an unfinished project, not a detail.
+This is both the checklist and the progress tracker. Copy it into the
+initialization report, mark each item as it is completed, and keep it
+updated at every checkpoint. Every `pending` item is an unfinished project,
+not a detail.
+
+States: `pending` → `done` (created and verified), or `stopped here` when
+the user ends the session at that point.
 
 ### Analysis and decisions
 

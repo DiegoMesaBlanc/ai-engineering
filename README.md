@@ -22,7 +22,7 @@ A provider-agnostic, free-first engineering workflow with shared engineering gui
 ## Current top-level structure
 
 - `agents/`: OpenCode agents and orchestration.
-- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, `/validate`, `/code-audit`, `/commit`, `/audit-e2e`, `/checkpoint`, `/resume-work`, `/provider-check`, and `/delivery-check`.
+- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, `/validate`, `/code-audit`, `/commit`, `/audit-e2e`, `/create-project`, `/checkpoint`, `/resume-work`, `/provider-check`, `/delivery-check`, and `/estimate`.
 - `contracts/`: provider-neutral task, design, and Git contracts.
 - `integrations/`: provider access, security, cost, and compatibility policy.
 - `references/`: official documentation indexes and technical references.
@@ -42,11 +42,11 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
 - `/review-pr`: generate copy-ready review feedback.
 - `/system-check`: read-only validation of repository consistency and
   OpenCode and Codex CLI integration.
-- `/validate`: validate project changes using existing tools and
-  risk-based checks without modifying application source code.
 - `/checkpoint`: write a user-level checkpoint of the current task state
   outside the target project's source tree, without modifying source files
   or remote state.
+- `/validate`: validate project changes using existing tools and
+  risk-based checks without modifying application source code.
 - `/resume-work`: recover a long-running task from a checkpoint by verifying
   actual repository state and continuing from the first incomplete action.
 - `/provider-check`: verify actual task, design, and Git provider
@@ -66,6 +66,16 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
   project from start to finish, from a supplied project artifact (brief,
   document, text, link, file, or image), producing a durable document in the
   current working directory without starting implementation.
+- `/audit-e2e`: apply an adjustment to the AI Engineering System and prove it
+  in the same run, with a structural audit of the repository and a behavioral
+  audit that builds a real artifact, verifies it passes, injects the violation
+  the adjustment was meant to prevent, and verifies it is detected. The
+  adjustment text is the only input.
+- `/create-project`: create a new project from scratch, progressively and
+  with user-controlled stopping points. It recovers the source analysis,
+  agrees the scope catalog, asks for the architectural style, then creates
+  one step at a time, stopping at every checkpoint with the progress
+  tracker and the next suggested step.
 
 OpenCode supports Markdown commands and agents with permissions defined in
 frontmatter. Those files are OpenCode adapters; they do not create slash

@@ -33,6 +33,7 @@ Check for the existence of:
 - commands/review-pr.md
 - commands/commit.md
 - commands/audit-e2e.md
+- commands/create-project.md
 - commands/system-check.md
 - commands/validate.md
 - commands/code-audit.md
@@ -726,6 +727,7 @@ Return:
 - V2.32 mandatory rule reachability checks:
 - V2.33 new project initialization checks:
 - V2.34 end-to-end audit checks:
+- V2.35 progressive project creation checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1643,6 +1645,9 @@ driven only by its text:
 - `commands/audit-e2e.md` exists at its canonical path and is listed in the
   required-file inventory of this workflow. It delegates to
   `workflows/system-audit.md` and copies no block from it.
+- Every command in `commands/` has its own description in the README, and
+  the structural audit verifies it. A command without a README description
+  is a `FAIL`: the catalog a reader consults is incomplete.
 - `workflows/system-audit.md` exists at its canonical path and is listed in
   the required-file inventory of this workflow.
 - The command accepts the adjustment text as its only input. It defines no
@@ -1668,3 +1673,27 @@ driven only by its text:
   the evidence, and the cycle is repeated after the correction.
 - The command presents the commit text and does not create the commit.
 - `references/system-workflow-regression-matrix.md` includes R-55.
+
+## V2.35 Regression — Progressive Project Creation
+
+Verify that a new project is created progressively, within an agreed scope,
+with user-controlled stopping points:
+
+- `commands/create-project.md` exists at its canonical path and is listed in
+  the required-file inventory of this workflow.
+- `AGENTS.md` states that a new project is created progressively, that the
+  scope catalog is agreed first and is a ceiling, that each step ends in a
+  checkpoint that reports the next step and waits, and that stopping is a
+  normal outcome.
+- `AGENTS.md` states that creating a project from zero requires the
+  explicit `create-project` command, and that without it the agent asks
+  instead of creating one.
+- `references/project-creation-order.md` defines the scope catalog, the
+  dependency budget, the one-slice-at-a-time rule, the checkpoint
+  semantics, and the progress tracker with its states.
+- `workflows/project-initialization.md` Phase 3 agrees the scope catalog,
+  and Phase 4 executes one step at a time, verifies it, updates the
+  tracker, reports the next suggested step, and waits.
+- The remaining steps are never generated to finish the project, and the
+  scope is never exceeded without asking.
+- `references/system-workflow-regression-matrix.md` includes R-56.

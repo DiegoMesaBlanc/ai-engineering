@@ -164,6 +164,15 @@ Ask the user before proceeding only when the decision materially requires human 
   the next one starts. Every step states where the project grows next, so
   the structure has an extension point instead of a parallel structure. The
   creation checklist from that reference is completed and reported.
+- A new project is created **progressively, with user-controlled stopping
+  points**. Agree the scope catalog first: the modules, the public surfaces,
+  and the dependencies with their reasons. The catalog is a ceiling, not a
+  floor. After each step, verify it, update the progress tracker, report
+  what the next step would add, and **wait**. Do not generate the remaining
+  steps to "finish" the project, and never exceed the agreed scope without
+  asking. Stopping at a checkpoint is a normal outcome, not a defect.
+- Creating a project from zero requires the explicit `create-project` command.
+  Without it, do not create a project from scratch; ask the user first.
 - A proposed new runtime or development dependency under the canonical dependency policy.
 - Changes that materially affect scope, backward compatibility, security, sensitive data, or production behavior.
 - Destructive actions or changes to shared or production resources.

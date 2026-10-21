@@ -97,14 +97,30 @@ grep -rhoE '\]\([^)#[:space:]]+\.md\)' --include='*.md' . |
   sed 's/^](//; s/)$//' | sort -u
 ```
 
-### 3.2 Index, inventory, and numbering
+### 3.2 Command catalog
+
+Every command in `commands/` has its own description in the README, so the
+catalog does not drift from the commands that exist.
+
+```sh
+for command in commands/*.md; do
+  name=$(basename "$command" .md)
+  grep -q "^- \`/$name\`:" README.md ||
+    echo "FAIL command /$name has no description in README.md"
+done
+```
+
+A command without a README description is a `FAIL`: the catalog a reader
+consults is incomplete.
+
+### 3.3 Index, inventory, and numbering
 
 - The `V2.x` index and the `V2.x` sections match exactly: no orphan entry
   and no unindexed section.
 - Every file in the required-file inventory exists.
 - The `R-nn` identifiers have no gap and no duplicate.
 
-### 3.3 Rule reachability and cross-client reach
+### 3.4 Rule reachability and cross-client reach
 
 For every row of `references/mandatory-rules.md`, the anchor is present on
 every required surface, and the canonical wording is present in `AGENTS.md`.
@@ -134,7 +150,7 @@ while IFS='|' read -r _ id _ _ anchor surfaces; do
 done
 ```
 
-### 3.4 Duplication and contradiction
+### 3.5 Duplication and contradiction
 
 - Two files must not carry the same normative wording. A surface that
   restates a rule is a drift risk; it must reference the canonical source.
@@ -142,7 +158,7 @@ done
   superseded phrasings when a rule changed, and confirm each is gone.
 - A command must not copy a block from the workflow it delegates to.
 
-### 3.5 Coverage
+### 3.6 Coverage
 
 When the adjustment affects a rule that applies to several ecosystems or
 project types, confirm the coverage is complete for all of them, not only
