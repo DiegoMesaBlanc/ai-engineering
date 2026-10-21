@@ -313,12 +313,27 @@ with evidence. That workflow validates system consistency; it does not
 assert that a custom Codex slash command exists or that Codex was executed
 unless an actual CLI run is recorded.
 
-## OpenCode setup (macOS)
+## Setup (macOS, Linux, and Windows)
+
+The setup is per environment. The **repository is the source of truth**, and
+a client that cannot discover it by link can be pointed at its path. The
+shared procedures assume a **POSIX shell**; on Windows, run them through Git
+Bash or WSL. The portability contract is defined in
+`references/portability.md`.
 
 Set the path to the canonical repository:
 
 ```sh
+# macOS
 export AI_ENGINEERING_HOME="$HOME/Documents/ai-engineering"
+
+# Linux
+export AI_ENGINEERING_HOME="$HOME/ai-engineering"
+```
+
+```powershell
+# Windows PowerShell
+$env:AI_ENGINEERING_HOME = "$HOME\ai-engineering"
 ```
 
 Verify the repository:
@@ -328,7 +343,7 @@ git -C "$AI_ENGINEERING_HOME" status --short --branch
 ```
 
 OpenCode's global configuration directory is the expanded value of
-`$HOME/.config/opencode`.
+`$HOME/.config/opencode` on macOS and Linux.
 
 Before creating links, inspect every destination:
 
@@ -354,6 +369,10 @@ ln -s "$AI_ENGINEERING_HOME/agents" \
 
 Never overwrite an existing configuration or symlink without inspecting
 its target.
+
+On Windows a symbolic link requires Developer Mode or an elevated shell. When
+it is unavailable, point the client at the canonical path instead of linking;
+no rule depends on the link existing.
 
 Skills are stored in the canonical repository's `skills/` directory.
 Expose them through the global Skill directory inspected above

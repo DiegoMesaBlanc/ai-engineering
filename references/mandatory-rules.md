@@ -64,6 +64,7 @@ It exists to prevent two failures observed in practice:
 | M-19 | Consulted documentation is current: the version guide is consulted first, a version-agnostic source is preferred, every pinned source is registered with its version and review rule, and the consulted version and date are recorded | `AGENTS.md` — Human Decision Gates | `version guide` | `AGENTS.md`, `references/official-documentation.md`, `workflows/project-initialization.md`, `skills/stack-detection/SKILL.md`, `workflows/system-audit.md` |
 | M-20 | The applicable learnings are read before acting, and repeating a lesson the store already records is a defect of the task | `AGENTS.md` — Self-Learning and Maturity | `applicable learnings` | `AGENTS.md`, `workflows/self-learning.md`, `workflows/task-to-code.md`, `commands/task.md` |
 | M-21 | Every task is executed to a Staff standard however simple it is; the maturity level changes the direction and review it needs, never the quality it gets | `AGENTS.md` — Self-Learning and Maturity | `Staff standard` | `AGENTS.md`, `workflows/self-learning.md` |
+| M-22 | The system works on every client and operating system: the repository is the source of truth, the procedures assume a POSIX shell, degrade to NOT VERIFIED when a tool is missing, and hardcode no operating-system path or client directory | `AGENTS.md` — Client Compatibility | `POSIX shell` | `AGENTS.md`, `references/portability.md`, `workflows/system-audit.md`, `README.md` |
 
 ## Adding a rule
 

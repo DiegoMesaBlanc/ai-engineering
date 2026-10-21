@@ -126,14 +126,17 @@ grep -oE 'https?://[^ )]+' references/official-documentation.md |
 
 # The extraction above can carry trailing markdown; compare on the URL alone.
 # Compare against the pinned table, not against the whole document.
-awk '/^## Version-Pinned Sources/{found=1} found' \
-  references/official-documentation.md > /tmp/pinned-sources.txt
+# No temporary file: the table is piped straight into the comparison.
+pinned_table() {
+  awk '/^## Version-Pinned Sources/{found=1} found' \
+    references/official-documentation.md
+}
 
 grep -oE 'https?://[^ )[:space:]]+' references/official-documentation.md |
   tr -d '`' | sed 's/[.,]$//' | sort -u |
   grep -E '/v?[0-9]+\.[0-9]+|version-[0-9]+|/en/[0-9]+\.[0-9]+/' |
   while read -r url; do
-    grep -qF "$url" /tmp/pinned-sources.txt ||
+    pinned_table | grep -qF "$url" ||
       echo "FAIL pinned source not registered: $url"
   done
 ```
@@ -155,6 +158,10 @@ A status that is not `200` is a finding to investigate. A `403` from a known
 host is bot protection rather than a dead link, and a `000` is a transient
 failure; record those as `NOT VERIFIED` with the reason instead of silently
 passing them.
+
+When the environment has no `curl`, the URL check is `NOT VERIFIED` with the
+tool named. It is never a pass. The same applies to any other tool the
+environment lacks.
 
 ### 3.2 Command catalog
 
@@ -179,14 +186,51 @@ consults is incomplete. A README entry without a command is a `FAIL` too: it
 is a dangling reference left by a rename, and a reader would invoke a
 command that does not exist.
 
-### 3.3 Index, inventory, and numbering
+### 3.3 Portability
+
+The system must work on every client and operating system. The shared
+procedures assume a **POSIX shell**; when the environment does not provide
+one, the check is `NOT VERIFIED` with the reason. Verify:
+
+- Every workflow is reachable **without** the `commands/` adapters, so a
+  client without slash commands still reaches it.
+- No shared procedure contains any of the **non-portable constructs**
+  listed in `references/portability.md`. That list is the single source;
+  it is not repeated here.
+- No shared procedure hardcodes an operating-system path or a client
+  configuration directory.
+
+```sh
+# Workflows reachable without the commands/ adapters
+for workflow in workflows/*.md; do
+  name="workflows/$(basename "$workflow")"
+  grep -rl "$name" --include='*.md' . |
+    grep -v '^./commands/' | grep -q . ||
+    echo "FAIL $name is only reachable from commands/"
+done
+
+# Non-portable constructs in shared procedures.
+# The patterns live in references/portability.md, so they are defined once.
+# The character classes keep this pattern from matching itself.
+grep -rnE '/[t]mp/|/var/[f]olders/|~?/\.[c]onfig/opencode|~?/\.[c]laude' \
+  workflows/ references/ skills/ commands/ 2>/dev/null |
+  grep -v 'references/portability.md' |
+  grep -v 'README.md' |
+  sed 's/^/  /'
+```
+
+A hardcoded path is a `FAIL` when it appears in a shared procedure, and a
+`PASS` when it appears in the setup instructions, which are per environment
+by nature.
+
+### 3.4 Index, inventory, and numbering
 
 - The `V2.x` index and the `V2.x` sections match exactly: no orphan entry
   and no unindexed section.
 - Every file in the required-file inventory exists.
 - The `R-nn` identifiers have no gap and no duplicate.
 
-### 3.4 Rule reachability and cross-client reach
+### 3.5 Rule reachability and cross-client reach
 
 For every row of `references/mandatory-rules.md`, the anchor is present on
 every required surface, and the canonical wording is present in `AGENTS.md`.
@@ -216,7 +260,7 @@ while IFS='|' read -r _ id _ _ anchor surfaces; do
 done
 ```
 
-### 3.5 Duplication and contradiction
+### 3.6 Duplication and contradiction
 
 - Two files must not carry the same normative wording. A surface that
   restates a rule is a drift risk; it must reference the canonical source.
@@ -224,7 +268,7 @@ done
   superseded phrasings when a rule changed, and confirm each is gone.
 - A command must not copy a block from the workflow it delegates to.
 
-### 3.6 Coverage
+### 3.7 Coverage
 
 When the adjustment affects a rule that applies to several ecosystems or
 project types, confirm the coverage is complete for all of them, not only

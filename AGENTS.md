@@ -466,6 +466,15 @@ Skill. The registry in `references/mandatory-rules.md` records the canonical
 wording, the anchor, and the required surfaces of every mandatory rule, and
 the reachability check in `workflows/system-validation.md` verifies it.
 
+**The system is portable across clients and operating systems.** The
+repository is the source of truth, not any installation of it: a client that
+cannot discover Skills still receives every mandatory rule, and a client that
+only looks in a fixed directory is pointed at the canonical path. The
+procedures assume a POSIX shell and degrade to `NOT VERIFIED` with the
+reason when a tool is missing; they never hardcode an operating-system path
+or a client-specific directory. The contract is defined in
+`references/portability.md`.
+
 ## Official Documentation Grounding
 
 Use references/official-documentation.md when framework-specific or

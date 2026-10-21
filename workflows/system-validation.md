@@ -736,6 +736,7 @@ Return:
 - V2.36 target version and official documentation checks:
 - V2.37 documentation freshness checks:
 - V2.38 self-learning execution checks:
+- V2.39 portability checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1795,3 +1796,26 @@ root="${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}"
 
 A missing store or scope is reported, never treated as a failure. A learning
 entry that contains a credential, a token, or personal data is a `FAIL`.
+
+## V2.39 Regression — Portability
+
+Verify that the system works on every client and operating system:
+
+- `references/portability.md` exists at its canonical path and is listed
+  in the required-file inventory of this workflow. It defines the contract:
+  the repository is the source of truth, the knowledge is client-neutral, the
+  procedures assume a POSIX shell, and no operating-system assumption is
+  baked into the rules.
+- `AGENTS.md` states the portability rule: a client without Skills still
+  receives every mandatory rule, the procedures degrade to `NOT VERIFIED`
+  with the reason when a tool is missing, and no operating-system path or
+  client directory is hardcoded.
+- Every workflow is reachable **without** the `commands/` adapters, so a
+  client without slash commands is never blocked.
+- No shared procedure hardcodes an operating-system path or a client
+  configuration directory, and none depends on a macOS-only utility.
+- A check that could not run because a tool is missing is reported as
+  `NOT VERIFIED` with the tool named, never as passed.
+- The setup instructions cover macOS, Linux, and Windows, and state that
+  linking is a convenience rather than a requirement.
+- `references/system-workflow-regression-matrix.md` includes R-61.
