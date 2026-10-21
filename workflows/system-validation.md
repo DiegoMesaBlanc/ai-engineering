@@ -740,6 +740,7 @@ Return:
 - V2.40 feature-driven structure checks:
 - V2.41 folder architecture checks:
 - V2.42 topology decision checks:
+- V2.43 source grounding checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1865,3 +1866,27 @@ unjustified monorepo is declined:
 - `workflows/output-compliance.md` checks STRUCT-005: a repository with
   several packages and no recorded concrete benefit is a `FAIL`.
 - `references/system-workflow-regression-matrix.md` includes R-64.
+
+## V2.43 Regression — Source Grounding
+
+Verify that every structural rule and folder tree names its source:
+
+- `AGENTS.md` requires every structural rule and every folder tree to name
+  its source and the kind of source, and forbids presenting a community
+  methodology as a framework standard or extrapolating one ecosystem's rule
+  to another.
+- `references/folder-architectures.md` states the authority of each tree:
+  Fowler's Presentation-Domain-Data Layering, Feature-Sliced Design,
+  Cockburn's original ports and adapters description, the bounded context for
+  DDD, and Spring Modulith for a feature-driven Java module.
+- `references/folder-architectures.md` records the source of the rule for
+  every ecosystem in the per-ecosystem table.
+- `references/official-documentation.md` distinguishes an ecosystem official
+  rule from a recognized community methodology, and records the verified
+  source for each: the Angular Style Guide for "one concept per file", the
+  Vue single-file component specification, Solid for multiple components per
+  file, the Go specification for a package per directory, PSR-4 for one
+  class per file, Spring Modulith for the provided interface, and the
+  Feature-Sliced Design layers and public API references.
+- Every URL in that section resolves.
+- `references/system-workflow-regression-matrix.md` includes R-65.

@@ -19,6 +19,29 @@ their folders, and the difference is worth one question.
 The decision is part of the startup decision set. It is asked together with
 the architectural style, and both are settled before any file is created.
 
+## Authority of each tree
+
+Every tree below **names its source**, and the kind of source differs.
+The difference matters:
+
+- **Ecosystem official rule** — the framework or language prescribes it.
+  Angular's "one concept per file", Vue's single-file component, Go's
+  package per directory, PSR-4's class per file, the Java Language
+  Specification on public types.
+- **Recognized community methodology** — a published method that a project
+  adopts deliberately. Feature-Sliced Design for the feature-driven tree,
+  Cockburn's Ports and Adapters for the hexagonal tree, Fowler's
+  Presentation-Domain-Data Layering for the layered tree, Spring Modulith
+  for a feature-driven Java module.
+- **System policy** — a rule of this system, not of any ecosystem. Arrow
+  functions, one type per file, and no pass-through re-export are the
+  system's own policy and apply wherever the ecosystem does not contradict
+  them.
+
+A tree is never presented as an ecosystem standard when it is not. When the
+detected framework prescribes its own structure, that structure wins and the
+methodology is applied inside it.
+
 ## Rules that hold in every tree
 
 - **One folder per unit.** A unit gets its own folder, with its
@@ -43,6 +66,9 @@ alternatives"). This reference holds only the **trees** each style produces.
 
 ## Style 1 — Layered
 
+**Authority**: Presentation-Domain-Data Layering (Martin Fowler) —
+https://martinfowler.com/bliki/PresentationDomainDataLayering.html
+
 ```
 src/
 ├── api/                 # controllers, routes, request handling
@@ -60,6 +86,11 @@ src/
 ```
 
 ## Style 2 — Feature-driven
+
+**Authority**: Feature-Sliced Design —
+https://feature-sliced.design/docs/get-started/overview and
+https://feature-sliced.design/docs/reference/public-api
+(a community methodology, adopted deliberately)
 
 ```
 src/
@@ -83,6 +114,9 @@ to `shared/`, in the folder that matches its kind; it is not copied.
 
 ## Style 3 — Hexagonal / Ports and Adapters
 
+**Authority**: Alistair Cockburn's original description —
+https://alistair.cockburn.us/hexagonal-architecture/
+
 ```
 src/
 ├── domain/              # entities, value objects, business rules
@@ -99,6 +133,9 @@ lives on the other side.
 
 ## Style 4 — DDD
 
+**Authority**: Domain-Driven Design, with the bounded context of
+https://martinfowler.com/bliki/BoundedContext.html
+
 ```
 src/
 ├── domain/              # aggregates, entities, value objects, domain events
@@ -109,6 +146,10 @@ src/
 ```
 
 ## Style 5 — Modular Monolith
+
+**Authority**: Spring Modulith for Java —
+https://docs.spring.io/spring-modulith/reference/fundamentals.html
+(application modules with a provided interface and internal components)
 
 ```
 src/
@@ -126,6 +167,9 @@ context's public API.
 
 ## Style 6 — Event-driven
 
+**Authority**: event-driven architecture guidance; the contracts are the
+schema registry of the chosen broker.
+
 ```
 src/
 ├── producers/           # commands that publish events
@@ -141,16 +185,20 @@ src/
 The unit of organization changes with the ecosystem. The tree keeps its
 shape; the names change.
 
-| Ecosystem | Unit of organization | Public API of a module | Unit folder | Test location |
-|---|---|---|---|---|
-| TypeScript, JavaScript, React, Next.js, Angular, Vue, Svelte, Solid | folder | `index.ts` | folder | next to the unit |
-| Java, Kotlin | package | package-level public API | package folder | mirrored test tree |
-| Python | package | `__init__.py` | package folder | next to the unit |
-| Go | package | the package's exported identifiers | package folder | next to the unit, `_test.go` |
-| Rust | module or crate | `pub use` in `mod.rs` or `lib.rs` | module folder | inline module or `tests/` |
-| C# / .NET | project or folder | `public` types | folder | mirrored test project |
-| PHP | namespace | the namespace's public classes | folder | mirrored tests directory |
-| Ruby | engine or module | the module's public methods | folder | `spec/` mirroring `lib/` |
+| Ecosystem | Unit of organization | Public API of a module | Unit folder | Test location | Source of the rule |
+|---|---|---|---|---|---|
+| TypeScript, JavaScript, React, Next.js | folder | `index.ts` | folder | next to the unit | Vitest include convention; no framework prescribes `src/features` |
+| Angular | folder | `index.ts` | folder | next to the unit, `*.spec.ts` | Angular Style Guide, "One concept per file" |
+| Vue | folder | `index.ts` | folder | next to the unit | Vue Single-File Component specification |
+| Svelte | folder | `index.ts` | folder | next to the unit | Svelte, one component per `.svelte` file |
+| Solid | folder | `index.ts` | folder | next to the unit | Solid, named exports allow multiple components per file |
+| Java, Kotlin | package | package-level public API | package folder | mirrored test tree | Spring Modulith, application modules with a provided interface; JLS on public types |
+| Python | package | `__init__.py` | package folder | next to the unit, `test_*.py` | Python packaging; no one-class-per-file rule |
+| Go | package | the package's exported identifiers | package folder | next to the unit, `_test.go` | Go specification, a package is a directory |
+| Rust | module or crate | `pub use` in `mod.rs` or `lib.rs` | module folder | inline module or `tests/` | The Rust Programming Language, module files |
+| C# / .NET | project or folder | `public` types | folder | mirrored test project | StyleCop `SA1402`; no framework rule |
+| PHP | namespace | the namespace's public classes | folder | mirrored tests directory | PSR-4, one class per file |
+| Ruby | engine or module | the module's public methods | folder | `spec/` mirroring `lib/` | RSpec and Rails conventions; no Ruby rule |
 
 **Concrete variants of the two most distinct trees.**
 

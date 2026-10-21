@@ -80,7 +80,11 @@ Do not duplicate Skills, workflows, or architecture definitions.
   the files.
 - Ground stack-specific structure and test conventions in that stack's
   official documentation or a recognized authoritative style guide. Never
-  extrapolate one ecosystem's rule to another.
+  extrapolate one ecosystem's rule to another. Every structural rule and
+  every folder tree names its source, and the kind of source is stated:
+  an ecosystem official rule, a recognized community methodology, or a policy
+  of this system. A community methodology is never presented as a framework
+  standard, and a framework's own convention wins when the two differ.
 
 ## Scope and Evidence Boundaries
 

@@ -449,11 +449,46 @@ These are the authoritative sources that inform our internal rules. Consult when
 - **Alistair Cockburn - Hexagonal Architecture**: https://alistaircockburn.com/Articles/Hexagonal-Architecture/
 - **Ports and Adapters**: https://alistair.cockburn.us/hexagonal-architecture/
 
+Every structural rule and folder tree **names its source** here, and the
+kind of source is stated: an ecosystem official rule, a recognized community
+methodology, or a policy of this system. A methodology is never presented as
+a framework standard.
+
+### Spring Boot and Java
+
+- Structuring your code: https://docs.spring.io/spring-boot/reference/using/structuring-your-code.html
+  — the official example groups a domain in one package (`customer/` with
+  its controller, service, and repository), and points to Spring Modulith
+  when the structure is to be enforced by domain.
+- **Spring Modulith**: https://docs.spring.io/spring-modulith/reference/fundamentals.html
+  — application modules, with a **provided interface** that other modules
+  may use and **internal** components that are not supposed to be accessed
+  from outside. This is the Java authority for a feature-driven module
+  with a public API.
+- Spring Modulith project structure: https://docs.spring.io/spring-modulith/reference/project-structure.html
+
+### Layered Architecture
+
+- Presentation, Domain, Data Layering (Martin Fowler):
+  https://martinfowler.com/bliki/PresentationDomainDataLayering.html
+
 ### Feature-Sliced Design (Frontend Architecture)
+
+A **community methodology**, not a framework standard. It is the authority
+for the feature-driven tree and the public API per slice. No framework
+prescribes `src/features`; the framework's own convention is followed where
+it exists, and the feature-driven layout is used when the project adopts
+this methodology.
 
 - **Official Methodology**: https://feature-sliced.design/docs/get-started/overview
 - **Layers & Slices**: https://feature-sliced.design/docs/reference/layers
+  — layers are folders with lowercase names, such as `shared`, `pages`, and
+  `app`; a project uses the layers that bring it value, and adding layers
+  beyond the standardized ones is not recommended.
 - **Public API**: https://feature-sliced.design/docs/reference/public-api
+  — a public API is a contract between a group of modules and the code
+  that uses it, it acts as a gate allowing access only through that API,
+  and it is usually implemented as an index file with re-exports.
 
 ### Modular Monolith & Bounded Contexts
 
