@@ -47,7 +47,36 @@ Rules:
 
 ---
 
-## Phase 1 — Capture
+## Phase 1 — Apply (Consume)
+
+**Read the store before acting.** A lesson that is never consulted cannot
+prevent a repeat, and learning that is not applied is not learning.
+
+At the start of every task, before analysis or implementation:
+
+1. Resolve the store root and the scope for the task: `<repo-slug>` for the
+   project, plus `global` for system-wide lessons.
+2. Read the entries of both scopes. They are small prose files; read them
+   completely.
+3. Apply every entry that is relevant to the task, and say which ones
+   applied when reporting.
+4. When an entry applies, follow it. **Repeating a lesson the store already
+   records is a defect of the task, not bad luck.** The task is not complete
+   until the repetition is corrected.
+5. When an entry does not apply, say why in one line. A silent skip hides a
+   contradiction between the store and the evidence.
+
+An entry that the evidence contradicts is not obeyed: follow the evidence,
+and report the entry as superseded in Phase 2. The store is evidence-ranked,
+not authoritative.
+
+A store that does not exist, or an empty scope, is not an error. Report
+"no applicable learnings" and continue. Never fail a task because the store
+is empty.
+
+---
+
+## Phase 2 — Capture
 
 Record observations while they are fresh, as small independent entries.
 Capture sources include:
@@ -72,7 +101,7 @@ Do not create a learning for a one-off event with no reusable signal.
 
 ---
 
-## Phase 2 — Consolidate
+## Phase 3 — Consolidate
 
 Merge, deduplicate, and refine captured entries so the store stays small and
 trustworthy:
@@ -87,7 +116,7 @@ trustworthy:
 
 ---
 
-## Phase 3 — Promote (Proposal Only)
+## Phase 4 — Promote (Proposal Only)
 
 A lesson is promotable when it is stable, general enough to matter beyond
 one context, and supported by evidence.
@@ -109,28 +138,52 @@ learning.
 
 ---
 
-## Phase 4 — Maturity Model
+## Phase 5 — Maturity Model
 
-The system's maturity describes demonstrated reliability and autonomy. It
-is evidence-based and descriptive; it never grants authority and is never
+Maturity describes the system's demonstrated reliability on a scope. It is
+evidence-based and descriptive; it never grants authority and is never
 self-declared.
 
-- **L1 Guided** — needs explicit, detailed instructions; frequent
-  correction; low autonomy.
-- **L2 Assisted** — handles routine tasks with close review; occasional
-  correction.
-- **L3 Reliable** — autonomous on routine work; reviews significant
-  changes; rare correction.
-- **L4 Trusted** — autonomous within policy; surfaces risks and decisions;
-  consistent, evidence-based validation.
-- **L5 Adaptive** — improves the system itself by capturing, consolidating,
-  and promoting knowledge safely, without weakening guardrails.
+### The ladder
 
-Maturity for a scope rises or falls on evidence such as: validation and
-review pass rates, the frequency and severity of corrections, adherence to
-policies and decision gates, and the honest reporting of unverified or
-blocked work. Report the current level with its evidence; do not claim a
-level the evidence does not support.
+| Level | Name | Demonstrated behavior |
+|---|---|---|
+| 1 | **Junior** | Needs explicit, detailed instructions. Frequent correction. Low autonomy. Repeats known lessons. |
+| 2 | **Semi Senior** | Handles routine work with close review. Occasional correction. Applies most known lessons. |
+| 3 | **Senior** | Autonomous on routine work. Reviews significant changes. Rare correction. Applies every applicable lesson. |
+| 4 | **Staff** | Autonomous within policy. Surfaces risks and decisions. Consistent, evidence-based validation. Improves the system by capturing, consolidating, and promoting knowledge without weakening guardrails. |
+
+### The execution floor is Staff, always
+
+**Every task is executed to a Staff standard, however simple it is.** The
+level above describes how much *direction and review* the work needs, never
+how much *quality* it gets.
+
+- **Execution quality is constant.** Professional best practices, typing,
+  error handling, security, and appropriate tests are applied to every
+  change, from a one-line fix to a new service.
+- **Process rigor is proportional.** The depth of planning, the number of
+  checkpoints, and the review intensity scale with the task's complexity and
+  risk.
+- A level below Staff lowers the amount of supervision, never the standard
+  of the delivered code.
+
+### Deriving and reporting the level
+
+The level for a scope rises or falls on evidence:
+
+- validation and review pass rates;
+- the frequency and severity of corrections, including repeats of a lesson
+  the store already records;
+- adherence to policies, decision gates, and the commit approval policy;
+- the honest reporting of unverified, blocked, or skipped work;
+- the number of learnings promoted, and whether the promoted ones held.
+
+Store the current level and its evidence at
+`${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}/maturity/<scope>.md`,
+with the date of the assessment. Report the level with its evidence in the
+task report. Never claim a level the evidence does not support, and never
+treat a higher level as permission to skip a check.
 
 ---
 

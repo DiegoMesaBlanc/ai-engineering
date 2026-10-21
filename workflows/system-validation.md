@@ -735,6 +735,7 @@ Return:
 - V2.35 progressive project creation checks:
 - V2.36 target version and official documentation checks:
 - V2.37 documentation freshness checks:
+- V2.38 self-learning execution checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1757,3 +1758,40 @@ visible:
 - `workflows/project-initialization.md` Phase 2 reports a source that does
   not cover the target version instead of applying it silently.
 - `references/system-workflow-regression-matrix.md` includes R-58.
+
+## V2.38 Regression — Self-Learning Execution
+
+Verify that the system learns from its mistakes and does not repeat them:
+
+- `workflows/self-learning.md` Phase 1 is an **Apply** phase: it reads the
+  store for the project scope and the global scope before acting, applies
+  every relevant entry, and reports the applied ones.
+- Repeating a lesson the store already records is defined as a defect of
+  the task, not bad luck, and the task is not complete until it is
+  corrected.
+- An entry the evidence contradicts is not obeyed: the evidence wins and the
+  entry is reported as superseded.
+- An empty or missing store is reported and never blocks a task.
+- `AGENTS.md` states the consume rule, and `workflows/task-to-code.md`
+  Phase 1 reads the learnings and Phase 12 captures a lesson when there is
+  a reusable signal.
+- `commands/task.md` requires reading the learnings before acting.
+- The maturity ladder is Junior, Semi Senior, Senior, Staff, is derived from
+  evidence, is stored with its date, and is reported in the task report.
+- The execution floor is Staff for every task; the level changes the
+  direction and review the work needs, never the quality it gets.
+- The store holds no credentials, tokens, secrets, or personal data, and
+  never writes inside a target project or the canonical repository.
+- `references/system-workflow-regression-matrix.md` includes R-59 and R-60.
+
+### Store structure check
+
+```sh
+root="${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}"
+[ -d "$root" ] && echo "store present: $root" || echo "store absent (allowed, never blocks)"
+[ -d "$root/learnings" ] && echo "learnings scope present" || echo "no learnings yet (allowed)"
+[ -d "$root/maturity" ] && echo "maturity scope present" || echo "no maturity record yet (allowed)"
+```
+
+A missing store or scope is reported, never treated as a failure. A learning
+entry that contains a credential, a token, or personal data is a `FAIL`.

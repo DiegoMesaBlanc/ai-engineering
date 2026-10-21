@@ -99,6 +99,8 @@ Detect engineering intent from the request (architecture/solution design, time/c
 
 Key required behaviors within that workflow:
 
+- read the applicable learnings from the learning store before acting, and
+  treat a repeat of a recorded lesson as a defect of the task
 - complete the dependency assessment in
   `workflows/dependency-assessment.md` and record its outcome before
   finalizing the plan

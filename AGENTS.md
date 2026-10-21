@@ -302,6 +302,18 @@ layer. This is provider-neutral and is not a retrospective of people or
 teams.
 
 - The behavior is defined canonically in `workflows/self-learning.md`.
+- **Read the applicable learnings before acting.** At the start of a task,
+  read the store for the project scope and for the global scope, and apply
+  every relevant entry. **Repeating a lesson the store already records is a
+  defect of the task**, and the task is not complete until the repetition is
+  corrected. An empty or missing store is reported and does not block the
+  task.
+- **Every task is executed to a Staff standard, however simple it is.** The
+  maturity level describes how much direction and review the work needs,
+  never how much quality it gets. Execution quality is constant; only the
+  process rigor, the planning depth, and the review intensity are
+  proportional to the task. A level below Staff never lowers the standard of
+  the delivered code.
 - Learnings are stored in the provider-neutral user-level state root
   (`${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}`), outside every
   target project and the canonical repository. Never store credentials,

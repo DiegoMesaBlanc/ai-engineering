@@ -7,6 +7,12 @@ implementation on a user-provided task branch.
 
 ## Phase 1 — Detect
 
+**Read the applicable learnings first.** Before any analysis or
+implementation, read the learning store for the project scope and the global
+scope, per `workflows/self-learning.md` Phase 1, and apply every relevant
+entry. Report which entries applied. Repeating a lesson the store already
+records is a defect of the task.
+
 Determine:
 
 - project state
@@ -465,6 +471,12 @@ Preserve unrelated and uncommitted user changes.
 A passing build alone does not establish completion.
 
 ## Phase 12 — Review
+
+**Capture the lesson.** When the task produced a reusable signal — a
+correction from the user, a pattern that worked or failed, a validation
+surprise, or a workflow friction — record it per
+`workflows/self-learning.md` Phase 2. Do not create a learning for a one-off
+event with no reusable signal.
 
 Load `skills/engineering-review/SKILL.md`.
 
