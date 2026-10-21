@@ -308,7 +308,7 @@ The type/contract placement rule derives from the folder map: **the type lives i
 | Medium, multiple domains | Feature-first: `src/features/<feature>/{api,domain,server,components,hooks,contracts}` + `src/shared/` |
 | Large, multiple teams | Feature modules with explicit public APIs and boundaries; packages only when justified |
 
-**Architectural style alternatives** (select based on domain complexity, team structure, deployment needs):
+**Architectural style alternatives** (select based on domain complexity, team structure, deployment needs). The **concrete folder tree of each style, per ecosystem, is defined in `references/folder-architectures.md`**; that is where the user sees the folders:
 
 | Style | When to use | Structure hint |
 |---|---|---|
@@ -347,6 +347,58 @@ Framework-specific route handlers (`app/api/...`, `routes/...`) remain in the fr
 - Route handlers delegate to services; they do not contain business logic.
 
 A mixed `lib/` with unrelated responsibilities is an anti-pattern, not a convention to preserve. New code uses the correct folders; existing code moves only when touched (R-42).
+
+### Feature-Driven Folder Architecture
+
+In a feature-driven architecture the code is grouped by business capability,
+not by technical kind. This is the target shape for a modern web
+application:
+
+```
+src/
+├── app/            # global configuration: providers, routes, global state
+├── shared/         # generic and reusable, bound to no business capability
+└── features/
+    └── <feature>/
+        ├── <unit>/          # one folder per unit: implementation + its test
+        │   ├── <unit>.tsx
+        │   ├── <unit>.test.tsx
+        │   └── <unit>.types.ts
+        └── index.ts          # the public API of the feature
+```
+
+**One folder per unit.** A unit that owns an implementation and a test gets
+its own folder, with the test next to the implementation. A feature folder
+never holds a flat pile of implementation files, tests, and types mixed
+together; that pile is the symptom of a missing decision about which unit
+owns what.
+
+**The feature exposes a public API.** `features/<feature>/index.ts` is the
+only entry point other parts of the application may use. It exports what
+they are allowed to use and nothing else; the rest of the feature stays
+encapsulated.
+
+This is a different kind of barrel from the convenience re-export described
+above, and the two are not in conflict: a convenience barrel re-exports a
+single file and is optional, while the public API of a feature is the
+encapsulation boundary between capabilities and is required in this
+architecture.
+
+**The golden dependency rule.** A feature may import from `app/` and from
+`shared/`. It must never import the internals of another feature. When two
+features need to interact, they go through the other feature's public API,
+or through the global state in `app/`. An import that reaches past the
+public API is an architecture violation, not a convenience.
+
+**Promotion to `shared/`.** A unit that starts inside a feature and later
+needs a second consumer is **promoted**: it moves to `shared/`, in the
+folder that matches its kind, and the feature that owned it imports it from
+there. A unit is not copied into `shared/` to avoid the move; the feature
+keeps a single owner.
+
+**The system decides.** The folder layout is decided, not left to chance:
+for each unit, the owner, the folder, and the public surface are recorded
+before the files are created.
 
 ### Unit Folders and Co-located Tests
 

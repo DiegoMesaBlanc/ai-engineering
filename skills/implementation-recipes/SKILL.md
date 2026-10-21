@@ -74,7 +74,7 @@ Follow the **Folder Architecture Map** from `architecture-advisor`. Place contra
 | Complexity | Recommended structure |
 |---|---|
 | Small, single domain | Layer-first: `src/api/<domain>/`, `src/services/<domain>/`, `src/server/<domain>/`, `src/shared/`, `src/components/`, `src/hooks/` |
-| Medium, multiple domains | Feature-first: `src/features/<feature>/{api,domain,server,components,hooks,contracts}` + `src/shared/` |
+| Medium, multiple domains | Feature-first: `src/app/`, `src/shared/`, and `src/features/<feature>/` with one folder per unit (implementation + its test) and an `index.ts` public API for the feature. See **Feature-Driven Folder Architecture** in `skills/architecture-advisor/SKILL.md` |
 | Large, multiple teams | Feature modules with explicit public APIs and boundaries; packages only when justified |
 
 | Ecosystem | Contract/type location (rule: one per file; group if same exclusive consumer) | Import direction |

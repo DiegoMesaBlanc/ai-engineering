@@ -737,6 +737,8 @@ Return:
 - V2.37 documentation freshness checks:
 - V2.38 self-learning execution checks:
 - V2.39 portability checks:
+- V2.40 feature-driven structure checks:
+- V2.41 folder architecture checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1819,3 +1821,62 @@ Verify that the system works on every client and operating system:
 - The setup instructions cover macOS, Linux, and Windows, and state that
   linking is a convenience rather than a requirement.
 - `references/system-workflow-regression-matrix.md` includes R-61.
+
+## V2.40 Regression — Feature-Driven Structure
+
+Verify that a feature-driven project is organized by capability, with one
+folder per unit and a public API per feature:
+
+- `AGENTS.md` states the rule: the code is grouped by business capability,
+  each unit has its own folder with its implementation, its test, and its
+  types, each feature exposes a public API, a feature never imports the
+  internals of another feature, and a unit with a second consumer is
+  promoted to `shared/` rather than copied.
+- `skills/architecture-advisor/SKILL.md` defines **Feature-Driven Folder
+  Architecture**: the target tree, the folder per unit, the public API of a
+  feature, the golden dependency rule, the promotion rule, and the decision
+  that the owner, the folder, and the public surface are recorded before
+  the files are created.
+- The convenience barrel and the public API of a feature are distinguished,
+  so the optionality of one does not weaken the requirement of the other.
+- `skills/implementation-recipes/SKILL.md` gives the feature-first structure
+  with one folder per unit and a public API per feature.
+- `references/project-creation-order.md` requires the folder decision before
+  the files are created, and states that a flat feature folder is the
+  symptom of skipping it.
+- `workflows/output-compliance.md` checks STRUCT-001 (one folder per unit),
+  STRUCT-002 (no import that reaches past a feature's public API), and
+  STRUCT-003 (every feature exposes a public API).
+- `workflows/code-audit.md` includes the feature-driven structure check with
+  the golden dependency rule.
+- `references/system-workflow-regression-matrix.md` includes R-62.
+
+## V2.41 Regression — Folder Architecture as a Decision
+
+Verify that the folder structure is decided, and that every style has a
+concrete tree for the detected ecosystem:
+
+- `references/folder-architectures.md` exists at its canonical path and is
+  listed in the required-file inventory of this workflow. It defines the
+  concrete tree of every style, the rules that hold in every tree, the
+  per-ecosystem translation of the unit of organization, and the concrete
+  variants of the most distinct combinations.
+- Every style listed in `skills/architecture-advisor/SKILL.md` has a tree in
+  that reference, and the reference is where the trees live, so they do not
+  diverge.
+- `AGENTS.md` states that the folder structure is a decision, asked with the
+  architectural style and settled before any file is created, and that a
+  style presented only as a one-line hint is not a choice the user can make.
+- `references/project-startup-decisions.md` lists the folder architecture as
+  a decision of the startup decision set.
+- `workflows/project-initialization.md` presents the concrete trees with the
+  question, asks about the architecture **and** the folders together, and
+  never filters Ports and Adapters out of the options.
+- `references/project-creation-order.md` takes the tree from the same
+  reference.
+- `workflows/output-compliance.md` checks STRUCT-004: the folders that exist
+  are the folders that were agreed.
+- The per-ecosystem translation covers every ecosystem of the applicability
+  matrix: TypeScript and JavaScript, React and Next.js, Angular, Vue, Svelte,
+   Solid, Java and Kotlin, Python, Go, Rust, C# and .NET, PHP, and Ruby.
+- `references/system-workflow-regression-matrix.md` includes R-63.

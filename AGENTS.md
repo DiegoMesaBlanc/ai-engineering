@@ -55,6 +55,20 @@ Do not duplicate Skills, workflows, or architecture definitions.
   a type alias, a `pub use`, or an `__all__` entry that only re-exports.
   A barrel that aggregates several modules may re-export them.
 - Place code by responsibility; `lib/` and `utils/` are not dumping grounds for domain services, API clients, contracts, or storage. Folder structure follows project complexity, not a universal template.
+- The **folder structure is a decision**, asked with the architectural style
+  and settled before any file is created. The trees of every style, per
+  ecosystem, are defined in `references/folder-architectures.md`; the user
+  sees the folders before they exist. A style presented only as a one-line
+  hint is not a choice the user can make.
+- In a **feature-driven architecture**, group the code by business capability
+  (`app/`, `shared/`, `features/<feature>/`), give **each unit its own folder**
+  with its implementation, its test, and its types, and let each feature
+  expose a **public API** (`index.ts`). A feature imports from `app/` and
+  `shared/` and **never the internals of another feature**; cross-feature
+  interaction goes through the other feature's public API or the global
+  state. A unit that needs a second consumer is promoted to `shared/`, not
+  copied. The system decides the owner, the folder, and the public surface
+  of every unit before creating the files.
 - Ground stack-specific structure and test conventions in that stack's
   official documentation or a recognized authoritative style guide. Never
   extrapolate one ecosystem's rule to another.

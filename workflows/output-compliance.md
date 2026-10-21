@@ -210,6 +210,74 @@ re-exposed and not part of that module's own API surface. A forwarding
 mechanism used with a documented purpose — an assembly migration in C#/.NET,
 a conditional class alias in PHP — is not a pass-through.
 
+### STRUCT-001 — One folder per unit inside a feature
+
+A feature folder never holds a flat pile of implementation files, tests, and
+types mixed together. A unit that owns an implementation and a test gets its
+own folder, with the test next to the implementation.
+
+```sh
+# Implementation and test as siblings inside a feature folder
+for feature in $(find src/features -mindepth 1 -maxdepth 1 -type d 2>/dev/null); do
+  find "$feature" -maxdepth 1 -type f \
+    \( -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.spec.ts' \) |
+  while read -r test; do
+    base="$(basename "$test")"
+    impl="${base%%.test*}"
+    [ -f "$feature/$impl.ts" ] || [ -f "$feature/$impl.tsx" ] ||
+      [ -f "$feature/$impl.js" ] || [ -f "$feature/$impl.jsx" ] &&
+      echo "FAIL $test sits next to its implementation: the unit needs its own folder"
+  done
+done
+```
+
+### STRUCT-002 — No imports that reach past a feature's public API
+
+A feature may import from `app/` and from `shared/`. It must never import
+the internals of another feature. Cross-feature interaction goes through the
+other feature's public API, or through the global state in `app/`.
+
+```sh
+# An import that reaches into another feature's internals
+grep -rnE "from ['\"][^'\"]*features/[^'\"/]+/" src/ \
+  --include='*.ts' --include='*.tsx' 2>/dev/null |
+  grep -vE "features/[^/]+/?['\"]" |
+  sed 's/^/  /'
+```
+
+An import of `features/<other>/` is the public API and is allowed. An import
+of `features/<other>/<internals>` is a `FAIL`.
+
+### STRUCT-003 — Every feature exposes a public API
+
+In a feature-driven architecture, `features/<feature>/index.ts` is the only
+entry point other parts of the application may use.
+
+```sh
+for feature in $(find src/features -mindepth 1 -maxdepth 1 -type d 2>/dev/null); do
+  [ -f "$feature/index.ts" ] ||
+    echo "FAIL $feature has no public API (index.ts)"
+done
+```
+
+### STRUCT-004 — The created tree matches the chosen architecture
+
+The folders that exist must be the folders that were decided. Compare the
+top-level folders of the project against the tree of the agreed style, in
+`references/folder-architectures.md`, translated to the detected ecosystem.
+
+```sh
+# The agreed top-level folders, for example for a feature-driven web app
+for folder in app shared features; do
+  [ -d "src/$folder" ] ||
+    echo "FAIL src/$folder is missing: it belongs to the agreed tree"
+done
+```
+
+A missing or an unexpected top-level folder is a `FAIL` (P2). The check
+does not judge whether the tree is a good one; it verifies that the tree is
+the one that was agreed.
+
 ### FILE-001 — Unit folder and test co-location
 
 Where the ecosystem supports it, a unit with multiple related artifacts

@@ -39,6 +39,14 @@ For every decision in this catalog, resolve it in this order:
   difference is reported and the verification against that version is
   reported as not verified.
 
+## Folder architecture
+
+The folder structure is a decision of its own, not a side effect of the
+architectural style. The trees are defined in
+`references/folder-architectures.md`, translated to the detected ecosystem.
+The user is asked for the style and for the tree together, and sees the
+folders before they exist.
+
 ## Asking rules
 
 - **One message, grouped by theme.** Never one question per decision, and
@@ -75,6 +83,7 @@ Applies to every project type.
 | Documentation | A README with the stack, the architecture style, and the reproducible commands | Never |
 | Internationalization | Only when the product has user-facing text in more than one language | The product has user-facing text, and the supported locales or RTL are not stated |
 | Target language and framework version | The version the source analysis assumes, or the current stable release when the analysis is silent | The product targets a specific version, or the ecosystem's support window requires one |
+| Folder architecture | The tree of the agreed architectural style, translated to the detected ecosystem, with one folder per unit and a public API per module | The team has a mandated structure, or the scope suits a different tree |
 
 ---
 

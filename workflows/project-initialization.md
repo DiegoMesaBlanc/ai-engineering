@@ -114,22 +114,31 @@ detected stack and the scope recovered in Phase 1:
 | Modular Monolith | Multiple bounded contexts, single deployable | `src/modules/<context>/{domain,application,api}/` + `src/shared/` |
 | Event-driven | Asynchronous integration between bounded contexts | `src/{producer,consumer,contracts,messaging}/` |
 
-**Adapt the structure hints to the detected ecosystem.** They are
-TypeScript-shaped. Use the conventions catalog in
-`skills/architecture-advisor/SKILL.md` for the detected stack: a Django
-project uses apps, a Spring project uses packages, a Go project uses
-packages, a Rails project uses engines or modules, and a .NET project uses
-projects or folders.
+**Present the concrete trees, not one-line hints.** The trees of every
+style, translated to the detected ecosystem, are defined in
+`references/folder-architectures.md`. Show the applicable ones with their
+folders. A style presented only as a hint is not a choice the user can make.
 
 Microservices are a **deployment** decision, not a code-organization
 default. Do not offer them without evidence that independent deployment is
 a stated requirement.
 
-Then ask explicitly:
+Then ask explicitly, showing the trees:
 
-> What architecture style should the new project use? I recommend \<style\>
-> because \<reason from the scope and the analysis\>. The alternatives are
-> \<the other applicable styles\> and they differ in \<trade-offs\>.
+> What architecture and folder structure should the new project use? I
+> recommend \<style\> because \<reason from the scope and the analysis\>.
+> Its folders would be \<the tree from the reference\>. The alternatives
+> are \<the other applicable styles\>, with the folders \<their trees\>, and
+> they differ in \<trade-offs\>.
+
+The question is about the architecture **and the folders**. A user who
+answers only the style still gets a proposed tree, and the tree is
+confirmed before anything is created.
+
+**Ports and Adapters is always among the options when it applies.** It fits
+a project with several external integrations, and it is a legitimate choice
+even when a simpler style would also work. It is never filtered out because
+it looks advanced.
 
 ### 3.4 Scope agreement
 

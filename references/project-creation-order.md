@@ -22,6 +22,22 @@ version that happens to be installed in the environment. When the
 environment does not have the target version, the difference is reported and
 the checks that could not run against it are reported as `NOT VERIFIED`.
 
+## Deciding the folders
+
+The folder layout is **decided**, not left to chance. The tree comes from
+`references/folder-architectures.md`, translated to the detected ecosystem.
+Before the files of a feature are created, the system records, for each unit:
+
+- the **owner**: the feature, or `shared/` when it already has a second
+  consumer;
+- the **folder**: `features/<feature>/<unit>/` for a unit with its own test
+  or types, and `features/<feature>/` only for a single trivial file;
+- the **public surface**: the `index.ts` of the feature, listing what other
+  parts of the application may use.
+
+A feature folder that ends up holding a flat pile of implementation files,
+tests, and types mixed together is the symptom of skipping this decision.
+
 ## Scope Control
 
 Before creating anything, agree the **catalog of what the project will
@@ -168,7 +184,7 @@ Applies to every project type, in this order.
 | C3 | Application shell | The layout, the navigation, the providers, the error boundary, the loading boundary | The shell renders in every state, including the error state | A new provider is added at the shell, once |
 | C4 | Data layer | The API client, the query client, the typed endpoints, the error mapping, the cache policy | A typed endpoint test proves the request and the error path | A new endpoint is a typed function in the data layer, never called from a component |
 | C5 | Shared components | The primitives and the shared UI, with their states | The accessibility check of the component library passes | A component is shared only after a second consumer exists |
-| C6 | Feature slices | One feature at a time, complete, with its route, its data, its states, and its tests | The slice works end to end | A feature is self-contained; it does not reach into another feature's internals |
+| C6 | Feature slices | One feature at a time, complete, with its route, its data, its states, and its tests. Each **unit** gets its own folder with the implementation, its test, and its types; the feature ends with an `index.ts` public API | The slice works end to end, the unit folders hold their own tests, and the public API exports only what is allowed | A feature is self-contained; it does not reach into another feature's internals |
 | C7 | Forms and validation | The form solution, the schema validation, the error and submit states | The submit path and its validation errors are covered | A form owns its validation; a field does not validate itself |
 | C8 | Localization | The message catalogs, the locale switching, the formatting helpers, the RTL handling, when the product has user-facing text | No hardcoded user-facing string remains, and the RTL layout is correct | Every user-facing string lives in a catalog, keyed by locale |
 | C9 | Accessibility, SEO, and analytics | The audited behavior, the metadata, the tracking | The accessibility audit passes and the metadata is generated | Applied once, at the shell and the router |
