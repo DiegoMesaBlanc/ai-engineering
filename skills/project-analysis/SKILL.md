@@ -52,15 +52,9 @@ Possible examples include:
 
 Do not classify an architecture solely from directory names.
 
-Use implementation evidence:
-
-- real structure, entry points, and organization by domain, module, or
-  responsibility
-- imports, dependencies, and the boundaries between modules
-- the components, hooks, contexts, services, controllers, models,
-  interfaces, and adapters relevant to the detected stack
-- configuration files, testing conventions, and framework rules
-- existing architecture documentation and the patterns used by working code
+Use implementation evidence. The evidence to inspect is defined in
+`skills/architecture-advisor/SKILL.md` ("Evidence-Based Detection"); it is
+the canonical list and it is not restated here.
 
 Report the confidence of the classification explicitly:
 

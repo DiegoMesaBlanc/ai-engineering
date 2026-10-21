@@ -455,7 +455,7 @@ Pull Request preparation and Pull Request review are separate workflows.
 
 ### PR Preparation
 
-The `/pr` command generates copy-ready content.
+The `/generate-pr` command generates copy-ready content.
 
 It does not create, publish, approve, merge, or modify a PR/MR.
 

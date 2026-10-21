@@ -260,15 +260,10 @@ Review only the context required for the current iteration.
 
 ## 10. Finding Quality
 
-Every actionable finding must include:
-
-- Severity: Critical, High, Medium, or Low.
-- Exact file and line, or the narrowest relevant range, verified against
-  the reviewed revision.
-- The specific behavior or defect.
-- Why it is incorrect or risky.
-- Reproducible evidence, a direct code reference, or a clearly explained
-  execution path.
+Every actionable finding must include the elements defined in
+`workflows/pull-request-review.md` ("Every finding must include"). The
+workflow is the canonical source of the finding format and it is not
+restated here.
 - A practical suggested correction.
 - Confidence: High, Medium, or Low.
 

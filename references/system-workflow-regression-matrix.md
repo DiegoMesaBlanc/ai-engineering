@@ -85,7 +85,7 @@ with the concrete reason.
 | R-08 | Provider capability separation | `workflows/provider-integration-proof.md` | Configuration, authentication, read evidence, and untested write are distinguished; simulation is never real | Provider report |
 | R-09 | Optional providers absent | `workflows/provider-integration-proof.md` | An absent optional provider is not a core failure | Status `NOT_CONFIGURED` |
 | R-10 | Delivery read-only boundary | `workflows/secure-delivery.md` | Assessment changes no configuration or remote state | Delivery report |
-| R-11 | PR and review are copy-only | `workflows/pull-request-review.md`, `commands/pr.md`, `commands/review-pr.md` | Nothing is published, approved, merged, or pushed | Absence of remote actions |
+| R-11 | PR and review are copy-only | `workflows/pull-request-review.md`, `commands/generate-pr.md`, `commands/review-pr.md` | Nothing is published, approved, merged, or pushed | Absence of remote actions |
 | R-12 | Review grounded in the revision | `workflows/pull-request-review.md` | Findings correspond to the reviewed revision; no invented lines or results | Report plus reviewed diff |
 | R-13 | Checkpoint identity and preservation | `workflows/session-resilience.md` | Distinct tasks have distinct checkpoints; mixed working-tree state is preserved; no source file changes | Checkpoint metadata plus `git status` |
 | R-14 | Recovery divergence and next action | `workflows/session-resilience.md` | Divergence is reported, work is preserved, and the next action derives from actual repository state | Recovery report |

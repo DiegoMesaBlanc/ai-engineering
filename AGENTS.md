@@ -416,7 +416,7 @@ duplicating its decision policy.
 
 ## Pull Request Policy
 
-- /pr generates copy-ready PR/MR content only.
+- /generate-pr generates copy-ready PR/MR content only.
 - /review-pr generates copy-ready review feedback only.
 - The user creates the PR/MR and manually publishes review comments.
 - PR review must not edit code, publish comments, approve, merge, push,

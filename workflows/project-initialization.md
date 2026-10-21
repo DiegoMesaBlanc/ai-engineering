@@ -93,15 +93,8 @@ them.
 
 ### 3.2 Ask once, grouped
 
-- **One message, grouped by theme.** Never one question per decision, and
-  never a sequence of fifteen questions.
-- Each question carries its recommendation and its trade-off. A
-  recommendation is not a decision.
-- Ask only the decisions that reached category 4. State the decisions
-  resolved by categories 1 to 3 in the same message, so the user can
-  correct them.
-- The architectural style is always asked, and is asked first, because it
-  determines the shape of every other decision.
+Apply the asking rules of `references/project-startup-decisions.md`
+("Asking rules"). They are the canonical rules and are not restated here.
 
 ### 3.3 Architectural style
 

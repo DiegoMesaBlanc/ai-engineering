@@ -5,6 +5,11 @@
 Audit the consistency of the AI Engineering System and its client
 integration without modifying files or remote services.
 
+This workflow audits the **whole system** as it stands. It is not
+`workflows/system-audit.md`, which applies a change and then audits that
+change. Use this one for a consistency sweep; use the other one when a
+change is being applied.
+
 ## 1. Resolve the Canonical Root
 
 Determine the system root using this preference:
@@ -29,7 +34,7 @@ Check for the existence of:
 - agents/reviewer.md
 - agents/auditor.md
 - commands/task.md
-- commands/pr.md
+- commands/generate-pr.md
 - commands/review-pr.md
 - commands/commit.md
 - commands/audit-e2e.md
@@ -1348,7 +1353,7 @@ quality gates and atomic commits:
   duplicating rules.
 - `agents/orchestrator.md` references the workflow in the Delivery phase.
 - `README.md` distinguishes `/commit` from `/validate`, `/code-audit`,
-  and `/pr`.
+  and `/generate-pr`.
 - `references/system-workflow-regression-matrix.md` includes R-45.
 - No new Skill, agent, package.json, dependency, or competing orchestrator
   introduced.

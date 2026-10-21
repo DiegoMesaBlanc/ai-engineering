@@ -19,12 +19,8 @@ separate attributes. Keep them in separate columns or sections.
 
 The statuses above classify documented support and client configuration.
 Machine-specific runtime verification uses the Provider Integration Proof
-workflow (`workflows/provider-integration-proof.md`) and these statuses:
-
-- DOCUMENTED_ONLY: support is described but no configuration has been
-  demonstrated.
-- NOT_CONFIGURED: evidence indicates that the integration is not
-  configured.
+workflow (`workflows/provider-integration-proof.md`). It defines the status
+vocabulary; the statuses are not restated here.
 - CONFIGURED_UNVERIFIED: configuration is present, but authentication or
   capability has not been proven.
 - AUTHENTICATED: authentication was established, but the requested read

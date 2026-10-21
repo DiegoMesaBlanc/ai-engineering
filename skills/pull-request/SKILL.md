@@ -28,9 +28,10 @@ It does not create or publish PRs/MRs.
 Use the cheapest reliable source first:
 
 1. local Git status, log, and diff
-2. repository PR template and contribution guidelines
-3. supplied task and design references
-4. authorized read-only provider integrations
+2. the intended source and target branches
+3. repository PR template and contribution guidelines
+4. supplied task and design references
+5. authorized read-only provider integrations
 
 Do not require MCP when local files and Git provide sufficient evidence.
 
@@ -41,6 +42,7 @@ Do not inspect the entire repository when a focused set of files is enough.
 Determine:
 
 - changed files and modules
+- unrelated changes that must not be included
 - functional behavior
 - architectural impact
 - new or removed dependencies

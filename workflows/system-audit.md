@@ -128,10 +128,17 @@ for command in commands/*.md; do
   grep -q "^- \`/$name\`:" README.md ||
     echo "FAIL command /$name has no description in README.md"
 done
+
+for name in $(grep -oE '^- `/[a-z-]+`:' README.md | sed 's/^- `//; s/`:$//'); do
+  [ -f "commands/$name.md" ] ||
+    echo "FAIL README describes /$name but commands/$name.md does not exist"
+done
 ```
 
 A command without a README description is a `FAIL`: the catalog a reader
-consults is incomplete.
+consults is incomplete. A README entry without a command is a `FAIL` too: it
+is a dangling reference left by a rename, and a reader would invoke a
+command that does not exist.
 
 ### 3.3 Index, inventory, and numbering
 

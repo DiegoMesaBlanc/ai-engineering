@@ -301,7 +301,8 @@ Mandatory decision gate. Before implementing:
 The proposal must include a sufficiently concrete target structure, the
 location of relevant files, the **Folder Architecture Map**, the contracts
 and types, the direction of dependencies, and the pending decisions; stating
-"architecture evaluated" is not sufficient.
+"architecture evaluated" is not sufficient. The canonical requirement is in
+`skills/architecture-advisor/SKILL.md`.
 
 Require human approval for significant architectural changes per the Human Decision Gates in AGENTS.md. Do not treat routine component choices as significant architectural decisions. Consult the user when a styling-system decision significantly affects architecture, dependencies, or the visual experience.
 

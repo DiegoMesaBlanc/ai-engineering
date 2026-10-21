@@ -11,7 +11,7 @@ A provider-agnostic, free-first engineering workflow with shared engineering gui
 - Evaluate architecture, reuse, and code organization before implementing, and validate the result against the proposed design and project conventions.
 - Ask the user for an exact branch name before implementation if one was not supplied.
 - Preserve user changes and use isolated worktrees for PR inspection when needed.
-- `/pr` generates copy-ready PR text; it does not create a PR.
+- `/generate-pr` generates copy-ready PR text; it does not create a PR.
 - `/review-pr` creates evidence-based, copy-ready feedback grounded in the reviewed revision; it does not publish comments or modify remote repositories.
 - Prefer free/open-source options, but use company-provided licenses when authorized.
 - Use official documentation on demand for the detected technology and version.
@@ -22,7 +22,7 @@ A provider-agnostic, free-first engineering workflow with shared engineering gui
 ## Current top-level structure
 
 - `agents/`: OpenCode agents and orchestration.
-- `commands/`: commands such as `/task`, `/pr`, `/review-pr`, `/system-check`, `/validate`, `/code-audit`, `/commit`, `/audit-e2e`, `/create-project`, `/checkpoint`, `/resume-work`, `/provider-check`, `/delivery-check`, and `/estimate`.
+- `commands/`: commands such as `/task`, `/generate-pr`, `/review-pr`, `/system-check`, `/validate`, `/code-audit`, `/commit`, `/audit-e2e`, `/create-project`, `/checkpoint`, `/resume-work`, `/provider-check`, `/delivery-check`, and `/estimate`.
 - `contracts/`: provider-neutral task, design, and Git contracts.
 - `integrations/`: provider access, security, cost, and compatibility policy.
 - `references/`: official documentation indexes and technical references.
@@ -38,7 +38,7 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
 ## Commands
 
 - `/task`: start or continue an engineering task.
-- `/pr`: generate copy-ready PR/MR content.
+- `/generate-pr`: generate copy-ready PR/MR content.
 - `/review-pr`: generate copy-ready review feedback.
 - `/system-check`: read-only validation of repository consistency and
   OpenCode and Codex CLI integration.
@@ -109,7 +109,7 @@ repository's `commands/` directory.
   English messages. It creates commits; it does not push or deploy.
 - It is distinct from `/validate` (read-only validation without commit
   creation), `/code-audit` (senior/staff architecture and patterns audit),
-  and `/pr` (copy-ready PR content).
+  and `/generate-pr` (copy-ready PR content).
 - Documentation-only repositories skip application gates; only Git hygiene
   and commit message rules apply.
 
