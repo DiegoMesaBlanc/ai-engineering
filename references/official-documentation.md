@@ -10,6 +10,33 @@ documentation.
 
 Consult the smallest relevant source on demand.
 
+## Freshness
+
+Documentation that is ten years old is worse than no documentation: it
+teaches patterns the ecosystem has moved away from. Every source below is
+classified by how it tracks versions.
+
+- **Version-agnostic** sources follow the current release. They are the
+  default choice, and they never expire. A version number in the path
+  refers to a *major* line that is still current, such as `/3/` for Python 3.
+- **Version-pinned** sources document one specific release. They are
+  necessary only when the guidance differs between releases. Every pinned
+  source is listed in **Version-pinned sources** with its version and its
+  review rule.
+- **Version guides** are the source of truth for what is current. Consult
+  the guide of the ecosystem before its other pages.
+
+Rules:
+
+- Never cite a source without knowing whether it is current. When a
+  version-pinned source is needed, register it in the pinned table.
+- When the consulted source does not cover the target version, report it
+  instead of applying older guidance silently.
+- Record the version the consulted source documents, and the date of the
+  consultation.
+- A pinned source that is past its review rule is `NOT VERIFIED`, not
+  silently applied.
+
 ## Version and Support
 
 The **target version** of a language, framework, or runtime is a decision,
@@ -20,7 +47,7 @@ official documentation, then a stated default.
 
 - React: https://react.dev/versions
 - Angular: https://angular.dev/guide/versioning
-- Next.js: https://nextjs.org/docs/app/guides/upgrading/version-16
+- Next.js: https://nextjs.org/docs/app/guides/upgrading (upgrade guide per major version)
 - Vue: https://vuejs.org/guide/scaling-up/tooling.html
 - Svelte: https://svelte.dev/docs/svelte/v5-migration-guide
 - Node.js: https://nodejs.org/en/about/previous-releases
@@ -203,7 +230,7 @@ guidance.
 - Official documentation: https://docs.ruby-lang.org/en/master/
 - RubyGems and gem versioning: https://guides.rubygems.org/specification-reference/
 - Bundler: https://bundler.io/
-- RSpec: https://rspec.info/documentation/3.13/rspec-core/
+- RSpec: https://rspec.info/documentation/latest/rspec-core/ (tracks the current release)
 
 ## Mobile
 
@@ -571,3 +598,16 @@ If documentation cannot be accessed:
 - use reliable local evidence where possible
 - avoid inventing version-specific behavior
 - ask for additional context only when necessary
+
+## Version-Pinned Sources
+
+These sources document one specific release. They are listed so that a
+stale one is visible instead of silently applied. The check in
+`workflows/system-audit.md` requires every URL that contains a version
+number to appear here.
+
+| Source | Version | Why pinned | Review rule |
+|---|---|---|---|
+| https://docs.phpunit.de/en/11.5/organizing-tests.html | PHPUnit 11.5 | The test organization guide is version-specific and there is no `current` alias | Review when PHPUnit 12 becomes the default branch |
+| https://nextjs.org/docs/app/guides/upgrading/version-16 | Next.js 16 | The upgrade guide is per major version | Review when Next.js 17 is released |
+| https://rspec.info/documentation/3.13/rspec-core/ | RSpec 3.13 | The core documentation is version-specific | Prefer https://rspec.info/documentation/latest/rspec-core/, which tracks the current release |

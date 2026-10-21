@@ -60,6 +60,15 @@ project will use.
 - Consult the official documentation **for the target version**, not only for
   the version installed. The consultation is recorded: source, version, and
   the decisions it informed.
+- Consult the **version guide** of the ecosystem first, to learn what is
+  current, and then the ecosystem pages. Guidance from a superseded release
+  teaches patterns the ecosystem has moved away from.
+- Prefer a **version-agnostic** source. A source pinned to one release is
+  used only when the guidance differs between releases, and it is
+  registered in the pinned-sources table with its review rule.
+- Record the version the consulted source documents and the date of the
+  consultation. A source that does not cover the target version is reported,
+  not applied silently.
 - Report a version that could not be determined as not determined, not as the
   installed one.
 

@@ -734,6 +734,7 @@ Return:
 - V2.34 end-to-end audit checks:
 - V2.35 progressive project creation checks:
 - V2.36 target version and official documentation checks:
+- V2.37 documentation freshness checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1731,3 +1732,28 @@ and that the official documentation mandate is satisfiable:
   for the confirmed target version, and to report as `NOT VERIFIED` any
   check that could not run against it.
 - `references/system-workflow-regression-matrix.md` includes R-57.
+
+## V2.37 Regression — Documentation Freshness
+
+Verify that consulted documentation is current and that a stale source is
+visible:
+
+- `AGENTS.md` states that the version guide is consulted first, that a
+  version-agnostic source is preferred, that a pinned source is registered
+  with its version and a review rule, and that the consulted version and the
+  consultation date are recorded.
+- `references/official-documentation.md` contains a **Freshness** policy that
+  classifies each source as version-agnostic or version-pinned, and a
+  **Version-Pinned Sources** table with the version and the review rule of
+  every pinned source.
+- Every URL in the official documentation index that contains a version
+  number is registered in the pinned table. An unregistered pinned source is
+  a `FAIL`, because it can age without anyone noticing.
+- `workflows/system-audit.md` runs that check, and resolves every external
+  URL.
+- `skills/stack-detection/SKILL.md` consults the version guide before the
+  ecosystem pages, prefers a version-agnostic source, and records the
+  version and the date.
+- `workflows/project-initialization.md` Phase 2 reports a source that does
+  not cover the target version instead of applying it silently.
+- `references/system-workflow-regression-matrix.md` includes R-58.

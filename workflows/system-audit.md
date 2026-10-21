@@ -94,9 +94,48 @@ Every local Markdown link resolves, and every repository file path in
 backticks exists. A reference to an artifact installed in a target project,
 such as an ESLint configuration, is not a failure.
 
+A path cited precisely **because it must not exist** is a negative
+assertion, not a broken reference. It is a `FAIL` when the file exists, and
+a `PASS` when it does not. Read the sentence before classifying it.
+
 ```sh
 grep -rhoE '\]\([^)#[:space:]]+\.md\)' --include='*.md' . |
   sed 's/^](//; s/)$//' | sort -u
+```
+
+**The version guide is consulted.** The **version guide** of the ecosystem
+is the source of truth for what is current. An audit that checks a
+framework-specific convention confirms that the guide was consulted for the
+target version, and that the consulted source covers it.
+
+**Pinned sources are registered.** A source that documents one specific
+release can silently become stale. Every URL that contains a version number
+must appear in the **Version-Pinned Sources** table of
+`references/official-documentation.md`, with its version and its review
+rule. An unregistered pinned URL is a `FAIL`: it can age without anyone
+noticing.
+
+```sh
+grep -oE 'https?://[^ )]+' references/official-documentation.md |
+  tr -d '`' | sed 's/[.,]$//' | sort -u |
+  grep -E '/v?[0-9]+\.[0-9]+|version-[0-9]+|/en/[0-9]+\.[0-9]+/' |
+  while read -r url; do
+    grep -qF "$url" references/official-documentation.md ||
+      echo "FAIL pinned source not registered: $url"
+  done
+
+# The extraction above can carry trailing markdown; compare on the URL alone.
+# Compare against the pinned table, not against the whole document.
+awk '/^## Version-Pinned Sources/{found=1} found' \
+  references/official-documentation.md > /tmp/pinned-sources.txt
+
+grep -oE 'https?://[^ )[:space:]]+' references/official-documentation.md |
+  tr -d '`' | sed 's/[.,]$//' | sort -u |
+  grep -E '/v?[0-9]+\.[0-9]+|version-[0-9]+|/en/[0-9]+\.[0-9]+/' |
+  while read -r url; do
+    grep -qF "$url" /tmp/pinned-sources.txt ||
+      echo "FAIL pinned source not registered: $url"
+  done
 ```
 
 **External URLs resolve.** A documentation reference that points nowhere
@@ -105,8 +144,8 @@ guessing. Check every URL in the changed files, and every URL in
 `references/official-documentation.md` when that file is touched:
 
 ```sh
-grep -rhoE 'https?://[^ )]+' references/official-documentation.md |
-  sed 's/[.,]$//' | sort -u | while read -r url; do
+grep -rhoE 'https?://[^ )[:space:]]+' references/official-documentation.md |
+  tr -d '`' | sed 's/[.,]$//' | sort -u | while read -r url; do
     code=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 20 "$url")
     [ "$code" = "200" ] || echo "FAIL $code $url"
   done

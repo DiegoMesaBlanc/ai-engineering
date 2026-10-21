@@ -56,8 +56,12 @@ from the task itself and confirm the scope with the user.
   the analysis states a version that differs from the current stable
   release, report the difference and confirm which one to use.
 - **Consult the official documentation** of the detected stack **for that
-  version** before any stack-specific decision. Record the source, the
-  version it documents, and the decisions it informed.
+  version** before any stack-specific decision. Consult the ecosystem's
+  version guide first to learn what is current, and prefer a
+  version-agnostic source over one pinned to an older release. Record the
+  source, the version it documents, the date of the consultation, and the
+  decisions it informed. A source that does not cover the target version is
+  reported, never applied silently.
 - **Compare the target version with the environment.** A version is never
   chosen because it happens to be installed. When the environment does not
   have the target version, report it: the project is created for the target
