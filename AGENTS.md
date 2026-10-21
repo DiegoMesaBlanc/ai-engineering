@@ -149,6 +149,7 @@ Ask the user before proceeding only when the decision materially requires human 
   applicable styles with their trade-offs and ask which one to use. A
   recommendation is not a decision, and the structure is not created before
   the answer. Use `workflows/project-initialization.md`.
+- A new project settles its **target version** of the language, framework, and runtime before its structure is created. The source of truth is the source analysis, then the ecosystem's official documentation, then a stated default. A version is never chosen because it happens to be installed, and the official documentation of the detected stack is consulted **for that version** before any stack-specific decision. The consultation is recorded.
 - A new project settles its **startup decision set** in one pass, before
   any structure is created: the architectural style, the API surface, the
   data and persistence layer, identity and access, asynchronous work and

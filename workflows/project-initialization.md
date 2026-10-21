@@ -46,12 +46,23 @@ mandatory quality tooling before the first feature is written.
 If the task points to no analysis, state that the requirements are derived
 from the task itself and confirm the scope with the user.
 
-## Phase 2 — Detect the Stack
+## Phase 2 — Detect the Stack and the Target Version
 
 - Detect the language, runtime, framework, and versions the analysis
   assumes, and confirm them against the project brief.
-- Consult `references/official-documentation.md` for the detected stack
-  before any stack-specific decision.
+- **Confirm the target version** of the language, framework, and runtime.
+  Its source of truth is, in order: the source analysis, the ecosystem's
+  official documentation for the detected stack, then a stated default. When
+  the analysis states a version that differs from the current stable
+  release, report the difference and confirm which one to use.
+- **Consult the official documentation** of the detected stack **for that
+  version** before any stack-specific decision. Record the source, the
+  version it documents, and the decisions it informed.
+- **Compare the target version with the environment.** A version is never
+  chosen because it happens to be installed. When the environment does not
+  have the target version, report it: the project is created for the target
+  version, and any check that could not run against it is reported as
+  `NOT VERIFIED` with the reason.
 - A stack assumption in the analysis that conflicts with the detected
   environment is a material question for the user, not a silent correction.
 

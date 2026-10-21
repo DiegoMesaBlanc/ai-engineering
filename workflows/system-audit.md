@@ -62,6 +62,8 @@ from the adjustment text, never from an external scope argument.
 | An agent | It references the shared workflows and skills instead of restating them | The agent's task dispatch |
 | A reference or a document | Every URL resolves and every referenced file exists | The document's referenced artifact |
 | The token efficiency policy | The budget, the stop rules, and the measurement are defined, and the reachability check passes | A session-like workload with a known exploration profile |
+| A target version, or a stack's version support | The artifact is built for the **confirmed target version**, not for whatever version the environment happens to have | The toolchain reports the target version, or the check that could not run against it is reported as `NOT VERIFIED` with the reason |
+| A framework or language convention | The conventions come from the official documentation of that framework, for the target version | The convention is checked against the official source, and the source is recorded |
 
 If the adjustment does not fit any row, derive the check from the rule it
 implements and state it in the report.
@@ -96,6 +98,24 @@ such as an ESLint configuration, is not a failure.
 grep -rhoE '\]\([^)#[:space:]]+\.md\)' --include='*.md' . |
   sed 's/^](//; s/)$//' | sort -u
 ```
+
+**External URLs resolve.** A documentation reference that points nowhere
+makes the consultation mandate unsatisfiable, and the agent falls back to
+guessing. Check every URL in the changed files, and every URL in
+`references/official-documentation.md` when that file is touched:
+
+```sh
+grep -rhoE 'https?://[^ )]+' references/official-documentation.md |
+  sed 's/[.,]$//' | sort -u | while read -r url; do
+    code=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 20 "$url")
+    [ "$code" = "200" ] || echo "FAIL $code $url"
+  done
+```
+
+A status that is not `200` is a finding to investigate. A `403` from a known
+host is bot protection rather than a dead link, and a `000` is a transient
+failure; record those as `NOT VERIFIED` with the reason instead of silently
+passing them.
 
 ### 3.2 Command catalog
 

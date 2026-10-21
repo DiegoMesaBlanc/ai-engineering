@@ -21,6 +21,24 @@ For every decision in this catalog, resolve it in this order:
    the proposal, and proceed.
 4. **Materially changes the outcome and has no default**: ask the user.
 
+## Version and documentation
+
+- The **target version** of the language, framework, and runtime is a
+  decision, not an accident. It is settled in the startup decision set,
+  before the structure is created.
+- Its source of truth is, in order: the source analysis, the ecosystem's
+  official documentation for the detected stack, then a stated default. When
+  the analysis states a version that differs from the current stable release,
+  the difference is reported and the version is confirmed.
+- The **official documentation** of the detected stack and version is
+  consulted before any stack-specific decision. The consultation is
+  recorded: which source, for which version, and which decisions it
+  informed.
+- A version is never chosen because it happens to be installed in the
+  environment. When the environment does not have the target version, the
+  difference is reported and the verification against that version is
+  reported as not verified.
+
 ## Asking rules
 
 - **One message, grouped by theme.** Never one question per decision, and
@@ -56,6 +74,7 @@ Applies to every project type.
 | Secret and environment management | An environment file for local development, never a committed secret | The organization mandates a vault or secret manager |
 | Documentation | A README with the stack, the architecture style, and the reproducible commands | Never |
 | Internationalization | Only when the product has user-facing text in more than one language | The product has user-facing text, and the supported locales or RTL are not stated |
+| Target language and framework version | The version the source analysis assumes, or the current stable release when the analysis is silent | The product targets a specific version, or the ecosystem's support window requires one |
 
 ---
 

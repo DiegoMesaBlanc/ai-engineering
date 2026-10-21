@@ -728,6 +728,7 @@ Return:
 - V2.33 new project initialization checks:
 - V2.34 end-to-end audit checks:
 - V2.35 progressive project creation checks:
+- V2.36 target version and official documentation checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1697,3 +1698,31 @@ with user-controlled stopping points:
 - The remaining steps are never generated to finish the project, and the
   scope is never exceeded without asking.
 - `references/system-workflow-regression-matrix.md` includes R-56.
+
+## V2.36 Regression — Target Version and Official Documentation
+
+Verify that the target version is settled before the structure is created,
+and that the official documentation mandate is satisfiable:
+
+- `AGENTS.md` states that a new project settles its target version before its
+  structure is created, that the source of truth is the source analysis,
+  then the official documentation, then a stated default, that a version is
+  never chosen because it is installed, and that the official documentation
+  is consulted for that version with the consultation recorded.
+- `workflows/project-initialization.md` Phase 2 confirms the target version,
+  consults the official documentation for it, compares it with the
+  environment, and reports a mismatch instead of silently resolving it.
+- `references/project-startup-decisions.md` lists the target version as a
+  universal decision, and states the version and documentation rules.
+- `references/project-creation-order.md` states that the project is created
+  for the confirmed target version, and every skeleton step of every project
+  type produces an artifact pinned to it and verifies the reported version.
+- `skills/stack-detection/SKILL.md` separates the version found from the
+  target version, and records the source of truth for it.
+- `references/official-documentation.md` contains a section for every
+  supported ecosystem, so the consultation mandate is satisfiable for all of
+  them.
+- `workflows/system-audit.md` requires the behavioral artifact to be built
+  for the confirmed target version, and to report as `NOT VERIFIED` any
+  check that could not run against it.
+- `references/system-workflow-regression-matrix.md` includes R-57.

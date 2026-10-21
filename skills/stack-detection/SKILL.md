@@ -46,6 +46,23 @@ Databases:
 
 TypeScript is preferred wherever the selected ecosystem supports it.
 
+## Target Version
+
+Detection reports the version found. It does not choose the version the
+project will use.
+
+- The **target version** comes from the source analysis, the ecosystem's
+  official documentation, or a stated default. Record which of the three it
+  came from.
+- When the analysis states a version and the environment has another, report
+  the difference. The project is created for the target version; the
+  environment mismatch is reported, never silently resolved.
+- Consult the official documentation **for the target version**, not only for
+  the version installed. The consultation is recorded: source, version, and
+  the decisions it informed.
+- Report a version that could not be determined as not determined, not as the
+  installed one.
+
 ## Detection rules
 
 Never infer the stack solely from the user's description when repository evidence is available.

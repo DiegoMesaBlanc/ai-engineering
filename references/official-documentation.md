@@ -10,6 +10,28 @@ documentation.
 
 Consult the smallest relevant source on demand.
 
+## Version and Support
+
+The **target version** of a language, framework, or runtime is a decision,
+never an accident. When the stack is detected, consult the version guide of
+that ecosystem below and propose the version the project should use, with its
+support status. The source of truth is, in order, the source analysis, the
+official documentation, then a stated default.
+
+- React: https://react.dev/versions
+- Angular: https://angular.dev/guide/versioning
+- Next.js: https://nextjs.org/docs/app/guides/upgrading/version-16
+- Vue: https://vuejs.org/guide/scaling-up/tooling.html
+- Svelte: https://svelte.dev/docs/svelte/v5-migration-guide
+- Node.js: https://nodejs.org/en/about/previous-releases
+- Python: https://www.python.org/downloads/
+- Spring Boot: https://spring.io/projects/spring-boot#support
+- Go: https://go.dev/doc/devel/release
+- Rust: https://doc.rust-lang.org/edition-guide/
+- .NET: https://learn.microsoft.com/en-us/dotnet/core/versions/
+- PHP: https://www.php.net/releases/
+- Ruby: https://www.ruby-lang.org/en/downloads/releases/
+
 ## Global Rules
 
 1. Detect the actual stack, runtime, and installed framework versions.
@@ -31,6 +53,7 @@ Consult the smallest relevant source on demand.
 ### React
 
 - Official documentation: https://react.dev/
+- Versions and release channels: https://react.dev/versions
 - Learn: https://react.dev/learn
 - API reference: https://react.dev/reference/react
 - Rules of React: https://react.dev/reference/rules
@@ -41,9 +64,12 @@ Consult the smallest relevant source on demand.
 - API reference: https://angular.dev/api/
 - Style guide: https://angular.dev/style-guide
 - Agent Skills: https://angular.dev/ai/agent-skills
+- Versions and release schedule: https://angular.dev/guide/versioning
 
-Detect the installed version before using Signals, Signal Forms, SSR,
-routing, or other version-sensitive APIs.
+Confirm the **target version** before using Signals, Signal Forms, SSR,
+routing, or other version-sensitive APIs. The version guide is the source
+for what is current and supported; the installed version is only what the
+environment happens to have.
 
 ### Vue
 
@@ -77,6 +103,19 @@ links or framework detection rules.
 
 Use official runtime and framework documentation when a question concerns
 a runtime-specific or framework-specific behavior.
+
+### Svelte
+
+- Official documentation: https://svelte.dev/docs/svelte/overview
+- SvelteKit: https://svelte.dev/docs/kit/introduction
+- Runes and reactivity: https://svelte.dev/docs/svelte/what-are-runes
+- Versions and the v5 migration guide: https://svelte.dev/docs/svelte/v5-migration-guide
+
+### Solid
+
+- Official documentation: https://docs.solidjs.com/
+- Components basics: https://docs.solidjs.com/concepts/components/basics
+- SolidStart: https://docs.solidjs.com/solid-start
 
 ## Backend
 
@@ -120,6 +159,51 @@ Select the documentation version matching the installed Django version.
 
 Detect the Java version, build system, and Spring version before selecting
 guidance.
+
+### Kotlin
+
+- Official documentation: https://kotlinlang.org/docs/home.html
+- Coding conventions: https://kotlinlang.org/docs/coding-conventions.html
+- Type aliases: https://kotlinlang.org/docs/type-aliases.html
+- Spring Boot with Kotlin: https://docs.spring.io/spring-boot/reference/features/kotlin.html
+
+### Go
+
+- Official documentation: https://go.dev/doc/
+- Language specification: https://go.dev/ref/spec
+- Effective Go: https://go.dev/doc/effective_go
+- Modules and versioning: https://go.dev/ref/mod#semver-versions
+- Package layout and testing: https://go.dev/doc/tutorial/add-a-test
+
+### Rust
+
+- Official documentation: https://doc.rust-lang.org/book/
+- Edition guide and toolchain: https://doc.rust-lang.org/edition-guide/
+- Cargo workspaces: https://doc.rust-lang.org/cargo/reference/workspaces.html
+- Test organization: https://doc.rust-lang.org/book/ch11-03-test-organization.html
+- `pub use` and re-exports: https://doc.rust-lang.org/book/ch07-02-defining-modules-to-control-scope-and-privacy.html#re-exporting-public-items-with-pub-use
+
+### C# / .NET
+
+- Official documentation: https://learn.microsoft.com/en-us/dotnet/
+- .NET SDK and target frameworks: https://learn.microsoft.com/en-us/dotnet/core/versions/
+- Project layout and tooling: https://learn.microsoft.com/en-us/dotnet/core/tools/
+- StyleCop analyzers: https://github.com/StyleCop/StyleCop
+- `TypeForwardedToAttribute`: https://learn.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.typeforwardedtoattribute
+
+### PHP
+
+- Official documentation: https://www.php.net/manual/en/
+- PSR-4 autoloading: https://www.php-fig.org/psr/psr-4/
+- PSR-12 coding style: https://www.php-fig.org/psr/psr-12/
+- `class_alias()`: https://www.php.net/manual/en/function.class-alias.php
+
+### Ruby
+
+- Official documentation: https://docs.ruby-lang.org/en/master/
+- RubyGems and gem versioning: https://guides.rubygems.org/specification-reference/
+- Bundler: https://bundler.io/
+- RSpec: https://rspec.info/documentation/3.13/rspec-core/
 
 ## Mobile
 
@@ -279,7 +363,7 @@ Linting Policy in AGENTS.md.
 
 ### Dependency and Secret Scanning (open source)
 
-- OWASP Dependency-Check: https://dependency-check.github.io/
+- OWASP Dependency-Check: https://dependency-check.github.io/DependencyCheck/
 - OSV-Scanner: https://google.github.io/osv-scanner/
 - Trivy (vulnerabilities, misconfigurations, IaC): https://aquasecurity.github.io/trivy/
 - gitleaks (secret scanning): https://github.com/gitleaks/gitleaks
@@ -304,7 +388,7 @@ and technology, and prefer the project's existing or approved tooling.
 
 - Official documentation: https://learn.microsoft.com/en-us/azure/devops/pipelines/
 - Security and secrets:
-  https://learn.microsoft.com/en-us/azure/devops/pipelines/security/
+  https://learn.microsoft.com/en-us/azure/devops/pipelines/security/overview
 
 ### Bitbucket Pipelines
 
@@ -336,7 +420,7 @@ These are the authoritative sources that inform our internal rules. Consult when
 ### Hexagonal Architecture (Ports & Adapters)
 
 - **Alistair Cockburn - Hexagonal Architecture**: https://alistaircockburn.com/Articles/Hexagonal-Architecture/
-- **Ports and Adapters**: https://herbertograca.com/2017/11/16/hexagonal-architecture-ports-adapters/
+- **Ports and Adapters**: https://alistair.cockburn.us/hexagonal-architecture/
 
 ### Feature-Sliced Design (Frontend Architecture)
 
@@ -347,7 +431,7 @@ These are the authoritative sources that inform our internal rules. Consult when
 ### Modular Monolith & Bounded Contexts
 
 - **Modular Monolith (Kamil Grzybek)**: https://github.com/kgrzybek/modular-monolith-with-ddd
-- **Modular Monolith vs Microservices**: https://www.martinfowler.com/articles/modular-monolith.html
+- **Modular Monolith vs Microservices**: https://github.com/dotnet-architecture/eShopOnWeb
 - **Context Mapping (DDD Strategic Design)**: https://martinfowler.com/bliki/BoundedContext.html
 
 ### Clean Code & Code Quality
@@ -383,7 +467,7 @@ These are the authoritative sources that inform our internal rules. Consult when
 
 - **Test Pyramid (Martin Fowler)**: https://martinfowler.com/bliki/TestPyramid.html
 - **Testing Trophy (Kent C. Dodds)**: https://kentcdodds.com/blog/the-testing-trophy-and-testing-classifications
-- **Property-Based Testing**: https://github.com/leanprover-community/mathlib4/blob/master/docs/contribute/property-based-testing.md
+- **Property-Based Testing**: https://github.com/leanprover-community/mathlib4/tree/master/docs
 
 ## Project Structure and Test Co-location
 
