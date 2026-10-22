@@ -53,19 +53,19 @@ because it looks simple.
 
 ## Folder Architecture and Contract Placement
 
-Follow the **Folder Architecture Map** from `architecture-advisor`. Place contracts/types in the folder of the owning layer. **Rule: one interface/type per file in its owning layer's folder.** Exception: when multiple interfaces/types are **exclusively consumed by the same component/service/logical unit**, they are grouped in a single file (e.g., `ComponentTypes.ts`, `ServiceTypes.ts`, or co-located with the unit). Do not create separate files for types that always travel together. Respect language idiom.
+Follow the **Folder Architecture Map** from `architecture-advisor`. Place contracts/types in the folder of the owning layer. In a feature-driven tree, feature-level contracts go in `types/` (or the ecosystem equivalent), and a unit-local contract goes in the unit's folder as `<unit>.types.ts`; a contract never sits at the feature root or directly inside `components/`, `hooks/`, or `services/`. **Rule: one interface/type per file in its owning layer's folder.** Exception: when multiple interfaces/types are **exclusively consumed by the same component/service/logical unit**, they are grouped in a single file (e.g., `ComponentTypes.ts`, `ServiceTypes.ts`, or co-located with the unit). Do not create separate files for types that always travel together. Respect language idiom.
 
 **Complexity-based structure decision** (when no coherent architecture exists):
 
 | Complexity | Recommended structure |
 |---|---|
 | Small, single domain | Layer-first: `src/api/<domain>/`, `src/services/<domain>/`, `src/server/<domain>/`, `src/shared/`, `src/components/`, `src/hooks/` |
-| Medium, multiple domains | Feature-first: `src/app/`, `src/shared/`, and `src/features/<feature>/` with one folder per unit (implementation + its test) and an `index.ts` public API for the feature. See **Feature-Driven Folder Architecture** in `skills/architecture-advisor/SKILL.md` |
+| Medium, multiple domains | Feature-first: `src/app/`, `src/shared/`, and `src/features/<feature>/` with responsibility folders (`components/`, `hooks/`, `services/`, `types/`, `context/`), one folder per unit inside its responsibility folder, and an `index.ts` public API for the feature (or the ecosystem equivalent). See **Feature-Driven Folder Architecture** in `skills/architecture-advisor/SKILL.md` and the per-ecosystem trees in `references/folder-architectures.md` |
 | Large, multiple teams | Feature modules with explicit public APIs and boundaries; packages only when justified |
 
 | Ecosystem | Contract/type location (rule: one per file; group if same exclusive consumer) | Import direction |
 |---|---|---|
-| TS/JS (React/Next.js) | Feature `types.ts` or `src/shared/types/<domain>.ts` (one type per export; group same-consumer types) | UI → feature/shared contract; never UI → `services` for types |
+| TS/JS (React/Next.js) | Feature `types/<domain>.types.ts` or `src/shared/types/<domain>.ts` (one type per export; group same-consumer types) | UI → feature/shared contract; never UI → `services` for types |
 | Java/Kotlin (Spring) | `domain/` or `application/` package (one public type per file; group same-consumer types) | `api → application → domain`; no UI → infra |
 | Python (FastAPI/Flask/Django) | `domain/contracts.py` or `domain/types.py` (one class per module preferred; group same-consumer types) | router → application/domain; not → infra |
 | C#/.NET | `Domain/` or `Application/` (one public type per file; group same-consumer types) | `Api → Application → Domain` |
@@ -142,7 +142,7 @@ pattern as the default; adapt to the project's existing conventions.
 
 | Responsibility | File(s) | Notes |
 |---|---|---|
-| Contracts / Types (public API) | `types.ts` / `contracts.ts` / `domain/*.ts` | Shared interfaces, types, enums, DTOs. |
+| Contracts / Types (public API) | `types/` / `contracts/` / `domain/` (one file per type, or one file per consumer group) | Shared interfaces, types, enums, DTOs. |
 | Static Data / Catalogs | `messages/`, `catalogs/`, `data/` | Message catalogs, locale data, lookup tables. Per-locale files enable lazy loading. |
 | Configuration | `config.ts` / `constants.ts` / `settings.ts` | Locale metadata, feature flags, constants. |
 | Behavior / Formatters | `format.ts` / `utils.ts` / `helpers.ts` / `services/` | Pure functions, formatters, accessors, business logic. |
@@ -194,8 +194,8 @@ src/server/<domain>/        # or src/features/<feature>/server/
 
 - Match the detected router (App Router or Pages Router) and rendering
   model (server/client components).
-- Follow the project's **Folder Architecture Map**: feature folders with `components/`, `hooks/`, `services/`, `types.ts`; shared code in `src/shared/{components,hooks,lib,types}`.
-- **Contracts**: shared domain types in feature `types.ts` or `src/shared/types/<domain>.ts`; props/view models co-located in the component.
+- Follow the project's **Folder Architecture Map**: a feature holds `components/`, `hooks/`, `services/`, `types/`, and `context/` when it owns local state, plus `index.ts` or the ecosystem equivalent; shared code lives in `src/shared/{components,hooks,lib,types}`.
+- **Contracts**: feature-level types in `types/<domain>.types.ts` or `src/shared/types/<domain>.ts`; props/view models co-located in the unit folder, never at the feature root.
 - **Imports**: UI imports contracts from feature/shared types, never from `services` or `lib` implementation modules.
 - Keep server and client boundaries explicit; do not leak server-only code to the client.
 - Manage state with the project's existing solution; avoid introducing a new one without justification.
@@ -209,8 +209,9 @@ src/server/<domain>/        # or src/features/<feature>/server/
 ### Angular
 
 - Follow the standalone-component or NgModule organization actually used.
-- **Contracts**: shared types in feature `types.ts` or a shared types module; component inputs/outputs co-located. Use a barrel only when justified.
+- **Contracts**: shared types in feature `types/` or `models/`; component inputs/outputs co-located in the unit folder. Use a barrel only when justified.
 - **Imports**: components import from feature/shared types, not from service implementation files.
+- Place HTTP calls and data access in `data-access/`, and UI in `components/`.
 - Use the framework's dependency injection and services; keep components thin.
 - Respect RxJS conventions and unsubscribe/cleanup patterns.
 - Use the detected state, routing, and form libraries consistently.
@@ -218,9 +219,9 @@ src/server/<domain>/        # or src/features/<feature>/server/
 ### Vue / Nuxt
 
 - Use the detected composition/options style and component conventions.
-- **Contracts**: shared types in feature `types.ts` or `composables/types.ts`; props co-located.
+- **Contracts**: shared types in feature `types/`; props co-located in the unit folder.
 - **Imports**: components import from feature/shared types, not from service files.
-- Place composables, stores, and services by cohesion.
+- Place composables in `composables/`, stores in `stores/`, HTTP calls in `services/`, and UI in `components/`.
 - Respect Nuxt server/client boundaries when present.
 
 ## Backend Recipes

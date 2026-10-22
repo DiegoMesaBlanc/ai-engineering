@@ -150,7 +150,7 @@ For the initially selected Skills, verify:
 ### test-driven-development
 
 - Path: skills/test-driven-development/
-- Required files: SKILL.md, writing-good-tests.md, and LICENSE-MIT.txt
+- Required files: SKILL.md, references/writing-good-tests.md, and LICENSE-MIT.txt
 - License: MIT
 - Verify that the local language-neutral adaptation is documented.
 
@@ -710,6 +710,7 @@ Return:
 - V2.6 architecture-first checks:
 - V2.7 architecture decision gate checks:
 - V2.8 architecture catalog and evidence boundary checks:
+- V2.9 automatic task interpretation checks:
 - V2.12 web quality checks:
 - V2.13 proportional planning checks:
 - V2.14 formatter/linter setup checks:
@@ -744,8 +745,8 @@ Return:
 - V2.44 architecture matrix checks:
 - V2.45 installation gate checks:
 - V2.46 phase checklist checks:
-- V2.47 phase plan checks:
 - V2.47 phase plan and phase checklist are distinct artifacts:
+- V2.48 feature responsibility folders checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -828,7 +829,7 @@ Verify the following controls exist and are not contradictory:
 - Software implementation requests still require branch preparation before modifying application code per the branch policy.
 - No conflicting rules have been introduced in AGENTS.md, the orchestrator, the task workflow, or commands.
 
-## V2.5 Refinement — Automatic Task Interpretation
+## V2.9 Refinement — Automatic Task Interpretation
 
 Verify the following controls exist and are not contradictory across
 `AGENTS.md`, `agents/orchestrator.md`, `commands/task.md`,
@@ -1315,7 +1316,7 @@ Verify that folder architecture and type/contract ownership are defined once, en
 
 - `skills/architecture-advisor/SKILL.md` defines the **Folder Architecture Map** (layers/modules, responsibility→folder, allowed dependency directions, contract/type location per module, co-location rules) and the **ownership principle** (type lives in the folder of the owning layer); includes the per-ecosystem matrix (TS/JS, Java/Kotlin, Python, C#/.NET, Go, Rust, PHP, Ruby, SQL) with typical folders, contract location, and import direction; explicitly states "not mandatory; preserve detected conventions."
 - `skills/complexity-advisor/SKILL.md` reconciles R-42: shared contract extraction meets reuse threshold; single-consumer props/local types do not; language idiom overrides file-count aesthetics.
-- `skills/implementation-recipes/SKILL.md` includes the **Folder Architecture and Contract Placement** section with the cross-ecosystem table and per-stack examples (React/Next.js feature `types.ts`, Java `domain`, Python `domain/contracts.py`, Go consumer-side interfaces).
+- `skills/implementation-recipes/SKILL.md` includes the **Folder Architecture and Contract Placement** section with the cross-ecosystem table and per-stack examples (React/Next.js feature `types/`, Java `domain`, Python `domain/contracts.py`, Go consumer-side interfaces).
 - `skills/engineering-review/SKILL.md` checks folder conformance, dependency direction, and contract ownership in Architecture.
 - `workflows/code-audit.md` Dimension 1 renamed to "Architecture & folder structure"; adds explicit **Folder Architecture check** (build map, map declarations, verify imports, flag layer-skipping/mixed-responsibility/global buckets) and **Type/Contract Ownership check** (language-aware declaration patterns, consumer mapping, follow declaration sites, flag shared-in-impl/import-from-impl/duplicates/cycles/idiom violations; exempt single-consumer props, Go consumer interfaces, private types, RBS); severity P1/P2/P3 with tags `TYPE_OWNERSHIP`/`FOLDER_ARCHITECTURE`; pre-existing labeling for declarations outside scope; no universal template imposed.
 - `commands/code-audit.md` notes scope expansion for architecture/type ownership.
@@ -1905,7 +1906,8 @@ Verify that every architectural style works in every supported ecosystem:
   each style, and states that the matrix is machine-checkable and how it is
   verified.
 - The matrix covers the six styles — layered, feature-driven, hexagonal, DDD,
-  modular monolith, and event-driven — and the fifteen supported ecosystems.
+  modular monolith, and event-driven — and the ecosystems of the
+  per-ecosystem translation table.
 - A checker derives the expected layout from the matrix, so the trees and the
   checks cannot drift apart.
 - For every combination it verifies: the folders of the style exist, a unit
@@ -1997,3 +1999,35 @@ boundary:
   `workflows/task-to-code.md`, so the check never drifts from its source of
   truth.
 - `references/system-workflow-regression-matrix.md` includes R-69.
+
+## V2.48 Regression — Feature Responsibility Folders
+
+Verify that a feature is a boundary with explicit folders, not a pile of
+files:
+
+- `AGENTS.md` states that the feature root holds only its responsibility
+  folders and its public API, that a component, a hook, a service, or a
+  contract never sits at the feature root, and that a component and a
+  contract never share a folder.
+- `references/folder-architectures.md` defines the feature tree with
+  `components/`, `hooks/`, `services/`, `types/`, `context/`, and the public
+  API (`index.ts` or the ecosystem equivalent), the table that maps each
+  artifact to its responsibility folder, the
+  consumer-group rule for contracts, and a concrete tree for every supported
+  ecosystem: TypeScript, JavaScript, React, Next.js, Angular, Vue, Svelte,
+  Solid, Java, Kotlin, Python, Go, Rust, C#/.NET, PHP, and Ruby.
+- `skills/architecture-advisor/SKILL.md` references the canonical reference
+  instead of restating the per-ecosystem table.
+- `skills/implementation-recipes/SKILL.md` places feature-level contracts in
+  `types/` and unit-local contracts in the unit folder, and gives the
+  responsibility folders for React, Angular, and Vue.
+- `references/project-creation-order.md` records the responsibility folder
+  with the owner, and states that a feature root never holds a source file.
+- `workflows/output-compliance.md` checks STRUCT-006 (the feature root holds
+  only responsibility folders and its public API) and STRUCT-007 (a contract
+  is not mixed with the units of a responsibility folder), and STRUCT-001
+  checks the unit folder inside a responsibility folder.
+- `workflows/code-audit.md` includes the responsibility-folder check and the
+  mixed component/contract finding.
+- `references/mandatory-rules.md` includes M-30.
+- `references/system-workflow-regression-matrix.md` includes R-70.

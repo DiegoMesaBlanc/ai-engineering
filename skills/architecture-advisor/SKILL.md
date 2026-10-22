@@ -364,21 +364,41 @@ src/
 ├── shared/         # generic and reusable, bound to no business capability
 └── features/
     └── <feature>/
-        ├── <unit>/          # one folder per unit: implementation + its test
-        │   ├── <unit>.tsx
-        │   ├── <unit>.test.tsx
-        │   └── <unit>.types.ts
-        └── index.ts          # the public API of the feature
+        ├── components/      # UI units owned by the feature
+        │   └── <unit>/      # implementation + test + styles
+        ├── hooks/           # behavioral units
+        ├── services/        # API and transport calls
+        ├── types/           # feature-level contracts
+        ├── context/         # feature-local state, when the feature owns it
+        └── index.ts         # the public API of the feature
 ```
 
-**One folder per unit.** A unit that owns an implementation and a test gets
-its own folder, with the test next to the implementation. A feature folder
-never holds a flat pile of implementation files, tests, and types mixed
-together; that pile is the symptom of a missing decision about which unit
-owns what.
+**The feature root holds no source file.** The feature root contains only its
+responsibility folders and its public API. A component, a hook, a service, or
+a contract at the feature root is a misplaced artifact; it belongs to the
+folder that owns its responsibility. The artifact's kind decides the folder:
+UI goes to `components/`, behavior to `hooks/`, transport to `services/`,
+feature-level contracts to `types/`, and local state to `context/`.
 
-**The feature exposes a public API.** `features/<feature>/index.ts` is the
-only entry point other parts of the application may use. It exports what
+**Components and contracts never share a folder.** A contract consumed by
+more than one unit lives in `types/`; a contract consumed by exactly one unit
+lives in that unit's folder as `<unit>.types.ts`. It never sits at the
+feature root and never directly inside `components/`, `hooks/`, or
+`services/`. The full per-ecosystem translation, with a concrete tree for
+every supported framework and language, is in
+`references/folder-architectures.md` ("Feature responsibility folders per
+ecosystem").
+
+**One folder per unit inside its responsibility folder.** A unit that owns an
+implementation and a test gets its own folder inside `components/`,
+`hooks/`, or `services/`, with the test next to the implementation. A
+responsibility folder never holds a flat pile of implementation files and
+tests mixed together; that pile is the symptom of a missing decision about
+which unit owns what.
+
+**The feature exposes a public API.** `features/<feature>/index.ts` (or the
+ecosystem equivalent) is the only entry point other parts of the application
+may use. It exports what
 they are allowed to use and nothing else; the rest of the feature stays
 encapsulated.
 

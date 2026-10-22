@@ -51,7 +51,7 @@ cannot drift apart.
 | Style | Top-level folders | Public API of a module | Core dependency direction |
 |---|---|---|---|
 | Layered | `api/`, `services/`, `domain/`, `infrastructure/` | none required | `infrastructure` → `services` → `domain`; `domain` depends on nothing |
-| Feature-driven | `app/`, `shared/`, `features/<feature>/` | `features/<feature>/index.ts` | a feature → `app` and `shared`; never another feature's internals |
+| Feature-driven | `app/`, `shared/`, `features/<feature>/` | `features/<feature>/index.ts` (or the ecosystem equivalent) | a feature → `app` and `shared`; never another feature's internals |
 | Hexagonal | `domain/`, `application/`, `adapters/inbound/`, `adapters/outbound/` | `domain/ports/` holds the ports | `adapters` → `application` → `domain`; `domain` depends on nothing |
 | DDD | `domain/<context>/`, `application/`, `infrastructure/`, `interfaces/` | `domain/<context>/` exports the model | `interfaces` → `application` → `domain`; `domain` depends on nothing |
 | Modular Monolith | `modules/<context>/`, `shared/` | `modules/<context>/index.ts` | a context → `shared`; never another context's internals |
@@ -68,19 +68,25 @@ exist, that a unit owns its implementation and keeps its test where the
 ecosystem places it, that the module exposes its public API, and that the
 dependency direction of the style holds. Where the ecosystem has a toolchain
 available, the generated project is compiled, built, imported, or linted. The
-matrix covers the six styles and the fifteen supported ecosystems; the
-ecosystems without a local toolchain are verified structurally and reported
-as not verified for execution, never as executed.
+matrix covers the six styles and the ecosystems of the per-ecosystem
+translation table below; the ecosystems without a local toolchain are
+verified structurally and reported as not verified for execution, never as
+executed.
 
 ## Rules that hold in every tree
 
-- **One folder per unit.** A unit gets its own folder, with its
-  implementation and its types. The test joins that folder **only where the
+- **One folder per unit inside its responsibility folder.** A UI unit gets
+  `components/<unit>/`, a behavioral unit gets `hooks/<unit>/` when it has a
+  test or several files, and a service gets `services/<unit>/`. The unit
+  folder holds the implementation and, where the ecosystem co-locates them,
+  its test and its unit-local contract. A feature-level contract lives in
+  `types/`. A feature root never holds a flat pile of implementations,
+  tests, and types mixed together, and a responsibility folder never mixes
+  components with contracts. The test joins the unit folder **only where the
   ecosystem co-locates tests**: TypeScript and JavaScript, Angular, Vue, Go,
   and Python. Where the ecosystem mirrors the test tree — Java, Kotlin,
   C#/.NET, PHP, and Ruby — the test belongs to that mirrored tree, not to the
-  unit folder. A folder never holds a flat pile of implementations, tests,
-  and types mixed together.
+  unit folder.
 - **One public API per module.** `index.ts` (or the ecosystem equivalent)
   exports what other modules may use; the rest stays encapsulated.
 - **The dependency direction is downward.** A layer imports the layer
@@ -122,19 +128,56 @@ https://feature-sliced.design/docs/get-started/overview and
 https://feature-sliced.design/docs/reference/public-api
 (a community methodology, adopted deliberately)
 
+**Authority of the internal folders.** Feature-Sliced Design defines the
+layers, the slice, and the public API; it does not prescribe the folders
+inside a slice. The responsibility folders below are a **policy of this
+system**: they make the owner of every artifact explicit, so a component and
+a contract never share a folder. Each ecosystem translates them to its own
+idiom in **Feature responsibility folders per ecosystem** below.
+
 ```
 src/
 ├── app/                 # global configuration: providers, routes, state
 ├── shared/              # generic and reusable, bound to no capability
 └── features/
     └── <feature>/
-        ├── <unit>/      # one folder per unit: implementation + test + types
-        │   ├── <unit>.tsx
-        │   ├── <unit>.test.tsx
-        │   └── <unit>.types.ts
-        ├── api/         # network calls of the feature
+        ├── components/  # UI units owned by the feature
+        │   └── <unit>/  # a unit with a test, styles, or subcomponents
+        │       ├── <unit>.tsx
+        │       ├── <unit>.test.tsx
+        │       └── <unit>.module.css
+        ├── hooks/       # behavioral units, one per file with its test
+        ├── services/    # API and transport calls of the feature
+        ├── types/       # feature-level contracts, one type per file
+        ├── context/     # feature-local state, only when the feature owns it
         └── index.ts     # the public API of the feature
 ```
+
+**The feature root holds no source file.** Only the responsibility folders
+and the public API live at `features/<feature>/`. A component, a hook, a
+service, or a contract at the feature root is a misplaced artifact: it
+belongs to the folder that owns its responsibility. `features/<feature>/`
+is not a folder for "the feature's files"; it is the boundary that contains
+the folders.
+
+**Each responsibility has one folder.** The artifact's kind decides the
+folder, not the file's proximity to the component:
+
+| Artifact | Folder | Example |
+|---|---|---|
+| UI component | `components/` | `components/payment-form/payment-form.tsx` |
+| Behavioral unit | `hooks/` | `hooks/use-payment.ts` |
+| API or transport call | `services/` | `services/payment-api.ts` |
+| Feature-level contract | `types/` | `types/payment.types.ts` |
+| Local state or context | `context/` | `context/payment-context.tsx` |
+| Public API | feature root | `index.ts` |
+
+**A contract follows its consumer group.** A contract consumed by more than
+one unit of the feature lives in `types/`. A contract consumed by exactly
+one unit lives in that unit's folder as `<unit>.types.ts`, following the
+consumer-group rule of `TYPE-002`. A contract file never sits at the feature
+root and never sits directly in `components/`, `hooks/`, or `services/`.
+A component and the types it does not own are never mixed in one folder.
 
 **The golden dependency rule.** A feature imports from `app/` and
 `shared/`, and never the internals of another feature. Cross-feature
@@ -230,31 +273,279 @@ shape; the names change.
 | PHP | namespace | the namespace's public classes | folder | mirrored tests directory | PSR-4, one class per file |
 | Ruby | engine or module | the module's public methods | folder | `spec/` mirroring `lib/` | RSpec and Rails conventions; no Ruby rule |
 
-**Concrete variants of the two most distinct trees.**
+### Feature responsibility folders per ecosystem
 
-### Feature-driven, Angular
+Every ecosystem translates the same responsibilities. The column names are
+the **responsibility**, not a literal folder: the framework's own convention
+wins when it names the folder differently. The frontend rows keep the literal
+tree; the backend rows translate it to the idiom of the framework, because a
+backend feature has no hooks or context and inventing them would be the same
+mistake in the opposite direction. A dash means the responsibility does not
+apply: a stateless backend feature has no local state folder.
+
+| Ecosystem | Interface / UI | Behavior | Transport / service | Contracts / types | Local state | Public API |
+|---|---|---|---|---|---|---|
+| TypeScript, JavaScript, React, Next.js | `components/` | `hooks/` | `services/` | `types/` | `context/` | `index.ts` |
+| Angular | `components/` | `data-access/` | `services/` | `models/` or `types/` | `store/` | `index.ts` |
+| Vue, Nuxt | `components/` | `composables/` | `services/` | `types/` | `stores/` | `index.ts` |
+| Svelte, SvelteKit | `components/` | `hooks/` | `services/` | `types/` | `stores/` | `index.ts` |
+| Solid, SolidStart | `components/` | `hooks/` | `services/` | `types/` | `context/` | `index.ts` |
+| Java, Kotlin (Spring) | `api/` | `application/` | `infrastructure/` | `domain/` | — (stateless) | package-level public API |
+| Python (Django, FastAPI, Flask) | `api/` | `services/` | `repositories/` | `domain/` | `state/` | `__init__.py` |
+| Go | `api/` | `service/` | `repository/` | `domain/` | `state/` | exported identifiers |
+| Rust | `api/` | `service/` | `repository/` | `domain/` | `state/` | `mod.rs` or `pub use` |
+| C# / .NET | `Api/` | `Services/` | `Infrastructure/` | `Domain/` | `State/` | public types |
+| PHP | `Api/` | `Services/` | `Infrastructure/` | `Domain/` | `State/` | namespace |
+| Ruby | `api/` | `services/` | `repositories/` | `contracts/` | `models/` | module |
+
+**The source of each row.** The responsibility split is a policy of this
+system. The framework's own convention decides the name and the file
+granularity: Angular's "one concept per file" and its `data-access/`
+convention, the Vue single-file component and its `composables/`, the Svelte
+`.svelte` file, Solid's named exports, Spring Modulith's provided interface
+and package layout, PSR-4 for PHP, and the Go package-per-directory rule.
+No framework prescribes `src/features`; that layer comes from Feature-Sliced
+Design. A tree is never presented as a framework standard when it is not.
+The official source behind each framework convention is registered in
+`references/official-documentation.md`, including its "Project Structure and
+Test Co-location" section and its Spring Modulith entry. The folder split
+itself is stated as system policy, not attributed to a framework that does
+not prescribe it.
+
+### Feature-driven, concrete trees per ecosystem
+
+**TypeScript, JavaScript, React, Next.js**
 
 ```
-src/app/
-├── core/                # singletons, services, guards
-├── shared/              # reusable components, directives, pipes
-├── features/
-│   └── cart/
-│       ├── data-access/ # services and HTTP calls
-│       ├── ui/          # components
-│       └── cart.routes.ts
+src/features/payment/
+├── components/
+│   └── payment-form/
+│       ├── payment-form.tsx
+│       ├── payment-form.test.tsx
+│       └── payment-form.module.css
+├── hooks/
+│   └── use-payment.ts
+├── services/
+│   └── payment-api.ts
+├── types/
+│   └── payment.types.ts
+├── context/
+│   └── payment-context.tsx
+└── index.ts
 ```
 
-### Feature-driven, Java with Spring Boot
+**Angular**
 
 ```
-src/main/java/com/app/
-├── cart/
-│   ├── api/             # controllers
-│   ├── application/     # services
-│   ├── domain/          # entities and value objects
-│   └── infrastructure/  # repositories
-└── shared/
+src/app/features/payment/
+├── components/
+│   └── payment-form/
+│       ├── payment-form.component.ts
+│       ├── payment-form.component.html
+│       ├── payment-form.component.css
+│       └── payment-form.component.spec.ts
+├── data-access/
+│   └── payment.service.ts
+├── services/
+│   └── payment-api.service.ts
+├── models/
+│   └── payment.model.ts
+├── store/
+│   └── payment.store.ts
+└── index.ts
+```
+
+**Vue / Nuxt**
+
+```
+src/features/payment/
+├── components/
+│   └── PaymentForm/
+│       ├── PaymentForm.vue
+│       └── PaymentForm.test.ts
+├── composables/
+│   └── usePayment.ts
+├── services/
+│   └── paymentApi.ts
+├── types/
+│   └── payment.types.ts
+├── stores/
+│   └── paymentStore.ts
+└── index.ts
+```
+
+**Svelte / SvelteKit**
+
+```
+src/features/payment/
+├── components/
+│   └── PaymentForm/
+│       ├── PaymentForm.svelte
+│       └── PaymentForm.test.ts
+├── hooks/
+│   └── use-payment.ts
+├── services/
+│   └── payment-api.ts
+├── types/
+│   └── payment.types.ts
+├── stores/
+│   └── payment-store.ts
+└── index.ts
+```
+
+**Solid / SolidStart**
+
+```
+src/features/payment/
+├── components/
+│   └── PaymentForm/
+│       ├── PaymentForm.tsx
+│       └── PaymentForm.test.tsx
+├── hooks/
+│   └── use-payment.ts
+├── services/
+│   └── payment-api.ts
+├── types/
+│   └── payment.types.ts
+├── context/
+│   └── payment-context.tsx
+└── index.ts
+```
+
+**Java / Kotlin with Spring Boot**
+
+```
+src/main/java/com/app/features/payment/
+├── api/
+│   └── PaymentController.java
+├── application/
+│   └── PaymentService.java
+├── domain/
+│   └── Payment.java
+├── infrastructure/
+│   └── PaymentRepository.java
+└── package-info.java
+src/test/java/com/app/features/payment/
+├── api/PaymentControllerTest.java
+├── application/PaymentServiceTest.java
+└── infrastructure/PaymentRepositoryTest.java
+```
+
+**Python with Django, FastAPI, or Flask**
+
+```
+src/features/payment/
+├── api/
+│   ├── routes.py
+│   └── test_routes.py
+├── services/
+│   ├── payment_service.py
+│   └── test_payment_service.py
+├── repositories/
+│   ├── payment_repository.py
+│   └── test_payment_repository.py
+├── domain/
+│   └── payment.py
+├── state/
+│   └── payment_state.py
+└── __init__.py
+```
+
+**Go**
+
+```
+internal/features/payment/
+├── api/
+│   ├── handler.go
+│   └── handler_test.go
+├── service/
+│   ├── service.go
+│   └── service_test.go
+├── repository/
+│   ├── repository.go
+│   └── repository_test.go
+├── domain/
+│   └── payment.go
+├── state/
+│   └── state.go
+└── doc.go
+```
+
+**Rust**
+
+```
+src/features/payment/
+├── api/
+│   └── mod.rs
+├── service/
+│   └── mod.rs
+├── repository/
+│   └── mod.rs
+├── domain/
+│   └── mod.rs
+├── state/
+│   └── mod.rs
+└── mod.rs
+```
+
+**C# / .NET**
+
+```
+src/Features/Payment/
+├── Api/
+│   └── PaymentController.cs
+├── Services/
+│   └── PaymentService.cs
+├── Infrastructure/
+│   └── PaymentRepository.cs
+├── Domain/
+│   └── Payment.cs
+├── State/
+│   └── PaymentState.cs
+└── PaymentModule.cs
+tests/Features/Payment/
+├── Api/PaymentControllerTests.cs
+└── Services/PaymentServiceTests.cs
+```
+
+**PHP**
+
+```
+src/Features/Payment/
+├── Api/
+│   └── PaymentController.php
+├── Services/
+│   └── PaymentService.php
+├── Infrastructure/
+│   └── PaymentRepository.php
+├── Domain/
+│   └── Payment.php
+├── State/
+│   └── PaymentState.php
+└── PaymentModule.php
+tests/Features/Payment/
+├── Api/PaymentControllerTest.php
+└── Services/PaymentServiceTest.php
+```
+
+**Ruby**
+
+```
+app/features/payment/
+├── api/
+│   └── payment_controller.rb
+├── services/
+│   └── payment_service.rb
+├── repositories/
+│   └── payment_repository.rb
+├── contracts/
+│   └── payment_contract.rb
+├── models/
+│   └── payment.rb
+└── payment.rb
+spec/features/payment/
+├── api/payment_controller_spec.rb
+└── services/payment_service_spec.rb
 ```
 
 ### Hexagonal, Go

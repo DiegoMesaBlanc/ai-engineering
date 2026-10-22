@@ -66,18 +66,25 @@ Do not duplicate Skills, workflows, or architecture definitions.
   sees the folders before they exist. A style presented only as a one-line
   hint is not a choice the user can make.
 - In a **feature-driven architecture**, group the code by business capability
-  (`app/`, `shared/`, `features/<feature>/`), give **each unit its own folder**
-  with its implementation and its types, and let each feature expose a
-  **public API** (`index.ts`). The test joins the unit folder **only where
-  the ecosystem co-locates tests** (TypeScript, JavaScript, Angular, Vue,
-  Go, Python); where the ecosystem mirrors the test tree (Java, Kotlin,
-  C#/.NET, PHP, Ruby) the test belongs to that mirrored tree, not to the unit
-  folder. A feature imports from `app/` and `shared/` and **never the
-  internals of another feature**; cross-feature interaction goes through the
-  other feature's public API or the global state. A unit that needs a second
-  consumer is promoted to `shared/`, not copied. The system decides the
-  owner, the folder, and the public surface of every unit before creating
-  the files.
+  (`app/`, `shared/`, `features/<feature>/`), give **each unit its own folder
+  inside its responsibility folder**, and let each feature expose a
+  **public API** (`index.ts` or the ecosystem equivalent). The feature root holds only its
+  **responsibility folders** — `components/`, `hooks/`, `services/`,
+  `types/`, and `context/` when the feature owns local state — and its public
+  API; a component, a hook, a service, or a contract never sits at the
+  feature root. A component and a contract never share a folder: a
+  feature-level contract lives in `types/`, and a contract consumed by one
+  unit lives in that unit's folder. Each ecosystem's translation of the
+  responsibility folders is defined in `references/folder-architectures.md`.
+  The test joins the unit folder **only where the ecosystem co-locates
+  tests** (TypeScript, JavaScript, Angular, Vue, Go, Python); where the
+  ecosystem mirrors the test tree (Java, Kotlin, C#/.NET, PHP, Ruby) the test
+  belongs to that mirrored tree, not to the unit folder. A feature imports
+  from `app/` and `shared/` and **never the internals of another feature**;
+  cross-feature interaction goes through the other feature's public API or
+  the global state. A unit that needs a second consumer is promoted to
+  `shared/`, not copied. The system decides the owner, the responsibility
+  folder, and the public surface of every unit before creating the files.
 - Ground stack-specific structure and test conventions in that stack's
   official documentation or a recognized authoritative style guide. Never
   extrapolate one ecosystem's rule to another. Every structural rule and

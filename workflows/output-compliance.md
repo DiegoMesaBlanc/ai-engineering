@@ -210,23 +210,33 @@ re-exposed and not part of that module's own API surface. A forwarding
 mechanism used with a documented purpose — an assembly migration in C#/.NET,
 a conditional class alias in PHP — is not a pass-through.
 
-### STRUCT-001 — One folder per unit inside a feature
+### STRUCT-001 — One folder per unit inside its responsibility folder
 
-A feature folder never holds a flat pile of implementation files, tests, and
-types mixed together. A unit that owns an implementation and a test gets its
-own folder, with the test next to the implementation.
+A responsibility folder never holds a flat pile of implementation files and
+tests mixed together. A unit that owns an implementation and a test gets its
+own folder inside `components/`, `hooks/`, or `services/`, with the test next
+to the implementation. The check looks at the responsibility level only
+(depth 3 under `features/`); a test inside a unit folder (depth 4) is the
+expected layout and is not flagged.
 
 ```sh
-# Implementation and test as siblings inside a feature folder
-for feature in $(find src/features -mindepth 1 -maxdepth 1 -type d 2>/dev/null); do
-  find "$feature" -maxdepth 1 -type f \
-    \( -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.spec.ts' \) |
+# Implementation and test as siblings directly inside a responsibility folder
+# depth 3 under features/ = features/<feature>/<responsibility>/<file>
+for root in $(find . -type d -iname features -not -path '*/node_modules/*' 2>/dev/null); do
+  find "$root" -mindepth 3 -maxdepth 3 -type f \
+    \( -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.test.js' \
+       -o -name '*.test.jsx' -o -name '*.spec.ts' \) |
   while read -r test; do
+    dir="$(dirname "$test")"
     base="$(basename "$test")"
-    impl="${base%%.test*}"
-    [ -f "$feature/$impl.ts" ] || [ -f "$feature/$impl.tsx" ] ||
-      [ -f "$feature/$impl.js" ] || [ -f "$feature/$impl.jsx" ] &&
-      echo "FAIL $test sits next to its implementation: the unit needs its own folder"
+    unit="${base%%.test*}"
+    unit="${unit%%.spec*}"
+    for ext in ts tsx js jsx; do
+      impl="$dir/$unit.$ext"
+      if [ -f "$impl" ]; then
+        echo "FAIL $test:1 sits next to $impl: the unit needs its own folder"
+      fi
+    done
   done
 done
 ```
@@ -250,13 +260,32 @@ of `features/<other>/<internals>` is a `FAIL`.
 
 ### STRUCT-003 — Every feature exposes a public API
 
-In a feature-driven architecture, `features/<feature>/index.ts` is the only
-entry point other parts of the application may use.
+In a feature-driven architecture the feature exposes one public entry point.
+The form is the ecosystem's: `index.ts` for TypeScript and JavaScript,
+`__init__.py` for Python, `mod.rs` for Rust, `package-info.java` for Java, a
+`*Module.cs`/`*Module.php` for C#/.NET and PHP, and the feature's own module
+file for Ruby. Test mirrors (`src/test/`, `tests/`, `spec/`) are not feature
+roots and are skipped.
 
 ```sh
-for feature in $(find src/features -mindepth 1 -maxdepth 1 -type d 2>/dev/null); do
-  [ -f "$feature/index.ts" ] ||
-    echo "FAIL $feature has no public API (index.ts)"
+for root in $(find . -type d -iname features -not -path '*/node_modules/*' 2>/dev/null); do
+  case "$root" in
+    */src/test/*|*/tests/*|*/spec/*) continue ;;
+  esac
+  for feature in $(find "$root" -mindepth 1 -maxdepth 1 -type d 2>/dev/null); do
+    name="$(basename "$feature")"
+    found=0
+    for api in index.ts index.tsx index.js index.jsx index.vue index.svelte \
+               __init__.py mod.rs package-info.java doc.go "$name.rb"; do
+      if [ -f "$feature/$api" ]; then found=1; break; fi
+    done
+    for module in "$feature"/*Module.cs "$feature"/*Module.php; do
+      if [ -f "$module" ]; then found=1; break; fi
+    done
+    if [ "$found" -ne 1 ]; then
+      echo "FAIL $feature:1 has no public API for its ecosystem"
+    fi
+  done
 done
 ```
 
@@ -297,6 +326,77 @@ if [ "$packages" -gt 1 ]; then
     echo "FAIL monorepo without a recorded concrete benefit"
 fi
 ```
+
+### STRUCT-006 — The feature root holds only responsibility folders and its public API
+
+A feature is not a folder for "the feature's files"; it is the boundary that
+contains the folders. A source file directly inside `features/<feature>/` is
+a `FAIL` (P2): it belongs to `components/`, `hooks/`, `services/`, `types/`,
+`context/`, or the ecosystem equivalent. The public API of the feature is the
+only allowed file at the root, plus the ecosystem's package or module
+marker (`__init__.py`, `mod.rs`, `package-info.java`, `doc.go`, a
+`*Module.cs`/`*Module.php`, or the feature's own Ruby module file).
+
+```sh
+# Files directly inside a feature folder, excluding the public API and markers
+for root in $(find . -type d -iname features -not -path '*/node_modules/*' 2>/dev/null); do
+  case "$root" in
+    */src/test/*|*/tests/*|*/spec/*) continue ;;
+  esac
+  find "$root" -mindepth 2 -maxdepth 2 -type f \
+    \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' \
+       -o -name '*.vue' -o -name '*.svelte' -o -name '*.java' -o -name '*.kt' \
+       -o -name '*.py' -o -name '*.go' -o -name '*.rs' -o -name '*.cs' \
+       -o -name '*.php' -o -name '*.rb' \) |
+  while read -r file; do
+    base="$(basename "$file")"
+    feature="$(basename "$(dirname "$file")")"
+    case "$base" in
+      index.*|__init__.py|mod.rs|package-info.java|doc.go|*Module.cs|*Module.php)
+        continue ;;
+    esac
+    if [ "$base" = "$feature.rb" ]; then
+      continue
+    fi
+    echo "FAIL $file:1 sits at the feature root: it belongs to a responsibility folder"
+  done
+done
+```
+
+### STRUCT-007 — Contracts are not mixed with components
+
+A contract file lives in `types/` (or the ecosystem's contract folder,
+`domain/` or `contracts/`), or in the folder of the single unit that consumes
+it. It never sits at the feature root and never directly inside
+`components/`, `hooks/`, or `services/` next to the units. A component and
+the types it does not own are not piled in one folder.
+
+```sh
+# A contract at the feature root, or directly inside a responsibility folder
+for root in $(find . -type d -iname features -not -path '*/node_modules/*' 2>/dev/null); do
+  case "$root" in
+    */src/test/*|*/tests/*|*/spec/*) continue ;;
+  esac
+  find "$root" -mindepth 2 -maxdepth 2 -type f \
+    \( -name '*.types.*' -o -name '*.contracts.*' \) |
+  while read -r file; do
+    echo "FAIL $file:1 sits at the feature root: a contract belongs to types/ or to its unit folder"
+  done
+  find "$root" -mindepth 3 -maxdepth 3 -type f \
+    \( -name '*.types.*' -o -name '*.contracts.*' \) |
+  while read -r file; do
+    parent="$(basename "$(dirname "$file")")"
+    case "$parent" in
+      types|contracts|domain|models) continue ;;
+    esac
+    echo "FAIL $file:1 is mixed with the units of its responsibility folder: move it to types/ or to the unit folder"
+  done
+done
+```
+
+A contract inside a unit folder (`components/<unit>/<unit>.types.ts`) is the
+single-consumer case and is allowed. A contract inside `types/`, `domain/`,
+or `contracts/` is the shared case and is allowed.
 
 ### CHECK-001 — Phase checklist format and derivation
 
@@ -423,15 +523,17 @@ unit folder with the test next to the unit. `Component.tsx` +
    untracked).
 2. Exclude generated output, dependencies, and build artifacts.
 3. Run `FUNC-001` over the change set.
-3. Run `FUNC-001` over the change set.
 4. Run `TYPE-001` over the change set.
 5. Run `TYPE-002` over the contract files identified in `TYPE-001`.
 6. Run `TYPE-003` over the change set, in the form the detected ecosystem
    uses to forward a contract.
 7. Run `FILE-001` over the change set.
-8. Review each match against the allowed reasons before reporting it.
-9. Report every finding with `file:line`, the rule id, the severity, and the
-   concrete fix.
+8. Run `STRUCT-001` and `STRUCT-006` over every feature folder.
+9. Run `STRUCT-007` over every contract file in a feature folder.
+10. Run `STRUCT-002` and `STRUCT-003` when the project is feature-driven.
+11. Review each match against the allowed reasons before reporting it.
+12. Report every finding with `file:line`, the rule id, the severity, and the
+    concrete fix.
 
 ## Reporting
 
@@ -439,7 +541,7 @@ unit folder with the test next to the unit. `Component.tsx` +
 ### OUTPUT COMPLIANCE
 
 - Scope: <paths, branch, commit>
-- Checks executed: FUNC-001, TYPE-001, TYPE-002, TYPE-003, FILE-001
+- Checks executed: FUNC-001, TYPE-001, TYPE-002, TYPE-003, FILE-001, STRUCT-001, STRUCT-006, STRUCT-007
 - Result: PASS | FAIL
 - Findings:
   - <file>:<line> — <RULE> — <severity> — <reason> — <fix>
