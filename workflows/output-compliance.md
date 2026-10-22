@@ -298,6 +298,23 @@ if [ "$packages" -gt 1 ]; then
 fi
 ```
 
+### GATE-001 — No installation path bypasses the approval gate
+
+A package may only be installed through the approval gate. An instruction
+that installs a package without the gate is a `FAIL`, whatever step it
+belongs to.
+
+```sh
+# Instrucciones que instalan paquetes sin pasar por la puerta
+grep -rnE '\b(npm|pnpm|yarn|bun|pip|pip3|poetry|uv|cargo|gem|composer|dotnet|mvn|gradle)\s+(install|add|i|get)\s+[@<a-zA-Z0-9_./-]+' \
+  --include='*.md' AGENTS.md workflows/ commands/ skills/ references/ 2>/dev/null |
+  grep -viE 'approval|approve|authorized|gate|installation list|never|without|only after|npx ' |
+  sed 's/^/  /'
+```
+
+A line that installs a package and does not reference the approval gate is a
+finding. The expected result is no output.
+
 ### FILE-001 — Unit folder and test co-location
 
 Where the ecosystem supports it, a unit with multiple related artifacts

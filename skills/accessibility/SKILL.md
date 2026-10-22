@@ -413,8 +413,11 @@ Prefer a live Lighthouse audit that returns failing rendered nodes directly to t
 npx lighthouse https://example.com --only-categories=accessibility
 
 # axe-core
-npm install @axe-core/cli -g
-axe https://example.com
+# Installing a CLI is an installation: present the installation list and
+# install only after the user approves it, through the gate of
+# `workflows/dependency-assessment.md`. Prefer a project-local dev dependency
+# over a global install.
+npx @axe-core/cli https://example.com
 ```
 
 ### Manual testing

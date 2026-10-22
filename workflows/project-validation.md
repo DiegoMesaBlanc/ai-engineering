@@ -142,11 +142,16 @@ and mobile — without running tools and without modifying code.
 ## Phase 5 — Configure Mandatory Formatting and Linting
 
 When Phase 2 found that a required formatter or linter is missing,
-incomplete, or not yet installed, configure it. This is mandatory, not
-optional, and is established by the policy in AGENTS.md; do not request a
-redundant approval for the standard setup that policy already authorizes.
-The policy requires a **configured linter** for every language and framework
-in scope; a project without one is not validated.
+incomplete, or not yet installed, propose it. The policy requires a
+**configured linter** for every language and framework in scope; a project
+without one is not validated.
+
+The setup is mandatory, and it is still an installation: it goes through the
+approval gate of `workflows/dependency-assessment.md` like any other. Present
+the installation list, with the exact packages, versions, and scope, and
+install only after the user approves. This setup has no exemption from the
+gate; what makes it standard is the recommendation, not the absence of
+approval.
 
 Before configuring anything, confirm the repository is a software project
 within scope. Never create a package.json, install formatter or linter

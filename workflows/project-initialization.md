@@ -187,7 +187,17 @@ Never exceed the catalog without asking. A project that ends with five
 endpoints nobody discussed, or twenty dependencies nobody requested, is a
 defect.
 
-### 4.2 Execute one step, then stop
+### 4.2 Install only what the user approved
+
+A step that installs a package does not install it directly. Before the
+installation, present the **installation list** of
+`workflows/dependency-assessment.md` — exact name, version, runtime or
+development scope, why it is needed, and what it brings — and install only
+after the user approves it. This applies to the tooling step, to a test
+runner, to a structural rule, and to any package a step needs. The gate has
+no exception, and it applies in every language and framework.
+
+### 4.3 Execute one step, then stop
 
 For each step in order:
 
@@ -202,7 +212,7 @@ Do not start the next step on your own initiative. A step that is "mostly
 done" produces a structure that has to be reworked, and a step the user
 never wanted is work that has to be undone.
 
-### 4.3 Stopping is a normal outcome
+### 4.4 Stopping is a normal outcome
 
 When the user stops, the project is left exactly at that checkpoint, with
 the tracker recording it. Report the resume point: the next `pending` step,
@@ -212,13 +222,13 @@ A session that ends at a checkpoint is **complete, not broken**. Do not
 generate the remaining steps to "finish" it, and do not treat the pause as a
 defect to fix.
 
-### 4.4 Apply the growth rule
+### 4.5 Apply the growth rule
 
 The creation order exists so the project can grow. When a new piece of code
 does not fit the growth rule of its layer, the structure is wrong, not the
 code. Do not create a parallel structure to avoid changing the agreed one.
 
-### 4.5 Never exceed the agreed scope
+### 4.6 Never exceed the agreed scope
 
 - One vertical slice at a time. The first is complete before the second
   starts.

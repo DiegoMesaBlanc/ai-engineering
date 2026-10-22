@@ -133,7 +133,7 @@ Applies to every project type, in this order.
 | # | Step | Produces | Verify | Growth rule |
 |---|---|---|---|---|
 | A1 | Repository skeleton | The top-level folders, the **entry point** of the project, the ignore file, the license, pinned to the **confirmed target version** | The tree matches the agreed structure, the entry point compiles, and the toolchain reports the confirmed version | A new top-level folder appears only when a new responsibility exists, never for a feature of an existing one |
-| A2 | Tooling | Formatter, linter, structural compliance rules, test runner, scripts | The formatter check, the linter, and the test runner all run against the entry point from A1 and pass | Tooling changes in one place: the config and the scripts |
+| A2 | Tooling | Formatter, linter, structural compliance rules, test runner, scripts, **after the user approves the installation list** | The formatter check, the linter, and the test runner all run against the entry point from A1 and pass | Tooling changes in one place: the config and the scripts |
 | A3 | Configuration | A typed configuration schema, a local environment example, no secret in the repository | The app starts with only the example file | Every new setting is declared in the schema, never read ad hoc |
 | A4 | Observability baseline | Structured logging, a correlation id, the error shape | A request produces a log line with the correlation id | One logging and one error module; every layer uses them |
 | A5 | Domain or core | The entities, value objects, invariants, domain errors | The core unit tests pass without any infrastructure | Business rules live here and nowhere else |

@@ -742,6 +742,7 @@ Return:
 - V2.42 topology decision checks:
 - V2.43 source grounding checks:
 - V2.44 architecture matrix checks:
+- V2.45 installation gate checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1913,3 +1914,27 @@ Verify that every architectural style works in every supported ecosystem:
   is verified structurally and reported as not verified for execution, never
   as executed.
 - `references/system-workflow-regression-matrix.md` includes R-66.
+
+## V2.45 Regression — Installation Gate
+
+Verify that nothing is installed without the user's approval:
+
+- `AGENTS.md` states that every installation requires explicit approval at
+  the moment it happens, in every step, for every language and framework,
+  and that the mandatory formatter and linter setup is **not** an
+  exception.
+- `AGENTS.md` requires the **installation list** before installing: exact
+  package name, version, runtime or development scope, why it is needed,
+  and what it brings. Approval covers that list and that scope only, and a
+  general approval to implement or continue authorizes no installation.
+- `workflows/dependency-assessment.md` Phase 4 presents the installation
+  list, has no exception, and Phase 5 installs only the approved packages at
+  the approved versions, returning to the gate for anything else.
+- `workflows/project-validation.md` Phase 5 proposes the mandatory setup
+  through the same gate instead of installing it directly.
+- `workflows/project-initialization.md` has a phase that applies the gate to
+  any step that installs, and `references/project-creation-order.md` marks
+  the tooling step as approved before it runs.
+- No workflow or Skill contains an instruction that installs a package
+  without the gate.
+- `references/system-workflow-regression-matrix.md` includes R-67.

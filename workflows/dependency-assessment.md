@@ -116,27 +116,41 @@ explain:
   bundle-size concerns
 - whether the dependency is runtime or development-only
 
-Ask the user for approval when the required authorization has not already
-been explicitly provided.
+**Every installation requires approval, at the moment it happens.** This
+gate applies in every step of every workflow, for every language and
+framework, and it has no exception. The mandatory formatter and linter
+setup is not exempt: it is proposed with the same installation list and
+approved the same way.
 
-Treat approval of a specific option as authorization only for that option
-and scope. If a material change in package, version, license, cost, or
-purpose becomes necessary, request renewed approval.
+Present the **installation list** before installing anything:
 
-Do not treat general approval to implement a task as blanket authorization
-to introduce arbitrary libraries.
+| Field | Content |
+|---|---|
+| Package | The exact name as the registry resolves it |
+| Version | The exact version, and the range that will be written |
+| Scope | Runtime, or development only |
+| Why | The requirement it satisfies, and what it replaces |
+| What it brings | Its direct dependencies, and the material size or cost impact |
+| Alternatives | What was considered instead, including doing nothing |
+
+Ask for approval with that list. Approval covers **that list and that
+scope** only. A general approval to implement a task, to continue, or to
+proceed is not authorization to install anything, and a previously approved
+list never authorizes a different installation. When the step, the language,
+the framework, or the package manager changes, the gate applies again.
 
 An explicit user instruction naming a dependency can count as approval for
 that dependency, but compatibility and security checks still apply.
-
-The existing policy exception for mandatory formatter and linter setup in
-AGENTS.md is preserved. Report those required tooling additions clearly and
-do not extend that exception to unrelated runtime libraries or frameworks.
 
 Never install paid services, initiate billable usage, or add paid
 dependencies without explicit authorization.
 
 ## Phase 5 — After Approval
+
+Install **only** the packages in the approved list, at the approved
+versions, with the approved scope. If the installation needs anything that
+was not in the list, stop and go back to the approval gate; do not widen
+the installation.
 
 Use the project's existing package manager and workspace conventions.
 
