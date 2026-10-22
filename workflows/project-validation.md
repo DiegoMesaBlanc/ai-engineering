@@ -146,12 +146,13 @@ incomplete, or not yet installed, propose it. The policy requires a
 **configured linter** for every language and framework in scope; a project
 without one is not validated.
 
-The setup is mandatory, and it is still an installation: it goes through the
-approval gate of `workflows/dependency-assessment.md` like any other. Present
-the installation list, with the exact packages, versions, and scope, and
-install only after the user approves. This setup has no exemption from the
-gate; what makes it standard is the recommendation, not the absence of
-approval.
+The setup is mandatory, and it is an installation, so it is an
+**installation package** like any other: the formatter, the linter, and
+their plugins are assembled as one set. A setup with a single package is
+installed directly; a setup with several is presented once with the
+installation list and installed after the user's evaluation, through the gate
+of `workflows/dependency-assessment.md`. What makes the setup standard is the
+recommendation, not the absence of evaluation.
 
 Before configuring anything, confirm the repository is a software project
 within scope. Never create a package.json, install formatter or linter

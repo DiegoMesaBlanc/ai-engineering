@@ -189,13 +189,16 @@ defect.
 
 ### 4.2 Install only what the user approved
 
-A step that installs a package does not install it directly. Before the
-installation, present the **installation list** of
-`workflows/dependency-assessment.md` — exact name, version, runtime or
-development scope, why it is needed, and what it brings — and install only
-after the user approves it. This applies to the tooling step, to a test
-runner, to a structural rule, and to any package a step needs. The gate has
-no exception, and it applies in every language and framework.
+A step that installs does not install one package at a time. The packages
+a step needs are assembled into one **installation package** and handled
+together, through `workflows/dependency-assessment.md`: a package with a single
+dependency is installed directly, and a package with several is presented
+once with the installation list — exact name, version, runtime or development
+scope, why it is needed, and what it brings — and installed after the
+user's evaluation. This applies to the tooling step, to a test runner, to a
+structural rule, and to any package a step needs. The gate has no exception,
+it applies in every language and framework, and it is never applied once per
+library.
 
 ### 4.3 Execute one step, then stop
 

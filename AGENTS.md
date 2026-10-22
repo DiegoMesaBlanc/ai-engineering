@@ -442,18 +442,26 @@ duplicating its decision policy.
 - Prefer no new dependency when the existing stack, native APIs, or
   project abstractions are sufficient, and check for a compatible already
   installed dependency before proposing a new one.
-- **Every installation requires the user's explicit approval**, at the
-  moment it is about to happen, in every step, for every language and
-  framework. The mandatory formatter and linter setup is **not** an
-  exception: it is proposed with the same list and approved the same way.
-- Before installing anything, present the **installation list**: every
-  package with its exact name, version, runtime or development scope, why it
-  is needed, and what it brings. One or many, the gate is the same.
-- The approval is for that specific list and that specific scope. A general
+- The unit of approval is the **installation package**: the complete set of
+  packages a task or a phase needs, assembled at once. The gate applies in
+  every step, for every language and framework, and it is never applied once
+  per library.
+- A package with **one** dependency is the minimal adjustment: install it
+  and report what was installed.
+- A package with **several** dependencies is assembled as a whole,
+  presented once with the **installation list**, and installed after the
+  user's evaluation. The mandatory formatter and linter setup is usually
+  such a package and follows the same rule.
+- The installation list states, for every package in the set: its exact
+  name, version, runtime or development scope, why it is needed, what it
+  brings, and the alternatives, including doing nothing.
+- Never split a package to fit the single-dependency case.
+- The evaluation covers that package and that scope only. A general
   approval to implement a task, to continue, or to proceed is **not**
-  authorization to install anything.
-- When a step, language, or framework changes, the gate applies again. A
-  previously approved list never authorizes a different installation.
+  authorization to install anything, and an approved package never
+  authorizes a different installation.
+- When a step, language, or framework changes, the package is assembled
+  again and evaluated again.
 - Never install paid services or dependencies, initiate billable usage, or
   change an approved package, version, license, cost, or purpose without
   renewed authorization.

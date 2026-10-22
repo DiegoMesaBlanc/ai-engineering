@@ -116,13 +116,23 @@ explain:
   bundle-size concerns
 - whether the dependency is runtime or development-only
 
-**Every installation requires approval, at the moment it happens.** This
-gate applies in every step of every workflow, for every language and
-framework, and it has no exception. The mandatory formatter and linter
-setup is not exempt: it is proposed with the same installation list and
-approved the same way.
+**The gate applies to the installation package, not to each library.**
+It applies in every step of every workflow, for every language and
+framework, and it has no exception.
 
-Present the **installation list** before installing anything:
+The **installation package** is the complete set of packages a task or a
+phase needs, assembled at once:
+
+| Package | Behavior |
+|---|---|
+| One dependency | The minimal adjustment. Install it and report what was installed. |
+| Several dependencies | Assemble them into one package, present the list once, and install the whole package after the user's evaluation. |
+
+Never stop once per library, and never split a package to fit the
+single-dependency case. A formatter, a linter, and their plugins are one
+package, not three decisions.
+
+Present the **installation list** of the package before installing it:
 
 | Field | Content |
 |---|---|
@@ -133,8 +143,9 @@ Present the **installation list** before installing anything:
 | What it brings | Its direct dependencies, and the material size or cost impact |
 | Alternatives | What was considered instead, including doing nothing |
 
-Ask for approval with that list. Approval covers **that list and that
-scope** only. A general approval to implement a task, to continue, or to
+Ask for approval with that list when the package has several
+dependencies. A package with a single dependency is installed directly and
+reported. Approval covers **that list and that scope** only. A general approval to implement a task, to continue, or to
 proceed is not authorization to install anything, and a previously approved
 list never authorizes a different installation. When the step, the language,
 the framework, or the package manager changes, the gate applies again.

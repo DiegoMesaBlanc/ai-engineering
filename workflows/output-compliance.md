@@ -300,15 +300,15 @@ fi
 
 ### GATE-001 — No installation path bypasses the approval gate
 
-A package may only be installed through the approval gate. An instruction
-that installs a package without the gate is a `FAIL`, whatever step it
-belongs to.
+Packages are installed as an **installation package**, evaluated once. An
+instruction that installs a package without the package evaluation is a
+`FAIL`, whatever step it belongs to.
 
 ```sh
 # Instrucciones que instalan paquetes sin pasar por la puerta
 grep -rnE '\b(npm|pnpm|yarn|bun|pip|pip3|poetry|uv|cargo|gem|composer|dotnet|mvn|gradle)\s+(install|add|i|get)\s+[@<a-zA-Z0-9_./-]+' \
   --include='*.md' AGENTS.md workflows/ commands/ skills/ references/ 2>/dev/null |
-  grep -viE 'approval|approve|authorized|gate|installation list|never|without|only after|npx ' |
+  grep -viE 'approval|approve|authorized|gate|installation package|installation list|package|never|without|only after|npx ' |
   sed 's/^/  /'
 ```
 

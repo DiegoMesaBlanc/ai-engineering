@@ -1919,14 +1919,16 @@ Verify that every architectural style works in every supported ecosystem:
 
 Verify that nothing is installed without the user's approval:
 
-- `AGENTS.md` states that every installation requires explicit approval at
-  the moment it happens, in every step, for every language and framework,
-  and that the mandatory formatter and linter setup is **not** an
-  exception.
-- `AGENTS.md` requires the **installation list** before installing: exact
-  package name, version, runtime or development scope, why it is needed,
-  and what it brings. Approval covers that list and that scope only, and a
+- `AGENTS.md` states that the unit of approval is the **installation
+  package**, assembled once per task or phase: a single dependency is the
+  minimal adjustment and is installed directly, and a package with several
+  dependencies is presented once and installed after the user's evaluation.
+- `AGENTS.md` states that the gate is never applied once per library, that a
+  package is never split to fit the single-dependency case, and that a
   general approval to implement or continue authorizes no installation.
+- `AGENTS.md` requires the **installation list** for a multi-dependency
+  package: exact package name, version, runtime or development scope, why it
+  is needed, what it brings, and the alternatives including doing nothing.
 - `workflows/dependency-assessment.md` Phase 4 presents the installation
   list, has no exception, and Phase 5 installs only the approved packages at
   the approved versions, returning to the gate for anything else.
@@ -1936,5 +1938,5 @@ Verify that nothing is installed without the user's approval:
   any step that installs, and `references/project-creation-order.md` marks
   the tooling step as approved before it runs.
 - No workflow or Skill contains an instruction that installs a package
-  without the gate.
+  outside an installation package evaluation.
 - `references/system-workflow-regression-matrix.md` includes R-67.
