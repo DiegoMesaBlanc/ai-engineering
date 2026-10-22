@@ -299,11 +299,19 @@ Require human approval for significant architectural changes per the Human Decis
 
 ## Phase 9 — Plan
 
+**Publish the phase plan.** The **phase plan** is the sequence of phases; it
+is not the **task plan**, which says what the task does. When the task has
+more than one phase, show the phases it will go through, in order, each
+with the outcome it produces, and where the work can stop. The phases are
+the canonical ones of this workflow, restricted to the ones the task needs.
+The format and the phase boundary report are defined in
+`workflows/session-resilience.md` ("Phase Plan").
+
 Determine the proportional rigor level from the Phase 8 complexity
-classification and produce the plan by following
+classification and produce the **task plan** by following
 `workflows/task-planning.md`. Do not reclassify complexity here.
 
-Before the plan is finalized, complete the dependency assessment described
+Before the task plan is finalized, complete the dependency assessment described
 in `workflows/dependency-assessment.md` and record its outcome.
 
 Provide a concise implementation plan including:
@@ -321,7 +329,7 @@ Provide a concise implementation plan including:
 - validation
 - risks
 
-The depth of the plan follows its rigor level: R1 Brief for trivial and low
+The depth of the task plan follows its rigor level: R1 Brief for trivial and low
 tasks, R2 Moderate for medium tasks, R3 Complex for high tasks, and R4
 High-risk for critical tasks. A High task requires approval only when a
 Human Decision Gate applies; a Critical task activates reinforced controls
@@ -339,10 +347,11 @@ libraries.
 Implement on the requested branch and only within the target project.
 
 **Show the phase checklist.** Detect the concrete steps of this phase from
-the plan and the File Responsibility Map, and carry the checklist in every
-status update, refreshing it as its steps complete. Each step names the
-artifact it produces. The format and the derivation are defined in
-`workflows/session-resilience.md` ("Phase Checklist").
+the **task plan** and the File Responsibility Map, never from the phase
+plan, and carry the checklist in every status update, refreshing it as its
+steps complete. Each step names the artifact it produces. The format and
+the derivation are defined in `workflows/session-resilience.md` ("Phase
+Checklist").
 
 **Structural policy — non-negotiable while writing code.** Follow the
 non-negotiable quality baseline in `skills/implementation-recipes/SKILL.md`:

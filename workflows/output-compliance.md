@@ -307,26 +307,91 @@ depend on the language or the framework.
 ```sh
 # The format: [ x ], [   ] or [ ! ] followed by the step
 checklist() {
-  printf '%s\n' "$@" | grep -nvE '^\[( x|   | !)\] .+' |
+  printf '%s\n' "$@" | grep -nvE '^\[(   | x | ! )\] .+' |
     sed 's/^/  FAIL invalid checklist line: /'
+}
+
+# The canonical phase names, read from the workflow that defines them, so the
+# check never drifts from its source of truth.
+phase_names() {
+  for candidate in \
+    "${AI_ENGINEERING_ROOT:+$AI_ENGINEERING_ROOT/workflows/task-to-code.md}" \
+    "workflows/task-to-code.md" \
+    "../../workflows/task-to-code.md"; do
+    [ -n "$candidate" ] && [ -f "$candidate" ] || continue
+    grep -hoE '^## Phase [0-9]+ .+' "$candidate" |
+      sed -E 's/^## Phase [0-9]+[[:space:]]*[^[:alnum:]]*[[:space:]]*//' |
+      tr '[:upper:]' '[:lower:]' | paste -sd'|' - && return 0
+  done
+  return 1
 }
 
 # The derivation: a step is not the name of a phase
 checklist_not_phase_names() {
+  names="$(phase_names)" || {
+    echo "  FAIL canonical phase names not found: set AI_ENGINEERING_ROOT"
+    return 1
+  }
   printf '%s\n' "$@" |
-    grep -iE '^\[( x|   | !)\] (requirements and approach|implementation milestone|new finding|validation results|final diff|alignment|validation|review|implementation|planning|design|analysis|delivery|documentation)\b' |
+    grep -iE "^\[(   | x | ! )\][[:space:]]*($names)[[:space:]]*$" |
     sed 's/^/  FAIL step is a phase name: /'
+}
+
+# A phase plan is not a phase checklist: the two artifacts are not the same
+checklist_not_a_plan() {
+  total=$(printf '%s\n' "$@" | grep -cE '^\[(   | x | ! )\] ')
+  plans=$(printf '%s\n' "$@" | grep -cE '^\[(   | x | ! )\] [0-9]+\. ')
+  if [ "$total" -gt 0 ] && [ "$total" -eq "$plans" ]; then
+    echo "  FAIL this is a phase plan, not a phase checklist"
+  fi
 }
 ```
 
-A compliant checklist passes both checks. A checklist of phase names, such
-as "Implementation milestone", fails the second one. A step states the
+A compliant checklist passes all three checks. A checklist of phase names,
+such as "Implement", fails the second one, because the names are read from
+`workflows/task-to-code.md` and not from a fixed list. A phase plan passed
+as a checklist fails the third one, because the two artifacts are not the
+same thing. A step states the
 concrete thing it creates or verifies — "the store reducers", "the MSAL
 sign-in flow", "the cart view" — and its artifact comes from the plan the
 step was derived from, so the step text does not repeat the path.
 
 The scenarios the derivation must cover are listed in
 `workflows/session-resilience.md` ("Scenarios the checklist must cover").
+
+### CHECK-002 — Phase plan and phase boundary report
+
+The phase plan lists the phases the task will go through, each with its
+outcome. The boundary report states what was produced, what remains, and the
+stop point. Both use the same states as the checklist.
+
+```sh
+# The phase plan format: [   ], [ x ] or [ ! ] followed by the phase
+check_phase_plan() {
+  printf '%s\n' "$@" | grep -nvE '^\[(   | x | ! )\] [0-9]+\. .+' |
+    sed 's/^/  FAIL invalid phase plan line: /'
+}
+
+# The boundary report states what was produced, what remains, and the stop point
+check_boundary_report() {
+  report="$(printf '%s\n' "$@")"
+  printf '%s\n' "$report" | grep -qiE 'hecho|done|produced' ||
+    echo "  FAIL boundary report does not say what was produced"
+  printf '%s\n' "$report" | grep -qiE 'pendiente|remaining|falta' ||
+    echo "  FAIL boundary report does not say what remains"
+  printf '%s\n' "$report" | grep -qiE 'pued(e|es)? parar|can stop' ||
+    echo "  FAIL boundary report does not say the user can stop here"
+  printf '%s\n' "$report" | grep -qiE 'reanuda|resume' ||
+    echo "  FAIL boundary report does not give the resume point"
+}
+```
+
+A compliant plan passes the first check, and a compliant boundary report
+passes the second one. A plan whose phases are phase names without an
+outcome, or a boundary report that omits the stop point, is a finding. The
+phases the plan lists are the canonical ones of
+`workflows/task-to-code.md`, restricted to the ones the task needs, so the
+sequence is derived from the task and never fixed.
 
 ### GATE-001 — No installation path bypasses the approval gate
 

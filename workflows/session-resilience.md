@@ -259,11 +259,62 @@ If a session appears stalled during compaction or a long operation:
 
 ---
 
+## Phase Plan
+
+When a task has more than one phase, the agent shows the **phase plan**
+once, at the beginning, so the user knows the sequence and where the work
+can stop.
+
+The **phase plan** is the sequence of phases. It is not the **task plan**,
+which is the planning artifact of `workflows/task-planning.md` and says what
+the task does. The phase plan says in which order it happens, and the
+**phase checklist** of the phase in progress says what is being done inside
+it. All three can be shown together: the phase plan for the position, the
+checklist for the detail.
+
+### Format
+
+```
+[   ] 1. Detect and analyze the repository
+[   ] 2. Agree the requirements and the approach
+[   ] 3. Evaluate the architecture
+[   ] 4. Implement
+[   ] 5. Review and validate
+```
+
+- `[   ]` the phase has not started, `[ x ]` it is complete, `[ ! ]` it is
+  blocked.
+- Each phase names **the outcome it produces**, not only its name.
+- The phases are the canonical phases of `workflows/task-to-code.md`,
+  **restricted to the ones this task actually needs**. The sequence is
+  derived from the task: a documentation-only change runs a short plan, a
+  new service runs a long one, and a task with a single phase shows no
+  plan at all.
+- The plan is shown once. It is refined only when the scope changes, and
+  the refinement is reported.
+- The plan is session state, and it does not require a commit.
+
+### Phase boundary report
+
+At the end of each phase, the report states:
+
+- what the phase produced, with the checklist of that phase;
+- what remains: the pending items of the phase and the phases that follow;
+- **that the user can stop there**, and the exact resume point.
+
+A phase that ends with pending work is not a failure to report as done.
+The boundary report is what makes stopping a deliberate choice.
+
 ## Phase Checklist
 
 While a phase is in progress, the agent shows **what it is doing, step by
 step**, so the user can follow the work without committing after every
 phase.
+
+The **phase checklist** is not the **phase plan**. The plan lists the phases
+the task goes through; the checklist lists the steps of the phase in
+progress. A checklist is never the plan restated, and the plan is never
+passed off as a checklist.
 
 ### Format
 
@@ -292,10 +343,12 @@ from a fixed template. The same phase produces different steps in different
 projects, and the same project produces different steps in different phases.
 
 **Source of the steps.** The derivation is a chain, and it always starts from
-the plan of the task at hand:
+the **task plan** and the file responsibility map, never from the phase
+plan:
 
-1. The **plan** of the task, and the **File Responsibility Map** when the
-   task has one, name the artifacts the phase must produce and verify.
+1. The **task plan** of `workflows/task-planning.md`, and the **File
+   Responsibility Map** when the task has one, name the artifacts the phase
+   must produce and verify.
 2. The **phase scope** narrows that list to what this phase covers.
 3. One step is emitted per artifact, in the order it is executed, stating
    what is being done to it.
@@ -312,9 +365,9 @@ Each step is one action that produces or verifies a **concrete thing**:
   configuration value, a document section;
 - named specifically, in the order it is executed.
 
-The artifact comes from the plan the step was derived from, so the step text
-states what is being done without repeating the path: "the store reducers",
-"the MSAL sign-in flow", "the cart view".
+The artifact comes from the task plan the step was derived from, so the step
+text states what is being done without repeating the path: "the store
+reducers", "the MSAL sign-in flow", "the cart view".
 
 A step that is only the name of a phase is **not a step**. Phase names are
 not steps, and a checklist of phase names tells the user nothing. A checklist

@@ -744,6 +744,8 @@ Return:
 - V2.44 architecture matrix checks:
 - V2.45 installation gate checks:
 - V2.46 phase checklist checks:
+- V2.47 phase plan checks:
+- V2.47 phase plan and phase checklist are distinct artifacts:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1967,3 +1969,31 @@ Verify that the user can see what the system is doing, step by step:
   CI/CD change, and a cross-cutting configuration change. Each yields a
   different checklist, and a checklist of phase names is rejected.
 - `references/system-workflow-regression-matrix.md` includes R-68.
+
+## V2.47 Regression — Phase Plan and Boundary Report
+
+Verify that the user sees the plan from the start and can stop at any
+boundary:
+
+- `AGENTS.md` states that when a task has more than one phase the phase
+  plan is shown once at the start, with the phases the task will go
+  through and the outcome each produces, and that a single-phase task shows
+  no plan.
+- `AGENTS.md` states that every phase boundary reports what the phase
+  produced, what remains, and that the user can stop there with the exact
+  resume point.
+- `workflows/session-resilience.md` defines the **Phase Plan** format, the
+  derivation of the sequence from the task, and the **Phase boundary
+  report**, and states that both are session state requiring no commit.
+- `workflows/task-to-code.md` Phase 9 publishes the plan, restricted to the
+  phases the task needs.
+- The phase plan and the task plan artifact are not the same thing: the
+  plan states what the task does, the phase plan states the order it
+  happens in.
+- The phase plan and the phase checklist are not the same thing: the
+  checklist derives from the task plan and the file responsibility map, and
+  `checklist_not_a_plan` rejects a phase plan passed as a checklist.
+- The phase names rejected as checklist steps are read from
+  `workflows/task-to-code.md`, so the check never drifts from its source of
+  truth.
+- `references/system-workflow-regression-matrix.md` includes R-69.

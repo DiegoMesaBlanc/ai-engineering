@@ -240,6 +240,31 @@ conversation.
 
 During implementation, provide concise status updates at meaningful milestones: requirements and approach aligned, implementation milestone completed, important new finding or decision required, validation results, final diff and completion summary. Each update must explain what changed, the evidence available, and the next step. An update is not a request for approval unless a decision gate actually applies.
 
+**Show the phase plan at the start, when the task has more than one
+phase.** Before the work begins, list the phases the task will go through,
+in order, each with the outcome it produces. The phases are the canonical
+ones, restricted to the ones this task needs, so the sequence is derived
+from the task rather than fixed. A task with a single phase shows no plan.
+The plan is shown once and is refined only when the scope changes.
+
+The **phase plan** is the sequence of phases. It is not the **task plan**,
+which is the planning artifact and says what the task does. The phase plan
+says in which order it happens; the **phase checklist** says what is being
+done inside the phase in progress. Both can be shown together: the phase
+plan for the position, the checklist for the detail.
+
+```
+[   ] 1. Detect and analyze the repository
+[   ] 2. Agree the requirements and the approach
+[   ] 3. Implement
+[   ] 4. Review and validate
+```
+
+**Report each phase boundary.** When a phase ends, state what it produced,
+what remains, and **that the user can stop there**, with the exact resume
+point. Stopping is a deliberate choice the user can make at any boundary,
+in any task and any language or framework.
+
 **Show the phase checklist, in every task, without exception.** While a
 phase is in progress, every status update carries a checklist of the
 concrete steps of that phase:
@@ -257,9 +282,10 @@ the work of the phase and are never a template.
 failed, followed by the reason.
 
 The steps are **detected from the work of the phase**, never from a fixed
-template: the plan of the task and the file responsibility map name the
-artifacts the phase produces, the phase scope narrows them, and one step is
-emitted per artifact in the order it is executed. Each step names the
+template: the **task plan** and the file responsibility map name the
+artifacts the phase produces, the phase scope narrows them, and one step
+is emitted per artifact in the order it is executed. The source is the
+task plan, never the phase plan.
 artifact it produces: a file, a type, a contract, an endpoint, a migration, a
 test, a configuration value, or a document section. A step that cannot name
 the artifact it produces is a phase name, not a step, and a checklist of
