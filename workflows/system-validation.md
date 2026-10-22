@@ -743,6 +743,7 @@ Return:
 - V2.43 source grounding checks:
 - V2.44 architecture matrix checks:
 - V2.45 installation gate checks:
+- V2.46 phase checklist checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1940,3 +1941,29 @@ Verify that nothing is installed without the user's approval:
 - No workflow or Skill contains an instruction that installs a package
   outside an installation package evaluation.
 - `references/system-workflow-regression-matrix.md` includes R-67.
+
+## V2.46 Regression — Phase Checklist
+
+Verify that the user can see what the system is doing, step by step:
+
+- `AGENTS.md` requires every status update raised during a phase to carry a
+  checklist of the concrete steps of that phase, with the done, pending, and
+  blocked states, and states that a checklist of phase names is a defect.
+- `workflows/session-resilience.md` defines the **Phase Checklist**: the
+  format, the derivation from the work of the phase, the rule that each step
+  names the artifact it produces, the emission in every status update, the
+  refresh as steps complete, and the fact that it is session state and needs
+  no commit.
+- `workflows/task-to-code.md` Phase 10 detects the steps from the plan and
+  the File Responsibility Map and carries the checklist in every update.
+- `references/project-creation-order.md` uses the same format for the
+  creation tracker, so there is one format everywhere.
+- The same format is used in the creation tracker, an implementation phase, a
+  review, and a validation run.
+- `workflows/session-resilience.md` lists the scenarios the derivation must
+  cover: a new project, a bug fix, a new endpoint, a new feature, a
+  refactor, performance work, a migration, a dependency upgrade, a
+  documentation change, an accessibility fix, localization, added tests, a
+  CI/CD change, and a cross-cutting configuration change. Each yields a
+  different checklist, and a checklist of phase names is rejected.
+- `references/system-workflow-regression-matrix.md` includes R-68.

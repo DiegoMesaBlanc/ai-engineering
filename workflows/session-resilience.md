@@ -259,6 +259,109 @@ If a session appears stalled during compaction or a long operation:
 
 ---
 
+## Phase Checklist
+
+While a phase is in progress, the agent shows **what it is doing, step by
+step**, so the user can follow the work without committing after every
+phase.
+
+### Format
+
+The lines below illustrate the **format only**. Their content is an example
+of how a line reads, never a template: the steps are derived from the work
+of the phase and are never reused.
+
+```
+[ x ] Creating the store reducers for the global cart state
+[   ] Wiring the MSAL sign-in flow to the session endpoint
+[   ] Building the shopping cart view over the store selectors
+```
+
+- `[ x ]` the step is done and verified.
+- `[   ]` the step is pending.
+- `[ ! ]` the step is blocked or failed, followed by the reason.
+
+The checklist is **session state**. It is shown in the conversation and is
+not written to the repository, so following the work never requires a
+commit.
+
+### Derivation
+
+The steps are **detected from the work of the current phase**, never taken
+from a fixed template. The same phase produces different steps in different
+projects, and the same project produces different steps in different phases.
+
+**Source of the steps.** The derivation is a chain, and it always starts from
+the plan of the task at hand:
+
+1. The **plan** of the task, and the **File Responsibility Map** when the
+   task has one, name the artifacts the phase must produce and verify.
+2. The **phase scope** narrows that list to what this phase covers.
+3. One step is emitted per artifact, in the order it is executed, stating
+   what is being done to it.
+
+There is no per-phase template anywhere in the system. A step is never
+carried over from another project, another phase, or another run. When a
+phase has no plan yet, derive its steps from the phase's own scope, record
+them in the first status update of that phase, and refine them if the scope
+changes.
+
+Each step is one action that produces or verifies a **concrete thing**:
+
+- a file, a type, a contract, an endpoint, a reducer, a migration, a test, a
+  configuration value, a document section;
+- named specifically, in the order it is executed.
+
+The artifact comes from the plan the step was derived from, so the step text
+states what is being done without repeating the path: "the store reducers",
+"the MSAL sign-in flow", "the cart view".
+
+A step that is only the name of a phase is **not a step**. Phase names are
+not steps, and a checklist of phase names tells the user nothing. A checklist
+whose steps are all generic is a defect.
+
+### Emission
+
+- Every progress update raised during a phase carries the checklist with its
+  current state.
+- The checklist is refreshed as its steps complete, not only at the end of
+  the phase.
+- It is the same format everywhere: the creation tracker, an implementation
+  phase, a review, and a validation run.
+- A phase that ends with pending steps reports them, so the next session
+  resumes from the same place.
+
+### Scope
+
+The checklist covers the phase in progress. It does not replace the phase
+plan, the proposal, or the final report; it is the live view of the work
+between them.
+
+### Scenarios the checklist must cover
+
+The derivation is framework, language, flow, and task independent, so the
+checklist must work in every kind of phase. These scenarios are the
+coverage, and each one yields a different checklist:
+
+| Scenario | Shape of the phase |
+|---|---|
+| A new project from scratch | One slice at a time, with the tooling and the contracts |
+| A bug fix in an existing project | The fix, then the test that proves it |
+| A new API endpoint | The contract, the handler, the request that proves it |
+| A new feature in an existing project | The contracts, then the service, then the view |
+| A structural refactor | The extraction, then the consumers that change |
+| Performance work | The measurement, then the change that answers it |
+| A database migration | The migration, then the verification on an empty database |
+| A dependency upgrade | The manifest change, then the compatibility check |
+| A documentation-only change | The section that changes, and the link that proves it |
+| An accessibility fix | The element, and the behavior that satisfies it |
+| Localization | The catalog, and the layout that adapts to it |
+| Adding tests | The test, and the behavior it locks |
+| A CI/CD change | The pipeline step, and the check it runs |
+| A cross-cutting configuration change | The setting, and the place that reads it |
+
+A checklist whose steps are all phase names is a defect in any of them.
+
 ## Safety
 
 - Read-only with respect to the target project's source tree.

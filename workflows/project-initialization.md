@@ -249,7 +249,7 @@ Report:
 - the startup decision set: the decisions the user answered, the decisions
   resolved by default, and the source of each one;
 - the creation progress tracker from `references/project-creation-order.md`,
-  with each step marked `done`, `pending`, or `stopped here`;
+  with each step marked `[ x ]` done, `[   ]` pending, or `[ ! ]` blocked;
 - the scope catalog agreed in Phase 3, and the confirmation that the
   creation did not exceed it;
 - the resume point: the next `pending` step and what it would add;

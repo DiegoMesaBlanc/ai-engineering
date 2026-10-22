@@ -298,6 +298,36 @@ if [ "$packages" -gt 1 ]; then
 fi
 ```
 
+### CHECK-001 — Phase checklist format and derivation
+
+A phase checklist is valid when every line uses the state format and every
+step names the artifact it produces. This check is repeatable and does not
+depend on the language or the framework.
+
+```sh
+# The format: [ x ], [   ] or [ ! ] followed by the step
+checklist() {
+  printf '%s\n' "$@" | grep -nvE '^\[( x|   | !)\] .+' |
+    sed 's/^/  FAIL invalid checklist line: /'
+}
+
+# The derivation: a step is not the name of a phase
+checklist_not_phase_names() {
+  printf '%s\n' "$@" |
+    grep -iE '^\[( x|   | !)\] (requirements and approach|implementation milestone|new finding|validation results|final diff|alignment|validation|review|implementation|planning|design|analysis|delivery|documentation)\b' |
+    sed 's/^/  FAIL step is a phase name: /'
+}
+```
+
+A compliant checklist passes both checks. A checklist of phase names, such
+as "Implementation milestone", fails the second one. A step states the
+concrete thing it creates or verifies — "the store reducers", "the MSAL
+sign-in flow", "the cart view" — and its artifact comes from the plan the
+step was derived from, so the step text does not repeat the path.
+
+The scenarios the derivation must cover are listed in
+`workflows/session-resilience.md` ("Scenarios the checklist must cover").
+
 ### GATE-001 — No installation path bypasses the approval gate
 
 Packages are installed as an **installation package**, evaluated once. An

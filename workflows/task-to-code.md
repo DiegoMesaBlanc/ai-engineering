@@ -338,6 +338,12 @@ libraries.
 
 Implement on the requested branch and only within the target project.
 
+**Show the phase checklist.** Detect the concrete steps of this phase from
+the plan and the File Responsibility Map, and carry the checklist in every
+status update, refreshing it as its steps complete. Each step names the
+artifact it produces. The format and the derivation are defined in
+`workflows/session-resilience.md` ("Phase Checklist").
+
 **Structural policy — non-negotiable while writing code.** Follow the
 non-negotiable quality baseline in `skills/implementation-recipes/SKILL.md`:
 

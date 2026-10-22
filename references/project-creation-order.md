@@ -86,22 +86,25 @@ the rest.
 
 ### Progress tracker
 
-Keep this state alongside the project and report it at every checkpoint.
+Keep this state alongside the project and report it at every checkpoint. It
+uses the **phase checklist** format of `workflows/session-resilience.md`
+("Phase Checklist"), so there is one format everywhere:
 
-| Step | State | Note |
-|---|---|---|
-| not started | `pending` | |
-| created and verified | `done` | what it produced |
-| the current point | `stopped here` | why the user stopped, when known |
+```
+[ x ] A1 Repository skeleton — the folders, the entry point, the ignore file
+[ x ] A2 Tooling — the formatter, the linter, and the test runner
+[   ] A3 Configuration — the typed configuration schema
+[   ] A4 Observability baseline — the logger and the correlation id
+```
 
 Rules:
 
-- A step is `done` only when it passed its verification.
+- A step is `[ x ]` only when it passed its verification.
 - The tracker is the single record of what exists. It is updated before the
   next step starts, never at the end.
-- A session that ends with a `stopped here` state is complete, not broken.
-- The next session reads the tracker, confirms the repository still matches
-  it, and continues from the next `pending` step.
+- A session that ends with pending steps is complete, not broken. The next
+  session reads the tracker, confirms the repository still matches it, and
+  continues from the next `[   ]` step.
 
 ## The growth rule
 
@@ -230,7 +233,7 @@ initialization report, mark each item as it is completed, and keep it
 updated at every checkpoint. Every `pending` item is an unfinished project,
 not a detail.
 
-States: `pending` → `done` (created and verified), or `stopped here` when
+States: `[   ]` pending, `[ x ]` done (created and verified), `[ ! ]` blocked when
 the user ends the session at that point.
 
 ### Analysis and decisions

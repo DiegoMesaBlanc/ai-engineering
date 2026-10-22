@@ -240,6 +240,37 @@ conversation.
 
 During implementation, provide concise status updates at meaningful milestones: requirements and approach aligned, implementation milestone completed, important new finding or decision required, validation results, final diff and completion summary. Each update must explain what changed, the evidence available, and the next step. An update is not a request for approval unless a decision gate actually applies.
 
+**Show the phase checklist, in every task, without exception.** While a
+phase is in progress, every status update carries a checklist of the
+concrete steps of that phase:
+
+The lines below illustrate the **format only**; the steps are derived from
+the work of the phase and are never a template.
+
+```
+[ x ] Creating the store reducers for the global cart state
+[   ] Wiring the MSAL sign-in flow to the session endpoint
+[   ] Building the shopping cart view over the store selectors
+```
+
+`[ x ]` is done and verified, `[   ]` is pending, and `[ ! ]` is blocked or
+failed, followed by the reason.
+
+The steps are **detected from the work of the phase**, never from a fixed
+template: the plan of the task and the file responsibility map name the
+artifacts the phase produces, the phase scope narrows them, and one step is
+emitted per artifact in the order it is executed. Each step names the
+artifact it produces: a file, a type, a contract, an endpoint, a migration, a
+test, a configuration value, or a document section. A step that cannot name
+the artifact it produces is a phase name, not a step, and a checklist of
+phase names is a defect.
+
+The checklist is refreshed as its steps complete, it is session state rather
+than a file, and following the work never requires a commit. This applies to
+every task, every phase, and every language and framework. The format, the
+derivation, and the covered scenarios are defined in
+`workflows/session-resilience.md` ("Phase Checklist").
+
 If new evidence changes a material requirement or approved design, pause and explain the reason before continuing beyond the approved scope. Otherwise, proceed autonomously.
 
 Use checkpoints for long-running tasks according to `workflows/session-resilience.md`. Do not require the user to restart the terminal as the normal recovery method.
