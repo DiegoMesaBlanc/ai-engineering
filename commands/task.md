@@ -108,6 +108,10 @@ Key required behaviors within that workflow:
   proposed new dependency
 - evaluate architecture, reuse, and code organization before implementing,
   and validate the result against the proposed design and conventions
+- select design patterns from the task's **design forces** with
+  `references/design-patterns.md`, record the selected and rejected
+  candidates and the derived count, and translate each pattern to the
+  detected stack's idiom
 - apply proportional planning rigor: derive it from the Phase 8 complexity
   classification via `workflows/task-planning.md`, keep simple tasks
   lightweight, and define the expected behavior before implementing complex

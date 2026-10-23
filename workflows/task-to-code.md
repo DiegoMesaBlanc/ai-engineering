@@ -192,8 +192,17 @@ Evaluate:
 Perform the architecture-first evaluation defined in
 `skills/architecture-advisor/SKILL.md` before implementation. It must cover
 the real project architecture and conventions, placement and cohesion,
-reuse and module conventions, design patterns only when justified, and
-existing dependencies, tools, and styling conventions.
+reuse and module conventions, design patterns selected from the task's
+design forces, and existing dependencies, tools, and styling conventions.
+
+**Pattern selection (M-31):** Apply `references/design-patterns.md` before
+proposing the implementation. Record the **design forces**, the signals with
+evidence, the selected patterns with their stack translation, the rejected
+candidates, and the derived count. Inventory existing patterns and
+framework mechanisms first. The count is an output: 0, 2, 32, or 100+ are
+all valid. A pattern without a signal is a defect. The selection belongs in
+the task plan (Phase 9); the File Responsibility Map records any file or
+unit introduced to implement a selected pattern.
 
 **Official documentation consultation (mandatory for architecture evaluation):**
 

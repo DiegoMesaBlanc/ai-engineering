@@ -175,7 +175,13 @@ repository's `commands/` directory.
 - The evaluation covers where components, hooks, services, configuration,
   types, and interfaces belong; cohesion and separation of
   responsibilities; public exports, barrels, import aliases, and module
-  conventions; design patterns only when justified; and styling decisions.
+  conventions; design patterns selected from the task's design forces; and
+  styling decisions.
+- Design patterns are selected with `references/design-patterns.md`: every
+  selected pattern has a signal and a force, existing mechanisms are
+  preferred, the set is composed and deduplicated, and the count is derived.
+  It may be 0, 2, 32, or 100+; it is never targeted or capped, and each
+  pattern is translated to the detected stack's idiom.
 - The diagnosis is evidence-based and classified as detected, inferred, or
   absent; directory names alone do not establish an architecture. When no
   coherent architecture is detected, conventions conflict, or a new one must
@@ -183,9 +189,10 @@ repository's `commands/` directory.
   before implementation.
 - After implementation, the result is validated against the proposed design
   and the project's conventions, in addition to functional tests.
-- No universal folder structure, fixed file count, or mandatory pattern is
-  imposed. Routine technical details remain autonomous; only significant
-  product or architecture decisions reach a human decision gate.
+- No universal folder structure, fixed file count, or preferred pattern
+  count is imposed. Routine technical details remain autonomous; only
+  significant product or architecture decisions reach a human decision
+  gate.
 
 ### Contracts, recipes, and decisions
 

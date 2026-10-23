@@ -28,7 +28,7 @@ Each dimension maps to an existing Skill. Only applicable dimensions are audited
 | # | Dimension | Responsible Skill(s) | Applies when |
 |---|---|---|---|
 | 1 | **Architecture & folder structure** — style, layering, boundaries, dependency direction, placement, **folder map, type/contract ownership**, cohesion/coupling | `architecture-advisor`, `project-analysis` | Always |
-| 2 | **Patterns & complexity** — justified patterns, decision priority, no over-engineering/fragmentation (R-42) | `complexity-advisor` | Always |
+| 2 | **Patterns & complexity** — patterns selected from design forces, justified, composed, stack-idiomatic, no over-engineering/fragmentation (R-42) | `complexity-advisor`, `architecture-advisor` | Always |
 | 3 | **Code quality & separation** — naming, SRP, separation of concerns, duplication, dead/debug code, errors, boundary validation, typing, docs, config, logging | `implementation-recipes`, `engineering-review` | Always |
 | 4 | **API & contracts** — schemas, error model, versioning, auth, idempotency, no leakage | `api-contract-design` | Boundary/integration changes |
 | 5 | **Data & database** — integrity, safe migrations, parameterized queries, indexes, N+1, transactions | `database-engineering` | Schema/query changes |
@@ -136,6 +136,33 @@ For each applicable dimension:
     - Exempt: small single-responsibility files (types-only, config-only, behavior-only, wiring-only, generated files).
     - Severity: P2 for mixing contracts with data/behavior, schema+validators+client, or multiple independent exported units where the ecosystem supports one unit per file; P3 for config + behavior or minor mixing. Tag findings with `FILE_COHESION`.
     - Evidence: file with responsibility breakdown + reason to change analysis + consumer import paths.
+
+**Dimension 2 — Patterns & complexity: explicit checks**
+
+1. **Selection record check**
+    - Compare the implemented patterns against the recorded selection from `references/design-patterns.md`.
+    - A change that introduces or changes a pattern without a selection record is a finding: `PATTERN_UNJUSTIFIED`.
+    - A pattern in the code with no recorded signal and force is a finding: `PATTERN_UNJUSTIFIED`.
+    - A recorded pattern with no real consumer is a finding: `PATTERN_UNUSED`.
+2. **Signal check**
+    - Every selected pattern must cite at least one signal from the catalog's taxonomy.
+    - A pattern justified only by its name, by “best practice”, or by a framework fashion is not evidence.
+    - A count that matches a preferred number rather than the set of **design forces** is a finding.
+3. **Existing mechanism check**
+    - Verify that an existing abstraction, framework capability, or language construct was not duplicated by a new pattern.
+    - A new pattern that repeats an existing mechanism is `PATTERN_DUPLICATE`.
+4. **Composition check**
+    - Verify that patterns which resolve the same force are not both present unless they are a recognized composition.
+    - Verify that patterns which must compose (Strategy + Factory, Composite + Visitor, Command + Memento, Repository + Unit of Work, Outbox + Idempotent Receiver) are wired correctly.
+5. **Stack translation check**
+    - Verify that the implementation uses the detected stack's idiom, not a class-shaped GoF diagram forced onto functions, protocols, traits, or modules.
+    - Verify that the idiom is consistent with `references/design-patterns.md`, `skills/implementation-recipes/SKILL.md`, and the stack's official documentation.
+6. **Count check**
+    - Recompute the count from the selected set. It may be 0, 2, 32, or 100+; it is never capped and never padded.
+    - A count that cannot be reconstructed from signals and forces is a finding.
+7. **Scope check**
+    - Audit only the change set. A pre-existing pattern outside the diff is context, not a finding (R-42).
+    - A pattern introduced or changed by the task is in scope.
 
 ### Phase 6 — Validate Findings Against Context
 

@@ -64,6 +64,9 @@ Common content for every level:
 
 - files and modules affected
 - existing abstractions to reuse
+- the design forces and the design-pattern selection: selected patterns,
+  rejected candidates, stack translation, and derived count
+  (`references/design-patterns.md`)
 - the dependency outcome and its evidence
 - the selected Secure Delivery Workflow when CI/CD, security, or delivery
   controls are involved

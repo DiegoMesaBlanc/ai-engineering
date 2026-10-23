@@ -1,6 +1,6 @@
 ---
 name: architecture-advisor
-description: Evaluate architecture and design options and decide where code, types, contracts, and files belong — file cohesion, one primary unit per file, type-per-file placement, folder architecture, reuse, and module conventions. Load when deciding where new or changed code goes, or when reviewing file, type, and contract placement.
+description: Evaluate architecture and design options and decide where code, types, contracts, and files belong — file cohesion, one primary unit per file, type-per-file placement, folder architecture, reuse, module conventions, and design-pattern selection. Load when deciding where new or changed code goes, when selecting design patterns from a task's forces, or when reviewing file, type, contract, and pattern implementation.
 ---
 
 # Architecture Advisor
@@ -489,9 +489,17 @@ instead of implementing.
 
 ### Design Patterns
 
-Select a design pattern only when it solves a real need.
+Apply the canonical procedure in `references/design-patterns.md`.
 
-Prefer existing abstractions and framework capabilities over a new pattern.
+- Extract the task's **design forces** and cite the evidence.
+- Inventory existing patterns and framework mechanisms before adding one.
+- Select every candidate whose force is present and not already resolved;
+  reject every candidate whose force is absent.
+- Translate each selected pattern to the detected stack's idiom.
+- Derive the count; never target it. A task may need 0, 2, 32, or 100+.
+- Record the selection and the rejected candidates.
+
+A pattern without a signal is a defect.
 
 ### Dependencies, Tooling, and Styling
 

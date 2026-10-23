@@ -22,6 +22,12 @@ Review the actual changes, not the entire repository unless required.
 - Does the change respect the existing architecture and conventions?
 - Were unnecessary abstractions introduced?
 - Were existing abstractions reused?
+- **Pattern selection**: verify the change against the recorded selection in
+  `references/design-patterns.md`. Every pattern must have a signal and a
+  **design forces** entry; no existing mechanism may be duplicated;
+  compositions must be coherent; the count must be derived; the
+  implementation must be idiomatic for the stack. A pattern without a signal
+  is a finding.
 - Perform the post-implementation architectural validation defined in
   `skills/architecture-advisor/SKILL.md`: contrast the result with the
   proposed design and the project's conventions, including placement,

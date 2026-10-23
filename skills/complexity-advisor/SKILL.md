@@ -1,6 +1,6 @@
 ---
 name: complexity-advisor
-description: Analyze task complexity and determine the simplest appropriate implementation strategy while avoiding unnecessary abstractions, design patterns, refactoring, and architectural changes.
+description: Analyze task complexity and determine the simplest appropriate implementation strategy while avoiding unnecessary abstractions, refactoring, and architectural changes, and selecting design patterns from the task's design forces.
 ---
 
 # Complexity Advisor
@@ -28,7 +28,8 @@ Recommendation:
 
 Prefer direct implementation.
 
-Do not introduce abstractions or patterns.
+Do not add an abstraction or a pattern without a design signal; record the
+selection as 0 patterns when no force is present.
 
 ## Low
 
@@ -41,7 +42,9 @@ Examples:
 
 Recommendation:
 
-Prefer the existing architecture and a simple implementation.
+Prefer the existing architecture and a simple implementation. Check the
+existing mechanisms first, and select only the pattern that a present signal
+requires.
 
 ## Medium
 
@@ -55,9 +58,9 @@ Examples:
 
 Recommendation:
 
-Analyze existing abstractions and consider appropriate patterns.
-
-Do not automatically introduce one.
+Analyze existing abstractions and apply `references/design-patterns.md` to
+the signals that are actually present. Do not introduce a pattern without a
+signal; the count is derived.
 
 ## High
 
@@ -71,7 +74,9 @@ Examples:
 
 Recommendation:
 
-Perform explicit architecture analysis.
+Perform explicit architecture analysis and the full pattern-selection
+procedure: profile, signals, compositions, conflicts, stack translation,
+and alternatives.
 
 Present alternatives and trade-offs.
 
@@ -112,6 +117,22 @@ triggered by the Human Decision Gates in AGENTS.md: risk, irreversible or
 high-impact operations, security or data impact, cost, scope or
 backward-compatibility changes, shared or production resources, and
 project rules.
+
+## Pattern selection scales with rigor
+
+Complexity scales the depth of the pattern analysis, never the evidence bar.
+The task's **design forces** are the only input; the count is an output.
+
+| Complexity | Pattern analysis |
+|---|---|
+| Trivial | No pattern unless a signal is explicit; usually 0. |
+| Low | Check existing mechanisms; select only the patterns one signal requires. |
+| Medium | Apply the signal matrix; record selected and rejected candidates. |
+| High | Full procedure: profile, signals, compositions, conflicts, stack translation, alternatives. |
+| Critical | High plus reliability, security, data-consistency, and rollback patterns, with approval. |
+
+A task may need 0, 2, 32, or 100+ patterns. The complexity level never caps
+the set and never pads it.
 
 ## Quality is not proportional
 

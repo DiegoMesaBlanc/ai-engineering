@@ -58,6 +58,7 @@ Check for the existence of:
 - references/official-documentation.md
 - references/linter-rules.md
 - references/system-workflow-regression-matrix.md
+- references/design-patterns.md
 - references/token-efficiency.md
 - references/mandatory-rules.md
 - references/project-startup-decisions.md
@@ -302,7 +303,8 @@ Confirm consistency across the Core, Skills, commands, and workflows:
 - Do not create a PR or publish review comments remotely.
 - Generate copy-ready PR and review content.
 - Keep review workflows read-only.
-- Use architecture patterns only when justified.
+- Select architecture and design patterns from evidence and the task's
+  design forces, never from a quota or a stack.
 - Support direct URLs and local artifacts.
 - Treat MCP as optional.
 - Keep credentials out of version control.
@@ -747,6 +749,7 @@ Return:
 - V2.46 phase checklist checks:
 - V2.47 phase plan and phase checklist are distinct artifacts:
 - V2.48 feature responsibility folders checks:
+- V2.49 design-pattern selection checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -873,7 +876,8 @@ after it, across frameworks, languages, and application types:
   the implementation phase and does not implement first
 - the architecture evaluation covers code organization and placement,
   cohesion, reuse, module conventions (public exports, barrels, import
-  aliases), design patterns only when justified, and styling decisions
+  aliases), design patterns selected from the task's design forces, and
+  styling decisions
 - the architecture knowledge is defined once in
   `skills/architecture-advisor/SKILL.md`; no duplicate architecture Skill
   was created and no competing order was introduced
@@ -882,7 +886,7 @@ after it, across frameworks, languages, and application types:
   with the proposed design and the project's conventions, in addition to
   functional tests
 - the rules are framework- and language-neutral: no universal folder
-  structure, fixed file count, or mandatory pattern is imposed
+  structure, fixed file count, or preferred pattern count is imposed
 - a styling-system decision that significantly affects architecture,
   dependencies, or the visual experience triggers a human decision gate
 - routine technical details remain autonomous and are not turned into
@@ -1517,13 +1521,32 @@ trim() {
   sed 's/`//g; s/^[[:space:]]*//; s/[[:space:]]*$//'
 }
 
-grep -E '^\| M-[0-9]+ \|' references/mandatory-rules.md |
-while IFS='|' read -r _ id _ _ anchor surfaces; do
-  id="$(printf '%s' "$id" | trim)"
-  anchor="$(printf '%s' "$anchor" | trim)"
-  normalized_anchor="$(printf '%s' "$anchor" | normalize)"
-  missing=""
+failures="$(
+  grep -E '^\| M-[0-9]+ \|' references/mandatory-rules.md |
+  while IFS='|' read -r _ id _ _ anchor surfaces; do
+    id="$(printf '%s' "$id" | trim)"
+    anchor="$(printf '%s' "$anchor" | trim)"
+    normalized_anchor="$(printf '%s' "$anchor" | normalize)"
+    printf '%s' "$surfaces" | tr ',' '\n' | while read -r surface; do
+      surface="$(printf '%s' "$surface" | trim)"
+      [ -n "$surface" ] || continue
+      if [ ! -f "$surface" ]; then
+        printf 'FAIL %s: missing surface %s\n' "$id" "$surface"
+        continue
+      fi
+      normalized_file="$(normalize < "$surface")"
+      if ! printf '%s' "$normalized_file" | grep -Fq -- "$normalized_anchor"; then
+        printf 'FAIL %s: anchor "%s" missing from %s\n' "$id" "$anchor" "$surface"
+      fi
+    done
+  done
+)"
 
+if [ -n "$failures" ]; then
+  printf '%s\n' "$failures"
+  exit 1
+fi
+```
 
 A rule whose canonical wording is missing from `AGENTS.md` is a `FAIL`: it
 would not reach every client.
@@ -2031,3 +2054,43 @@ files:
   mixed component/contract finding.
 - `references/mandatory-rules.md` includes M-30.
 - `references/system-workflow-regression-matrix.md` includes R-70.
+
+## V2.49 Regression — Design-Pattern Selection
+
+Verify that pattern selection is signal-driven, language-neutral, and
+count-agnostic:
+
+- `AGENTS.md` contains M-31 and the anchor `design forces`, and states that
+  a task may need 0, 2, 32, or 100+ patterns with no maximum.
+- `references/design-patterns.md` exists and contains: the design-force
+  model; a language-neutral signal taxonomy; a catalog of at least 100
+  patterns across the GoF, enterprise, integration, architectural,
+  concurrency, functional, UI, reliability, data, and security families;
+  the selection procedure with rejection and composition; the count
+  semantics; the stack-neutrality rules and translation examples; the eight
+  worked flows with counts 2, 4, 5, 6, 7, 5, 5, and 9; a 32-pattern scale
+  example; the validation checklist; and the sources.
+- `skills/architecture-advisor/SKILL.md` delegates to the reference, requires
+  the **design forces** and evidence, and rejects a pattern without a
+  signal.
+- `skills/complexity-advisor/SKILL.md` scales the depth of pattern analysis
+  by rigor without capping or padding the count, and states that the task's
+  **design forces** are the only input.
+- `workflows/task-to-code.md` Phase 8 requires the pattern selection record
+  (forces, signals, selected, rejected, stack translation, count) before the
+  plan.
+- `workflows/task-planning.md` includes the selection in the plan.
+- `workflows/code-audit.md` checks `PATTERN_UNJUSTIFIED`, `PATTERN_UNUSED`,
+  `PATTERN_DUPLICATE`, composition, stack translation, and the derived
+  count.
+- `skills/engineering-review/SKILL.md` checks the pattern selection against
+  the code.
+- `references/official-documentation.md` contains the GoF, Fowler EAA, and
+  Enterprise Integration Patterns sources.
+- `references/mandatory-rules.md` includes M-31.
+- `references/system-workflow-regression-matrix.md` includes R-71.
+- `commands/task.md` and `agents/orchestrator.md` reference the selection and
+  contain the anchor `design forces`.
+- The count is never presented as a target: the same mechanism yields 2 for
+  a small flow and 32+ for a program, and the catalog has at least 100
+  patterns.

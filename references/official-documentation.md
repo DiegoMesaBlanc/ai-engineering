@@ -430,6 +430,37 @@ corresponding documentation. CI/CD and delivery decisions follow
 
 These are the authoritative sources that inform our internal rules. Consult when making architectural decisions, evaluating patterns, or establishing conventions.
 
+### Design Patterns
+
+The pattern catalog and the selection procedure are defined in
+`references/design-patterns.md`. These are the authoritative sources behind
+the catalog; the implementation idiom is always taken from the detected
+stack's official documentation.
+
+- **Design Patterns: Elements of Reusable Object-Oriented Software**
+  (Gamma, Helm, Johnson, Vlissides, 1994): ISBN 978-0201633610 — the GoF
+  catalog.
+- **Patterns of Enterprise Application Architecture** (Martin Fowler):
+  https://martinfowler.com/books/eaa.html — persistence, domain, and
+  layering patterns.
+- **Enterprise Integration Patterns** (Hohpe, Woolf):
+  https://www.enterpriseintegrationpatterns.com/ — messaging and
+  integration patterns.
+- **Refactoring catalog** (Martin Fowler):
+  https://refactoring.com/catalog/ — the refactoring vocabulary used when a
+  pattern replaces an existing structure.
+- **Refactoring Guru — Design Patterns** (Spanish):
+  https://refactoring.guru/es/design-patterns — practical catalog with
+  intent, trade-offs, structure, and per-language examples. Consult it when
+  explaining or implementing a selected pattern in the detected stack. It
+  is a secondary reference, not a replacement for the GoF catalog; its
+  public catalog lists 22 classic patterns and omits Interpreter, while the
+  canonical catalog contains all 23 GoF patterns.
+- **TypeScript Handbook** — generics, classes, modules, iterators:
+  https://www.typescriptlang.org/docs/handbook/
+- **MDN Web Docs** — `Set`, `EventTarget`, iterators:
+  https://developer.mozilla.org/en-US/docs/Web/JavaScript
+
 ### Clean Architecture & SOLID Principles
 
 - **Robert C. Martin (Uncle Bob) - Clean Architecture**: https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html

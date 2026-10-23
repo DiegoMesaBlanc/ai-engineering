@@ -28,13 +28,23 @@ Do not duplicate Skills, workflows, or architecture definitions.
   however small, follows professional best practices, clean code, typing,
   error handling, security, and appropriate tests. Only process rigor and
   test depth are proportional to the task; implementation quality never is.
-- Evaluate monorepos, microfrontends, Atomic Design, and design patterns
-  only when evidence justifies them. A monorepo is justified by a concrete
-  benefit — shared code or types, atomic changes across projects, common
-  tooling, or consistent validation. One team and a shared release train are
-  not that benefit: when the projects share no code and no change spans
-  them, separate repositories are the simpler topology, and the decision is
+- Evaluate monorepos, microfrontends, and Atomic Design only when evidence
+  justifies them. A monorepo is justified by a concrete benefit — shared
+  code or types, atomic changes across projects, common tooling, or
+  consistent validation. One team and a shared release train are not that
+  benefit: when the projects share no code and no change spans them,
+  separate repositories are the simpler topology, and the decision is
   recorded with the reason.
+- Every implementation task records its design-pattern selection from the
+  task's **design forces**, never from a quota or a stack: map the forces to
+  `references/design-patterns.md`, keep
+  every pattern whose force is present and not already covered by an
+  existing mechanism, reject every pattern without evidence, and derive the
+  count from the set. The selection is language- and framework-neutral: the
+  pattern is the design intent, and the implementation is translated to the
+  detected stack's idiom. There is no maximum — a task may need 0, 2, 32, or
+  100+ patterns — and there is no minimum; a pattern without a signal is a
+  defect.
 - Require human approval for significant architectural changes.
 - Load only relevant Skills and supporting references.
 - Write TypeScript and JavaScript with **arrow functions**. Use the

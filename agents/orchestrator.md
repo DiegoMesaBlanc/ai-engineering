@@ -191,6 +191,12 @@ options and wait for the user's decision before implementing.
 
 Do not introduce new architecture for small changes.
 
+Before implementation, apply `references/design-patterns.md` to derive the
+pattern set: extract the **design forces**, inventory existing mechanisms,
+select and reject with evidence, compose, translate to the detected stack's
+idiom, and derive the count. The count may be 0 and has no maximum; a
+pattern without a signal is a defect.
+
 When the task changes a boundary, interface, or integration, load
 `skills/api-contract-design/SKILL.md` to define the contract before
 implementing. When the task touches the database — schema, migration,
