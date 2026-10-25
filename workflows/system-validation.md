@@ -33,15 +33,18 @@ Check for the existence of:
 - agents/orchestrator.md
 - agents/reviewer.md
 - agents/auditor.md
+- agents/external-auditor.md
 - commands/task.md
 - commands/generate-pr.md
 - commands/review-pr.md
 - commands/commit.md
 - commands/audit-e2e.md
 - commands/create-project.md
+- commands/adopt-baseline.md
 - commands/system-check.md
 - commands/validate.md
 - commands/code-audit.md
+- commands/external-audit.md
 - commands/checkpoint.md
 - commands/resume-work.md
 - commands/provider-check.md
@@ -66,6 +69,7 @@ Check for the existence of:
 - workflows/task-to-code.md
 - workflows/pull-request-review.md
 - workflows/code-audit.md
+- workflows/external-audit.md
 - workflows/commit.md
 - workflows/system-validation.md
 - workflows/project-validation.md
@@ -77,6 +81,7 @@ Check for the existence of:
 - workflows/task-planning.md
 - workflows/estimation.md
 - workflows/project-initialization.md
+- workflows/engineering-baseline.md
 - workflows/system-audit.md
 - workflows/output-compliance.md
 
@@ -117,6 +122,7 @@ At minimum inspect:
 - performance
 - core-web-vitals
 - best-practices
+- engineering-baseline
 
 Do not require a dedicated Next.js Skill.
 
@@ -750,6 +756,8 @@ Return:
 - V2.47 phase plan and phase checklist are distinct artifacts:
 - V2.48 feature responsibility folders checks:
 - V2.49 design-pattern selection checks:
+- V2.50 external audit checks:
+- V2.51 engineering baseline checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -2094,3 +2102,127 @@ count-agnostic:
 - The count is never presented as a target: the same mechanism yields 2 for
   a small flow and 32+ for a program, and the catalog has at least 100
   patterns.
+
+## V2.50 Regression — External Audit of Our Own Deliverable
+
+Verify that the external audit exists as a separate, independent, read-only
+flow and does not replace or duplicate the code audit:
+
+- `workflows/external-audit.md` exists and defines the independence contract
+  (I-1 to I-7): a separate session, cold input, read-only, adversarial
+  stance, re-execution, frozen scope, and the declared epistemic limit
+- the workflow lists the **allowed** and **denied** input explicitly; the
+  denied list includes the implementation conversation, the task plan, the
+  pattern selection record, the validation claims, and the PR description
+- Phase 0 refuses to audit when the context already contains implementation
+  history, reporting `NOT INDEPENDENT — FRESH SESSION REQUIRED`
+- Phase 1 resolves the **artifact root** and the **Git root** separately and
+  never uses `AI_ENGINEERING_HOME` as the artifact root
+- Phase 2 rebuilds the acceptance criteria from the original requirement and
+  forbids deriving them from the implementation
+- Phase 4 re-executes the project's gates and the structural compliance
+  checks, and a skipped check is `NOT_VERIFIED`, never a pass
+- Phase 5 falsifies every delivery claim with `CONFIRMED`, `FALSIFIED`, or
+  `NOT VERIFIED`; a falsified claim is a P1 finding
+- Phase 6 applies the `workflows/code-audit.md` dimensions **by reference**
+  and does not restate them; the workflow does not duplicate
+  `workflows/output-compliance.md`
+- the verdict taxonomy is `ACCEPTED`, `ACCEPTED WITH FINDINGS`, `REJECTED`,
+  or `NOT VERIFIED`, and an acceptance criterion cannot be silently skipped
+- `commands/external-audit.md` exists, delegates to the workflow without
+  restating it, names `external-auditor`, and sets `subtask: true`
+- `agents/external-auditor.md` exists as a read-only agent with
+  `mode: all`: selectable as the Auditor mode with Tab in a new session, and
+  invocable as a subagent by the command. The agent states that switching
+  mode inside the implementing session does not create independence and does
+  not restate the workflow
+- `skills/external-audit/SKILL.md` exists, names the concrete triggers, and
+  delegates to the workflow
+- the flow is distinct from `code-audit` (foreign code), `pull-request-review`
+  (a colleague's PR), `project-validation` (gate execution), and
+  `system-audit` (the system itself)
+- `agents/reviewer.md` is unchanged and `code-audit` keeps its current
+  behavior, agent, and scope
+- `README.md` distinguishes `/external-audit` from `/code-audit`,
+  `/validate`, and `/review-pr`
+- `references/system-workflow-regression-matrix.md` includes R-72
+- the behavioral pilot is reproducible: a synthetic artifact that contains
+  each targeted violation is detected with `file:line`, corrected, and
+  re-verified as PASS; the pilot runs outside the repository and its
+  temporary directory is deleted when finished
+- no new package.json, dependency, or competing orchestrator was introduced
+
+## V2.51 Regression — Opt-In Engineering Baseline
+
+Verify that the engineering baseline exists, is opt-in, and makes onboarding
+work from the repository itself instead of depending on an existing team
+member explaining the project from memory, without overwriting existing
+conventions:
+
+- `workflows/engineering-baseline.md` exists and its Purpose describes the
+  covered failure in plain language: onboarding that only works when an
+  existing team member explains the project from memory, and the reduction of
+  repeated initial configuration
+- the workflow defines the adoption contract B-1 to B-9: opt-in, asked once,
+  additive and incremental, one module at a time, existing convention wins,
+  conflict reported, verified not declared, no package without the gate, and
+  no remote write or commit
+- the **single question** is defined once, with the four answers, and states
+  the conditions under which it is never asked (documentation-only project,
+  read-only intent, existing record, already answered in the session); the
+  "choose modules" path asks which modules without preselecting
+- the answer mapping is explicit: acceptance and "never" write
+  `docs/engineering-baseline.md`; "not now" writes nothing and asks again on
+  a later task
+- the record path, frontmatter (`status`, `version`, `date`, `modules`), the
+  status values, and the module values are defined; a module is `adopted`
+  only with verification evidence
+- the six modules exist with their artifacts and verification: `onboarding`,
+  `docs-gate`, `decisions`, `bootstrap`, `devops`, `release`; the recommended
+  order is `onboarding`, `docs-gate`, `decisions`, `bootstrap`, `devops`,
+  `release`
+- new-project scheduling is separate from the recommended adoption order and
+  places each module at the earliest creation step where its verification is
+  possible: `decisions` after `A2`, `onboarding`, `bootstrap`, and `docs-gate`
+  after `A8`, `devops` after `A9`, and `release` after `A9` and `A10`
+- the diagnosis is read-only and classifies every module as `Adopt`,
+  `Adapt`, `Conflict`, or `Skip`, with evidence
+- the workflow forbids restructuring the repository, overwriting a working
+  file without an approved diff, shadowing existing scripts, and duplicating
+  `workflows/secure-delivery.md`
+- the `docs-gate` module requires an executable `scripts/check-docs`, wired
+  into CI and `/validate`, that fails on a deliberate break and passes on the
+  restore; prose is not accepted as the gate
+- the required set of `scripts/check-docs` is derived from the record, so a
+  module that is `pending`, `declined`, or `n/a` is never checked and a
+  partial adoption is not failed for documents it never selected or has not
+  applied yet
+- the newcomer test is defined as a clean copy plus a fresh session that
+  follows only `docs/onboarding.md`; pass requires zero questions and a green
+  suite, and a static reading is not a newcomer test
+- `commands/adopt-baseline.md` exists, uses `agent: orchestrator`, delegates
+  to the workflow without restating it, and never creates an agent
+- `skills/engineering-baseline/SKILL.md` exists and makes the flow
+  discoverable in clients that load Skills natively
+- `workflows/task-to-code.md` Phase 1 contains the single gate with the four
+  conditions and treats an accepted adoption as a separate change set
+- `workflows/project-initialization.md` Phase 3 asks the question in the
+  startup decision set, records the answer, and Phase 4 instantiates the
+  selected modules at the earliest creation step where each can be verified,
+  following the workflow's new-project scheduling
+- `AGENTS.md` contains M-32 and the anchor `opt-in engineering baseline`, and
+  the Human Decision Gates list includes the opt-in baseline with the same
+  opt-in, asked-once, separate-change-set, and "never" rules
+- `references/mandatory-rules.md` includes M-32 with its canonical anchor and
+  required surfaces
+- the baseline is distinct from `project-validation`, `secure-delivery`,
+  `external-audit`, `code-audit`, and `system-audit`
+- `README.md` lists `/adopt-baseline` and distinguishes it from
+  `/create-project`, `/validate`, and `/external-audit`
+- `references/system-workflow-regression-matrix.md` includes R-73
+- the out-of-scope declaration names incident response, infrastructure
+  provisioning, capacity and cost, privacy and compliance, and product
+  analytics, instead of implying coverage
+- no package.json, dependency, or `.env.example` was added to this
+  documentation-only repository
+

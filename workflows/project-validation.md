@@ -113,6 +113,12 @@ Prefer:
 7. full test suites or builds when justified
 8. configured security and coverage checks when relevant
 
+When the project has `scripts/check-docs`, run it as a documentation gate.
+It is part of the validation of a project that adopted the `docs-gate`
+module of `workflows/engineering-baseline.md`: a non-zero exit is a finding,
+and a missing script is not a failure for a project that never adopted that
+module.
+
 Use existing tooling and project conventions.
 
 Formatting and linting are mandatory for the application code of every

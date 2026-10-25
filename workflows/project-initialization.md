@@ -165,6 +165,29 @@ asking. See "Scope Control" in `references/project-creation-order.md`.
 - Do not create the repository structure, and do not write code, before the
   decision set is settled.
 
+### 3.7 Engineering baseline
+
+Ask the canonical question of the opt-in engineering baseline in
+`workflows/engineering-baseline.md` ("The Single Question") exactly once,
+and only when the project is a software project with application source
+code. A documentation-only project is marked not applicable with the reason
+and is not asked.
+
+Record the answer in the decision set:
+
+- **All modules or a selection**: add the selected modules to the scope
+  catalog as a ceiling, and schedule each one in Phase 4 at the earliest
+  creation step where its verification is possible, per the "New-project
+  scheduling" table of `workflows/engineering-baseline.md`. Do not create
+  `docs/engineering-baseline.md` before the repository exists.
+- **Not now**: record the answer and create no record. The existing-project
+  gate in `workflows/task-to-code.md` asks once the project exists.
+- **Never**: record the answer; create `docs/engineering-baseline.md` with
+  `status: declined` as soon as the repository exists, so the gate never
+  asks.
+
+The baseline never expands the catalog beyond the user's answer.
+
 ## Phase 4 — Create the Project, Step by Step, Stopping at Every Checkpoint
 
 Create the project in the order defined by
@@ -175,6 +198,18 @@ is what makes the project grow well instead of decaying.
 **The creation is progressive and the user controls where it stops.** It is
 not a single pass that produces a finished project. The **stopping points**
 are the checkpoints of `references/project-creation-order.md`.
+
+When the decision set selected baseline modules, instantiate them through
+`workflows/engineering-baseline.md` at the earliest creation step where each
+module's verification is possible, following the "New-project scheduling"
+table of that workflow. Do not apply a module before its verification is
+possible: `decisions` can start after `A2`, while `onboarding`, `bootstrap`,
+and `docs-gate` wait for the running slice and the green suite of `A8`.
+`devops` follows `A9`, and `release` follows `A9` and `A10`. Each module is
+applied, verified, and recorded before the next one starts, and each is a
+stopping point. The baseline never replaces a step of the creation order; it
+makes the documentation, decision, bootstrap, and delivery steps of that
+order executable and verified.
 
 ### 4.1 Agree the scope first
 

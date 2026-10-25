@@ -29,6 +29,38 @@ Determine:
 - provisional Context Manifest: required Skills and references, likely
   files, exploration budget, and stop condition
 
+### Engineering baseline gate
+
+After resolving the target project root, check for
+`docs/engineering-baseline.md` and decide whether the single question
+applies.
+
+Ask **once**, and only when every condition holds:
+
+- the target project is a software project with application source code;
+- the task will create or change source code, provisionally;
+- the record does not exist;
+- the question has not already been answered in this session.
+
+A read-only intent — audit, review, estimation, investigation, or
+architecture-only — never asks.
+
+Ask the canonical question for the opt-in engineering baseline, defined in
+`workflows/engineering-baseline.md` ("The Single Question"). Do not restate
+it here. Record the answer as that
+workflow requires: acceptance and refusal write the record, and "not now"
+writes nothing so a later task can ask again.
+
+An accepted adoption is a **separate change set**. Run it through
+`workflows/engineering-baseline.md` on its own branch or worktree, before or
+after this task as the user chooses. Never mix the baseline's files with the
+task's change set, and never let the answer expand this task's scope
+silently.
+
+When the record exists, read it and honor its status; do not ask again. An
+explicit `/adopt-baseline` invocation is the only way to revisit a
+`declined` record.
+
 ## Phase 2 — Understand the Task
 
 Accept the task in any available form: provider reference, URL, local

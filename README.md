@@ -22,7 +22,7 @@ A provider-agnostic, free-first engineering workflow with shared engineering gui
 ## Current top-level structure
 
 - `agents/`: OpenCode agents and orchestration.
-- `commands/`: commands such as `/task`, `/generate-pr`, `/review-pr`, `/system-check`, `/validate`, `/code-audit`, `/commit`, `/audit-e2e`, `/create-project`, `/checkpoint`, `/resume-work`, `/provider-check`, `/delivery-check`, and `/estimate`.
+- `commands/`: commands such as `/task`, `/generate-pr`, `/review-pr`, `/system-check`, `/validate`, `/code-audit`, `/external-audit`, `/commit`, `/audit-e2e`, `/create-project`, `/adopt-baseline`, `/checkpoint`, `/resume-work`, `/provider-check`, `/delivery-check`, and `/estimate`.
 - `contracts/`: provider-neutral task, design, and Git contracts.
 - `integrations/`: provider access, security, cost, and compatibility policy.
 - `references/`: official documentation indexes and technical references.
@@ -58,6 +58,9 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
 - `/code-audit`: read-only senior/staff whole-cycle audit of generated
   code for architecture, patterns, quality, security, data, tests,
   performance, a11y, i18n, SEO, UI, and mobile.
+- `/external-audit`: independent read-only audit of a deliverable **we**
+  produced, from a fresh session that did not implement it, with re-executed
+  evidence, claim falsification, and an acceptance-criteria verdict.
 - `/commit`: generate and validate commits from the current change set using
   project-native quality gates (format, lint, typecheck, tests, build,
   security, AI sanity review), creating atomic commits with English
@@ -76,6 +79,11 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
   agrees the scope catalog, asks for the architectural style, then creates
   one step at a time, stopping at every checkpoint with the progress
   tracker and the next suggested step.
+- `/adopt-baseline`: adopt an opt-in engineering baseline that removes the
+  need for an existing team member to explain the project from memory when
+  someone new joins, and reduces the configuration repeated at the start. It
+  diagnoses read-only, applies one module at a time, verifies each one, and
+  records the state in `docs/engineering-baseline.md`.
 
 OpenCode supports Markdown commands and agents with permissions defined in
 frontmatter. Those files are OpenCode adapters; they do not create slash
@@ -100,6 +108,63 @@ repository's `commands/` directory.
   accessibility, i18n, SEO, UI, and mobile — in read-only mode.
 - It is distinct from `/system-check` (system config), `/validate` (tool
   execution), and `/review-pr` (colleague's PR feedback).
+
+### External audit
+
+- `/external-audit` audits a deliverable **we** produced, from outside the
+  context that produced it. It exists because `/code-audit` is for code
+  written by someone else: a colleague, another AI, or a supplied change
+  set. When the code is ours, the auditor must not share our reasoning.
+- The audit runs in a fresh session. In OpenCode there are two paths: select
+  the **Auditor** mode with Tab in a **new session**, or run
+  `/external-audit`, which forces a fresh subagent with `subtask: true`.
+  Switching to Auditor mode inside the session that implemented the
+  deliverable does **not** create independence: the history persists. In
+  Codex and Claude, start a new process or session.
+- It rebuilds the acceptance criteria from the requirement, re-executes the
+  project's gates and the structural compliance checks, falsifies every
+  delivery claim, applies the code-audit dimensions by reference, and issues
+  one verdict: `ACCEPTED`, `ACCEPTED WITH FINDINGS`, `REJECTED`, or
+  `NOT VERIFIED`.
+- It is read-only. A skipped check is `NOT_VERIFIED`, never a pass. It is
+  distinct from `/code-audit` (foreign code), `/review-pr` (a colleague's
+  PR), `/validate` (gate execution), and `/audit-e2e` (the system itself).
+- The Skill `skills/external-audit/SKILL.md` makes the flow discoverable in
+  clients that load Skills natively, including Codex and Claude.
+
+### Engineering baseline
+
+- `/adopt-baseline` adopts an opt-in engineering baseline that removes one
+  specific failure: onboarding that only works when an existing team member
+  explains the project from memory. It also reduces the configuration a
+  project repeats at the start: skeleton, tooling, environment, decisions,
+  documentation gate, and delivery pipeline.
+- It is **opt-in and asked once**. The question appears in
+  `/create-project` Phase 3 for a new project and in the task flow Phase 1
+  for an existing one, only when the project is software, the task changes
+  source code, and `docs/engineering-baseline.md` is absent. "Not now"
+  writes nothing and asks again later; "never" writes `status: declined`
+  and is respected.
+- It is **additive and incremental**. Existing files, tooling, scripts, and
+  conventions are preserved; a conflict is reported, never resolved
+  silently. Each module is applied, verified, and recorded before the next
+  one starts, and every module is a stopping point.
+- The six modules are `onboarding`, `docs-gate`, `decisions`, `bootstrap`,
+  `devops`, and `release`, in that order. `onboarding` is accepted only when
+  the **newcomer test** passes: a clean copy plus a fresh session following
+  only `docs/onboarding.md`, with zero questions and a green suite.
+  `docs-gate` is an executable `scripts/check-docs` wired into CI and
+  `/validate`, not prose.
+- The state lives in `docs/engineering-baseline.md`, in the target project,
+  with `status`, `version`, `date`, and the per-module state. It travels with
+  the repository and survives sessions.
+- It is distinct from `/create-project` (which creates the project and
+  offers the baseline), `/validate` (which executes the gates), and
+  `/external-audit` (which audits from a fresh session). The baseline
+  changes the project; it does not audit it.
+- The out-of-scope declaration is explicit: incident response,
+  infrastructure provisioning, capacity and cost, privacy and compliance,
+  and product analytics remain separate gaps.
 
 ### Commit generation
 

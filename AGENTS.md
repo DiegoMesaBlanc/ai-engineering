@@ -219,6 +219,13 @@ Ask the user before proceeding only when the decision materially requires human 
   asking. Stopping at a checkpoint is a normal outcome, not a defect.
 - Creating a project from zero requires the explicit `create-project` command.
   Without it, do not create a project from scratch; ask the user first.
+- The **opt-in engineering baseline** is offered once for a software project
+  that has no `docs/engineering-baseline.md`: in a new project's startup
+  decision set and before the first code change in an existing project. Ask
+  the canonical question in `workflows/engineering-baseline.md`; acceptance
+  is a separate change set, "not now" asks again on a later task, and
+  "never" is recorded and respected. A general request to implement a task is
+  not an answer.
 - A proposed new runtime or development dependency under the canonical dependency policy.
 - Changes that materially affect scope, backward compatibility, security, sensitive data, or production behavior.
 - Destructive actions or changes to shared or production resources.
