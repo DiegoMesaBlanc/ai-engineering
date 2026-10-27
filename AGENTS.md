@@ -234,6 +234,8 @@ Ask the user before proceeding only when the decision materially requires human 
 - Creating a commit, including `git commit` and `git commit --amend` — always
   after the user reviewed the presented change set, never on the strength of a
   request that asked for the commit.
+- Continuing from one phase of a task to the next, after the phase report and
+  its approval question.
 
 Present the recommended option, relevant alternatives, concrete trade-offs, and the reason a human decision is needed.
 
@@ -285,16 +287,18 @@ Hard rules:
 - Preparation commands that never create commits, such as a dry run or a
   commit proposal, remain available without this gate.
 
-## Progress Updates Without Approval Fatigue
+## Progress Updates and Phase Gates
 
-During implementation, provide concise status updates at meaningful milestones: requirements and approach aligned, implementation milestone completed, important new finding or decision required, validation results, final diff and completion summary. Each update must explain what changed, the evidence available, and the next step. An update is not a request for approval unless a decision gate actually applies.
+During implementation, provide concise status updates at meaningful milestones: requirements and approach aligned, implementation milestone completed, important new finding or decision required, validation results, final diff and completion summary. Each update must explain what changed, the evidence available, and the next step. An update inside a phase is not a request for approval; a phase boundary is.
 
-**Show the phase plan at the start, when the task has more than one
-phase.** Before the work begins, list the phases the task will go through,
-in order, each with the outcome it produces. The phases are the canonical
-ones, restricted to the ones this task needs, so the sequence is derived
-from the task rather than fixed. A task with a single phase shows no plan.
-The plan is shown once and is refined only when the scope changes.
+**Show the phase plan before the work starts, in every task, without
+exception.** It has at least one phase: a task small enough to fit in one
+phase shows a one-phase plan, and a task that needs more shows every phase in
+order, each with the outcome it produces. The phases are the canonical ones,
+restricted to the ones this task needs, so the sequence is derived from the
+task rather than fixed. A plan with zero phases is a defect, and there is no
+maximum number of phases. The plan is shown once and is refined only when the
+scope changes, and a refinement is presented and approved again.
 
 The **phase plan** is the sequence of phases. It is not the **task plan**,
 which is the planning artifact and says what the task does. The phase plan
@@ -309,10 +313,32 @@ plan for the position, the checklist for the detail.
 [   ] 4. Review and validate
 ```
 
-**Report each phase boundary.** When a phase ends, state what it produced,
-what remains, and **that the user can stop there**, with the exact resume
-point. Stopping is a deliberate choice the user can make at any boundary,
-in any task and any language or framework.
+**Report each phase boundary and treat it as an approval gate.** When a
+phase ends and another phase remains, state what the phase produced, what
+remains, and what the next phase adds, with the exact resume point, and then
+ask a direct question in the current conversation:
+
+> Do you approve starting phase N?
+
+- The next phase starts only after an affirmative answer that follows that
+  question.
+- Continuing the work, the original task request, an earlier "continue", an
+  earlier approval of the plan, silence, a timeout, a resumed checkpoint, or
+  an automated retry is not approval for the transition.
+- Approval covers exactly the next phase. If its scope or the plan changes,
+  present it again and ask again.
+- If the user declines or asks for changes, do not start the next phase;
+  adjust and ask again.
+- When the phase is the last one, there is no transition to approve: deliver
+  the result, and apply the commit approval gate if a commit is proposed. A
+  single-phase task therefore has a one-phase plan, its checklist, and no
+  transition gate.
+
+This is the phase gate. It has the same mechanics as the commit approval
+gate, applied to the boundary instead of to the commit.
+
+Stopping is a deliberate choice the user can make at any boundary, in any
+task and any language or framework.
 
 **Show the phase checklist, in every task, without exception.** While a
 phase is in progress, every status update carries a checklist of the

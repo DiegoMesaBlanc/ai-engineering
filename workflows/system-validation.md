@@ -753,7 +753,7 @@ Return:
 - V2.44 architecture matrix checks:
 - V2.45 installation gate checks:
 - V2.46 phase checklist checks:
-- V2.47 phase plan and phase checklist are distinct artifacts:
+- V2.47 phase plan, phase checklist, and phase gate checks:
 - V2.48 feature responsibility folders checks:
 - V2.49 design-pattern selection checks:
 - V2.50 external audit checks:
@@ -2025,23 +2025,30 @@ Verify that the user can see what the system is doing, step by step:
   different checklist, and a checklist of phase names is rejected.
 - `references/system-workflow-regression-matrix.md` includes R-68.
 
-## V2.47 Regression — Phase Plan and Boundary Report
+## V2.47 Regression — Phase Plan, Checklist, and Phase Gate
 
-Verify that the user sees the plan from the start and can stop at any
+Verify that every task shows its phases and stops for approval at each
 boundary:
 
-- `AGENTS.md` states that when a task has more than one phase the phase
-  plan is shown once at the start, with the phases the task will go
-  through and the outcome each produces, and that a single-phase task shows
-  no plan.
+- `AGENTS.md` states that the phase plan is shown before the work starts in
+  every task, with at least one phase and no maximum, that a single-phase task
+  shows a one-phase plan, and that a plan with zero phases is a defect.
 - `AGENTS.md` states that every phase boundary reports what the phase
-  produced, what remains, and that the user can stop there with the exact
-  resume point.
+  produced, what remains, and what the next phase adds, and that it is an
+  approval gate: the next phase starts only after an affirmative answer in the
+  current conversation. The task request, an earlier "continue", the plan
+  approval, silence, a timeout, a resumed checkpoint, or an automated retry is
+  not approval. The last phase has no transition gate.
+- `AGENTS.md` **Human Decision Gates** lists continuing from one phase to the
+  next.
 - `workflows/session-resilience.md` defines the **Phase Plan** format, the
-  derivation of the sequence from the task, and the **Phase boundary
-  report**, and states that both are session state requiring no commit.
-- `workflows/task-to-code.md` Phase 9 publishes the plan, restricted to the
-  phases the task needs.
+  derivation of the sequence from the task, the **Phase boundary report and
+  phase gate**, and states that the artifacts are session state requiring no
+  commit.
+- `workflows/task-to-code.md` Phase 9 publishes the plan in every task and
+  references the phase gate.
+- `commands/task.md` and `agents/orchestrator.md` state the phase gate and
+  reject the task request or an earlier instruction to continue as approval.
 - The phase plan and the task plan artifact are not the same thing: the
   plan states what the task does, the phase plan states the order it
   happens in.
@@ -2052,6 +2059,18 @@ boundary:
   `workflows/task-to-code.md`, so the check never drifts from its source of
   truth.
 - `references/system-workflow-regression-matrix.md` includes R-69.
+
+```sh
+failures=0
+for f in AGENTS.md workflows/session-resilience.md workflows/task-to-code.md \
+         commands/task.md agents/orchestrator.md; do
+  if ! tr '\n' ' ' < "$f" | tr -s ' ' ' ' | grep -Fqi 'phase gate'; then
+    printf 'FAIL V2.47: %s does not define the phase gate\n' "$f"
+    failures=1
+  fi
+done
+exit "$failures"
+```
 
 ## V2.48 Regression — Feature Responsibility Folders
 

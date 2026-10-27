@@ -261,9 +261,10 @@ If a session appears stalled during compaction or a long operation:
 
 ## Phase Plan
 
-When a task has more than one phase, the agent shows the **phase plan**
-once, at the beginning, so the user knows the sequence and where the work
-can stop.
+Before the work starts, in every task, the agent shows the **phase plan**, so
+the user knows the sequence, the outcome of each phase, and where the work can
+stop. A task with one phase still shows its one-phase plan: a plan with zero
+phases is a defect, and there is no maximum number of phases.
 
 The **phase plan** is the sequence of phases. It is not the **task plan**,
 which is the planning artifact of `workflows/task-planning.md` and says what
@@ -288,22 +289,41 @@ checklist for the detail.
 - The phases are the canonical phases of `workflows/task-to-code.md`,
   **restricted to the ones this task actually needs**. The sequence is
   derived from the task: a documentation-only change runs a short plan, a
-  new service runs a long one, and a task with a single phase shows no
-  plan at all.
-- The plan is shown once. It is refined only when the scope changes, and
-  the refinement is reported.
+  new service runs a long one, and a task small enough to fit in one phase
+  shows a one-phase plan, never no plan.
+- The plan is shown once, before the work starts. It is refined only when
+  the scope changes, and the refinement is presented and approved again.
 - The plan is session state, and it does not require a commit.
 
-### Phase boundary report
+### Phase boundary report and phase gate
 
 At the end of each phase, the report states:
 
 - what the phase produced, with the checklist of that phase;
 - what remains: the pending items of the phase and the phases that follow;
-- **that the user can stop there**, and the exact resume point.
+- what the next phase adds, and the exact resume point.
+
+When another phase remains, the boundary is an **approval gate**. The agent
+asks, in the current conversation:
+
+> Do you approve starting phase N?
+
+The next phase starts only after an affirmative answer that follows that
+question. These are not approval for the transition: continuing the work, the
+original task request, an earlier "continue", an earlier approval of the plan,
+silence, a timeout, a resumed checkpoint, or an automated retry. Approval
+covers exactly the next phase; if its scope or the plan changes, it is
+presented again and approved again. If the user declines or asks for changes,
+the next phase does not start; the plan is adjusted and the question asked
+again.
+
+The last phase has no transition to approve: its result is delivered, and the
+commit approval gate applies if a commit is proposed. A single-phase task
+therefore has a one-phase plan, its checklist, and no transition gate.
 
 A phase that ends with pending work is not a failure to report as done.
-The boundary report is what makes stopping a deliberate choice.
+The boundary report is what makes stopping a deliberate choice, and stopping
+requires no commit.
 
 ## Phase Checklist
 

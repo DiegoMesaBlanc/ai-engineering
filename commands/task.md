@@ -94,7 +94,7 @@ Continue from the first incomplete phase and reuse analysis already
 completed — task and acceptance criteria, design, repository and stack,
 dependencies, complexity, and architecture — instead of repeating it.
 
-Detect engineering intent from the request (architecture/solution design, time/cost estimation, requirements analysis/technical investigation, software implementation, validation/debugging/code review). For architecture-only or estimation-only, do not modify application source code unless separately authorized. For implementation, align requirements before code changes and then proceed autonomously for routine work, providing concise status updates without approval fatigue; pause only when a material decision gate applies.
+Detect engineering intent from the request (architecture/solution design, time/cost estimation, requirements analysis/technical investigation, software implementation, validation/debugging/code review). For architecture-only or estimation-only, do not modify application source code unless separately authorized. For implementation, align requirements before code changes, then proceed autonomously inside the approved phase with concise status updates; the phase gate and the material decision gates still apply.
 
 Key required behaviors within that workflow:
 
@@ -132,6 +132,10 @@ Key required behaviors within that workflow:
 - present the Git diff and the commit proposal, and ask for explicit approval
   before creating any commit; the task request, including a prompt that tells
   the agent to commit, is not commit approval
+- show the phase plan for every task, including a one-phase plan, and treat
+  each phase boundary as the phase gate: ask before starting the next phase
+  and never treat the task request or an earlier instruction to continue as
+  approval
 
 Prefer no new dependency when the existing stack, native APIs, or project
 abstractions are sufficient. Adding or installing a new runtime or

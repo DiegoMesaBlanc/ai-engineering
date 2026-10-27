@@ -346,7 +346,18 @@ Do not restate the phase order here. Continue from the first incomplete
 phase in `workflows/task-to-code.md` and reuse analysis already performed
 instead of repeating it.
 
-After alignment, proceed autonomously for routine work and provide concise status updates without approval fatigue. If new evidence changes a material requirement or approved design, pause and explain the reason before continuing beyond the approved scope.
+Every task shows a phase plan before the work starts, including a one-phase
+plan, and carries a checklist during each phase. A phase boundary is an
+approval gate: the system reports the phase, asks, and starts the next phase
+only after the user approves in the current conversation. The task request,
+an earlier instruction to continue, silence, a timeout, or a resumed
+checkpoint is not approval. The phase gate is defined in
+`workflows/session-resilience.md`.
+
+After alignment, proceed autonomously inside the approved phase and provide
+concise status updates; the phase gate still applies at every boundary. If new
+evidence changes a material requirement or approved design, pause and explain
+the reason before continuing beyond the approved scope.
 
 ---
 

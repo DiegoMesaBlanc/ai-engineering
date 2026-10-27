@@ -343,12 +343,17 @@ Require human approval for significant architectural changes per the Human Decis
 ## Phase 9 — Plan
 
 **Publish the phase plan.** The **phase plan** is the sequence of phases; it
-is not the **task plan**, which says what the task does. When the task has
-more than one phase, show the phases it will go through, in order, each
-with the outcome it produces, and where the work can stop. The phases are
-the canonical ones of this workflow, restricted to the ones the task needs.
-The format and the phase boundary report are defined in
-`workflows/session-resilience.md` ("Phase Plan").
+is not the **task plan**, which says what the task does. Show it in every
+task: the phases the task will go through, in order, each with the outcome it
+produces, and where the work can stop. A task that fits in one phase shows a
+one-phase plan; a plan with zero phases is a defect, and there is no maximum
+number of phases. The phases are the canonical ones of this workflow,
+restricted to the ones the task needs.
+
+Each phase boundary is an approval gate: report, ask, and start the next phase
+only after an affirmative answer. The format, the boundary report, and the
+phase gate are defined in `workflows/session-resilience.md` ("Phase Plan" and
+"Phase boundary report and phase gate").
 
 Determine the proportional rigor level from the Phase 8 complexity
 classification and produce the **task plan** by following

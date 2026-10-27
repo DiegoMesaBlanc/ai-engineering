@@ -308,6 +308,10 @@ repository's `commands/` directory.
 - Approval is triggered by the Human Decision Gates (risk, irreversible or
   high-impact operations, security or data, cost, scope, shared or production
   resources, project rules), not by the classification label.
+- Every task shows a phase plan before the work starts, with at least one
+  phase and a checklist per phase, and each phase boundary is the phase gate:
+  the next phase starts only after the user approves in the current
+  conversation. The task request is never approval to continue.
 - Plans are session state by default; a durable artifact is created only when
   traceability, approval, or an explicit request requires it.
 
