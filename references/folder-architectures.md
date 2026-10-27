@@ -86,7 +86,10 @@ executed.
   ecosystem co-locates tests**: TypeScript and JavaScript, Angular, Vue, Go,
   and Python. Where the ecosystem mirrors the test tree — Java, Kotlin,
   C#/.NET, PHP, and Ruby — the test belongs to that mirrored tree, not to the
-  unit folder.
+  unit folder. A test case is never placed at the root of the source tree or
+  of a layer folder, and shared test support lives in an explicit support
+  location (`testing/`, `test/support/`, `spec/support/`, `conftest.py`,
+  `src/testFixtures`, the test project) that never contains test cases.
 - **One public API per module.** `index.ts` (or the ecosystem equivalent)
   exports what other modules may use; the rest stays encapsulated.
 - **The dependency direction is downward.** A layer imports the layer
@@ -265,6 +268,9 @@ shape; the names change.
 | Vue | folder | `index.ts` | folder | next to the unit | Vue Single-File Component specification |
 | Svelte | folder | `index.ts` | folder | next to the unit | Svelte, one component per `.svelte` file |
 | Solid | folder | `index.ts` | folder | next to the unit | Solid, named exports allow multiple components per file |
+| React Native | folder | `index.ts` | folder | next to the unit | React Native + Jest preset; no layout mandate |
+| Ionic (Angular) | folder | `index.ts` | folder | next to the unit, `*.spec.ts` | Angular Style Guide; Ionic adds no layout of its own |
+| Ionic (React) | folder | `index.ts` | folder | next to the unit | React conventions; Ionic adds no layout of its own |
 | Java, Kotlin | package | package-level public API | package folder | mirrored test tree | Spring Modulith, application modules with a provided interface; JLS on public types |
 | Python | package | `__init__.py` | package folder | next to the unit, `test_*.py` | Python packaging; no one-class-per-file rule |
 | Go | package | the package's exported identifiers | package folder | next to the unit, `_test.go` | Go specification, a package is a directory |
@@ -290,6 +296,9 @@ apply: a stateless backend feature has no local state folder.
 | Vue, Nuxt | `components/` | `composables/` | `services/` | `types/` | `stores/` | `index.ts` |
 | Svelte, SvelteKit | `components/` | `hooks/` | `services/` | `types/` | `stores/` | `index.ts` |
 | Solid, SolidStart | `components/` | `hooks/` | `services/` | `types/` | `context/` | `index.ts` |
+| React Native | `components/` | `hooks/` | `services/` | `types/` | `context/` | `index.ts` |
+| Ionic (Angular) | `components/` | `data-access/` | `services/` | `models/` | `store/` | `index.ts` |
+| Ionic (React) | `components/` | `hooks/` | `services/` | `types/` | `context/` | `index.ts` |
 | Java, Kotlin (Spring) | `api/` | `application/` | `infrastructure/` | `domain/` | — (stateless) | package-level public API |
 | Python (Django, FastAPI, Flask) | `api/` | `services/` | `repositories/` | `domain/` | `state/` | `__init__.py` |
 | Go | `api/` | `service/` | `repository/` | `domain/` | `state/` | exported identifiers |
@@ -306,6 +315,11 @@ convention, the Vue single-file component and its `composables/`, the Svelte
 and package layout, PSR-4 for PHP, and the Go package-per-directory rule.
 No framework prescribes `src/features`; that layer comes from Feature-Sliced
 Design. A tree is never presented as a framework standard when it is not.
+React Native keeps its native projects (`android/`, `ios/`) at the repository
+root, outside `src/`, uses the React tree below, and adds `.ios.tsx` /
+`.android.tsx` suffixes when a file is platform-specific. Ionic uses the
+Angular tree or the React tree, whichever it detected; Capacitor adds
+`android/` and `ios/` at the root and no source-level layout of its own.
 The official source behind each framework convention is registered in
 `references/official-documentation.md`, including its "Project Structure and
 Test Co-location" section and its Spring Modulith entry. The folder split

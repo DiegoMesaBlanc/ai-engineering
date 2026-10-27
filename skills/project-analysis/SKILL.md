@@ -150,6 +150,12 @@ report the internal file structure:
   ecosystem convention (React/Vue/Svelte/Angular component folder,
   Java/Kotlin mirrored test package, Python `test_<module>.py`,
   Go `_test.go`, Rust `tests/`, etc.).
+- Whether a test case sits at the root of the source tree or of a layer
+  folder, where no unit owns it; report it as detached.
+- Whether a support location (`testing/`, `test/support/`, `spec/support/`,
+  `conftest.py`, `src/testFixtures`) contains test cases, or whether a
+  `test/` or `tests/` folder under `src/` holds only support files in a
+  TypeScript or JavaScript project. Both are reported.
 - Whether a unit with multiple artifacts uses a dedicated folder or leaves
   `X`, `X.test`, and `X/` as siblings, where the ecosystem supports it.
 - Whether a file exports multiple independent components/units with their

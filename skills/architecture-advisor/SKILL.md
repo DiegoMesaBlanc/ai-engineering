@@ -440,6 +440,16 @@ where the ecosystem supports it.
 - The exact layout follows the ecosystem's official convention and the
   project's coherent conventions; the invariant is grouping by unit and
   co-locating tests when the ecosystem permits.
+- A test case never sits at the root of the source tree or of a layer
+  folder. When no single unit owns it, it belongs to `tests/integration/` or
+  next to the module it exercises, never to `src/`.
+- Shared test support — setup, fixtures, factories, helpers, test servers —
+  lives in an explicitly named support location: `testing/` or
+  `test/support/` in TypeScript and JavaScript, `spec/support/` in Ruby,
+  `conftest.py` in Python, `src/testFixtures` in JVM projects, the test
+  project in .NET. A support location never contains test cases, and a
+  `test/` or `tests/` folder directly under `src/` in TypeScript and
+  JavaScript is not a support location.
 - Ecosystem examples:
   - React/Next.js: `Component/` containing `Component.tsx`,
     `Component.test.tsx`, styles, stories, and subcomponents. A barrel is
@@ -452,6 +462,9 @@ where the ecosystem supports it.
     `Component.test.ts`, styles, and stories. A barrel is optional.
   - Angular: a component folder with `name.component.ts`,
     `name.component.html`, `name.component.css`, and `name.component.spec.ts`.
+  - TypeScript/JavaScript backend: `unit.ts` with `unit.test.ts` next to it;
+    support in `testing/`; an API-surface test in `tests/integration/` or
+    named `unit.integration.test.ts`.
   - Java/Kotlin: one package per unit; tests in the mirrored test source
     set and package.
   - Python: `module.py` with `test_module.py` co-located or in a mirrored

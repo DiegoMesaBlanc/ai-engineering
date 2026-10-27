@@ -61,6 +61,15 @@ Do not duplicate Skills, workflows, or architecture definitions.
   declarations, or files that mix type declarations with runtime behavior,
   is a defect to correct in the code you write — not a convention to
   preserve and copy.
+- **Design quality is evaluated at a Staff bar.** Every change is judged on
+  SOLID — one reason to change per unit, extension without editing callers,
+  substitutable implementations, small interfaces owned by their consumer, and
+  dependencies pointing at abstractions owned by the inner layer — plus high
+  cohesion, low coupling, explicit contracts at every boundary, composition
+  over inheritance, and the simplest design that satisfies the task's design
+  forces. A design that violates a principle is a finding even when it works,
+  and the finding names the principle. Pattern selection follows
+  `references/design-patterns.md` and is recorded even when it is empty.
 - A module that consumes a contract does not re-export it. The owning file
   is the single public path of the contract. A **pass-through re-export** —
   a component re-exporting the props it imports from `./types`, a service
@@ -89,7 +98,16 @@ Do not duplicate Skills, workflows, or architecture definitions.
   The test joins the unit folder **only where the ecosystem co-locates
   tests** (TypeScript, JavaScript, Angular, Vue, Go, Python); where the
   ecosystem mirrors the test tree (Java, Kotlin, C#/.NET, PHP, Ruby) the test
-  belongs to that mirrored tree, not to the unit folder. A feature imports
+  belongs to that mirrored tree, not to the unit folder. A test case is never
+  placed at the root of the source tree or of a layer folder: when no single
+  unit owns it, it belongs to an explicit integration tree
+  (`tests/integration/`) or next to the module it exercises, never to `src/`.
+  Shared test support — setup, fixtures, factories, helpers, test servers —
+  lives in an explicitly named support location (`testing/`,
+  `test/support/`, `spec/support/`, `conftest.py`, `src/testFixtures`, the
+  test project), and that location never contains test cases. In TypeScript
+  and JavaScript a `test/` or `tests/` folder directly under `src/` is not a
+  support location. A feature imports
   from `app/` and `shared/` and **never the internals of another feature**;
   cross-feature interaction goes through the other feature's public API or
   the global state. A unit that needs a second consumer is promoted to
@@ -386,7 +404,9 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
   the change set before reporting a task as implemented. It verifies the
   mechanical rules that prose cannot enforce: arrow functions over `function`
   declarations, type declarations separated from runtime behavior, contract
-  files grouped by consumer, and unit-folder test co-location. A `FAIL`
+  files grouped by consumer, and unit-folder test co-location: a test next to
+  its unit or in its explicit integration tree, never at the source root and
+  never inside a support location. A `FAIL`
   result is a defect of the task, not a finding to defer.
 - Format and lint changes with the project's configured tools.
 - Report checks that were not run.

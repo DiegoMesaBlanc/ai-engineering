@@ -99,10 +99,14 @@ the test next to the unit where the ecosystem supports it. Do not leave
 | Ecosystem | Primary unit per file | Test location | Authority / applicability |
 |---|---|---|---|
 | React / Next.js | One React component per file when the project accepts Airbnb + ESLint `react/no-multi-comp`; multiple stateless/pure components allowed. React documentation and Next.js do not mandate this. | Vitest/Jest next to the unit or project convention | Airbnb, ESLint; Next.js is unopinionated |
+| TypeScript / JavaScript backend (Node.js, Express, NestJS, Fastify) | One unit per file is common but not mandated | `foo.test.ts` next to `foo.ts`; API-surface tests in `tests/integration/` | Vitest guide (co-located `sum.test.js` example), project convention |
 | Angular | One concept per file; official exception for small related components/directives | `*.spec.ts` in the same directory | Angular Style Guide |
 | Vue | One component per `.vue`; at most one `<template>`/`<script>` | Vitest next to the unit | Vue SFC specification |
 | Svelte / SvelteKit | A `.svelte` file is one component | Vitest or project convention | Svelte documentation |
 | Solid | Multiple components per file are explicitly allowed; do not enforce one per file | Vitest or project convention | Solid documentation |
+| React Native | One component per file is the convention; related pure helpers may share | Jest/Vitest next to the unit | React Native documentation; Jest preset |
+| Ionic (Angular) | Follows Angular's "one concept per file" | `*.spec.ts` in the same directory | Angular Style Guide; Ionic adds no layout rule |
+| Ionic (React) | Follows React's file convention | Vitest/Jest next to the unit | React conventions; Ionic adds no layout rule |
 | Java | At most one public top-level class/interface referenced by other compilation units per file; one public type per file is the common convention | Mirrored `src/test/java` package | Java Language Specification §7.6 |
 | Kotlin | Multiple related declarations per file are allowed and encouraged; do not enforce one per file | Mirrored test source set | Kotlin coding conventions |
 | Python | No one-class-per-file rule | `test_*.py` co-located or in a tests tree | PEP 8, pytest |
@@ -117,6 +121,21 @@ the test next to the unit where the ecosystem supports it. Do not leave
 for Java/Kotlin; `test_*.py` for Python; `_test.go` for Go; `tests/` for
 Rust; mirrored test projects for C#/.NET; and mirrored test directories for
 PHP/Ruby.
+
+**Two rules apply in every ecosystem:**
+
+1. A test case lives next to the unit it tests (co-locating ecosystems) or in
+   the mirrored test tree (mirroring ecosystems). It is never placed at the
+   root of the source tree or of a layer folder: when no single unit owns it,
+   it belongs to an explicit integration tree (`tests/integration/`) or next
+   to the module it exercises.
+2. Shared test support — setup, fixtures, factories, helpers, test servers —
+   lives in an explicitly named support location: `testing/` or
+   `test/support/` in TypeScript and JavaScript, `spec/support/` in Ruby,
+   `conftest.py` in Python, `src/testFixtures` in JVM projects, the test
+   project in .NET, and `tests/common/` in Rust. A support location never
+   contains test cases. In TypeScript and JavaScript a `test/` or `tests/`
+   folder directly under `src/` is not a support location.
 
 **Barrels:** `index.ts` is optional and is not part of the default layout.
 Add one only for multiple public exports or consumers, a stable module
@@ -235,6 +254,30 @@ src/server/<domain>/        # or src/features/<feature>/server/
 - Place composables in `composables/`, stores in `stores/`, HTTP calls in `services/`, and UI in `components/`.
 - Respect Nuxt server/client boundaries when present.
 
+### Svelte / SvelteKit
+
+- One component per `.svelte` file; a component folder holds the component, its
+  test, styles, and stories.
+- SvelteKit routes live in `src/routes/`; shared code lives in `src/lib/` with
+  the `$lib` alias, not in deep relative paths.
+- **Contracts**: shared types in feature `types/`; component props co-located in
+  the unit folder; never declare contracts inside `<script>` when another unit
+  consumes them.
+- Server-only code stays in `+page.server.ts`, `+layout.server.ts`, or
+  `+server.ts`, and is never imported by client code.
+- Validate at form actions and endpoints, not inside presentational components.
+
+### Solid / SolidStart
+
+- One component per file is the norm; Solid allows several related components in
+  one file, so do not enforce a one-component rule as a framework mandate.
+- A feature holds `components/`, `hooks/`, `services/`, `types/`, and
+  `context/` when it owns local state, plus `index.ts`.
+- Prefer signals and stores already used by the project; do not duplicate state
+  in a second mechanism.
+- **Contracts**: shared types in `types/`; props co-located in the unit folder.
+- Keep server functions (`"use server"`) out of client component modules.
+
 ## Backend Recipes
 
 ### Node.js (Express, Fastify, NestJS)
@@ -263,6 +306,75 @@ src/server/<domain>/        # or src/features/<feature>/server/
 - Use dependency injection and configuration conventions.
 - Handle exceptions centrally and consistently.
 
+### Kotlin (Spring Boot)
+
+- Keep the same package boundaries as Java: `api`, `application`, `domain`,
+  `infrastructure`; multiple closely related declarations per file are
+  idiomatic and are not a defect.
+- **Contracts**: data classes and DTOs in `domain` or `application`; keep
+  framework types out of the domain; make nullability explicit at boundaries.
+- **Tests**: mirrored `src/test/kotlin` package, next to the production package.
+- Respect the project's coroutine scopes and dispatchers; never launch from
+  `GlobalScope`; prefer constructor injection and immutable state.
+- Handle errors with the project's exception or result model; do not swallow
+  them in `runCatching` without a decision.
+
+### Go
+
+- One package per directory; `internal/` for code that must not be imported
+  outside the module; the package's exported identifiers are its public API and
+  carry doc comments.
+- **Tests**: `_test.go` in the same package directory; table-driven cases and
+  `t.Run` subtests; `gofmt`, `go vet`, and `go test ./...` must pass.
+- Return errors instead of panicking; wrap with `%w`; pass `context.Context` as
+  the first parameter on I/O boundaries; keep package-level mutable state out.
+- Define small interfaces at the consumer, not at the implementation; do not
+  create an interface for a single implementation without a test seam.
+
+### Rust
+
+- One module per unit; `pub(crate)` by default and `pub use` in `lib.rs` or
+  `mod.rs` for the module's public API.
+- **Tests**: unit tests in an inline `#[cfg(test)]` module, integration tests in
+  `tests/`; a test file never lives inside `src/` as a separate file.
+- Propagate errors with `?` and the project's error type; no `unwrap` or
+  `expect` on a path that can fail in production code.
+- Borrow at boundaries instead of cloning by default; keep global mutable state
+  out; validate untrusted input at the edge.
+
+### C# / .NET
+
+- One project per bounded context; folders `Api/`, `Services/`,
+  `Infrastructure/`, `Domain/`; one public type per file when the project adopts
+  StyleCop `SA1402`.
+- **Tests**: a separate `*.Tests` project mirroring the production namespace;
+  a test type never lives in the production project.
+- Enable nullable reference types; use `async`/`await` throughout and never
+  block with `.Result` or `.Wait()`.
+- Constructor injection and interfaces at the consumer; no service locator; keep
+  persistence attributes out of the domain where the project allows it.
+
+### PHP
+
+- PSR-4: one autoloaded class per file, namespace mirroring the path;
+  **tests** in `tests/`, mirroring `src/` (PHPUnit).
+- Constructor injection and typed properties/parameters; no static service
+  locator or global container access.
+- Validate at the boundary; use domain exception classes; never suppress errors
+  with `@`.
+- Follow the detected framework's conventions (Laravel, Symfony) instead of
+  imposing a second structure.
+
+### Ruby
+
+- `lib/` holds the code and `spec/` mirrors it; one class per file by
+  convention, with module namespaces matching the path.
+- **Tests**: `spec/` mirroring `lib/`, RSpec; a spec never lives under `lib/`.
+- Service objects with keyword arguments; avoid monkey patching core classes;
+  use `# frozen_string_literal: true`.
+- Custom error classes and explicit rescue; never `rescue nil`; follow Rails
+  autoloading and `app/` conventions when Rails is detected.
+
 ## Data Access
 
 - Use the existing ORM/ODM or driver and its conventions.
@@ -282,6 +394,29 @@ src/server/<domain>/        # or src/features/<feature>/server/
 - Keep startup and first interaction fast on mid-range devices.
 - Load `skills/design-analysis/SKILL.md` for mobile-specific analysis and
   `skills/internationalization/SKILL.md` when locales or RTL apply.
+
+### React Native
+
+- A feature holds `components/`, `hooks/`, `services/`, `types/`, and
+  `context/` when it owns state, plus its public API; `App.tsx` is the entry
+  point and `android/`/`ios/` stay at the repository root.
+- Platform-specific files use the React Native suffix convention
+  (`*.ios.tsx`, `*.android.tsx`); shared logic lives in a platform-agnostic
+  module instead of being duplicated per platform.
+- Native modules and device APIs sit behind a service adapter, never called
+  directly from a component.
+- **Tests** sit next to the unit; shared support lives in `testing/`.
+
+### Ionic and Capacitor
+
+- The layout follows the detected web framework: Angular's
+  `components/`/`data-access/`/`services/`/`models/` or React's
+  `components/`/`hooks/`/`services/`/`types/`.
+- Capacitor plugins and native APIs sit behind a service adapter; a component
+  never imports `@capacitor/*` directly.
+- `android/` and `ios/` stay at the repository root, outside the web source
+  tree.
+- **Tests** sit next to the unit, following the web framework's convention.
 
 ## Relation to Other Components
 

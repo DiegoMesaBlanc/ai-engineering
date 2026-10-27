@@ -97,11 +97,11 @@ For each applicable dimension:
 1. **Folder Architecture check**
     - Build the Folder Architecture Map from the project (detected) or the approved proposal (if available): layers/modules, responsibility→folder, allowed dependency directions, contract/type location per module, co-location rules, public module API.
     - Map declarations to folders/layers **within the audited scope**.
-    - Verify allowed import directions; flag layer-skipping imports (e.g., UI → service implementation for types), mixed-responsibility folders, cross-feature private imports, global `types.ts`/`utils.ts` dumping grounds, circular layer dependencies.
+    - Verify allowed import directions; flag layer-skipping imports (e.g., UI → service implementation for types), mixed-responsibility folders, cross-feature private imports, global `types.ts`/`utils.ts` dumping grounds, circular layer dependencies. **Evidence required:** run `LAYER-001` in `workflows/output-compliance.md` over the audited scope and report the matched `file:line`.
     - **Dumping ground check**: flag `lib/`, `utils/`, `services/` folders that contain domain-specific code (API clients, contracts, storage, i18n catalogs) mixed with generic utilities. These are anti-patterns, not conventions to preserve.
     - **Feature-driven structure check**: in a feature-driven architecture, verify the tree has `app/`, `shared/`, and `features/<feature>/`; that the feature root holds only its responsibility folders and its public API, with no source file at the root; that `components/`, `hooks/`, `services/`, `types/`, and `context/` (or the ecosystem equivalent in `references/folder-architectures.md`) each own their artifacts; that a contract never sits at the feature root or directly inside `components/`, `hooks/`, or `services/`; that each unit with its own test, styles, or types has its own folder inside its responsibility folder; that every feature exposes a public API (`index.ts` or the ecosystem equivalent); and that **no import reaches past another feature's public API** into its internals. A feature imports from `app/` and `shared/` only. Tag `FOLDER_ARCHITECTURE`; severity P2.
     - **Primary unit per file check**: where the detected ecosystem supports it, flag files that export multiple independent components, classes, modules, or other units with their own behavior. **Rule: one interface/type per file in its owning layer's folder.** Exception: multiple types with the **same exclusive consumer** are grouped in one file. Use the applicability matrix in `skills/implementation-recipes/SKILL.md`; never impose React/Angular conventions on Solid, Kotlin, Python, Go, Rust, C#/.NET, or Ruby, which do not support a one-unit-per-file rule. Small private non-exported helpers are exempt. Tag `FILE_COHESION`; severity P2 for independent exported units, P3 for minor related helpers.
-    - **Unit folder and test co-location check**: for units with multiple related artifacts (implementation, test, styles, stories, subcomponents), verify they live in a dedicated unit folder (or the ecosystem's equivalent package/module) with the test next to the unit, where the ecosystem supports it. Flag `Component.tsx` + `Component.test.tsx` + `Component/` as siblings, or a test detached from the unit against the ecosystem convention. Tag `FOLDER_ARCHITECTURE`; severity P2 when the unit has multiple artifacts, P3 for a single trivial unit.
+    - **Unit folder and test co-location check**: for units with multiple related artifacts (implementation, test, styles, stories, subcomponents), verify they live in a dedicated unit folder (or the ecosystem's equivalent package/module) with the test next to the unit, where the ecosystem supports it. Flag `Component.tsx` + `Component.test.tsx` + `Component/` as siblings, a test at the root of the source tree or of a layer folder, a test detached from the unit against the ecosystem convention, or a support location that holds test cases. Tag `FOLDER_ARCHITECTURE`; severity P2 when the unit has multiple artifacts, P2 for a test at the source root or a support location with test cases, P3 for a single trivial unit.
     - **Barrel check**: a barrel (`index.ts`) is optional. Flag a barrel that only re-exports one file or lacks a real public-API role as P3 `FOLDER_ARCHITECTURE`. Do not require barrels by default or invent equivalents in ecosystems that do not use them.
     - Do not impose a universal template; audit conformance to the detected/declared structure. If no structure exists, report "no identifiable architecture" and evaluate whether new code created a coherent one per the complexity-based decision (small→layer-first, medium→feature-first).
     - Language-specific idioms: Go consumer-side interfaces, Java one-public-type-per-file, Python Protocols, Ruby RBS/Sorbet.
@@ -163,6 +163,27 @@ For each applicable dimension:
 7. **Scope check**
     - Audit only the change set. A pre-existing pattern outside the diff is context, not a finding (R-42).
     - A pattern introduced or changed by the task is in scope.
+
+**Dimension 3 — Code quality and separation: explicit checks**
+
+1. **SOLID check** — apply the five criteria in
+   `skills/engineering-review/SKILL.md` ("SOLID"): single responsibility,
+   open/closed, Liskov substitution, interface segregation, and dependency
+   inversion. Report with the tags `SOLID_SRP`, `SOLID_OCP`, `SOLID_LSP`,
+   `SOLID_ISP`, and `SOLID_DIP`, severity P2, `file:line` evidence, and the
+   concrete reason to change or the dependency edge. Never report a principle
+   without that evidence.
+2. **Cohesion and coupling check** — a unit with unrelated responsibilities,
+   a folder that changes for unrelated reasons, or a module that reaches into
+   another module's internals is `FILE_COHESION` or `FOLDER_ARCHITECTURE`.
+3. **Boundary validation and error model** — untrusted input validated at the
+   edge, domain errors distinct from transport errors, no leaked internals,
+   no swallowed failures. A violation is `BOUNDARY` or `ERROR_MODEL`, P2.
+4. **Language idiom check** — the design uses the detected stack's idiom
+   (Go consumer interfaces, Python protocols, TS structural contracts,
+   Java/Kotlin/C#/PHP interfaces, Ruby duck typing) instead of a class-shaped
+   diagram forced onto the language. A forced idiom is `SOLID_*` or
+   `FILE_COHESION`, P3.
 
 ### Phase 6 — Validate Findings Against Context
 

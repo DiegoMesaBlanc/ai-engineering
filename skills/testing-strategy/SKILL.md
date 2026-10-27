@@ -251,6 +251,46 @@ behavior, plugins, platform configuration, or delivery requirements.
 Do not generate release builds, sign applications, or publish packages
 unless explicitly requested.
 
+### Go
+
+Inspect `go.mod`, the toolchain version, and existing scripts. Use
+`gofmt -l`, `go vet ./...`, `go test ./...`, and `go build ./...`; run
+`golangci-lint` or `govulncheck` only when the project already configures
+them.
+
+### Rust
+
+Inspect `Cargo.toml`, the toolchain file, and workspace members. Use
+`cargo fmt --check`, `cargo clippy`, `cargo test`, and `cargo build`; run
+`cargo audit` only when the project already configures it.
+
+### C# / .NET
+
+Inspect the solution, project files, and target frameworks. Use
+`dotnet format --verify-no-changes`, the configured analyzers (StyleCop),
+`dotnet test`, and `dotnet build`; run
+`dotnet list package --vulnerable` when a security check is relevant.
+
+### PHP
+
+Inspect `composer.json`, the PHP version, and the test configuration. Use
+the project's PHP-CS-Fixer (dry run), PHPStan or Psalm, PHPUnit, and
+`composer audit`; a PHP library has no build step, so validation is static
+plus tests.
+
+### Ruby
+
+Inspect `Gemfile`, the Ruby version, and the test configuration. Use
+RuboCop, RSpec or Minitest, and `bundler-audit` when configured. A gem
+build is a packaging step, not a correctness check.
+
+### Svelte, Solid, and Vue
+
+Use the detected Vite/Vitest setup, the framework compiler check
+(`svelte-check`, `vue-tsc`, or the Solid TypeScript configuration), and the
+project's formatter and linter. A component test lives next to the
+component.
+
 ### Databases
 
 Inspect the database, driver, ORM, migration strategy, and test setup.
@@ -286,8 +326,15 @@ this policy. Follow the canonical tooling policy in AGENTS.md:
 - JavaScript and TypeScript: Prettier and ESLint with framework plugins.
 - Angular: Prettier and Angular ESLint, including template linting.
 - Ionic: the tooling of its underlying Angular or React stack.
-- Python: Ruff format and Ruff check.
-- Java: google-java-format and Checkstyle or an equivalent tool.
+- Svelte and Solid: Prettier, the framework compiler check, and ESLint.
+- Python: Ruff format and Ruff check, plus the configured type checker.
+- Java: google-java-format or Spotless, plus Checkstyle or the project's linter.
+- Kotlin: ktlint or detekt, plus the Gradle build.
+- Go: `gofmt` and `go vet`, plus `golangci-lint` when configured.
+- Rust: `cargo fmt --check` and `cargo clippy`.
+- C#/.NET: `dotnet format` and the configured analyzers such as StyleCop.
+- PHP: PHP-CS-Fixer and PHPStan or Psalm.
+- Ruby: RuboCop.
 - SQL: dialect-aware formatting and linting such as SQLFluff.
 - Other languages: the ecosystem-standard formatter and linter.
 

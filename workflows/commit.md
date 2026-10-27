@@ -78,7 +78,17 @@ tools or modify configuration without explicit user authorization.
 
 Scan the diff (staged + unstaged + untracked in scope) for common secret
 patterns: API keys, tokens, passwords, private keys, connection strings.
-Use regex patterns; no external tool required.
+
+```sh
+grep -rnE "(sk_live_|sk_test_|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----|(password|passwd|secret|token|api[_-]?key)[[:space:]]*[:=][[:space:]]*[\"'][^\"']{8,})" \
+  <scoped-paths> \
+  --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
+  --exclude-dir=coverage --exclude-dir=.git
+```
+
+Each match is a candidate: confirm it is not a placeholder, an example, or a
+test fixture. A real secret is reported with its location and type, redacted,
+and **blocks** all commits.
 
 If secrets are found: report location and type (redacted), **block** all
 commits.

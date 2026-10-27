@@ -613,6 +613,9 @@ canonical applicability matrix in
 
 ### Unit Folders and Test Placement
 
+- **Vitest — Getting Started**: https://vitest.dev/guide/
+  — the documented example places `sum.test.js` next to `sum.js`, and test
+  files are named with `.test.` or `.spec.`.
 - **Angular — Style Guide**: https://angular.dev/style-guide
   — group closely related component files in the same directory; unit
   tests live with the code under test.
@@ -635,8 +638,14 @@ canonical applicability matrix in
 **Invariant:** group a unit's related artifacts in one folder/module and
 co-locate its test when the ecosystem permits. Keep one primary unit per
 file only where the ecosystem's documentation or authoritative style guide
-supports it. The exact layout follows the official convention and the
-project's coherent conventions; do not impose one universal template.
+supports it. A test case is never placed at the root of the source tree or
+of a layer folder; an unowned test belongs to `tests/integration/` or next to
+the module it exercises. Shared test support — setup, fixtures, factories,
+helpers, test servers — lives in an explicit support location (`testing/`,
+`test/support/`, `spec/support/`, `conftest.py`, `src/testFixtures`, the test
+project) and never contains test cases. The exact layout follows the official
+convention and the project's coherent conventions; do not impose one
+universal template.
 
 ---
 

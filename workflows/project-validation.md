@@ -51,6 +51,7 @@ Examples:
 - Angular CLI configuration
 - Python project and test configuration
 - Maven or Gradle build files
+- Go modules, Cargo workspace, .NET solution, Composer, and Gemfile
 - workspace and monorepo configuration
 - CI pipeline definitions
 

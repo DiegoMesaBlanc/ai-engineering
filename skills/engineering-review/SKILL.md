@@ -45,9 +45,11 @@ Review the actual changes, not the entire repository unless required.
 - **Unit folders and co-located tests**: when a unit has multiple related
   artifacts (implementation, test, styles, stories, subcomponents), its
   implementation and test should live in the unit folder where the
-  ecosystem supports it; flag `X`, `X.test`, and `X/` siblings, or a test
-  detached from the unit against the ecosystem convention. Do not apply the
-  folder convention to ecosystems that organize tests differently.
+  ecosystem supports it; flag `X`, `X.test`, and `X/` siblings, a test at
+  the root of the source tree or of a layer folder, a test detached from the
+  unit against the ecosystem convention, or a support location that contains
+  test cases. Do not apply the folder convention to ecosystems that organize
+  tests differently.
 - **Barrel check**: a barrel (`index.ts`) is optional. Flag a barrel that
   only re-exports one file or has no real public-API role as a P3
   observation; do not require barrels by default.
@@ -83,6 +85,34 @@ Review the actual changes, not the entire repository unless required.
   thresholds in `skills/complexity-advisor/SKILL.md` (Refactoring and
   Abstraction Justification). A conditional PASS without resolution is not
   acceptable.**
+
+### SOLID
+
+Evaluate each principle against the change and name the principle in the
+finding, with `file:line` evidence.
+
+- **Single responsibility** (`SOLID_SRP`): a unit has one reason to change. A
+  class, module, or file that mixes transport, domain rules, persistence, and
+  formatting is a finding.
+- **Open/closed** (`SOLID_OCP`): adding a variant edits a `switch`/`if` chain
+  in a caller instead of extending a point. Prefer a new implementation over a
+  new branch in existing code.
+- **Liskov substitution** (`SOLID_LSP`): an implementation that throws "not
+  supported", narrows its contract, or breaks the base type's invariant is a
+  finding. A base type must be replaceable by every implementation.
+- **Interface segregation** (`SOLID_ISP`): a consumer depends on a fat
+  interface it only partly uses. Split by consumer need; a provider-side
+  interface with methods no consumer calls is a finding.
+- **Dependency inversion** (`SOLID_DIP`): a domain or application unit imports
+  infrastructure, a framework, or a vendor SDK. Depend on an abstraction owned
+  by the inner layer; implement it in infrastructure.
+
+Language notes: Go defines interfaces at the consumer; Python uses
+`Protocol`/`ABC`; TypeScript relies on structural typing but still owns the
+contract at the consumer; Java, Kotlin, C#, and PHP use explicit interfaces;
+Ruby relies on duck typing and explicit contracts in `sig/` or `rbi/`.
+Framework annotations in a domain model are a documented exception, not a
+default.
 
 ### Code quality
 

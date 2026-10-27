@@ -758,6 +758,7 @@ Return:
 - V2.49 design-pattern selection checks:
 - V2.50 external audit checks:
 - V2.51 engineering baseline checks:
+- V2.52 design quality and dependency direction checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1423,7 +1424,10 @@ done
 Verify that file/unit organization is applied according to ecosystem support, not as a universal rule:
 
 - `skills/architecture-advisor/SKILL.md`: **Primary Unit per File and Stack Applicability** defines the rule, the dumping-ground anti-pattern, the Angular exception, and optional barrels; **Unit Folders and Co-located Tests** defines the sibling anti-pattern, ecosystem-appropriate layouts, R-42 scope, and the official documentation reference.
-- `skills/implementation-recipes/SKILL.md`: the canonical applicability matrix covers React/Next.js, Angular, Vue, Svelte, Solid, Java, Kotlin, Python, Go, Rust, C#/.NET, PHP, and Ruby, with the primary-unit rule and test location per ecosystem. Barrels are optional and not part of the default layout.
+- `skills/implementation-recipes/SKILL.md`: the canonical applicability matrix covers React/Next.js, TypeScript/JavaScript backend (Node.js, Express, NestJS, Fastify), Angular, Vue, Svelte, Solid, React Native, Ionic, Java, Kotlin, Python, Go, Rust, C#/.NET, PHP, and Ruby, with the primary-unit rule and test location per ecosystem; the per-language recipe sections cover each backend and mobile stack. Two rules apply in every ecosystem: a test next to its unit or in its mirrored tree, never at the source root or a layer root; and a support location (`testing/`, `test/support/`, `spec/support/`, `conftest.py`, `src/testFixtures`) that never contains test cases. Barrels are optional and not part of the default layout.
+- `skills/architecture-advisor/SKILL.md`: **Unit Folders and Co-located Tests** states that a test case never sits at the source root or a layer root, that an unowned test belongs to `tests/integration/` or next to the module it exercises, and that a support location never contains test cases.
+- `workflows/output-compliance.md`: `FILE-001` detects a test at the source root, a test case inside a support location, a `src/test` folder that holds only support files, and a test inside `src/` with no sibling unit and no `.integration.test.` mark, with `file:line` evidence, and its per-ecosystem table covers Python, Go, Rust, Java, Kotlin, C#/.NET, PHP, and Ruby mirrored trees.
+- `AGENTS.md` states the test placement and support-location rule, and lists it in the structural compliance check.
 - `skills/project-analysis/SKILL.md`: Folder Architecture Map and Internal Module Layout Detection report primary-unit violations, unit grouping, test co-location, and barrel justification where supported.
 - `skills/engineering-review/SKILL.md`: review flags multi-unit files and `X`, `X.test`, and `X/` siblings only where the ecosystem supports the rule; it does not impose React/Angular conventions on Solid, Kotlin, Python, Go, Rust, C#/.NET, or Ruby.
 - `workflows/code-audit.md`: Dimension 1 includes the **Primary unit per file check**, **Unit folder and test co-location check**, and **Barrel check**, with `FILE_COHESION`/`FOLDER_ARCHITECTURE` tagging and P2/P3 severity.
@@ -2047,6 +2051,10 @@ boundary:
   commit.
 - `workflows/task-to-code.md` Phase 9 publishes the plan in every task and
   references the phase gate.
+- `workflows/output-compliance.md` `CHECK-002` requires the boundary report to
+  state what the next phase adds and, when another phase remains, to ask for
+  approval to start it; a report for the last phase is exempt from the
+  question.
 - `commands/task.md` and `agents/orchestrator.md` state the phase gate and
   reject the task request or an earlier instruction to continue as approval.
 - The phase plan and the task plan artifact are not the same thing: the
@@ -2267,3 +2275,30 @@ conventions:
 - no package.json, dependency, or `.env.example` was added to this
   documentation-only repository
 
+## V2.52 Regression — Design Quality and Dependency Direction
+
+Verify that design quality is specified and that dependency direction is
+verified mechanically:
+
+- `AGENTS.md` states the Staff bar for design: SOLID, cohesion and coupling,
+  explicit contracts, composition over inheritance, the simplest design, and a
+  recorded pattern selection.
+- `skills/engineering-review/SKILL.md` defines the five SOLID criteria with the
+  tags `SOLID_SRP`, `SOLID_OCP`, `SOLID_LSP`, `SOLID_ISP`, and `SOLID_DIP`,
+  plus language notes.
+- `workflows/code-audit.md` Dimension 3 applies the SOLID check with
+  `file:line` evidence, and Dimension 1 requires `LAYER-001`.
+- `workflows/output-compliance.md` defines `LAYER-001` with the forbidden
+  dependency edges per layer and executable detection for TypeScript and
+  JavaScript, Java and Kotlin, Python, C#/.NET, PHP, and Ruby.
+- `references/system-workflow-regression-matrix.md` includes R-74.
+- Proof: a fixture whose `domain/` imports `infrastructure/` is detected, and
+  the fixed fixture is clean.
+
+```sh
+failures=0
+grep -qi "Staff bar" AGENTS.md || { echo "FAIL V2.52: AGENTS.md has no design bar"; failures=1; }
+grep -qi "SOLID" skills/engineering-review/SKILL.md || { echo "FAIL V2.52: no SOLID criteria"; failures=1; }
+grep -qi "LAYER-001" workflows/code-audit.md workflows/output-compliance.md || { echo "FAIL V2.52: no LAYER-001"; failures=1; }
+exit "$failures"
+```

@@ -165,16 +165,33 @@ than one source) is a public API surface and is exempt.
 grep -rnE "^export (type )?\{[^}]+\} from \"[^\"]+\"" <changed-paths> \
   --include='*.ts' --include='*.tsx' \
   --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build
+
+# Local re-export of a name imported in the same file (no `from` clause)
+grep -rnE "^export (type )?\{[^}]+\};?[[:space:]]*$" <changed-paths> \
+  --include='*.ts' --include='*.tsx' \
+  --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build |
+while IFS=: read -r file line rest; do
+  names="$(printf '%s' "$rest" |
+    sed -E 's/^export (type )?\{//; s/\};?[[:space:]]*$//' |
+    tr ',' '\n' | sed 's/^ *//; s/ *$//')"
+  printf '%s\n' "$names" | while read -r name; do
+    [ -n "$name" ] || continue
+    grep -qE "^import[[:space:]].*\b$name\b" "$file" &&
+      echo "  FAIL $file:$line — TYPE-003 — local pass-through of $name"
+  done
+done
 ```
 
 This is a **candidate generator**, not a verdict. For each match, classify
 it:
 
-- The module **also imports** from the same source → pass-through.
+- The module **also imports** from the same source, or imports the name and
+  then re-exports it locally → pass-through.
 - The source is a **contract file** (`types`, `contracts`, `schemas`,
   `interfaces`) → pass-through.
 - The file re-exports from **two or more** distinct sources → it is an
-  aggregating barrel, which is exempt.
+  aggregating barrel, which is exempt. A local re-export of an imported name
+  is not a barrel: it adds no new module path, it only forwards.
 
 The module specifier may be relative (`./types`) or aliased
 (`@/contracts/types`); both are covered.
@@ -424,6 +441,62 @@ flagged. A shared, versioned configuration package published outside the
 project is also not flagged; what is flagged is a copy of system tooling
 inside the project.
 
+### LAYER-001 — Dependency direction
+
+Dependencies point inward: `domain` imports nothing from `application`,
+`infrastructure`, `api`, `ui`, or a framework; `application` may import
+`domain`; `infrastructure` implements abstractions declared by the inner
+layer; UI calls the application or API layer, never infrastructure. A
+framework annotation in a domain model is a documented exception, not a
+default.
+
+| From | Forbidden |
+|---|---|
+| `domain/` | `application/`, `infrastructure/`, `api/`, `components/`, framework SDK, vendor SDK |
+| `application/` | `infrastructure/`, `components/` |
+| `components/` or `api/` | `infrastructure/` |
+| `infrastructure/` | nothing forbidden; it may depend on `domain/` and `application/` |
+
+```sh
+# TypeScript / JavaScript
+find src -type d \( -name domain -o -name application \) -print0 2>/dev/null |
+xargs -0 grep -rnE "from ['\"][^'\"]*(infrastructure|/db|/storage|/stripe|@prisma|express|fastify)" 2>/dev/null |
+  sed 's/^/  FAIL LAYER-001: /'
+find src -type d \( -name components -o -name api \) -print0 2>/dev/null |
+xargs -0 grep -rnE "from ['\"][^'\"]*infrastructure" 2>/dev/null |
+  sed 's/^/  FAIL LAYER-001: /'
+
+# Java / Kotlin
+find . -type d -name domain -print0 2>/dev/null |
+xargs -0 grep -rnE '^import .*(infrastructure|javax\.persistence|org\.springframework)' 2>/dev/null |
+  sed 's/^/  FAIL LAYER-001: /'
+
+# Python
+find . -type d -name domain -print0 2>/dev/null |
+xargs -0 grep -rnE '^(from|import) .*(infrastructure|django|fastapi|sqlalchemy)' 2>/dev/null |
+  sed 's/^/  FAIL LAYER-001: /'
+
+# C# / .NET
+find . -type d \( -name Domain -o -name domain \) -print0 2>/dev/null |
+xargs -0 grep -rnE '^using .*(Infrastructure|Microsoft\.EntityFrameworkCore)' 2>/dev/null |
+  sed 's/^/  FAIL LAYER-001: /'
+
+# PHP
+find . -type d \( -name Domain -o -name domain \) -print0 2>/dev/null |
+xargs -0 grep -rnE '^use .*(Infrastructure|Doctrine|Illuminate)' 2>/dev/null |
+  sed 's/^/  FAIL LAYER-001: /'
+
+# Ruby
+find . -type d \( -name domain -o -name Domain \) -print0 2>/dev/null |
+xargs -0 grep -rnE '^(require|include|extend) .*(infrastructure|active_record|rails)' 2>/dev/null |
+  sed 's/^/  FAIL LAYER-001: /'
+```
+
+The patterns are candidate generators: a framework import in `domain/` is a
+finding unless the project documents the exception and the review records it.
+A `FAIL` is P1 when it crosses a module boundary with runtime risk, P2
+otherwise. The check reports `file:line`; it never rewrites code.
+
 ### CHECK-001 — Phase checklist format and derivation
 
 A phase checklist is valid when every line uses the state format and every
@@ -485,11 +558,12 @@ step was derived from, so the step text does not repeat the path.
 The scenarios the derivation must cover are listed in
 `workflows/session-resilience.md` ("Scenarios the checklist must cover").
 
-### CHECK-002 — Phase plan and phase boundary report
+### CHECK-002 — Phase plan and phase boundary gate
 
 The phase plan lists the phases the task will go through, each with its
-outcome. The boundary report states what was produced, what remains, and the
-stop point. Both use the same states as the checklist.
+outcome. The boundary report states what was produced, what remains, what the
+next phase adds, and the resume point; when another phase remains, it asks for
+approval to start it. Both use the same states as the checklist.
 
 ```sh
 # The phase plan format: [   ], [ x ] or [ ! ] followed by the phase
@@ -498,26 +572,36 @@ check_phase_plan() {
     sed 's/^/  FAIL invalid phase plan line: /'
 }
 
-# The boundary report states what was produced, what remains, and the stop point
+# The boundary report states produced, remaining, next, resume, and asks
 check_boundary_report() {
   report="$(printf '%s\n' "$@")"
   printf '%s\n' "$report" | grep -qiE 'hecho|done|produced' ||
     echo "  FAIL boundary report does not say what was produced"
   printf '%s\n' "$report" | grep -qiE 'pendiente|remaining|falta' ||
     echo "  FAIL boundary report does not say what remains"
-  printf '%s\n' "$report" | grep -qiE 'pued(e|es)? parar|can stop' ||
-    echo "  FAIL boundary report does not say the user can stop here"
   printf '%s\n' "$report" | grep -qiE 'reanuda|resume' ||
     echo "  FAIL boundary report does not give the resume point"
+  printf '%s\n' "$report" | grep -qiE 'siguiente fase|next phase' ||
+    echo "  FAIL boundary report does not say what the next phase adds"
+
+  # When another phase remains, the boundary asks for approval to start it.
+  if ! printf '%s\n' "$report" |
+       grep -qiE 'última fase|ultima fase|last phase|no further phase'; then
+    printf '%s\n' "$report" |
+      grep -qiE 'aprob|approve starting|do you approve' ||
+      echo "  FAIL boundary report does not ask for approval to start the next phase"
+  fi
 }
 ```
 
 A compliant plan passes the first check, and a compliant boundary report
 passes the second one. A plan whose phases are phase names without an
-outcome, or a boundary report that omits the stop point, is a finding. The
-phases the plan lists are the canonical ones of
-`workflows/task-to-code.md`, restricted to the ones the task needs, so the
-sequence is derived from the task and never fixed.
+outcome, or a boundary report that omits what the next phase adds or the
+approval question, is a finding. A report for the last phase is exempt from
+the question, because there is no transition to approve. The phases the plan
+lists are the canonical ones of `workflows/task-to-code.md`, restricted to
+the ones the task needs, so the sequence is derived from the task and never
+fixed.
 
 ### GATE-001 — No installation path bypasses the approval gate
 
@@ -536,12 +620,108 @@ grep -rnE '\b(npm|pnpm|yarn|bun|pip|pip3|poetry|uv|cargo|gem|composer|dotnet|mvn
 A line that installs a package and does not reference the approval gate is a
 finding. The expected result is no output.
 
-### FILE-001 — Unit folder and test co-location
+### FILE-001 — Unit folder, test co-location, and test-support separation
 
 Where the ecosystem supports it, a unit with multiple related artifacts
 (implementation, test, styles, stories, subcomponents) lives in a dedicated
 unit folder with the test next to the unit. `Component.tsx` +
 `Component.test.tsx` + `Component/` as siblings is `FAIL` (P2).
+
+A test case never sits at the root of the source tree or of a layer folder,
+and a support location never contains test cases. TypeScript and JavaScript:
+`foo.ts` and `foo.test.ts` share a folder; an API-surface test that no single
+unit owns is named `*.integration.test.*` or lives under `tests/integration/`;
+shared support lives in `testing/`, and a `test/` or `tests/` folder directly
+under `src/` is not a support location.
+
+```sh
+# (a) A test case at the root of the source tree
+find src -mindepth 1 -maxdepth 1 -type f \
+  \( -name '*.test.*' -o -name '*.spec.*' \) |
+  sed 's/^/  FAIL test at the source root: /'
+
+# (b) A support location that holds test cases
+for dir in src/testing src/test src/tests test/support spec/support; do
+  [ -d "$dir" ] || continue
+  find "$dir" -type f \( -name '*.test.*' -o -name '*.spec.*' \) |
+    sed "s|^|  FAIL test case inside the support location $dir: |"
+done
+
+# (c) A src/test folder that holds only support files
+if [ -d src/test ] &&
+   ! find src/test -type f \( -name '*.test.*' -o -name '*.spec.*' \) | grep -q .; then
+  echo "  FAIL src/test holds no test case: use src/testing for support"
+fi
+
+# (d) A test inside src/ with no sibling unit and no integration mark
+find src -type f \
+  \( -name '*.test.ts' -o -name '*.test.tsx' \
+     -o -name '*.spec.ts' -o -name '*.spec.tsx' \) |
+grep -v '\.integration\.test\.' |
+while read -r test_file; do
+  dir="$(dirname "$test_file")"
+  base="$(basename "$test_file")"
+  stem="${base%%.test.*}"
+  stem="${stem%%.spec.*}"
+  found=0
+  for ext in ts tsx js jsx mts cts; do
+    [ -f "$dir/$stem.$ext" ] && found=1
+  done
+  [ "$found" -eq 0 ] &&
+    echo "  FAIL detached test: $test_file has no sibling unit"
+done
+```
+
+**Per-ecosystem test location.** A test file outside its allowed location is
+a `FAIL`. The allowed locations are the ones the applicability matrix in
+`skills/implementation-recipes/SKILL.md` defines:
+
+| Ecosystem | Allowed test location | Flagged when |
+|---|---|---|
+| TypeScript, JavaScript, React, Next.js, Angular, Vue, Svelte, Solid, React Native, Ionic, Capacitor | Next to the unit (`*.test.*`, `*.spec.ts`), or `tests/integration/`, or `*.integration.test.*` | A test at the source root or with no sibling unit |
+| Python | `test_*.py` next to the module, or the project's `tests/` tree | A `test_*.py` at the source root |
+| Go | `_test.go` in the package directory | A `_test.go` whose directory has no non-test `.go` file |
+| Rust | `tests/` at the crate root, or an inline `#[cfg(test)]` module | A `*_test.rs` or `*_tests.rs` file inside `src/` |
+| Java, Kotlin | `src/test/java` or `src/test/kotlin`, mirrored package | A `*Test.java`, `*Tests.java`, or `*Test.kt` under `src/main` |
+| C#/.NET | A test project (`tests/`, `*.Tests/`) | A `*Tests.cs` under `src/` |
+| PHP | `tests/`, mirrored namespace | A `*Test.php` under `src/` |
+| Ruby | `spec/`, mirroring `lib/` | A `*_spec.rb` under `lib/` |
+| SQL | Not applicable — no test artifact | — |
+
+```sh
+# Python: a test module at the source root
+find src -mindepth 1 -maxdepth 1 -name 'test_*.py' |
+  sed 's/^/  FAIL root-level Python test: /'
+
+# Go: a test file whose directory has no non-test Go file
+find . -name '*_test.go' -not -path '*/node_modules/*' | while read -r t; do
+  d="$(dirname "$t")"
+  [ -z "$(find "$d" -maxdepth 1 -name '*.go' ! -name '*_test.go' | head -1)" ] &&
+    echo "  FAIL detached Go test: $t"
+done
+
+# Rust: a test file inside src/
+find src -type f \( -name '*_test.rs' -o -name '*_tests.rs' \) |
+  sed 's/^/  FAIL Rust test inside src: /'
+
+# Java, Kotlin: a test under the production source root
+find src/main -type f \
+  \( -name '*Test.java' -o -name '*Tests.java' -o -name '*Test.kt' \) |
+  sed 's/^/  FAIL test under src/main: /'
+
+# C#/.NET and PHP: a test under the production source root
+find src -type f \( -name '*Tests.cs' -o -name '*Test.php' \) \
+  -not -path '*/test*' |
+  sed 's/^/  FAIL test under src: /'
+
+# Ruby: a spec under lib/
+find lib -type f -name '*_spec.rb' | sed 's/^/  FAIL spec under lib: /'
+```
+
+A `FAIL` is P2: move the test next to its unit or into the mirrored test
+tree, give the integration test its explicit name or tree, or rename the
+support location. The check never reorganizes code; it reports `file:line`
+evidence.
 
 ## Procedure
 
@@ -553,12 +733,14 @@ unit folder with the test next to the unit. `Component.tsx` +
 5. Run `TYPE-002` over the contract files identified in `TYPE-001`.
 6. Run `TYPE-003` over the change set, in the form the detected ecosystem
    uses to forward a contract.
-7. Run `FILE-001` over the change set.
+7. Run `FILE-001` over the change set and the source tree: unit folders, test
+   placement, and support locations.
 8. Run `STRUCT-001` and `STRUCT-006` over every feature folder.
 9. Run `STRUCT-007` over every contract file in a feature folder.
 10. Run `STRUCT-002` and `STRUCT-003` when the project is feature-driven.
-11. Review each match against the allowed reasons before reporting it.
-12. Report every finding with `file:line`, the rule id, the severity, and the
+11. Run `LAYER-001` over the source tree when the architecture declares layers.
+12. Review each match against the allowed reasons before reporting it.
+13. Report every finding with `file:line`, the rule id, the severity, and the
     concrete fix.
 
 ## Reporting
@@ -567,7 +749,7 @@ unit folder with the test next to the unit. `Component.tsx` +
 ### OUTPUT COMPLIANCE
 
 - Scope: <paths, branch, commit>
-- Checks executed: FUNC-001, TYPE-001, TYPE-002, TYPE-003, FILE-001, STRUCT-001, STRUCT-006, STRUCT-007
+- Checks executed: FUNC-001, TYPE-001, TYPE-002, TYPE-003, FILE-001, STRUCT-001, STRUCT-006, STRUCT-007, LAYER-001
 - Result: PASS | FAIL
 - Findings:
   - <file>:<line> — <RULE> — <severity> — <reason> — <fix>
