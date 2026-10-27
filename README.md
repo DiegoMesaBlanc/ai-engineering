@@ -64,7 +64,9 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
 - `/commit`: generate and validate commits from the current change set using
   project-native quality gates (format, lint, typecheck, tests, build,
   security, AI sanity review), creating atomic commits with English
-  messages. Never pushes or deploys.
+  messages. It creates commits only after showing the change set and
+  receiving explicit approval; a prompt asking for the commit is not
+  approval. Never pushes or deploys.
 - `/estimate`: estimate effort, duration, and optional cost for a complete
   project from start to finish, from a supplied project artifact (brief,
   document, text, link, file, or image), producing a durable document in the
@@ -171,7 +173,9 @@ repository's `commands/` directory.
 - `/commit` generates and validates commits from the current change set
   using project-native quality gates (format, lint, typecheck, tests,
   build, security, AI sanity review), creating atomic commits with
-  English messages. It creates commits; it does not push or deploy.
+  English messages only after the user reviewed the proposed change set and
+  approved it in the current conversation, including when the prompt itself
+  asks for the commit. It creates commits; it does not push or deploy.
 - It is distinct from `/validate` (read-only validation without commit
   creation), `/code-audit` (senior/staff architecture and patterns audit),
   and `/generate-pr` (copy-ready PR content).

@@ -231,7 +231,9 @@ Ask the user before proceeding only when the decision materially requires human 
 - Destructive actions or changes to shared or production resources.
 - New paid services, billable usage, or additional cost requiring approval.
 - A material departure from the agreed approach.
-- Creating a commit, including `git commit` and `git commit --amend`.
+- Creating a commit, including `git commit` and `git commit --amend` — always
+  after the user reviewed the presented change set, never on the strength of a
+  request that asked for the commit.
 
 Present the recommended option, relevant alternatives, concrete trade-offs, and the reason a human decision is needed.
 
@@ -240,23 +242,46 @@ Present the recommended option, relevant alternatives, concrete trade-offs, and 
 
 ## Commit Approval Policy
 
-Creating a commit always requires explicit human approval in the current
-conversation.
+A commit is created only when the human approves the proposed change set
+**after reviewing it**, in a conversation where the system asked. This has no
+exception, including when the prompt itself orders the commit.
 
-- Never run `git commit`, `git commit --amend`, or any command that creates
-  a commit without explicit approval of the proposed scope and message.
+The required sequence is fixed:
+
+1. Inspect the change set.
+2. Run the project's gates.
+3. Present the proposal with the evidence the human needs to review the
+   actual adjustments: the diff (files and line ranges), each proposed commit
+   group and message, the gate results, and the skipped or unverified checks.
+4. Ask a direct, explicit approval question in the current conversation.
+5. Create the commits only after an affirmative answer that follows that
+   question.
+
+Hard rules:
+
+- Never run `git commit`, `git commit --amend`, or any command that creates a
+  commit without that answer. There is no exception and no override.
+- **An instruction to commit contained in the prompt, the task, the ticket,
+  the command arguments, an earlier turn, or an automated instruction is not
+  commit approval.** A request such as "commit", "haz el commit", "commit and
+  push", or any equivalent wording still produces a proposal followed by the
+  approval question. Approval cannot exist before the proposal the human has
+  to review.
 - Invoking `/commit`, `/task`, or any other command authorizes **preparing and
   validating a commit proposal**, not creating commits.
-- A general request to implement a task is not authorization to commit.
-- The required sequence is: inspect the change set → run the project's gates
-  → present the proposed commit groups, messages, and files → ask for explicit
-  approval → create the commits only after an affirmative answer.
+- The human must be able to review the adjustments: a proposal that does not
+  include the change set is not approvable, and an approval given without
+  having seen it is not valid.
+- Silence, a timeout, a resumed checkpoint, an automated retry, or a previous
+  approval of the implementation is not commit approval.
+- Approval covers exactly the presented groups, files, and messages. If any
+  of them changes, re-present the proposal and ask again.
 - If the user declines or requests changes, do not commit; adjust the proposal
   and ask again.
-- If the approved scope or message changes after approval, re-present the
-  proposal and ask again.
+- A general request to implement a task is not authorization to commit.
 - This policy applies to every client, agent, and workflow, including
-  automation. There is no implicit or standing commit authorization.
+  automation. There is no implicit, standing, or pre-authorized commit
+  approval.
 - Preparation commands that never create commits, such as a dry run or a
   commit proposal, remain available without this gate.
 

@@ -130,7 +130,9 @@ Key required behaviors within that workflow:
 - write arrow functions and keep every interface, type, enum, and contract
   in a dedicated file in the folder of the layer or module that owns it,
   following `skills/implementation-recipes/SKILL.md`
-- present the Git diff and commit proposal
+- present the Git diff and the commit proposal, and ask for explicit approval
+  before creating any commit; the task request, including a prompt that tells
+  the agent to commit, is not commit approval
 
 Prefer no new dependency when the existing stack, native APIs, or project
 abstractions are sufficient. Adding or installing a new runtime or

@@ -554,13 +554,16 @@ Inspect:
 - changed files
 - unrelated changes
 
-Propose the commit groups, messages, and files.
+Propose the commit groups, messages, and files, and include the change set the
+user has to review (files, line ranges, diff).
 
 Present the proposal and ask for explicit approval in the current
-conversation. Invoking `/task` or a general request to implement the task is
-not commit approval.
+conversation. Invoking `/task`, a general request to implement the task, and
+an instruction to commit in the original task or prompt are not commit
+approval: the proposal and the question come first, every time.
 
-Create the commit only after the user replies affirmatively. If the user
+Create the commit only after the user replies affirmatively to that question.
+An approval expressed before the proposal exists is not approval. If the user
 declines or requests changes, do not commit; adjust the proposal and ask
 again. If the approved scope or message changes, re-present the proposal.
 

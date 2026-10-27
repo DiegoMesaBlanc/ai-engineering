@@ -86,11 +86,15 @@ chore(ci): update test pipeline
 5. Verify type checking when available.
 6. Verify linting when available.
 7. Stage only the intended files.
-8. Show the proposed commit groups, messages, and files.
+8. Show the proposed commit groups, messages, and the change set (files,
+   line ranges, diff) so the adjustments can be reviewed.
 9. Ask for explicit approval in the current conversation.
-10. Create the commit only after the user replies affirmatively.
+10. Create the commit only after the user replies affirmatively to that
+    question, having reviewed the proposal.
 
-Invoking `/commit` or a general request to implement a task is not commit
+No commit is ever created without that question and its affirmative answer.
+Invoking `/commit`, a general request to implement a task, and an instruction
+to commit in the prompt, the task, or a command argument are not commit
 approval. If the user declines or requests changes, do not commit; adjust
 the proposal and ask again.
 

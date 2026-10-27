@@ -396,10 +396,11 @@ Never claim successful execution without evidence.
 A completed change may end with:
 
 - commit proposal
-- commit only after explicit approval of the proposed commit groups and
-  messages in the current conversation (using `workflows/commit.md` for
-  project-native quality gates: format, lint, typecheck, tests, build,
-  security, AI sanity review; English messages; no push/deploy)
+- commit only after the user reviewed the presented change set and approved
+  the proposed commit groups and messages in the current conversation (using
+  `workflows/commit.md` for project-native quality gates: format, lint,
+  typecheck, tests, build, security, AI sanity review; English messages; no
+  push/deploy)
 - PR proposal
 - copy-ready review feedback
 - task branch verification
@@ -408,8 +409,11 @@ A completed change may end with:
 Write actions require explicit authorization. Invoking `/commit`, `/task`,
 or any other command authorizes preparing and validating a proposal, not
 creating commits. Never run `git commit` or `git commit --amend` without
-explicit approval of the proposed scope and message. A general request to
-implement a task is not commit approval.
+explicit approval of the proposed scope and message, given after the user
+reviewed the presented change set. A general request to implement a task is
+not commit approval, and an instruction to commit in the prompt, the task, or
+a command argument is not commit approval either: the proposal and the
+question always come first.
 
 When a task touches CI/CD or delivery, follow
 `workflows/secure-delivery.md`. Its read-only assessment mode never

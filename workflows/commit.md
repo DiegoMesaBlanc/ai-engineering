@@ -5,12 +5,18 @@
 Generate and validate a commit proposal from the current change set using
 project-native quality gates, without pushing or deploying. Commits are
 created only after all gates pass **and the user explicitly approves the
-proposed commit groups and messages in the current conversation**. This
-workflow is the canonical procedure for local commit generation;
-`commands/commit.md` is the OpenCode adapter that delegates here.
+proposed commit groups and messages in the current conversation, after
+reviewing the presented change set**. This workflow is the canonical procedure
+for local commit generation; `commands/commit.md` is the OpenCode adapter that
+delegates here.
 
 Invoking `/commit` authorizes preparing and validating the proposal, not
 creating commits. There is no implicit or standing commit authorization.
+
+The request that started the work is not commit approval either. A prompt,
+task, ticket, or argument that says "commit", "haz el commit", or anything
+equivalent still receives the proposal and the approval question first,
+because approval cannot exist before the change set the user has to review.
 
 This workflow is **not** a code architecture audit; it validates project
 correctness (format, lint, typecheck, tests, build, security) at the level
@@ -183,26 +189,40 @@ respect it but keep the message in English.
 
 Do not create any commit in this phase.
 
-Present the complete proposal:
+Present the complete proposal, including the change set the user has to
+review:
 
 - Scope Manifest: files, line ranges, exclusions.
+- The diff of each proposed group, so the actual adjustments can be reviewed.
 - Tooling lifecycle states and gate results.
 - Each proposed commit group: files/hunks, message, and rationale.
 - Warnings, skipped checks, and anything that could not be verified.
 
 Then ask explicitly:
 
-> Do you approve creating these commits? Reply with an explicit approval
-> (for example: "yes, create the commits").
+> Do you approve creating these commits? Review the proposal above and reply
+> with an explicit approval (for example: "yes, create the commits").
 
 Rules:
 
 - Invoking `/commit` is authorization to prepare this proposal, not to
   create commits.
-- Silence, a general request to implement the task, or a previous approval
-  of the implementation is **not** commit approval.
+- A prompt, task, ticket, argument, or earlier message that orders the commit
+  ("commit", "haz el commit", "commit and push", or equivalent) is **not
+  commit approval**. Do not create anything: present the proposal and ask.
+- Approval only counts when it answers this question in the current
+  conversation, after the proposal was presented. An approval expressed
+  before the proposal exists is not approval: treat it as absent and ask
+  again.
+- The user must be able to review the adjustments. A proposal without the
+  change set is not approvable, and an approval given without it is not
+  valid.
+- Silence, a timeout, a resumed checkpoint, an automated retry, a general
+  request to implement the task, or a previous approval of the implementation
+  is **not** commit approval.
 - Do not run `git commit` or `git commit --amend` until the user replies
-  affirmatively in the current conversation.
+  affirmatively to this question in the current conversation.
+- Approval covers exactly the presented groups, files, and messages.
 - If the user declines or requests changes, do not commit; adjust the
   proposal and ask again.
 - If the approved scope, grouping, or message differs from what was
@@ -212,7 +232,8 @@ Rules:
 
 ## Phase 14 — Create Approved Commits
 
-Only after explicit approval in Phase 13, for each approved group:
+Only after the affirmative answer to the Phase 13 question, for each approved
+group:
 
 1. Stage exactly the approved files/hunks.
 2. Verify no secrets in the staged diff.

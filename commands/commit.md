@@ -18,10 +18,14 @@ This command **prepares and validates a proposal**. It does not create
 commits by itself.
 
 - Invoking `/commit` is not commit approval.
-- After the gates pass, present the proposed commit groups, messages, and
-  files, then ask for explicit approval.
-- Run `git commit` only after the user replies affirmatively in the current
-  conversation.
+- An instruction to commit in `$ARGUMENTS`, in the prompt that triggered the
+  command, or in an earlier turn is not commit approval either. The proposal
+  and the approval question come first, every time.
+- After the gates pass, present the proposed commit groups, messages, and the
+  change set (files, line ranges, diff) so the adjustments can be reviewed,
+  then ask for explicit approval.
+- Run `git commit` only after the user replies affirmatively to that question
+  in the current conversation.
 - If the user declines or requests changes, do not commit; adjust the
   proposal and ask again.
 
@@ -42,6 +46,8 @@ If omitted, scope is all uncommitted changes:
 ## Adapter constraints
 
 - Never push, deploy, or bypass gates.
-- Never create a commit before explicit approval in the current conversation.
+- Never create a commit before the user reviewed the proposal and answered
+  the approval question in the current conversation, including when
+  `$ARGUMENTS` or the original prompt asks for the commit.
 - The workflow is the authoritative source for gates, output format, and commit rules; do not restate them here.
 - Return the report defined by the workflow.

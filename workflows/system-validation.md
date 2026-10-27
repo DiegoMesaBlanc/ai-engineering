@@ -1395,15 +1395,28 @@ Verify that folder architecture is decided by complexity, `lib/`/`utils/` dumpin
 
 ## V2.27 Regression — Commit Approval Gate
 
-Verify that no commit is created without explicit human approval:
+Verify that no commit is created without explicit human approval that follows
+a proposal the user was able to review, including when the prompt itself asks
+for the commit:
 
-- `AGENTS.md` includes "Creating a commit" in Human Decision Gates and a **Commit Approval Policy**: never run `git commit`/`--amend` without explicit approval of the proposed scope and message; invoking `/commit` or `/task` authorizes preparing a proposal, not creating commits; a general request to implement is not approval; a changed scope or message requires re-approval.
-- `workflows/commit.md`: Phase 13 is a **Proposal and Approval Gate**; Phase 14 creates only approved commits; Phase 15 reports approval status; a dry run stops at the proposal.
-- `commands/commit.md`: states that the command prepares and validates a proposal and does not create commits by itself; includes the approval gate.
-- `skills/git-workflow/SKILL.md`: "Before commit" asks for explicit approval and creates only after an affirmative answer.
-- `agents/orchestrator.md` and `workflows/task-to-code.md`: delivery requires explicit approval and rejects command invocation or implementation request as commit approval.
+- `AGENTS.md` includes "Creating a commit" in Human Decision Gates and a **Commit Approval Policy** with a fixed sequence — inspect, run the gates, present the proposal with the change set, ask a direct question, create only after an affirmative answer — and states that: an instruction to commit in the prompt, task, ticket, command arguments, earlier turn, or automation is not commit approval; silence, timeout, resumed checkpoint, and automated retry are not approval; a proposal without the change set is not approvable; approval covers exactly the presented groups, files, and messages.
+- `workflows/commit.md`: the purpose states that the request that started the work is not commit approval; Phase 13 is a **Proposal and Approval Gate** that presents the diff of each group, rejects a commit instruction in the request as approval, requires the answer to follow the proposal, and lists the not-approval cases; Phase 14 creates only commits approved by that answer; Phase 15 reports approval status; a dry run stops at the proposal.
+- `commands/commit.md`: states that the command prepares and validates a proposal and does not create commits by itself, includes the approval gate, and rejects `$ARGUMENTS` or the triggering prompt as approval.
+- `skills/git-workflow/SKILL.md`: "Before commit" shows the change set, asks for explicit approval, and creates only after the affirmative answer.
+- `agents/orchestrator.md` and `workflows/task-to-code.md`: delivery requires approval after the user reviewed the change set and rejects command invocation, an implementation request, or a commit instruction in the original task as approval.
+- `commands/task.md`: the task command presents the diff and the proposal and never treats the task request as commit approval.
 - `references/system-workflow-regression-matrix.md` includes R-48.
 - No commit is created during validation; the validation itself is read-only.
+
+```sh
+for f in AGENTS.md workflows/commit.md commands/commit.md \
+         skills/git-workflow/SKILL.md workflows/task-to-code.md \
+         commands/task.md agents/orchestrator.md; do
+  if ! tr '\n' ' ' < "$f" | tr -s ' ' ' ' | grep -Fqi 'not commit approval'; then
+    printf 'FAIL M-05: %s does not reject the commit instruction as approval\n' "$f"
+  fi
+done
+```
 
 ## V2.28 Regression — Primary Unit per File, Unit Folders, and Co-located Tests
 
