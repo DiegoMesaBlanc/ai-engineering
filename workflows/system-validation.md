@@ -737,7 +737,7 @@ Return:
 - V2.28 primary unit per file, unit folder, and test co-location checks:
 - V2.29 target project and evidence-only path checks:
 - V2.30 minimum sufficient context and token-efficiency checks:
-- V2.31 structural compliance enforcement checks:
+- V2.31 structural compliance verification checks:
 - V2.32 mandatory rule reachability checks:
 - V2.33 new project initialization checks:
 - V2.34 end-to-end audit checks:
@@ -1467,50 +1467,58 @@ correctness:
 - No hard token cap, compaction plugin, or reduction of required evidence is
   introduced.
 
-## V2.31 Regression — Structural Compliance Enforcement
+## V2.31 Regression — Structural Compliance Verification
 
-Verify that the structural rules are enforced mechanically and not only
-documented in prose:
+Verify that the structural rules are enforced by this system and are not
+installed in the target project:
 
 - `workflows/output-compliance.md` exists at its canonical path and is listed
   in the required-file inventory of this workflow.
 - It defines deterministic checks with executable detection patterns and
-  `file:line` evidence: `FUNC-001`, `TYPE-001`, `TYPE-002`, `FILE-001`.
+  `file:line` evidence: `FUNC-001`, `TYPE-001`, `TYPE-002`, `TYPE-003`,
+  `STRUCT-001` to `STRUCT-007`, and `CONFIG-001`.
 - It is read-only and never modifies code.
 - `AGENTS.md` **Implementation and Validation** makes the check mandatory
   before a task is reported as implemented and states that a `FAIL` is a
   defect of the task, not a finding to defer.
 - `workflows/task-to-code.md` Phase 10 runs it and forbids reporting
-  completion with an unresolved `FAIL`.
+  completion with an unresolved `FAIL`. Phase 4 keeps the project's lint
+  configuration standard and never adds a custom rule file.
 - `workflows/project-validation.md` includes it as a mandatory check, and
   `commands/validate.md` runs it.
 - `workflows/code-audit.md` requires the executed detection as evidence for
   `TS_FUNCTION_STYLE` and `TYPE_OWNERSHIP` findings.
 - `references/linter-rules.md` exists at its canonical path and is listed in
-  the required-file inventory of this workflow. It provides the copy-ready
-  ESLint flat configuration, the local `structural/no-mixed-types-and-runtime`,
-  `structural/no-pass-through-re-export`, and `structural/no-unit-folder`
-  rules, and the contract consumer script.
-- The local rules are version-agnostic: they resolve the file name and the
-  source through the API available in ESLint 8, 9, and 10, so the canonical
-  artifact installs on the major version the target project uses.
-- Every structural rule of the feature-driven architecture is **installed**,
-  not only checked: the unit-folder rule in particular is an ESLint rule, so
-  it fails the lint the project already runs instead of depending on a
-  procedure the agent may skip.
-- `AGENTS.md` **Formatting and Linting Policy** requires the structural
-  compliance rules for JavaScript and TypeScript, requires the type-per-file
-  rule in every ecosystem whose linter can express it, and states that a
-  linter without them is not a complete setup.
-- `workflows/project-validation.md` Phase 5 installs the structural rules
-  when configuring the linter, and Phase 7 verifies that the resolved
-  configuration actually contains them, reporting a missing rule as
-  `SETUP_REQUIRED` even when the lint command exits successfully. The
-  verification covers every supported ecosystem, and states explicitly when
-  a rule is covered by verification rather than by an installed rule.
+  the required-file inventory of this workflow. It defines the standard
+  ESLint flat configuration, the Prettier configuration, and the coverage
+  matrix, and states that **no custom rule file**, plugin, or checker script
+  is created in a target project.
+- `AGENTS.md` **Formatting and Linting Policy** requires only the standard
+  configuration, expressed through the project's own `eslint.config.*` and
+  Prettier files, and states the rule in the same terms. A linter without a
+  custom artifact is a complete setup.
+- `workflows/project-validation.md` Phase 5 keeps the configuration standard
+  and Phase 7 verifies that the configuration exists and that the project
+  contains no bespoke enforcement artifact.
+- `CONFIG-001` is exercised both ways: a project that adds `eslint-rules/` or
+  `scripts/check-contract-consumers.mjs` is `FAIL`, and the same project
+  without those files is `PASS`.
 - `references/system-workflow-regression-matrix.md` includes R-52.
 - The checks cover TypeScript/JavaScript, Python, Java/Kotlin, Go, Rust,
   C#/.NET, PHP, and Ruby.
+
+```sh
+failures=0
+for f in AGENTS.md skills/implementation-recipes/SKILL.md \
+         workflows/project-validation.md workflows/task-to-code.md \
+         workflows/output-compliance.md references/linter-rules.md; do
+  if ! tr '\n' ' ' < "$f" | tr -s ' ' ' ' | grep -Fqi 'no custom rule file'; then
+    printf 'FAIL V2.31: %s does not state that no custom rule file is installed\n' "$f"
+    failures=1
+  fi
+done
+exit "$failures"
+```
 
 ## V2.32 Regression — Mandatory Rule Reachability
 
@@ -1628,9 +1636,10 @@ style before any structure is created:
 - Phase 3 presents the applicable architectural styles with their trade-offs
   and asks the user which one to use. A recommendation is not a decision, and
   the repository structure is not created before the answer.
-- Phase 5 installs the formatter, the linter, and the structural compliance
-  rules from `references/linter-rules.md`, with reproducible commands, plus a
-  test runner and a first test.
+- Phase 5 installs the standard formatter and linter configuration from
+  `references/linter-rules.md`, with reproducible commands, plus a test runner
+  and a first test. No custom rule file, plugin, or checker script is created
+  in the project.
 - `AGENTS.md` **Human Decision Gates** lists the architectural style of a new
   project as a decision that requires the user.
 - `workflows/task-to-code.md` Phase 4 routes a new project to the

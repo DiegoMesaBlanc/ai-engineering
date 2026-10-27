@@ -144,7 +144,7 @@ Applies to every project type, in this order.
 | # | Step | Produces | Verify | Growth rule |
 |---|---|---|---|---|
 | A1 | Repository skeleton | The top-level folders, the **entry point** of the project, the ignore file, the license, pinned to the **confirmed target version** | The tree matches the agreed structure, the entry point compiles, and the toolchain reports the confirmed version | A new top-level folder appears only when a new responsibility exists, never for a feature of an existing one |
-| A2 | Tooling | Formatter, linter, structural compliance rules, test runner, scripts, installed as **one installation package**, evaluated once | The formatter check, the linter, and the test runner all run against the entry point from A1 and pass | Tooling changes in one place: the config and the scripts |
+| A2 | Tooling | Formatter, linter configuration, test runner, scripts, installed as **one installation package**, evaluated once; no custom rule file, plugin, or checker script | The formatter check, the linter, and the test runner all run against the entry point from A1 and pass | Tooling changes in one place: the config and the scripts |
 | A3 | Configuration | A typed configuration schema, a local environment example, no secret in the repository | The app starts with only the example file | Every new setting is declared in the schema, never read ad hoc |
 | A4 | Observability baseline | Structured logging, a correlation id, the error shape | A request produces a log line with the correlation id | One logging and one error module; every layer uses them |
 | A5 | Domain or core | The entities, value objects, invariants, domain errors | The core unit tests pass without any infrastructure | Business rules live here and nowhere else |
@@ -161,7 +161,7 @@ Applies to every project type, in this order.
 | # | Step | Produces | Verify | Growth rule |
 |---|---|---|---|---|
 | B1 | Repository and package skeleton | The module or package layout implied by the agreed architectural style, plus the **entry point** of the service, pinned to the **confirmed target version** | The tree matches the style that was chosen, the entry point compiles, and the toolchain reports the confirmed version | A new bounded context becomes a new module; a new feature inside a context becomes a folder |
-| B2 | Tooling and scripts | Formatter, linter, structural compliance rules, test runner, type checker | The checks pass on an empty module | One config, one set of scripts |
+| B2 | Tooling and scripts | Formatter, linter configuration, test runner, type checker; no custom rule file, plugin, or checker script | The checks pass on an empty module | One config, one set of scripts |
 | B3 | Configuration schema | Typed settings, environment schema, a local example, secrets documented but not committed | The service refuses to start with an invalid configuration | Every new setting is declared, validated, and documented in one place |
 | B4 | Logging, correlation, and error model | Structured logger, request correlation id, the error response shape, the problem-details mapping | One failing request produces one error response and one correlated log | One error module; the API layer maps errors, the domain never knows HTTP |
 | B5 | Domain layer | Entities, value objects, aggregates, domain errors, invariants | The domain unit tests pass with no database and no HTTP | Business rules live here only |
@@ -190,7 +190,7 @@ Applies to every project type, in this order.
 
 | # | Step | Produces | Verify | Growth rule |
 |---|---|---|---|---|
-| C1 | Repository, tooling, and scripts | The app skeleton with its entry point, the formatter, the linter, the structural compliance rules, the test runner, pinned to the **confirmed target version** | Every check passes against the entry point, and the toolchain reports the confirmed version | A new page is a route, not a new build setup |
+| C1 | Repository, tooling, and scripts | The app skeleton with its entry point, the formatter, the linter configuration, the test runner, pinned to the **confirmed target version**; no custom rule file, plugin, or checker script | Every check passes against the entry point, and the toolchain reports the confirmed version | A new page is a route, not a new build setup |
 | C2 | Design tokens and the styling approach | The tokens, the global styles, the theme, the reset | The lint passes and the tokens are documented | A new color, spacing, or radius is a token, not a literal in a component |
 | C3 | Application shell | The layout, the navigation, the providers, the error boundary, the loading boundary | The shell renders in every state, including the error state | A new provider is added at the shell, once |
 | C4 | Data layer | The API client, the query client, the typed endpoints, the error mapping, the cache policy | A typed endpoint test proves the request and the error path | A new endpoint is a typed function in the data layer, never called from a component |
@@ -208,7 +208,7 @@ Applies to every project type, in this order.
 | # | Step | Produces | Verify | Growth rule |
 |---|---|---|---|---|
 | D1 | Package skeleton and manifest | The package name, the entry points, the manifest, the license, plus a minimal entry file, pinned to the **confirmed target version** | The package builds and installs locally, with the confirmed version | The public API lives behind the entry points |
-| D2 | Tooling, tests, and the CI pipeline | The formatter, the linter, the structural compliance rules, the test runner, the pipeline | The checks pass and the pipeline is green | One pipeline |
+| D2 | Tooling, tests, and the CI pipeline | The formatter, the linter configuration, the test runner, the pipeline; no custom rule file, plugin, or checker script | The checks pass and the pipeline is green | One pipeline |
 | D3 | Public API design | The exported types, the error surface, the deprecation policy | The exported surface is documented and type-checked | A public type is added with a deprecation path, never removed silently |
 | D4 | Core implementation | The logic, free of framework and I/O assumptions | The core tests pass with no framework and no I/O | The core stays reusable, so the framework is an adapter |
 | D5 | CLI or integration surface | The command layer, the argument parsing, the exit codes, the output format | The CLI runs, and its exit codes and output are asserted | The CLI is a thin adapter over the core |
@@ -219,7 +219,7 @@ Applies to every project type, in this order.
 
 | # | Step | Produces | Verify | Growth rule |
 |---|---|---|---|---|
-| E1 | Project, tooling, and build pipeline | The app skeleton with its entry point, the formatter, the linter, the structural compliance rules, the test runner, pinned to the **confirmed target version** | Every check passes against the entry point, and the toolchain reports the confirmed version | A new screen is a route, not a new setup |
+| E1 | Project, tooling, and build pipeline | The app skeleton with its entry point, the formatter, the linter configuration, the test runner, pinned to the **confirmed target version**; no custom rule file, plugin, or checker script | Every check passes against the entry point, and the toolchain reports the confirmed version | A new screen is a route, not a new setup |
 | E2 | Identity and signing | The bundle or package identifier, the signing keys, the version scheme, the build flavors | A release build is signed and installs | The identifier and the signing keys change once, at the start |
 | E3 | Navigation and shell | The navigator, the design system, the providers, the deep link routing | The shell renders in every state | The shell owns the shared providers and the deep link handling |
 | E4 | Permissions and privacy | The declared permissions, the privacy manifest, the runtime permission requests, the rationale | The permission request flow is exercised, and the declaration matches the code | A permission is added only with a user-facing reason, declared once |
@@ -256,7 +256,7 @@ the user ends the session at that point.
 ### Universal steps
 
 - [ ] A1 Repository skeleton, ignore file, and license
-- [ ] A2 Formatter, linter, structural compliance rules, test runner, and scripts, all passing
+- [ ] A2 Formatter, linter configuration, test runner, and scripts, all passing, with no custom rule file, plugin, or checker script
 - [ ] A3 Typed configuration schema and a local environment example, with no committed secret
 - [ ] A4 Structured logging, correlation id, and the error shape
 - [ ] A5 Domain or core, with its unit tests passing without infrastructure

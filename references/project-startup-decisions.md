@@ -73,7 +73,8 @@ Applies to every project type.
 | Language and version | The stack assumption in the source analysis | The analysis states alternatives, or the version is not supported |
 | Package manager and dependency policy | The ecosystem standard; no new dependency without authorization | A new dependency class, a paid service, or a license constraint |
 | Formatter and linter | The ecosystem standard from the Formatting and Linting Policy | The project mandates a different one |
-| Structural compliance rules | The rules the ecosystem linter can express, per the coverage matrix in `references/linter-rules.md` | Never; this is a policy decision |
+| Structural policy verification | Verified inside the system by `workflows/output-compliance.md`; never installed as project tooling | Never; this is a policy decision |
+| Configuration scope in the project | Only `eslint.config.*`, the Prettier configuration, and their ignore files; no custom rule file, plugin, or checker script | Never; a policy decision |
 | Test framework and test depth | The ecosystem standard, plus one test that proves the setup runs | The team has a mandated framework |
 | CI provider and pipeline | The provider the organization already uses | No provider is detectable, or more than one is in use |
 | Versioning and release model | Semantic versioning | The project is internal-only and never released |
@@ -84,7 +85,7 @@ Applies to every project type.
 | Internationalization | Only when the product has user-facing text in more than one language | The product has user-facing text, and the supported locales or RTL are not stated |
 | Target language and framework version | The version the source analysis assumes, or the current stable release when the analysis is silent | The product targets a specific version, or the ecosystem's support window requires one |
 | Folder architecture | The tree of the agreed architectural style, translated to the detected ecosystem, with one folder per unit and a public API per module | The team has a mandated structure, or the scope suits a different tree |
-| Structural rules installed | The local ESLint rules from `references/linter-rules.md`, including the unit-folder rule | Never; the rules are installed as part of the mandatory tooling setup |
+| Structural rules installed | Never. The structural policy is verified inside the system by `workflows/output-compliance.md`; the project carries no custom rule file, plugin, or checker script | Never; the project receives only its standard formatter and linter configuration |
 
 ---
 

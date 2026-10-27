@@ -203,9 +203,11 @@ Only when a software implementation task has been aligned and code changes are r
 - preserve uncommitted work
 - create the branch or isolated worktree
 - verify the active working location
-- verify that the target project's linter enforces the structural rules from
-  `references/linter-rules.md`; when it does not, install them in the
-  project's own configuration and report the change
+- verify that the target project's linter is configured with the standard
+  rules from `references/linter-rules.md`; when it is not, configure them in
+  the project's own `eslint.config.*` and report the change. There is no
+  custom rule file, plugin, or checker script in the project: the structural
+  placement rules are verified by `workflows/output-compliance.md`
 
 Do not implement until the requested branch is ready.
 

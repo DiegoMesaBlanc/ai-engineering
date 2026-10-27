@@ -465,8 +465,8 @@ divergent copies.
 
 Every software project the system works on must have a configured
 formatter and a configured linter appropriate for its detected stack,
-languages, and frameworks. This is mandatory, not an optional
-recommendation.
+languages, and frameworks, expressed only in the project's own
+configuration files. This is mandatory, not an optional recommendation.
 
 Scope: this requirement covers the application code of software projects.
 It does not apply to documentation-only knowledge repositories such as
@@ -502,24 +502,31 @@ Default tool choices by ecosystem:
 
 - JavaScript and TypeScript (React, Next.js, Vue, Node.js, React Native):
   Prettier for formatting and ESLint for linting, with the appropriate
-  framework plugins.
-- JavaScript and TypeScript additionally install the **structural compliance
-  rules** defined in `references/linter-rules.md`: `func-style`, the
-  `no-restricted-syntax` selector for function expressions, and the local
-  `structural/no-mixed-types-and-runtime` rule, plus the contract consumer
-  script. A linter that runs without these rules does not enforce the
-  structural policy of this system and is not a complete setup.
-- Every supported ecosystem installs the **type-per-file rule** when its
-  linter can express it: Checkstyle `OneTopLevelClass` for Java, StyleCop
-  `SA1402` for C#/.NET, and PHP_CodeSniffer
-  `PSR1.Classes.ClassDeclaration` for PHP. The rule is language agnostic
-  and applies to every supported ecosystem. When an ecosystem linter cannot
-  express it, the rule is covered by the structural compliance check and the
-  report states that it is covered by verification rather than by an
-  installed rule.
+  framework plugins, expressed only through the project's standard
+  `eslint.config.*` and Prettier configuration files.
 - The **arrow function preference** is a TypeScript and JavaScript
-  convention. Never impose it on an ecosystem that has no arrow syntax; the
-  detected ecosystem's own convention prevails.
+  convention. It is configured in that ESLint configuration with the core
+  rules `func-style: ["error", "expression"]` and the `no-restricted-syntax`
+  selector for function expressions. Never impose it on an ecosystem that has
+  no arrow syntax; the detected ecosystem's own convention prevails.
+- Type-only imports are configured with
+  `@typescript-eslint/consistent-type-imports` when `typescript-eslint` is
+  already part of the setup, or with `verbatimModuleSyntax` in the TypeScript
+  configuration. Both are configuration entries, not project code.
+- **No custom rule file, plugin, or checker script is created in a target
+  project.** The structural policy of this system — types separated from
+  runtime behavior, contract ownership, contract grouping, pass-through
+  re-exports, and unit folders — is defined and verified inside this system by
+  `workflows/output-compliance.md` over the change set, and applied during
+  review. It is never installed as project tooling: the canonical guidance
+  lives in `references/linter-rules.md` in this repository, and the target
+  project receives its standard formatter and linter configuration and nothing
+  else. The policy adds no project file and no dependency.
+- Where an ecosystem linter exposes an equivalent rule as a documented
+  standard option, the project may enable it in its normal configuration
+  without adding files. The system's compliance check remains the authority,
+  and a rule that no linter can express is covered there and reported as
+  covered by verification.
 - Angular: Prettier and Angular ESLint, preserving Angular template and
   TypeScript linting.
 - Ionic: the tooling of its underlying Angular or React stack, including

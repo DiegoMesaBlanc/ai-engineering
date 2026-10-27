@@ -55,9 +55,8 @@ Follow the central Engineering Orchestrator and Task-to-Code workflow.
 When the target does not exist yet, follow
 `workflows/project-initialization.md` first: it recovers the source analysis
 the task points to, asks the user to choose the architectural style, and
-installs the mandatory formatter, linter, and structural compliance rules
-before the first feature is written. Then continue with the Task-to-Code
-workflow.
+installs the mandatory formatter and linter configuration before the first
+feature is written. Then continue with the Task-to-Code workflow.
 
 ## Mandatory branch policy
 

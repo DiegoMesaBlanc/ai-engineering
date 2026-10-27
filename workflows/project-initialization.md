@@ -230,8 +230,8 @@ together, through `workflows/dependency-assessment.md`: a package with a single
 dependency is installed directly, and a package with several is presented
 once with the installation list — exact name, version, runtime or development
 scope, why it is needed, and what it brings — and installed after the
-user's evaluation. This applies to the tooling step, to a test runner, to a
-structural rule, and to any package a step needs. The gate has no exception,
+user's evaluation. This applies to the tooling step, to a test runner, and to
+any package a step needs. The gate has no exception,
 it applies in every language and framework, and it is never applied once per
 library.
 

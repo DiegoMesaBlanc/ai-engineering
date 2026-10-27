@@ -2,375 +2,46 @@
 
 ## Purpose
 
-Canonical, copy-ready linter configuration and rules that enforce the
-structural policy of the system **at lint time**, inside the target project.
+Define the standard formatter and linter configuration a target project
+receives, and state where the structural policy of this system is verified.
 
-Prose in a Skill is not enforcement. A rule installed in the project's lint
-configuration runs on every lint, every commit, and every CI job. This
-reference is the artifact the system materializes in the target project
-during the mandatory formatting and linting setup.
+The project receives **configuration only**: `eslint.config.*`, the Prettier
+configuration file, and their ignore files. The structural policy lives here,
+in `ai-engineering`, and is verified here by `workflows/output-compliance.md`.
+**No custom rule file, plugin, or checker script is created in a target
+project**, and the policy adds no dependency to it.
 
-Authority: `skills/implementation-recipes/SKILL.md` (rules),
-`skills/architecture-advisor/SKILL.md` (placement),
-`references/official-documentation.md` (rule documentation).
+This reference is the canonical guidance; the target project does not carry a
+copy of it.
 
-## What each rule enforces
+## What lives where
 
-| Rule | Enforces | Applies to |
-|---|---|---|
-| `func-style: ["error", "expression"]` | No `function` declarations; arrow functions preferred | TypeScript, JavaScript |
-| `no-restricted-syntax` (`VariableDeclarator > FunctionExpression`) | No `function` expression assigned to a variable | TypeScript, JavaScript |
-| `structural/no-mixed-types-and-runtime` (local rule) | A file declares types **or** runtime behavior, never both | TypeScript, JavaScript |
-| `structural/no-pass-through-re-export` (local rule) | A module does not re-export a contract it only consumes; the owning file is the single public path | TypeScript, JavaScript |
-| `structural/no-unit-folder` (local rule) | An implementation and its test are not siblings in a feature folder; a unit with several artifacts gets its own folder | TypeScript, JavaScript |
-| `structural/one-contract-file-per-consumer` (local script) | Contract files group types by consumer | TypeScript, JavaScript |
-| `react/no-multi-comp` | One component per file, only when `eslint-plugin-react` is already installed | React, Next.js |
-| Checkstyle `OneTopLevelClass` | One top-level type per file | Java |
-| StyleCop `SA1402` | One type per file | C#, .NET |
-| PHP_CodeSniffer `PSR1.Classes.ClassDeclaration` | One class per file | PHP |
+| Concern | Lives in |
+|---|---|
+| The policy and its wording | `AGENTS.md` in this system |
+| The standard configuration | This reference |
+| The verification of structural placement | `workflows/output-compliance.md` in this system |
+| The project's lint and format configuration | The target project: `eslint.config.*`, `.prettierrc.*` or `prettier.config.*`, ignore files |
 
-The type-per-file rule is language agnostic. The arrow function rule is a
-TypeScript and JavaScript convention and has no counterpart elsewhere. See
-**Rule applicability by ecosystem** for the full coverage matrix.
+Anything beyond those configuration files is out of scope for a target
+project. A project that contains `eslint-rules/`, a local plugin, or a checker
+script under `scripts/` is carrying system tooling it should not carry, and
+`CONFIG-001` reports it.
 
-## TypeScript / JavaScript
+## TypeScript / JavaScript — standard configuration
 
-### 1. Arrow functions
-
-`func-style` with the `"expression"` option is the correct core rule:
-
-- Arrow functions are **always allowed**; the option does not restrict them.
-- A callback passed as an argument to another function is **not** checked.
-- TypeScript **overload signatures** are not reported.
-- `export default function` is not reported.
-- A **generator** (`function*`) **is** reported. Keep it and justify it with an
-  inline disable:
-
-  ```ts
-  // eslint-disable-next-line func-style -- generator requires the function keyword
-  export function* streamEvents(): Generator<Event> {
-    /* ... */
-  }
-  ```
-
-  A recursive function rarely needs the keyword: `const f = () => { f(); }` is
-  valid because the call happens after initialization. Use `function` only for
-  a real `this` binding, the `arguments` object, or `new.target`.
-
-`func-style` is **not auto-fixable**: ESLint provides no fixer for it. The
-transformation is mechanical and is applied by the agent or the developer:
-
-```ts
-// before
-export function deriveSelectedMethod(methods: SavedPaymentMethod[]) {
-  return methods.find((method) => method.isDefault);
-}
-
-// after
-export const deriveSelectedMethod = (methods: SavedPaymentMethod[]) => {
-  return methods.find((method) => method.isDefault);
-};
-```
-
-Watch the return type: a `function` declaration carries it after the
-parameter list, while an arrow assigned to a variable carries it after the
-arrow (`const f = (a: A): R => {}`).
-
-### 2. No `function` expression assigned to a variable
-
-`func-style` alone permits `const fn = function () {}`. Forbid it explicitly:
-
-```js
-"no-restricted-syntax": [
-  "error",
-  {
-    selector: "VariableDeclarator > FunctionExpression",
-    message: "Prefer an arrow function: const fn = () => {}.",
-  },
-],
-```
-
-The selector targets only a `function` expression directly assigned to a
-variable. It does not match class methods, object methods, or callbacks.
-
-### 3. Local rule — no mixed types and runtime
-
-ESLint core has no rule for this. Add a local rule to the project.
-
-Create `eslint-rules/structural-compliance.mjs`:
-
-```js
-/**
- * Local ESLint rules that enforce the structural policy of the project.
- *
- * - no-mixed-types-and-runtime: a file declares type declarations or runtime
- *   behavior, never both. Types belong in a dedicated contract file.
- *
- * A contract file may contain type declarations, schema declarations that
- * pair with an inferred type, and literal-union constants (`as const`).
- */
-
-const TYPE_DECLARATIONS = new Set([
-  "TSInterfaceDeclaration",
-  "TSTypeAliasDeclaration",
-]);
-
-const RUNTIME_DECLARATIONS = new Set([
-  "FunctionDeclaration",
-  "ClassDeclaration",
-  "TSEnumDeclaration",
-  "TSModuleDeclaration",
-]);
-
-const SCHEMA_CALLS = [
-  "z.object",
-  "z.array",
-  "z.string",
-  "z.number",
-  "z.boolean",
-  "z.enum",
-  "z.union",
-  "z.discriminatedUnion",
-  "z.literal",
-  "z.record",
-  "Joi.object",
-  "Joi.array",
-  "Joi.string",
-  "Joi.number",
-  "Joi.boolean",
-  "yup.object",
-  "yup.array",
-  "yup.string",
-  "yup.number",
-  "yup.boolean",
-];
-
-import fs from "node:fs";
-import path from "node:path";
-
-const noMixedTypesAndRuntime = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        "Disallow files that declare types and runtime behavior together.",
-    },
-    schema: [],
-    messages: {
-      mixed:
-        "File mixes type declarations with runtime behavior. Extract the types to a dedicated contract file (types.ts / contracts.ts) in the owning layer folder.",
-    },
-  },
-  create(context) {
-    // ESLint 8 exposes getSourceCode, 9 and 10 expose sourceCode.
-    const sourceCode = context.sourceCode ?? context.getSourceCode?.();
-    if (!sourceCode) {
-      return {};
-    }
-
-    const unwrap = (statement) => {
-      if (
-        statement.type === "ExportNamedDeclaration" ||
-        statement.type === "ExportDefaultDeclaration"
-      ) {
-        return statement.declaration ?? null;
-      }
-      return statement;
-    };
-
-    const isContractSafeVariable = (declarator) => {
-      const text = sourceCode.getText(declarator);
-      if (text.includes("as const")) {
-        return true;
-      }
-      const init = declarator.init;
-      if (!init || init.type !== "CallExpression") {
-        return false;
-      }
-      const callee = sourceCode.getText(init.callee);
-      return SCHEMA_CALLS.some((schema) => callee.startsWith(schema));
-    };
-
-    return {
-      "Program:exit"(program) {
-        const typeNodes = [];
-        const runtimeNodes = [];
-
-        for (const statement of program.body) {
-          const node = unwrap(statement);
-          if (!node) {
-            continue;
-          }
-
-          if (TYPE_DECLARATIONS.has(node.type)) {
-            typeNodes.push(node);
-            continue;
-          }
-
-          if (RUNTIME_DECLARATIONS.has(node.type)) {
-            runtimeNodes.push(node);
-            continue;
-          }
-
-          if (node.type === "VariableDeclaration") {
-            const allContractSafe = node.declarations.every(
-              isContractSafeVariable,
-            );
-            const target = allContractSafe ? typeNodes : runtimeNodes;
-            target.push(node);
-            continue;
-          }
-
-          if (node.type === "TSDeclareFunction") {
-            typeNodes.push(node);
-          }
-        }
-
-        if (typeNodes.length > 0 && runtimeNodes.length > 0) {
-          context.report({ node: typeNodes[0], messageId: "mixed" });
-        }
-      },
-    };
-  },
-};
-
-const CONTRACT_FILE_NAMES = new Set([
-  "types",
-  "contracts",
-  "schemas",
-  "interfaces",
-  "model",
-  "models",
-]);
-
-const noPassThroughReExport = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        "Disallow re-exporting a contract that the module only consumes.",
-    },
-    schema: [],
-    messages: {
-      passThrough:
-        "Pass-through re-export. The contract is already exported by its owning file; consumers import it from there. A second public path for the same contract is ambiguity, not convenience.",
-    },
-  },
-  create(context) {
-    const importedSources = new Set();
-    const reExports = [];
-    const reExportSources = new Set();
-
-    return {
-      ImportDeclaration(node) {
-        if (node.source && node.source.value) {
-          importedSources.add(node.source.value);
-        }
-      },
-      ExportNamedDeclaration(node) {
-        if (!node.source) {
-          return;
-        }
-        const source = node.source.value;
-        reExportSources.add(source);
-        for (const specifier of node.specifiers) {
-          reExports.push({ node, specifier, source });
-        }
-      },
-      "Program:exit"(program) {
-        // A barrel that aggregates several modules is a public API surface
-        // and is exempt. A module that re-exports from a single source is
-        // a pass-through.
-        const aggregatingBarrel = reExportSources.size > 1;
-
-        for (const { node, specifier, source } of reExports) {
-          if (aggregatingBarrel) {
-            continue;
-          }
-          const importedToo = importedSources.has(source);
-          const baseName = source.split("/").pop().split(".")[0];
-          const isContractFile = CONTRACT_FILE_NAMES.has(baseName);
-
-          if (importedToo || isContractFile) {
-            context.report({ node: specifier, messageId: "passThrough" });
-          }
-        }
-      },
-    };
-  },
-};
-
-const noUnitFolder = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        "Disallow an implementation and its test as siblings in a feature folder.",
-    },
-    schema: [],
-    messages: {
-      unitFolder:
-        "The implementation and its test are siblings in the feature folder. A unit with several artifacts gets its own folder, with the test next to the implementation.",
-    },
-  },
-  create(context) {
-    // ESLint 8 exposes getFilename, 9 and 10 expose filename. Support both.
-    const filename =
-      context.filename ?? context.sourceCode?.getFilename?.() ?? "";
-    if (!filename || !/\.(test|spec)\.[cm]?[jt]sx?$/.test(filename)) {
-      return {};
-    }
-
-    const directory = path.dirname(filename);
-    const parts = filename.split(path.sep);
-    const featureIndex = parts.lastIndexOf("features");
-    if (featureIndex < 0) {
-      return {};
-    }
-    // Directly inside features/<feature>/, not inside a unit folder.
-    if (parts.length - featureIndex !== 3) {
-      return {};
-    }
-
-    const base = path.basename(filename).replace(/\.(test|spec)\./, ".");
-    const stem = base.replace(/\.[cm]?[jt]sx?$/, "");
-    const implementation = ["ts", "tsx", "js", "jsx", "mts", "cts"]
-      .map((extension) => path.join(directory, `${stem}.${extension}`))
-      .some((candidate) => fs.existsSync(candidate));
-
-    if (!implementation) {
-      return {};
-    }
-
-    return {
-      Program(node) {
-        context.report({ node, messageId: "unitFolder" });
-      },
-    };
-  },
-};
-
-export default {
-  rules: {
-    "no-mixed-types-and-runtime": noMixedTypesAndRuntime,
-    "no-pass-through-re-export": noPassThroughReExport,
-    "no-unit-folder": noUnitFolder,
-  },
-};
-```
-
-Wire it in the flat config (`eslint.config.mjs` for ESLint 9 and later):
+`eslint.config.mjs` for the current ESLint major (flat config), adapted to the
+detected major and to the framework plugins the stack already uses:
 
 ```js
 import { defineConfig, globalIgnores } from "eslint/config";
-import structuralCompliance from "./eslint-rules/structural-compliance.mjs";
+import tseslint from "typescript-eslint";
 
 export default defineConfig([
+  globalIgnores(["node_modules/**", "dist/**", "build/**", "coverage/**"]),
+  ...tseslint.configs.recommended,
   {
     files: ["**/*.{ts,tsx,js,jsx,mjs,cjs}"],
-    plugins: {
-      structural: structuralCompliance,
-    },
     rules: {
       "func-style": ["error", "expression"],
       "no-restricted-syntax": [
@@ -380,280 +51,106 @@ export default defineConfig([
           message: "Prefer an arrow function: const fn = () => {}.",
         },
       ],
-      "structural/no-mixed-types-and-runtime": "error",
-      "structural/no-pass-through-re-export": "error",
-      "structural/no-unit-folder": "error",
+      "@typescript-eslint/consistent-type-imports": "error",
     },
   },
-  globalIgnores([".next/**", "dist/**", "build/**", "coverage/**"]),
 ]);
 ```
 
-When the project uses the legacy `.eslintrc` format, use the equivalent
-`plugins` and `rules` entries. Keep the format the detected ESLint major
-expects.
+For a JavaScript-only project, drop the `typescript-eslint` import and the
+rule that depends on it; keep `func-style` and `no-restricted-syntax`, which
+are core rules.
 
-### 4. One contract file per consumer
+- `func-style` and `no-restricted-syntax` are **ESLint core rules**. They
+  express the arrow function convention and need no project code.
+- `@typescript-eslint/consistent-type-imports` is part of `typescript-eslint`,
+  which a TypeScript project already installs for its standard linting. When
+  the project prefers the compiler to own the rule, `verbatimModuleSyntax` in
+  `tsconfig.json` covers the same ground. Enable one, not both, to avoid
+  duplicate reports.
+- `typescript-eslint` is used only when the detected setup already includes
+  it. It is never added for the structural policy.
+- Prettier owns formatting. Do not re-enable ESLint rules that overlap with
+  Prettier; configure the formatter in `.prettierrc.json` or
+  `prettier.config.*` and leave formatting there.
 
-ESLint analyzes one file at a time, so the consumer grouping is verified by a
-small script with no dependencies. Create `scripts/check-contract-consumers.mjs`:
+For a legacy `.eslintrc` project, use the equivalent `rules` entries in the
+format the detected ESLint major expects.
 
-```js
-/**
- * Verifies that every contract file groups types with the same consumer.
- *
- * A type consumed by a different set of files than its siblings belongs in
- * a different contract file. Exit code 1 means a violation was found.
- */
+## What the standard configuration can and cannot express
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, extname, relative } from "node:path";
+| Rule | Expressable by standard configuration? | Mechanism |
+|---|---|---|
+| Arrow functions | Yes | ESLint core `func-style` + `no-restricted-syntax` |
+| Type-only imports | Yes | `@typescript-eslint/consistent-type-imports` or `verbatimModuleSyntax` |
+| One type per file, types separated from runtime behavior | No | Verified by `TYPE-001` in `workflows/output-compliance.md` |
+| Contract grouping by consumer | No | Verified by `TYPE-002` |
+| No pass-through re-export | No | Verified by `TYPE-003` |
+| Unit folders and co-located tests | No | Verified by `FILE-001` and `workflows/code-audit.md` |
 
-const ROOT = process.cwd();
-const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs"]);
-const IGNORED = new Set([
-  "node_modules",
-  ".next",
-  "dist",
-  "build",
-  "coverage",
-  "generated",
-  "__generated__",
-]);
-
-const isGenerated = (path) =>
-  path.includes("generated") || /\.generated\.[cm]?[jt]sx?$/.test(path);
-
-const walk = (directory) => {
-  const files = [];
-  for (const entry of readdirSync(directory)) {
-    if (IGNORED.has(entry)) {
-      continue;
-    }
-    const path = join(directory, entry);
-    if (statSync(path).isDirectory()) {
-      files.push(...walk(path));
-      continue;
-    }
-    if (SOURCE_EXTENSIONS.has(extname(path)) && !isGenerated(path)) {
-      files.push(path);
-    }
-  }
-  return files;
-};
-
-const files = walk(ROOT);
-
-const declaredTypes = new Map();
-const usedIn = new Map();
-
-for (const file of files) {
-  const source = readFileSync(file, "utf8");
-  const relativePath = relative(ROOT, file);
-
-  const declarationPattern =
-    /^\s*export\s+(?:declare\s+)?(interface|type|enum|class)\s+([A-Za-z_$][\w$]*)/gm;
-  for (const match of source.matchAll(declarationPattern)) {
-    declaredTypes.set(match[2], relativePath);
-  }
-
-  const identifierPattern = /\b([A-Za-z_$][\w$]*)\b/g;
-  for (const match of source.matchAll(identifierPattern)) {
-    const name = match[1];
-    if (!usedIn.has(name)) {
-      usedIn.set(name, new Set());
-    }
-    usedIn.get(name).add(relativePath);
-  }
-}
-
-const byFile = new Map();
-
-for (const [typeName, declaringFile] of declaredTypes) {
-  if (!byFile.has(declaringFile)) {
-    byFile.set(declaringFile, []);
-  }
-  const consumers = new Set(usedIn.get(typeName) ?? []);
-  consumers.delete(declaringFile);
-  byFile.get(declaringFile).push({ typeName, consumers });
-}
-
-let violations = 0;
-
-const shareAPlace = (left, right) => {
-  if (left.consumers.size === 0 && right.consumers.size === 0) {
-    return true;
-  }
-  if (left.consumers.size === 0 || right.consumers.size === 0) {
-    return false;
-  }
-  return [...left.consumers].some((consumer) => right.consumers.has(consumer));
-};
-
-for (const [file, members] of byFile) {
-  if (members.length < 2) {
-    continue;
-  }
-  for (let i = 0; i < members.length; i += 1) {
-    for (let j = i + 1; j < members.length; j += 1) {
-      const left = members[i];
-      const right = members[j];
-      if (!shareAPlace(left, right)) {
-        violations += 1;
-        console.error(
-          `${file}: "${left.typeName}" and "${right.typeName}" are used in different places and must not share one contract file.`,
-        );
-      }
-    }
-  }
-}
-
-if (violations > 0) {
-  console.error(`${violations} contract grouping violation(s) found.`);
-  process.exit(1);
-}
-
-console.log("Contract consumer grouping OK.");
-```
-
-Add it to the project scripts and run it from the lint pipeline:
-
-```json
-{
-  "scripts": {
-    "lint": "eslint .",
-    "check:contracts": "node scripts/check-contract-consumers.mjs",
-    "check:structure": "npm run lint && npm run check:contracts"
-  }
-}
-```
+ESLint core has no rule for "a file declares types or runtime behavior", and
+that is the point: expressing it at lint time requires a custom plugin
+distributed as a package and unit-tested with `RuleTester`, which is a
+different artifact from a configuration file. Copying a rule file into each
+project is not that artifact, it is an unversioned fork of it. The system
+verifies the rule itself, over the change set, and reports `file:line`
+evidence.
 
 ## Rule applicability by ecosystem
 
 Two rules are involved, and they do not apply to the same ecosystems.
 
-**Rule A — one type per file, separated from runtime behavior.** Language
-agnostic. It applies to every supported ecosystem, and it is *installed* in
-the ones whose linter can express it.
+**Rule A — types separated from runtime behavior, one contract file per
+consumer.** Language agnostic, a policy of this system, verified in every
+supported ecosystem by `workflows/output-compliance.md`. It is not installed
+in the project.
 
-**Rule B — prefer arrow functions.** A TypeScript and JavaScript
-convention. It has no counterpart in Python, Java, Kotlin, Go, Rust, C#, PHP,
-or Ruby, because those languages have no arrow syntax and their own
-conventions govern function declarations. The system never imposes an alien
-convention on an ecosystem that has its own. Where an ecosystem does define
-a function-style convention, the project convention prevails.
+**Rule B — prefer arrow functions.** A TypeScript and JavaScript convention
+with no counterpart in Python, Java, Kotlin, Go, Rust, C#, PHP, or Ruby. Those
+languages have no arrow syntax and their own conventions govern function
+declarations. The system never imposes an alien convention on an ecosystem
+that has its own.
 
 ### Coverage matrix
 
-Rule A is the type-per-file rule, Rule B the arrow function preference, and
-Rule C the pass-through re-export rule.
+| Ecosystem | Rule A | Rule B |
+|---|---|---|
+| TypeScript / JavaScript | Verified by the system | Configured with `func-style` + `no-restricted-syntax` |
+| React, Next.js, Angular, Vue, Svelte, Solid, React Native, Ionic, Capacitor, Node.js, Express, NestJS | Verified by the system | Configured, inherited from TypeScript / JavaScript |
+| Go, Rust, Python, Django, FastAPI, Ruby, Kotlin, Spring (Kotlin) | Verified by the system | Not applicable |
+| PHP, C# / .NET, Java, Spring (Java) | Verified by the system | Not applicable |
+| SQL (PostgreSQL, MySQL, Oracle, MongoDB) | Not applicable — no type or module declarations | Not applicable |
 
-| Ecosystem | Rule A | Rule B | Rule C — forwarding form |
-|---|---|---|---|
-| TypeScript / JavaScript | Installed — ESLint `structural/no-mixed-types-and-runtime` | Installed — `func-style` + `no-restricted-syntax` | Installed — ESLint `structural/no-pass-through-re-export` (`export … from`) |
-| React, Next.js, Angular, Vue, Svelte, Solid, React Native, Ionic, Capacitor, Node.js, Express, NestJS | Inherited from TypeScript / JavaScript | Inherited | Inherited — `export … from` |
-| Go | Verified — `golangci-lint` has no equivalent | Not applicable | Verified — type alias (`type T = pkg.T`) |
-| Rust | Verified — `clippy` has no equivalent | Not applicable | Verified — `pub use` |
-| Python, Django, FastAPI | Verified — Ruff cannot express it | Not applicable | Verified — `__all__` forwarding |
-| Ruby | Verified — Sorbet/RBS carry the types | Not applicable | Verified — constant alias |
-| Kotlin, Spring (Kotlin) | Verified — multiple declarations per file are idiomatic | Not applicable | Verified — `typealias` (public by default) |
-| PHP | Installed — PHP_CodeSniffer `PSR1.Classes.ClassDeclaration` | Not applicable | Verified — `class_alias()` |
-| C# / .NET | Installed — StyleCop `SA1402` | Not applicable | Verified — `TypeForwardedToAttribute` |
-| Java, Spring (Java) | Installed — Checkstyle `OneTopLevelClass` | Not applicable | **Not applicable — the language has no forwarding mechanism** |
-| SQL (PostgreSQL, MySQL, Oracle, MongoDB) | Not applicable — no type or module declarations | Not applicable | Not applicable |
-
-"Installed" means the ecosystem linter enforces the rule. "Verified" means
-the rule is checked by the deterministic compliance check in
-`workflows/output-compliance.md`, which runs over the change set and reports
-`file:line` evidence. "Not applicable" means the ecosystem has no mechanism
-that can express the anti-pattern.
-
-The pass-through re-export rule applies to every ecosystem that has a
-forwarding mechanism, and to no other. Java is the only supported language
-without one, confirmed three ways: an import declaration makes a type
-available by its simple name **only within the compilation unit that
-contains it** (JLS §7.5), the language has no type alias, and the compiled
-public signature of a consumer that imports a type is still the canonical
-name. The forwarding mechanisms of the other ecosystems are documented in
-`references/official-documentation.md`.
-
-"Verified" means the rule is checked by the deterministic compliance check in
-`workflows/output-compliance.md`, which runs over the change set and reports
-`file:line` evidence. It is enforced by the agent and the audit, not by the
-project's linter, because the ecosystem offers no rule to install.
-
-### Java — Checkstyle
-
-`OneTopLevelClass` enforces one top-level type per file, so an interface and
-a class in the same file are a violation.
-
-```xml
-<?xml version="1.0"?>
-<!-- config/checkstyle/checkstyle.xml -->
-<!DOCTYPE module PUBLIC
-  "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
-  "https://checkstyle.org/dtds/configuration_1_3.dtd">
-<module name="Checker">
-  <module name="TreeWalker">
-    <module name="OneTopLevelClass">
-      <property name="severity" value="error"/>
-    </module>
-    <module name="OuterTypeFilename">
-      <property name="severity" value="error"/>
-    </module>
-  </module>
-</module>
-```
-
-### C# / .NET — StyleCop analyzers
-
-`SA1402` (FileMayOnlyContainOneType) and `SA1401` (fields must be private)
-enforce the type-per-file rule.
-
-```ini
-; .editorconfig
-dotnet_diagnostic.SA1402.severity = error
-dotnet_diagnostic.SA1401.severity = error
-dotnet_diagnostic.SA1201.severity = error
-```
-
-`SA1201` requires elements to appear in the correct order, which keeps
-types before members and supports the separation of contract declarations
-from behavior.
-
-### PHP — PHP_CodeSniffer with the PSR-12 standard
-
-`PSR1.Classes.ClassDeclaration` enforces one class per file, and PSR-4
-autoloading already depends on it.
-
-```xml
-<?xml version="1.0"?>
-<!-- phpcs.xml -->
-<ruleset name="Project">
-  <rule ref="PSR12"/>
-  <rule ref="PSR1.Classes.ClassDeclaration">
-    <severity>5</severity>
-  </rule>
-</ruleset>
-```
-
-### Python, Go, Rust, Kotlin, Ruby
-
-No linter in these ecosystems can express the rule, so the deterministic
-compliance check is the mechanism. Do not invent a custom linter plugin for
-them, and do not report the rule as unenforced without stating that the
-compliance check covers it.
+Where an ecosystem linter ships a documented standard rule for Rule A —
+Checkstyle `OneTopLevelClass`, StyleCop `SA1402`, PHP_CodeSniffer
+`PSR1.Classes.ClassDeclaration` — the project may enable it in its normal
+configuration, because that is configuration, not a new artifact. It is
+optional: the system's check is the authority and runs whether or not the
+project enables the rule.
 
 ## Installation requirements
 
-- No new runtime dependency. `func-style`, `no-restricted-syntax`, and the
-  local rule use ESLint core.
-- `eslint-plugin-react` is used only when it is already installed.
-- The local rule file and the script are plain project files under the
-  existing source tree.
-- Checkstyle, StyleCop analyzers, PHP_CodeSniffer, Ruff, and
-  `golangci-lint` are the linters already mandated by the formatting and
-  linting policy in `AGENTS.md`. They are added as project-local development
-  dependencies, never globally.
-- When the ecosystem linter cannot express a rule, the compliance check
-  covers it and the report states that fact explicitly.
+- The formatter and the linter, with the plugins their detected stack already
+  needs, are the mandatory exception in the dependency policy of `AGENTS.md`.
+- The structural policy adds **no** dependency, file, plugin, or script to the
+  project.
+- A software project without a configured formatter or linter is
+  `SETUP_REQUIRED`.
+- A rule that no linter can express is covered by
+  `workflows/output-compliance.md` and reported as covered by verification,
+  never as an installed rule.
+
+## Sources
+
+- ESLint, *Custom Rules* — a custom rule is for a use case core rules do not
+  cover, and it is distributed as a plugin with unit tests (`RuleTester`).
+  Consulted 2026-10-27 for ESLint 10.
+- ESLint, *func-style* — a frozen core rule; the documentation states that the
+  choice is a preference, not a correctness rule. Consulted 2026-10-27 for
+  ESLint 10.
+- typescript-eslint, *consistent-type-imports* — a configuration rule that
+  enforces type-only imports and overlaps with `verbatimModuleSyntax`.
+  Consulted 2026-10-27 for typescript-eslint 8.
+- Prettier, *Rationale* — the formatter prints code and does not transform it;
+  formatting and linting are separate concerns. Consulted 2026-10-27 for
+  Prettier 3.

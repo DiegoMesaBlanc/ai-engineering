@@ -38,7 +38,7 @@ which artifacts it builds. There are no other modes and no flags.
    reason and the evidence.
 5. **Audit behaviorally**: build a real artifact per affected ecosystem or
    project type in a temporary directory outside the repository, install the
-   canonical artifacts, verify the compliant artifact passes, inject the
+   canonical configuration, verify the compliant artifact passes, inject the
    violation the adjustment was meant to prevent, verify it is detected with
    `file:line` evidence, fix it, re-verify, and clean the temporary
    directory.

@@ -398,6 +398,32 @@ A contract inside a unit folder (`components/<unit>/<unit>.types.ts`) is the
 single-consumer case and is allowed. A contract inside `types/`, `domain/`,
 or `contracts/` is the shared case and is allowed.
 
+### CONFIG-001 — The target project carries configuration, not system tooling
+
+The structural policy is verified here, not installed in the target project.
+The project receives its standard `eslint.config.*`, its Prettier
+configuration, and the ignore files those tools need. A file that implements a
+rule of this system — a local ESLint plugin under `eslint-rules/` or
+`.eslint-local/`, or a checker script such as
+`scripts/check-contract-consumers.mjs` — is a `FAIL` (P2): it is system
+tooling the project must not carry, and **no custom rule file**, plugin, or
+checker script belongs there.
+
+```sh
+{
+  git diff --name-only HEAD
+  git ls-files --others --exclude-standard
+} | sort -u |
+  grep -E '(^|/)(eslint-rules/|\.eslint-local/)|check-contract-consumers\.mjs$' |
+  sed 's/^/  FAIL system tooling inside the target project: /'
+```
+
+An ecosystem's standard rule configured in the project's normal configuration
+(for example Checkstyle `OneTopLevelClass`) is configuration and is not
+flagged. A shared, versioned configuration package published outside the
+project is also not flagged; what is flagged is a copy of system tooling
+inside the project.
+
 ### CHECK-001 — Phase checklist format and derivation
 
 A phase checklist is valid when every line uses the state format and every

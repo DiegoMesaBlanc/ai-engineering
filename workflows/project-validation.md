@@ -178,20 +178,19 @@ solely to satisfy this policy.
      (flat config for the current major, legacy eslintrc only while the
      project still uses it); disable the rules that overlap with Prettier
      instead of letting the two disagree.
-   - **JavaScript and TypeScript: install the structural compliance rules**
-     from `references/linter-rules.md` when configuring or repairing the
-     ESLint configuration. The project must end up with `func-style`,
-     the `no-restricted-syntax` selector for function expressions, and the
-     local `structural/no-mixed-types-and-runtime` rule, plus the contract
-     consumer script. A linter that runs without these rules is incomplete
-     even when it reports no error.
-   - **Other ecosystems: install the type-per-file rule when the ecosystem
-     linter can express it**, per the coverage matrix in
-     `references/linter-rules.md`: Checkstyle `OneTopLevelClass` for Java,
-     StyleCop `SA1402` for C# and .NET, and PHP_CodeSniffer
-     `PSR1.Classes.ClassDeclaration` for PHP. When the ecosystem has no
-     equivalent rule, do not invent a plugin: the rule stays covered by the
-     structural compliance check and the report states that explicitly.
+   - **JavaScript and TypeScript: keep the configuration standard.** Use the
+     detected ESLint flat or legacy configuration and enable the core rules
+     `func-style`, the `no-restricted-syntax` selector for function
+     expressions, and `@typescript-eslint/consistent-type-imports` when
+     `typescript-eslint` is already part of the setup. Do not create a custom
+     rule file, a local plugin, or a checker script, and do not add a
+     dependency for the structural policy. The placement rules are verified by
+     `workflows/output-compliance.md`, not by project tooling.
+   - **Other ecosystems:** use the ecosystem-standard formatter and linter.
+     Where that linter ships a documented rule for separating types from
+     runtime (Checkstyle `OneTopLevelClass`, StyleCop `SA1402`,
+     PHP_CodeSniffer `PSR1.Classes.ClassDeclaration`), enabling it is optional
+     configuration; the system's compliance check remains the authority.
    - Angular: Angular ESLint together with Prettier; do not add a generic
      ESLint configuration that conflicts with the Angular one.
    - Ionic: the tooling of its underlying Angular or React stack.
@@ -273,25 +272,21 @@ Record:
 - exit code when available
 - useful failure evidence
 
-**Verify that the linter is actually enforcing the structural rules.** A
-successful lint run proves nothing when the configuration is empty or lacks
-the structural rules. Confirm, per the coverage matrix in
-`references/linter-rules.md`:
+**Verify that the linter is configured and actually running.** A lint command
+that exits successfully proves nothing when the configuration is empty or
+missing. Confirm:
 
 - JavaScript and TypeScript: the resolved ESLint configuration contains
-  `func-style`, the `no-restricted-syntax` selector for function
-  expressions, and the local `structural/no-mixed-types-and-runtime` rule,
-  and the contract consumer script exists and is wired into the project
-  scripts.
-- Java: the Checkstyle configuration enables `OneTopLevelClass`.
-- C# and .NET: the analyzer configuration sets `SA1402` to error.
-- PHP: the PHP_CodeSniffer ruleset references `PSR1.Classes.ClassDeclaration`.
-- Python, Go, Rust, Kotlin, and Ruby: the ecosystem linter cannot express
-  the rule. Confirm that the structural compliance check covers it and
-  report it as covered by verification rather than as an installed rule.
+  `func-style` and the `no-restricted-syntax` selector, and a Prettier
+  configuration exists. There is no custom rule file, plugin, or checker
+  script in the project.
+- Other ecosystems: the ecosystem-standard linter configuration exists and
+  runs.
+- The structural placement rules are not verified here. They are verified by
+  `workflows/output-compliance.md` over the change set.
 
-Report a missing rule as `SETUP_REQUIRED` even when the lint command exits
-successfully.
+Report a missing formatter or linter as `SETUP_REQUIRED` even when the build or
+the lint command exits successfully.
 
 Do not claim success without execution evidence.
 

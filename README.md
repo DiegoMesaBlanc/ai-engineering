@@ -102,6 +102,10 @@ repository's `commands/` directory.
   and configures the mandatory formatter and linter when they are missing.
 - `/delivery-check` assesses CI/CD, security, and delivery readiness of
   the target project in read-only mode; it does not change the project.
+- Formatting and linting live in the project's own `eslint.config.*` and
+  Prettier configuration. The structural policy is verified by
+  `workflows/output-compliance.md`; no custom rule file, plugin, or checker
+  script is installed in a project.
 
 ### Code audit
 

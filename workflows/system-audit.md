@@ -52,7 +52,7 @@ from the adjustment text, never from an external scope argument.
 | The rule registry | Every anchor resolves on every required surface, and every canonical wording is in `AGENTS.md` | A rule whose reachability was broken, to prove the check detects it |
 | The regression matrix | No duplicate or missing identifier, and every changed rule has a row stating its evidence | The evidence the row claims, executed |
 | The validation workflow | The index and the sections match exactly, every required file exists, and every new check is executable | The new check, run against a real violation |
-| The linter artifacts | The rules install and run in a real project: a compliant artifact passes, and each targeted violation is detected with `file:line` | A small service per affected ecosystem, with the rules installed from `references/linter-rules.md` |
+| The linter configuration | A real project receives only its standard `eslint.config.*` and Prettier configuration: a compliant artifact passes, each injected structural violation is detected with `file:line` by the system's compliance check, and a project that adds a custom rule file fails `CONFIG-001` | A small service per affected ecosystem, configured from `references/linter-rules.md`, with the violation injected and no custom tooling added |
 | The compliance checks | Each detection pattern finds the violation it claims to find, including the aliased and relative forms | An artifact that contains each violation in both forms |
 | The project creation order | A real artifact per affected project type can be created following the order, passes the structural rules, and the checklist is completable | A service, a frontend, a library, and a mobile app, per the affected types |
 | The startup decision catalog | Every project type in scope has its decisions, each with a default, a user-decision condition, and a source | The decision resolution applied to a synthetic scope |
@@ -317,7 +317,7 @@ because it never looks is not evidence.
 
 ### 4.1 Rules for the behavioral artifacts
 
-- Build the artifact from the canonical artifacts of the repository, not from
+- Build the artifact from the canonical configuration and references of the repository, not from
   a paraphrase of them. A behavioral audit of a paraphrase proves nothing.
 - Use the real tooling when the ecosystem's tooling is available in the
   environment. When it is not, report the check as `NOT VERIFIED` with the

@@ -49,7 +49,18 @@ because it looks simple.
 
 **Official documentation consultation:** Step 2 is mandatory after stack detection. Consult only the sections relevant to the detected stack and current task. Do not load entire documentation sites.
 
-**Structural rules are installed, not only documented.** For a JavaScript or TypeScript project, the ESLint configuration must include the structural compliance rules from `references/linter-rules.md`: `func-style`, the `no-restricted-syntax` selector for function expressions, and the local `structural/no-mixed-types-and-runtime` rule, plus the contract consumer script. A linter that runs without these rules does not enforce the structural policy of this system.
+**Structural rules are verified, not installed in the target project.** A
+target project receives only its standard `eslint.config.*` and Prettier
+configuration, with the core rules `func-style` and `no-restricted-syntax`
+expressing the arrow function convention and
+`@typescript-eslint/consistent-type-imports` covering type-only imports when
+`typescript-eslint` is already part of the setup. The structural policy —
+types separated from runtime behavior, contract ownership and grouping,
+pass-through re-exports, and unit folders — is verified inside this system by
+`workflows/output-compliance.md` over the change set and applied during
+review. No custom rule file, plugin, or checker script is created in the target
+project, and no dependency is added for it. The canonical configuration
+guidance is `references/linter-rules.md`.
 
 ## Folder Architecture and Contract Placement
 
