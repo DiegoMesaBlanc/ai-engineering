@@ -2290,12 +2290,27 @@ conventions:
   `external-audit`, `code-audit`, and `system-audit`
 - `README.md` lists `/adopt-baseline` and distinguishes it from
   `/create-project`, `/validate`, and `/external-audit`
+- `commands/task.md` and `agents/orchestrator.md` reference the **opt-in
+  engineering baseline** gate at the entry point, with the four conditions and
+  the four answers; a task surface that never mentions it is a `FAIL`
 - `references/system-workflow-regression-matrix.md` includes R-73
 - the out-of-scope declaration names incident response, infrastructure
   provisioning, capacity and cost, privacy and compliance, and product
   analytics, instead of implying coverage
 - no package.json, dependency, or `.env.example` was added to this
   documentation-only repository
+
+
+```sh
+failures=0
+for f in commands/task.md agents/orchestrator.md; do
+  grep -qi "opt-in engineering baseline" "$f" ||
+    { echo "FAIL V2.51: $f does not surface the baseline gate"; failures=1; }
+done
+grep -q "The Single Question" workflows/engineering-baseline.md ||
+  { echo "FAIL V2.51: the canonical question is missing"; failures=1; }
+exit "$failures"
+```
 
 ## V2.52 Regression — Design Quality and Dependency Direction
 

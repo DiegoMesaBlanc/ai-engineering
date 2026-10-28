@@ -346,6 +346,15 @@ Do not restate the phase order here. Continue from the first incomplete
 phase in `workflows/task-to-code.md` and reuse analysis already performed
 instead of repeating it.
 
+Before the first code change in a software project, run the
+**opt-in engineering baseline** gate. When the target has no
+`docs/engineering-baseline.md` and the task will create or change source
+code, ask the single question defined in
+`workflows/engineering-baseline.md` ("The Single Question"). A general task
+request is not an answer; acceptance is a separate change set, "not now"
+asks again on a later task, and "never" is recorded and respected. A
+read-only task and a documentation-only repository do not ask.
+
 Every task shows a phase plan before the work starts, including a one-phase
 plan, and carries a checklist during each phase. A phase boundary is an
 approval gate: the system reports the phase, asks, and starts the next phase

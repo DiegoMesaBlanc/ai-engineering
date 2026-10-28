@@ -98,6 +98,13 @@ Detect engineering intent from the request (architecture/solution design, time/c
 
 Key required behaviors within that workflow:
 
+- before the first code change in a software project, run the
+  **opt-in engineering baseline** gate: when `docs/engineering-baseline.md` is absent
+  and the task will create or change source code, ask the single question in
+  `workflows/engineering-baseline.md`; a general task request is not an
+  answer, acceptance is a separate change set, "not now" asks again on a
+  later task, and "never" is recorded and respected. A read-only task and a
+  documentation-only repository do not ask
 - read the applicable learnings from the learning store before acting, and
   treat a repeat of a recorded lesson as a defect of the task
 - complete the dependency assessment in
