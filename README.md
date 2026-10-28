@@ -112,6 +112,10 @@ repository's `commands/` directory.
 - `/code-audit` performs a senior/staff whole-cycle audit of generated code:
   architecture, patterns, quality, security, data, tests, performance,
   accessibility, i18n, SEO, UI, and mobile — in read-only mode.
+- Scope: the last commit by default, or the whole project with `--all`. It
+  reports improvement suggestions ordered by impact; it never applies them and
+  never blocks a commit by itself. It does not check out commits or change the
+  working tree.
 - It is distinct from `/system-check` (system config), `/validate` (tool
   execution), and `/review-pr` (colleague's PR feedback).
 

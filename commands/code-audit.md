@@ -1,5 +1,5 @@
 ---
-description: Read-only senior/staff whole-cycle audit of generated code for over-engineering, architecture, patterns, quality, security, data, tests, performance, a11y, i18n, SEO, UI, and mobile — without modifying code or remote state.
+description: Read-only senior/staff audit of the last commit by default, or of the whole project with --all, reporting improvement suggestions for architecture, patterns, quality, security, data, tests, performance, a11y, i18n, SEO, UI, and mobile.
 agent: reviewer
 ---
 
@@ -11,15 +11,20 @@ Run the Code Audit Workflow:
 
 ## Input
 
-Optional arguments in `$ARGUMENTS`:
+Two modes only:
 
-- File or directory paths to audit (relative to project root).
-- `--all` to audit the entire project (explicit opt-in).
-- If omitted, audit only uncommitted changes:
-  - Staged + unstaged tracked changes (`git diff HEAD`)
-  - Untracked files (`git ls-files --others --exclude-standard`)
-  - If the working tree is clean: `NOTHING TO AUDIT` (no fallback to whole project).
-- **Default scope is the change set only; declaration sites outside the diff are not audited.**
+- Without arguments, audit the **last commit** (`HEAD`).
+- `--all` to audit the **whole project** in its current state.
+
+Rules:
+
+- If the repository has no commit, report `NOTHING TO AUDIT`.
+- The working tree is not audited in commit mode; `--all` audits the current
+  project, including uncommitted changes.
+- Findings are **improvement suggestions** ordered by impact. They are never
+  applied automatically and do not block a commit by themselves.
+- No other scope mode exists. Do not add a third mode or a fallback between
+  them.
 
 ## Behavior
 
@@ -27,8 +32,9 @@ Optional arguments in `$ARGUMENTS`:
 2. Detect stack, app type(s), and existing conventions.
 3. Build the applicability matrix for all code dimensions.
 4. Load only applicable Skills and audit each dimension.
-5. Produce a dimension matrix + prioritized findings + verdict.
-6. Never edit, commit, push, or write remote state.
+5. Produce a dimension matrix + prioritized suggestions + overall assessment.
+6. Never edit, commit, push, or write remote state. Never check out a commit or
+   modify the working tree to inspect one.
 
 ## Output
 

@@ -1321,7 +1321,28 @@ Verify that the code-creation audit is a standalone, read-only, non-duplicative 
   (R-43)
 - no new Skill, agent, package.json, dependency, or competing orchestrator
   was introduced
-- **default scope is the uncommitted change set; clean tree = NOTHING TO AUDIT; no fallback to whole project**
+- **exactly two modes**: the last commit (`HEAD`) by default and the whole
+  project with `--all`; no `--commit`, `--range`, paths, or fallback between
+  modes
+- the report is **advisory**: improvement suggestions, never applied changes
+  and never a commit gate
+- `workflows/code-audit.md` Phase 2 resolves the commit scope with
+  `git diff`/`git show`, handles a root commit through `--root`, and never
+  checks out a commit or modifies the working tree; declaration sites outside
+  the scope are read-only context
+
+```sh
+failures=0
+grep -q '\-\-all' commands/code-audit.md || { echo "FAIL V2.22: no --all"; failures=1; }
+grep -q 'last commit' commands/code-audit.md || { echo "FAIL V2.22: no default commit mode"; failures=1; }
+grep -q 'last commit' workflows/code-audit.md || { echo "FAIL V2.22: workflow has no default commit mode"; failures=1; }
+grep -q 'root commit' workflows/code-audit.md || { echo "FAIL V2.22: root commit not handled"; failures=1; }
+if grep -qE '\-\-commit|\-\-range' commands/code-audit.md workflows/code-audit.md; then
+  echo "FAIL V2.22: a third scope mode was added"
+  failures=1
+fi
+exit "$failures"
+```
 
 ## V2.23 Regression — Folder Architecture, Dependency Direction, and Type/Contract Ownership
 

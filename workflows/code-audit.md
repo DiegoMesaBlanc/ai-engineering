@@ -52,18 +52,30 @@ Each dimension maps to an existing Skill. Only applicable dimensions are audited
 
 ### Phase 2 — Identify Scope
 
-- If `$ARGUMENTS` provides paths, use those.
-- If `$ARGUMENTS` includes `--all`, audit the entire project (all application source files).
-- Else inspect Git status + diff; audit only uncommitted changes:
-  - Staged + unstaged tracked changes (`git diff HEAD`).
-  - Untracked files (`git ls-files --others --exclude-standard`).
-  - If the working tree is clean: report `NOTHING TO AUDIT` and exit (no fallback to whole project).
-- **Default scope is the change set only; declaration sites outside the diff are not audited.**
-- Build a **Scope Manifest** recording:
-  - `git status --porcelain=v1`
-  - `git diff --name-status -M HEAD`
-  - `git diff --unified=0 HEAD`
-  - `git ls-files --others --exclude-standard`
+There are exactly two modes. Do not add a third.
+
+1. **Default — the last commit.** Audit the change introduced by `HEAD`:
+   - `git rev-parse --verify HEAD`; if it fails (no commits), report
+     `NOTHING TO AUDIT` and exit.
+   - `git show --no-patch --format='%H %P%n%s'` to record the commit, its
+     parents, and its subject.
+   - `git diff --name-status -M HEAD^ HEAD` and
+     `git diff --unified=0 HEAD^ HEAD` for a normal commit; for a root commit
+     use `git show --name-status --format= --root HEAD` and
+     `git show --format= --unified=0 --root HEAD`; for a merge commit diff
+     against the first parent (`HEAD^1`).
+   - Record the commit SHA and the changed line ranges.
+2. **`--all` — the whole project.** Audit every application source file in the
+   current working tree, including uncommitted changes.
+
+- **The audited scope is never expanded.** Declaration sites outside it are
+  read-only context: read them with `git show <sha>:<path>` in commit mode, or
+  from the working tree in `--all`; they are not audited and their issues are
+  out of scope.
+- **Never check out a commit or modify the working tree.**
+- Build a **Scope Manifest** recording the mode (`last commit` or `project`),
+  the `--name-status` and `--unified=0` output in commit mode or the file list
+  in `--all`, and the exclusions.
 - Exclude by default: `node_modules`, `dist`, `.next`, `build`, `coverage`, lockfiles, binaries, minified assets.
   - Migrations and config files are included.
 - Deleted files: record as context only (no code audit).
@@ -192,16 +204,21 @@ Apply the canonical procedure in `skills/engineering-review/SKILL.md`
 
 ### Phase 7 — Report
 
+The report is **advisory**: it proposes improvements. It never applies a change
+and never blocks a commit by itself.
+
 Produce the report in this order:
 
 #### 1. Scope & Context
 
 - Project root, classification.
-- Audited scope (paths, branch, commit).
+- Audited scope: `last commit <sha>` or `whole project`.
 - Detected stack + architecture with confidence.
-- **Scope Manifest** (files + changed line ranges, exclusions declared).
+- **Scope Manifest** (mode, files + changed line ranges or project file list,
+  exclusions declared).
 - **Folder Architecture Map** (layers/modules, responsibility→folder, allowed dependency directions, contract/type location, co-location rules, public module API).
-- **Out of scope**: pre-existing issues outside the diff, excluded files, and declaration sites outside the audited change set.
+- **Out of scope**: files and declaration sites outside the audited scope,
+  excluded files, and issues pre-existing outside it.
 
 #### 2. Dimension Matrix
 
@@ -210,13 +227,14 @@ Produce the report in this order:
 | Architecture & folder structure | PASS/WARN/FAIL/N/A | *e.g., "change does not touch architecture"* |
 | ... | ... | ... |
 
-**Note**: Dimension 1 evaluates conformance of the changed code to the Folder Architecture Map; if the change set does not allow assessment of global architecture, report `N/A` with reason.
+**Note**: Dimension 1 evaluates conformance of the audited scope to the Folder Architecture Map; if the scope does not allow assessment of global architecture, report `N/A` with reason.
 
-#### 3. Findings
+#### 3. Suggested improvements
 
-Ordered by severity (P0 → P3), then confidence.
+Ordered by severity (P0 → P3), then confidence. Each item is a recommendation,
+not an applied change.
 
-For each finding:
+For each suggestion:
 - `[P0–P3] Short title`
 - `File:line` (or narrowest range)
 - **Evidence:** REAL / SIMULATED / STATIC + concrete code path, requirement, or command output.

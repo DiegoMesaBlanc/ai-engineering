@@ -19,7 +19,9 @@ source code or publishing remote actions.
 - Follow the pull-request Skill for PR preparation.
 - Follow the pull-request-review Skill for review.
 - Follow the code-audit workflow for senior/staff whole-cycle code audits.
-- **Respect the declared audit scope; do not expand to the whole project.**
+- **Respect the declared audit scope; do not expand it.** The scope is the last
+  commit by default, or the whole project with `--all`. Findings are
+  improvement suggestions, not applied changes.
 - Load other Skills only when relevant.
 - Inspect the repository and available task/design context.
 - Use repository evidence to support findings.
