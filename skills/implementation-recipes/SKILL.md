@@ -87,6 +87,35 @@ Follow the **Folder Architecture Map** from `architecture-advisor`. Place contra
 
 Do not impose a universal template; preserve the project's detected conventions **when coherent**. A mixed `lib/` is not a convention to preserve.
 
+### Unit style: functions or classes
+
+Clean Architecture and Hexagonal are a **dependency rule**, not a syntax
+rule. The unit is a class only when the ecosystem or the DI container makes
+it the idiom. Do not mix the two styles inside one layer.
+
+| Ecosystem | Default unit | Use a class when |
+|---|---|---|
+| TypeScript / JavaScript (Node, Express, Fastify) | function or factory + `interface` port | the unit holds state or lifecycle, the project already uses classes, or a DI container instantiates it |
+| NestJS, Angular | class | always; the framework instantiates and injects it |
+| Java, Kotlin, C#, PHP | class + interface | always; it is the language idiom |
+| Go | struct + interface at the consumer | a struct carries state; the language has no class |
+| Rust | struct + trait | a struct carries state; the language has no class |
+| Python | function or class + `Protocol`/ABC | state, framework, or project convention |
+| Ruby | class or module | state or framework; duck typing otherwise |
+
+Rules:
+
+- A **port** is an `interface` (TypeScript, Java, Kotlin, C#, PHP), a
+  `Protocol` or ABC (Python), a trait (Rust), or an interface declared by the
+  consumer (Go). It never leaks the framework.
+- An **adapter** is a factory function or a class; both satisfy the port.
+- The **composition root** is the only place that constructs concrete
+  adapters.
+- Arrow functions remain the default for standalone functions; class methods
+  are exempt from the arrow rule.
+- A project that adopts classes does so for the whole layer, not file by
+  file: two styles in one layer is a finding.
+
 ### Unit Organization and Test Co-location
 
 When a unit has more than one related artifact — implementation, test,

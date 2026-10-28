@@ -207,6 +207,65 @@ src/
 on nothing. The port lives with the domain; the adapter implements it and
 lives on the other side.
 
+### Clean Architecture mapping
+
+Clean Architecture (Robert C. Martin) and Hexagonal express the same
+dependency rule with different vocabulary. Either name selects the same
+tree; the layers map directly:
+
+| Clean Architecture | Hexagonal equivalent |
+|---|---|
+| Entities | `domain/entities/` |
+| Use cases | `application/use-cases/` (or `domain/use-cases/`) |
+| Interface adapters | `adapters/inbound/` and `adapters/outbound/` |
+| Frameworks and drivers | `infrastructure/` and `config/` |
+
+The **use-case layer** is Clean's addition; Hexagonal calls it application.
+Neither prescribes classes or functions: the unit is a class when the
+ecosystem's idiom or DI container requires it, and a function or factory
+otherwise. The canonical unit-style table is in
+`skills/implementation-recipes/SKILL.md` ("Unit style: functions or
+classes"). Both are application architectures: a frontend keeps its
+framework organization and may apply them only to its core.
+
+### Hexagonal / Clean, TypeScript and Node.js
+
+```
+src/
+├── domain/
+│   ├── entities/
+│   ├── value-objects/
+│   └── ports/
+├── application/
+│   └── use-cases/
+├── adapters/
+│   ├── inbound/http/
+│   └── outbound/persistence/
+├── infrastructure/
+│   └── config/
+├── testing/              # test support, never test cases
+└── main.ts               # composition root: wires ports to adapters
+```
+
+The test lives next to the unit it tests. `main.ts` is the only place that
+constructs concrete adapters; domain and application receive their
+dependencies as parameters.
+
+### Hexagonal / Clean, per ecosystem
+
+| Ecosystem | domain | application | inbound adapter | outbound adapter | composition root | tests |
+|---|---|---|---|---|---|---|
+| TypeScript / Node.js | `src/domain` | `src/application` | `src/adapters/inbound` | `src/adapters/outbound` | `src/main.ts` | next to the unit |
+| NestJS | `src/domain` | `src/application` | controllers | providers | Nest module wiring | `*.spec.ts` next to the unit |
+| Angular | `src/app/core/domain` | `src/app/core/application` | components/guards | services/adapters | `app.config.ts` | `*.spec.ts` next to the unit |
+| Java / Kotlin | `domain/` package | `application/` | `api/` | `infrastructure/` | Spring configuration | mirrored `src/test` |
+| C# / .NET | `Domain/` | `Application/` | `Api/` | `Infrastructure/` | `Program.cs` | `tests/` project |
+| PHP | `src/Domain` | `src/Application` | `src/Api` | `src/Infrastructure` | `public/index.php` | `tests/` |
+| Ruby | `lib/domain` | `lib/application` | `lib/api` | `lib/infrastructure` | `config.ru` | `spec/` |
+| Go | `internal/domain` | `internal/application` | `internal/adapters/http` | `internal/adapters/postgres` | `cmd/<app>/main.go` | same package |
+| Rust | `src/domain` | `src/application` | `src/adapters/inbound` | `src/adapters/outbound` | `src/main.rs` or `lib.rs` | inline or `tests/` |
+| Python | `src/domain` | `src/application` | `src/adapters/inbound` | `src/adapters/outbound` | `src/main.py` | next to the unit or `tests/` |
+
 ## Style 4 — DDD
 
 **Authority**: Domain-Driven Design, with the bounded context of

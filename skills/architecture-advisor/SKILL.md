@@ -127,6 +127,13 @@ appropriate to their ecosystems. Do not impose hexagonal, Clean, feature,
 microservice, or any other option on every project. Justify the level of
 separation from context and real needs.
 
+**Clean Architecture and Hexagonal are the same dependency rule** with
+different vocabulary. Choosing between them is not a class-versus-function
+decision: the unit style is the ecosystem's idiom, defined in
+`skills/implementation-recipes/SKILL.md` ("Unit style: functions or
+classes"). Do not present either as requiring classes, and do not mix
+functions and classes inside one layer.
+
 #### Architecture Alternatives by Supported Ecosystem
 
 Use this catalog as a set of alternatives to evaluate after detecting the

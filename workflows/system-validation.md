@@ -759,6 +759,7 @@ Return:
 - V2.50 external audit checks:
 - V2.51 engineering baseline checks:
 - V2.52 design quality and dependency direction checks:
+- V2.53 Clean Architecture mapping and unit style checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -2321,5 +2322,32 @@ failures=0
 grep -qi "Staff bar" AGENTS.md || { echo "FAIL V2.52: AGENTS.md has no design bar"; failures=1; }
 grep -qi "SOLID" skills/engineering-review/SKILL.md || { echo "FAIL V2.52: no SOLID criteria"; failures=1; }
 grep -qi "LAYER-001" workflows/code-audit.md workflows/output-compliance.md || { echo "FAIL V2.52: no LAYER-001"; failures=1; }
+exit "$failures"
+```
+
+## V2.53 Regression — Clean Architecture Mapping and Unit Style
+
+Verify that Clean and Hexagonal are documented as one dependency rule and
+that functions versus classes is an ecosystem decision, not an architecture
+requirement:
+
+- `references/folder-architectures.md` contains the **Clean Architecture
+  mapping** table, the TypeScript/Node tree, and the per-ecosystem
+  Hexagonal/Clean table.
+- `skills/implementation-recipes/SKILL.md` contains **Unit style: functions
+  or classes** with the per-ecosystem table, the port/adapter rules, and the
+  prohibition on mixing styles inside one layer.
+- `skills/architecture-advisor/SKILL.md` states that Clean and Hexagonal are
+  the same dependency rule and that the unit style is the ecosystem's idiom.
+- `references/system-workflow-regression-matrix.md` includes R-75.
+- Proof: a Clean fixture with functions and one with classes both pass; a
+  `domain/` importing `infrastructure/` is detected.
+
+```sh
+failures=0
+grep -q "Clean Architecture mapping" references/folder-architectures.md || { echo "FAIL V2.53: no Clean mapping"; failures=1; }
+grep -q "Hexagonal / Clean, per ecosystem" references/folder-architectures.md || { echo "FAIL V2.53: no per-ecosystem table"; failures=1; }
+grep -q "Unit style: functions or classes" skills/implementation-recipes/SKILL.md || { echo "FAIL V2.53: no unit-style table"; failures=1; }
+grep -q "same dependency rule" skills/architecture-advisor/SKILL.md || { echo "FAIL V2.53: no equivalence statement"; failures=1; }
 exit "$failures"
 ```
