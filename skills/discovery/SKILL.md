@@ -16,25 +16,17 @@ The objective is to understand the project before making architectural or implem
 Before implementing a task:
 
 1. Determine whether the project is new or existing.
-2. Inspect the repository structure.
-3. Inspect relevant configuration files.
-4. Detect the programming language.
-5. Detect the framework.
-6. Detect framework and runtime versions when possible.
-7. Detect package manager and build system.
-8. Detect database technology when applicable.
-9. Detect ORM/ODM when applicable.
-10. Detect state management when applicable.
-11. Detect testing frameworks.
-12. Detect E2E tooling.
-13. Detect linting and formatting configuration.
-14. Detect CI/CD configuration.
-15. Detect containerization and infrastructure configuration.
-16. Detect the current architecture.
-17. Detect existing project conventions.
-18. Detect existing abstractions and design patterns when reasonably identifiable.
-19. Determine which Skills are relevant to the task.
-20. Load only the Skills that are relevant.
+2. For an existing project, detect the stack, versions, package manager,
+   build system, data, testing, formatting and linting, CI/CD, containers,
+   and infrastructure with `skills/stack-detection/SKILL.md`.
+3. Detect the architecture, conventions, and existing abstractions and design
+   patterns with `skills/project-analysis/SKILL.md`.
+4. Determine which Skills are relevant to the task, and load only those.
+
+Discovery owns the stage gate, the new-or-existing determination, the scope
+and evidence boundary, the relevant-Skill selection, and the summary below.
+The detection itself is owned by the two Skills named above; it is not
+restated here.
 
 ## Scope and evidence
 
@@ -46,31 +38,9 @@ an implicit task.
 
 ## Existing projects
 
-Do not ask the user to provide information that can be reliably detected from the repository.
-
-Inspect the repository first.
-
-Prefer evidence from:
-
-- package.json
-- package-lock.json
-- pnpm-lock.yaml
-- yarn.lock
-- pom.xml
-- build.gradle
-- pyproject.toml
-- requirements.txt
-- poetry.lock
-- angular.json
-- vite.config.\*
-- tsconfig.json
-- Dockerfile
-- docker-compose files
-- CI/CD configuration
-- source structure
-- test configuration
-- README files
-- architecture documentation
+Do not ask the user to provide information that can be reliably detected from
+the repository. Inspect the repository first. The evidence sources are defined
+by `skills/stack-detection/SKILL.md` and `skills/project-analysis/SKILL.md`.
 
 ## New projects
 

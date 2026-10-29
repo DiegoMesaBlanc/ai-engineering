@@ -85,214 +85,23 @@ Apply the adjustment with the normal engineering flow, not with a shortcut:
 
 ## Phase 3 — Structural Audit
 
-Always executed after the implementation. Every check reports `PASS`,
-`FAIL`, or `NOT VERIFIED` with the reason and the evidence.
+Always executed after the implementation. The structural checks are owned by
+`workflows/system-validation.md` §6: the executable checks §6.0 to §6.7 cover
+reference integrity, the command catalog, portability, index and numbering,
+rule reachability and cross-client reach, retired wordings, and duplication.
+This workflow runs them and does not copy them. A change to a check is made in
+`workflows/system-validation.md`.
 
-### 3.1 Reference integrity
+The portability check assumes a **POSIX shell**, the shell the shared procedures
+are written for. When the environment does not provide one, the check is
+`NOT VERIFIED` with the reason, never a pass.
 
-Every local Markdown link resolves, and every repository file path in
-backticks exists. A reference to an artifact installed in a target project,
-such as an ESLint configuration, is not a failure.
+Every check reports `PASS`, `FAIL`, or `NOT VERIFIED` with the reason and the
+evidence. A `FAIL` is a defect of the system's own artifact.
 
-A path cited precisely **because it must not exist** is a negative
-assertion, not a broken reference. It is a `FAIL` when the file exists, and
-a `PASS` when it does not. Read the sentence before classifying it.
+The adjustment adds one check of its own:
 
-```sh
-grep -rhoE '\]\([^)#[:space:]]+\.md\)' --include='*.md' . |
-  sed 's/^](//; s/)$//' | sort -u
-```
-
-**The version guide is consulted.** The **version guide** of the ecosystem
-is the source of truth for what is current. An audit that checks a
-framework-specific convention confirms that the guide was consulted for the
-target version, and that the consulted source covers it.
-
-**Pinned sources are registered.** A source that documents one specific
-release can silently become stale. Every URL that contains a version number
-must appear in the **Version-Pinned Sources** table of
-`references/official-documentation.md`, with its version and its review
-rule. An unregistered pinned URL is a `FAIL`: it can age without anyone
-noticing.
-
-```sh
-grep -oE 'https?://[^ )]+' references/official-documentation.md |
-  tr -d '`' | sed 's/[.,]$//' | sort -u |
-  grep -E '/v?[0-9]+\.[0-9]+|version-[0-9]+|/en/[0-9]+\.[0-9]+/' |
-  while read -r url; do
-    grep -qF "$url" references/official-documentation.md ||
-      echo "FAIL pinned source not registered: $url"
-  done
-
-# The extraction above can carry trailing markdown; compare on the URL alone.
-# Compare against the pinned table, not against the whole document.
-# No temporary file: the table is piped straight into the comparison.
-pinned_table() {
-  awk '/^## Version-Pinned Sources/{found=1} found' \
-    references/official-documentation.md
-}
-
-grep -oE 'https?://[^ )[:space:]]+' references/official-documentation.md |
-  tr -d '`' | sed 's/[.,]$//' | sort -u |
-  grep -E '/v?[0-9]+\.[0-9]+|version-[0-9]+|/en/[0-9]+\.[0-9]+/' |
-  while read -r url; do
-    pinned_table | grep -qF "$url" ||
-      echo "FAIL pinned source not registered: $url"
-  done
-```
-
-**External URLs resolve.** A documentation reference that points nowhere
-makes the consultation mandate unsatisfiable, and the agent falls back to
-guessing. Check every URL in the changed files, and every URL in
-`references/official-documentation.md` when that file is touched:
-
-```sh
-grep -rhoE 'https?://[^ )[:space:]]+' references/official-documentation.md |
-  tr -d '`' | sed 's/[.,]$//' | sort -u | while read -r url; do
-    code=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 20 "$url")
-    [ "$code" = "200" ] || echo "FAIL $code $url"
-  done
-```
-
-A status that is not `200` is a finding to investigate. A `403` from a known
-host is bot protection rather than a dead link, and a `000` is a transient
-failure; record those as `NOT VERIFIED` with the reason instead of silently
-passing them.
-
-When the environment has no `curl`, the URL check is `NOT VERIFIED` with the
-tool named. It is never a pass. The same applies to any other tool the
-environment lacks.
-
-### 3.2 Command catalog
-
-Every command in `commands/` has its own description in the README, so the
-catalog does not drift from the commands that exist.
-
-```sh
-for command in commands/*.md; do
-  name=$(basename "$command" .md)
-  grep -q "^- \`/$name\`:" README.md ||
-    echo "FAIL command /$name has no description in README.md"
-done
-
-for name in $(grep -oE '^- `/[a-z-]+`:' README.md | sed 's/^- `//; s/`:$//'); do
-  [ -f "commands/$name.md" ] ||
-    echo "FAIL README describes /$name but commands/$name.md does not exist"
-done
-```
-
-A command without a README description is a `FAIL`: the catalog a reader
-consults is incomplete. A README entry without a command is a `FAIL` too: it
-is a dangling reference left by a rename, and a reader would invoke a
-command that does not exist.
-
-### 3.3 Portability
-
-The system must work on every client and operating system. The shared
-procedures assume a **POSIX shell**; when the environment does not provide
-one, the check is `NOT VERIFIED` with the reason. Verify:
-
-- Every workflow is reachable **without** the `commands/` adapters, so a
-  client without slash commands still reaches it.
-- No shared procedure contains any of the **non-portable constructs**
-  listed in `references/portability.md`. That list is the single source;
-  it is not repeated here.
-- No shared procedure hardcodes an operating-system path or a client
-  configuration directory.
-
-```sh
-# Workflows reachable without the commands/ adapters
-for workflow in workflows/*.md; do
-  name="workflows/$(basename "$workflow")"
-  grep -rl "$name" --include='*.md' . |
-    grep -v '^./commands/' | grep -q . ||
-    echo "FAIL $name is only reachable from commands/"
-done
-
-# Non-portable constructs in shared procedures.
-# The patterns live in references/portability.md, so they are defined once.
-# The character classes keep this pattern from matching itself.
-grep -rnE '/[t]mp/|/var/[f]olders/|~?/\.[c]onfig/opencode|~?/\.[c]laude' \
-  workflows/ references/ skills/ commands/ 2>/dev/null |
-  grep -v 'references/portability.md' |
-  grep -v 'README.md' |
-  sed 's/^/  /'
-```
-
-A hardcoded path is a `FAIL` when it appears in a shared procedure, and a
-`PASS` when it appears in the setup instructions, which are per environment
-by nature.
-
-### 3.4 Index, inventory, and numbering
-
-- The `V2.x` index and the `V2.x` sections match exactly: no orphan entry
-  and no unindexed section.
-- Every file in the required-file inventory exists.
-- The `R-nn` identifiers have no gap and no duplicate.
-
-### 3.5 Rule reachability and cross-client reach
-
-For every row of `references/mandatory-rules.md`, the anchor is present on
-every required surface, and the canonical wording is present in `AGENTS.md`.
-`AGENTS.md` is the only file every client reads, so a rule absent from it
-does not reach every client.
-
-```sh
-normalize() { tr '\n' ' ' | tr 'A-Z' 'a-z' | tr '-' ' ' | tr -s ' ' ' '; }
-trim() { sed 's/`//g; s/^[[:space:]]*//; s/[[:space:]]*$//'; }
-
-grep -E '^\| M-[0-9]+ \|' references/mandatory-rules.md |
-while IFS='|' read -r _ id _ _ anchor surfaces; do
-  id="$(printf '%s' "$id" | trim)"
-  anchor="$(printf '%s' "$anchor" | trim)"
-  normalized_anchor="$(printf '%s' "$anchor" | normalize)"
-  printf '%s' "$surfaces" | tr ',' '\n' | while read -r surface; do
-    surface="$(printf '%s' "$surface" | trim)"
-    [ -z "$surface" ] && continue
-    if [ ! -f "$surface" ]; then
-      echo "FAIL $id [$anchor] surface missing: $surface"
-      continue
-    fi
-    if ! normalize < "$surface" | grep -qF "$normalized_anchor"; then
-      echo "FAIL $id [$anchor] not reachable in: $surface"
-    fi
-  done
-done
-```
-
-### 3.6 Duplication and contradiction
-
-**A retired wording must not come back.** The registry lists the superseded
-phrasings in `references/mandatory-rules.md` ("Superseded Phrasings"). Each
-one is a rule that changed, and its previous wording must not reappear in the
-canonical content.
-
-```sh
-awk '/^## Superseded Phrasings/{found=1; next} /^## /{found=0} found' \
-  references/mandatory-rules.md |
-  grep -E '^\| [^-|]' | tail -n +2 | cut -d'|' -f2 |
-  sed 's/^ *//; s/ *$//' |
-  while read -r retired; do
-    [ -z "$retired" ] && continue
-    grep -rqiF "$retired" --include='*.md' . \
-      --exclude='mandatory-rules.md' &&
-      echo "FAIL retired wording is back: $retired"
-  done
-```
-
-The check reads the retired wordings from the registry, so it never drifts
-from it, and it excludes the registry itself, where they are recorded. A retired wording that reappears is a `FAIL`: the system would
-apply a rule that no longer exists.
-
-### 3.7 Duplication and contradiction
-
-- Two files must not carry the same normative wording. A surface that
-  restates a rule is a drift risk; it must reference the canonical source.
-- Two files must not carry incompatible wording of the same rule. Search the
-  superseded phrasings when a rule changed, and confirm each is gone.
-- A command must not copy a block from the workflow it delegates to.
-
-### 3.8 Coverage
+### 3.1 Coverage (adjustment-specific)
 
 When the adjustment affects a rule that applies to several ecosystems or
 project types, confirm the coverage is complete for all of them, not only

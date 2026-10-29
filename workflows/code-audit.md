@@ -11,6 +11,11 @@ This is **not**:
 
 It is an independent, on-demand audit of the generated code itself.
 
+The same procedure serves two inputs. Foreign code is audited against the
+dimensions alone. A deliverable **we** produced is audited in **Independent
+Mode**, which adds the independence contract, the acceptance judgment, and
+claim falsification around the same dimensions. There is one flow, not two.
+
 ## Senior/Staff Bar
 
 A clean PASS requires more than "it runs":
@@ -41,6 +46,105 @@ Each dimension maps to an existing Skill. Only applicable dimensions are audited
 | 12 | **Frontend/UI** — intentional design, responsive, fidelity | `frontend-design`, `design-analysis` | UI work |
 | 13 | **Mobile** — navigation, touch targets, safe areas, keyboard, offline | `design-analysis`, `implementation-recipes` | Mobile work |
 | 14 | **Organization boundaries** — package/module boundaries, dependency direction | `repository-strategy` | Multi-package |
+
+## Independent Mode — Our Own Deliverable
+
+Use this mode when the deliverable was produced by us or by an agent in our
+session and must be judged from outside the context that produced it. The
+question it answers is not "is this code good?" but **"did we actually
+deliver what was asked, and is it right?"**
+
+It is **not a third scope mode**. The scope is still chosen in Phase 2 (last
+commit, `--all`, or explicit paths or a range). Independent Mode adds the
+independence contract, the acceptance judgment, and claim falsification
+around the same dimensions.
+
+Invoke it through the `external-auditor` agent (`agents/external-auditor.md`):
+as the Auditor mode in a **new session**, or as a fresh subagent. Selecting
+that mode inside the session that implemented the deliverable does **not**
+create independence, because the history persists.
+
+### Independence Contract
+
+All seven rules are mandatory.
+
+| # | Rule | How it is satisfied |
+|---|---|---|
+| I-1 | **Separate session** | The audit runs in a context that did not produce the deliverable: a fresh subagent or a new session. |
+| I-2 | **Cold input** | The auditor receives the requirement and the artifact, never the implementation reasoning. |
+| I-3 | **Read-only** | No edits, fixes, commits, branches, pushes, or remote writes. |
+| I-4 | **Adversarial stance** | The auditor assumes the deliverable is wrong until evidence proves otherwise. Absence of findings requires executed checks. |
+| I-5 | **Re-execution** | Every claim in the delivery report is re-run. A claimed PASS is a hypothesis, never evidence. |
+| I-6 | **Frozen scope** | The scope manifest is recorded before inspection and does not change after seeing the code. |
+| I-7 | **Declared limit** | Independence is contextual, not epistemic. The same model keeps the same blind spots. State this in the report. |
+
+**Allowed input:** the artifact root and scope; the original task or
+requirement wording and its acceptance criteria; the design artifact when the
+task had one; the canonical rules (`AGENTS.md`, Skills, references).
+
+**Denied input** (never received, never read when discoverable): the
+implementation conversation or session history; the task plan, architecture
+proposal, file responsibility map, Folder Architecture Map, or pattern
+selection record; the implementer's final report, validation claims, or PR
+description; the implementer's explanation of why a choice was made. If the
+context already holds that material, stop and request a fresh session.
+
+### Phase I0 — Independence Gate
+
+1. Confirm the session did not produce the deliverable.
+2. Build the **Input Manifest**: what was received and what was withheld.
+3. If the context contains implementation history, report
+   `NOT INDEPENDENT — FRESH SESSION REQUIRED` and stop.
+4. Record the client, the session, the model, and the date.
+
+### Phase I1 — Requirement and Acceptance Matrix
+
+Run after Phase 2 and before the dimension audit.
+
+1. Rebuild the requirement from its original wording, without the
+   implementation plan. Extract acceptance criteria, constraints, non-goals,
+   and explicit decisions.
+2. Build the **Acceptance Matrix**: one row per criterion, with the evidence
+   that would prove it and how it will be observed.
+3. Mark a criterion `AMBIGUOUS` when the requirement does not settle it, and
+   say so instead of inventing an interpretation.
+4. Never derive criteria from the implementation. That makes the deliverable
+   judge itself.
+
+### Phase I2 — Deterministic Re-execution
+
+Run the project's own gates before any semantic judgment, following
+`workflows/project-validation.md` (Phases 2, 5, and 7) and the structural
+checks of `workflows/output-compliance.md` (`FUNC-001`, `TYPE-001` to
+`TYPE-003`, `FILE-001`, `STRUCT-001`, `STRUCT-006`, `STRUCT-007`) in the form
+the detected ecosystem supports. Record for every check the command, the exit
+code, and the relevant output. A check that cannot run is `NOT VERIFIED` with
+the missing tool named. **A skipped check is never a pass.**
+
+### Phase I3 — Claim Falsification
+
+For every claim in the delivery report, produce one row:
+
+| Claim | How it was re-checked | Result |
+|---|---|---|
+| "tests pass" | command and exit code | `CONFIRMED` / `FALSIFIED` / `NOT VERIFIED` |
+| "lint clean" | command and exit code | … |
+| "requirement met" | acceptance matrix | … |
+
+A `FALSIFIED` claim is a P1 finding regardless of the code quality: the
+delivery was misrepresented.
+
+### Independent Mode Verdict
+
+The Phase 7 verdict applies, with two additions:
+
+- Any acceptance criterion `FAIL` makes the verdict `FAIL`.
+- A criterion left silently `NOT VERIFIED` makes the verdict
+  `NOT VERIFIED`. `PASS` requires a passed Phase I0 and every criterion
+  `PASS`.
+
+The report also states the independence declaration (client, session, model,
+date, Input Manifest) and the I-7 limit.
 
 ## Procedure
 
@@ -219,6 +323,10 @@ Produce the report in this order:
 - **Folder Architecture Map** (layers/modules, responsibility→folder, allowed dependency directions, contract/type location, co-location rules, public module API).
 - **Out of scope**: files and declaration sites outside the audited scope,
   excluded files, and issues pre-existing outside it.
+- **Independent Mode only**: the independence declaration and Input Manifest
+  (Phase I0), the Acceptance Matrix (Phase I1), the deterministic results
+  (Phase I2), and the claim falsification table (Phase I3), placed before the
+  dimension matrix.
 
 #### 2. Dimension Matrix
 

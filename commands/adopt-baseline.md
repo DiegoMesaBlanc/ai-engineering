@@ -80,10 +80,10 @@ are in the workflow. This command does not restate them.
 - `/create-project` offers the baseline during the startup decision set.
 - `/task` asks the single question for an existing project, only when the
   task changes source code and the record is absent.
-- `/validate` and `/external-audit` execute `scripts/check-docs` once the
+- `/validate` and the Independent Mode of `/code-audit` execute `scripts/check-docs` once the
   `docs-gate` module exists.
 - `/delivery-check` and `workflows/secure-delivery.md` govern the pipeline
   that the `devops` module extends.
 
 This command is not an audit and does not review foreign code. Those are
-`/code-audit`, `/external-audit`, and `/review-pr`.
+`/code-audit`, and `/review-pr`.

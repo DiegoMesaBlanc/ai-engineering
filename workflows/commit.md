@@ -50,29 +50,19 @@ If `--staged` is passed, limit scope to `git diff --name-only --cached`.
 
 If explicit paths are passed, use those as the scope.
 
-## Phase 2 — Detect Tooling and Project Convention
+## Phase 2 — Gates Delegated to Project Validation
 
-Detect the actual stack, package manager, and available scripts:
+The formatter, linter, type-check, test, and build gates (Phases 4 to 8) are
+defined once, in `workflows/project-validation.md`. This workflow does not
+restate them. Run that workflow over the scoped change set:
 
-- Lockfile → package manager (`npm`, `yarn`, `pnpm`, `pip`, `poetry`, `uv`,
-  `cargo`, `maven`, `gradle`, etc.).
-- `package.json` scripts: `format`, `format:check`, `lint`, `typecheck`,
-  `test`, `test:unit`, `test:integration`, `test:e2e`, `build`,
-  `audit`, `security`.
-- Python: `ruff format --check`, `ruff check`, `mypy`, `pytest`, `pip-audit`.
-- Java: `checkstyle`, `spotless`, `mvn test`, `mvn verify`.
-- Go: `gofmt`, `go vet`, `go test`, `golangci-lint`.
-- Rust: `cargo fmt --check`, `cargo clippy`, `cargo test`, `cargo audit`.
-- C#/.NET: `dotnet format`, `dotnet build`, `dotnet test`.
-- Ruby: `rubocop`, `bundle exec rspec`, `bundler-audit`.
-- PHP: `php-cs-fixer`, `phpstan`, `phpunit`, `composer audit`.
+- its Phase 2 detects the tooling and records each tool's lifecycle state;
+- its Phase 5 verifies the mandatory formatter and linter;
+- its Phase 7 executes the checks and verifies that the linter actually runs.
 
-Record each tool's lifecycle state: detected, configured, installed,
-executed, approved — separately from check status.
-
-If a mandatory tool (formatter, linter for software projects) is missing,
-report `SETUP_REQUIRED` and do not proceed to commit. Do not install
-tools or modify configuration without explicit user authorization.
+A mandatory tool that is missing is `SETUP_REQUIRED` and blocks the commit,
+as `workflows/project-validation.md` defines. Do not install tools or modify
+configuration without explicit user authorization.
 
 ## Phase 3 — Secrets Scan
 
@@ -95,48 +85,32 @@ commits.
 
 ## Phase 4 — Format Check
 
-If a formatter is configured and a non-mutating format check command
-exists (e.g., `prettier --check`, `ruff format --check`, `cargo fmt
---check`, `dotnet format --verify-no-changes`, `gofmt -l`):
-
-- Execute the format check on the scoped files.
-- If the check fails: report files, **block** commits.
-- Do not auto-format; the user must run the formatter separately.
+Run the formatter check of `workflows/project-validation.md` (Phase 7) over
+the scoped files. A failing check blocks commits. Do not auto-format; the user
+must run the formatter separately.
 
 ## Phase 5 — Lint
 
-If a linter is configured (mandatory for software projects):
-
-- Execute the linter on the scoped files.
-- If lint fails: report errors, **block** commits.
-- If no linter is configured for a software project: report
-  `SETUP_REQUIRED`, **block** commits.
+Run the linter of `workflows/project-validation.md` (Phases 5 and 7). A failing
+lint blocks commits. A missing linter for a software project is
+`SETUP_REQUIRED` and blocks commits.
 
 ## Phase 6 — Type Check
 
-If a type checker is configured and applicable:
-
-- Execute the type check command.
-- If it fails: report errors, **block** commits.
+Run the type check of `workflows/project-validation.md` (Phase 7). A failure
+blocks commits.
 
 ## Phase 7 — Tests
 
-Execute tests in this order:
-
-1. Unit tests (project's `test:unit` or default `test` script).
-2. Integration tests (if `test:integration` exists and `--full` is passed).
-3. E2E tests (if `test:e2e` exists and `--full` is passed).
-
-If any test fails: report failures, **block** commits.
-
-If no test script exists, report `NOT_CONFIGURED` and continue.
+Select the test depth as `workflows/project-validation.md` does (Phases 3 and
+4). Unit tests run by default; integration and end-to-end suites run when the
+request passes `--full` or the validation selects them. A failing test blocks
+commits. A project with no test script reports `NOT_CONFIGURED` and continues.
 
 ## Phase 8 — Build / Compile
 
-If a build or compile command is configured:
-
-- Execute the build.
-- If it fails: report errors, **block** commits.
+Run the build of `workflows/project-validation.md` (Phase 7) when a build is
+configured. A failure blocks commits.
 
 ## Phase 9 — Security
 

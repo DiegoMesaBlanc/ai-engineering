@@ -216,13 +216,10 @@ design-review items.
 
 ## Phase 12 — Review Memory
 
-When a previous review iteration exists:
-
-- compare source commit
-- retrieve compact previous findings
-- track unresolved/resolved findings
-- identify regressions
-- avoid duplicate feedback
+When a previous review iteration exists, apply `skills/review-memory/SKILL.md`.
+It owns the compact review-state procedure: comparing the source commit,
+tracking resolved and unresolved findings, identifying regressions, and
+avoiding duplicate feedback. This phase only requires that it runs.
 
 ## Phase 13 — Report
 

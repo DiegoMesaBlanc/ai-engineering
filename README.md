@@ -22,7 +22,7 @@ A provider-agnostic, free-first engineering workflow with shared engineering gui
 ## Current top-level structure
 
 - `agents/`: OpenCode agents and orchestration.
-- `commands/`: commands such as `/task`, `/generate-pr`, `/review-pr`, `/system-check`, `/validate`, `/code-audit`, `/external-audit`, `/commit`, `/audit-e2e`, `/create-project`, `/adopt-baseline`, `/checkpoint`, `/resume-work`, `/provider-check`, `/delivery-check`, and `/estimate`.
+- `commands/`: commands such as `/task`, `/generate-pr`, `/review-pr`, `/system-check`, `/validate`, `/code-audit`, `/commit`, `/audit-e2e`, `/create-project`, `/adopt-baseline`, `/checkpoint`, `/resume-work`, `/provider-check`, `/delivery-check`, and `/estimate`.
 - `contracts/`: provider-neutral task, design, and Git contracts.
 - `integrations/`: provider access, security, cost, and compatibility policy.
 - `references/`: official documentation indexes and technical references.
@@ -57,10 +57,8 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
   and without modifying the project or performing remote writes.
 - `/code-audit`: read-only senior/staff whole-cycle audit of generated
   code for architecture, patterns, quality, security, data, tests,
-  performance, a11y, i18n, SEO, UI, and mobile.
-- `/external-audit`: independent read-only audit of a deliverable **we**
-  produced, from a fresh session that did not implement it, with re-executed
-  evidence, claim falsification, and an acceptance-criteria verdict.
+  performance, a11y, i18n, SEO, UI, and mobile. Auditing a deliverable **we**
+  produced runs the same flow in Independent Mode (see below).
 - `/commit`: generate and validate commits from the current change set using
   project-native quality gates (format, lint, typecheck, tests, build,
   security, AI sanity review), creating atomic commits with English
@@ -119,28 +117,26 @@ repository's `commands/` directory.
 - It is distinct from `/system-check` (system config), `/validate` (tool
   execution), and `/review-pr` (colleague's PR feedback).
 
-### External audit
+### Independent audit of our own deliverable
 
-- `/external-audit` audits a deliverable **we** produced, from outside the
-  context that produced it. It exists because `/code-audit` is for code
-  written by someone else: a colleague, another AI, or a supplied change
+- The Independent Mode of `/code-audit` audits a deliverable **we** produced,
+  from outside the context that produced it. It is the same flow as the
+  code-audit, not a second one. It exists because a plain code audit is for
+  code written by someone else: a colleague, another AI, or a supplied change
   set. When the code is ours, the auditor must not share our reasoning.
-- The audit runs in a fresh session. In OpenCode there are two paths: select
-  the **Auditor** mode with Tab in a **new session**, or run
-  `/external-audit`, which forces a fresh subagent with `subtask: true`.
-  Switching to Auditor mode inside the session that implemented the
-  deliverable does **not** create independence: the history persists. In
-  Codex and Claude, start a new process or session.
+- It is invoked through the `external-auditor` agent (`agents/external-auditor.md`),
+  which has no command of its own. It runs in a fresh context in one of two
+  ways: as a fresh subagent, or as the **Auditor** mode selected with Tab in a
+  **new session**. Selecting that mode inside the session that implemented the
+  deliverable does **not** create independence: the history persists. In Codex
+  and Claude, start a new process or session.
 - It rebuilds the acceptance criteria from the requirement, re-executes the
   project's gates and the structural compliance checks, falsifies every
-  delivery claim, applies the code-audit dimensions by reference, and issues
-  one verdict: `ACCEPTED`, `ACCEPTED WITH FINDINGS`, `REJECTED`, or
-  `NOT VERIFIED`.
+  delivery claim, applies the code-audit dimensions, and issues one verdict:
+  `PASS`, `PASS WITH FINDINGS`, `FAIL`, or `NOT VERIFIED`.
 - It is read-only. A skipped check is `NOT_VERIFIED`, never a pass. It is
-  distinct from `/code-audit` (foreign code), `/review-pr` (a colleague's
+  distinct from `/code-audit` on foreign code, `/review-pr` (a colleague's
   PR), `/validate` (gate execution), and `/audit-e2e` (the system itself).
-- The Skill `skills/external-audit/SKILL.md` makes the flow discoverable in
-  clients that load Skills natively, including Codex and Claude.
 
 ### Engineering baseline
 
@@ -170,7 +166,7 @@ repository's `commands/` directory.
   the repository and survives sessions.
 - It is distinct from `/create-project` (which creates the project and
   offers the baseline), `/validate` (which executes the gates), and
-  `/external-audit` (which audits from a fresh session). The baseline
+  the Independent Mode of `/code-audit` (which audits from a fresh session). The baseline
   changes the project; it does not audit it.
 - The out-of-scope declaration is explicit: incident response,
   infrastructure provisioning, capacity and cost, privacy and compliance,

@@ -162,7 +162,6 @@ commit; they are evaluated for consistency and policy alignment through
 - `project-analysis`
 - `stack-detection`
 - `pull-request`
-- `pull-request-review`
 - `review-memory`
 
 The technology families below describe external Skills and official

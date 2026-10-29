@@ -120,6 +120,10 @@ project rules.
 
 ## Pattern selection scales with rigor
 
+The pattern procedure itself is owned by `skills/architecture-advisor/SKILL.md`
+("Design Patterns") and `references/design-patterns.md`. This section defines
+only how much analysis each complexity level requires.
+
 Complexity scales the depth of the pattern analysis, never the evidence bar.
 The task's **design forces** are the only input; the count is an output.
 

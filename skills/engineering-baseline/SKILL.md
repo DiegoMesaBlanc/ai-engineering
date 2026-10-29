@@ -30,7 +30,7 @@ It applies in three situations:
 - A read-only intent — audit, review, estimation, investigation,
   architecture-only: never ask and never write.
 - Foreign code: `workflows/code-audit.md`.
-- Our own deliverable under audit: `workflows/external-audit.md`.
+- Our own deliverable under audit: `workflows/code-audit.md` (Independent Mode).
 - The delivery pipeline itself: `workflows/secure-delivery.md`.
 
 ## Non-negotiable

@@ -25,8 +25,8 @@ This workflow is **not**:
   This workflow installs the documentation gate and verifies it once.
 - `workflows/secure-delivery.md` — that authors and assesses the delivery
   pipeline. The `devops` module extends it and never duplicates it.
-- `workflows/external-audit.md` — that audits a deliverable from a fresh
-  session. This workflow changes the project and is not an audit.
+- `workflows/code-audit.md` (Independent Mode) — that audits a deliverable
+  from a fresh session. This workflow changes the project and is not an audit.
 - `workflows/code-audit.md` — that audits foreign code read-only.
 - `workflows/system-audit.md` — that audits the AI Engineering System
   itself.
@@ -485,7 +485,7 @@ Stopping after any module is a normal outcome, not a defect.
 | `workflows/dependency-assessment.md` | Governs every package the baseline needs |
 | `workflows/secure-delivery.md` | The `devops` module extends it and does not duplicate it |
 | `workflows/project-validation.md` | Runs `scripts/check-docs` once the `docs-gate` module exists |
-| `workflows/external-audit.md` | Re-executes `scripts/check-docs` and judges the baseline's claims |
+| `workflows/code-audit.md` (Independent Mode) | Re-executes `scripts/check-docs` and judges the baseline's claims |
 | `skills/architecture-advisor/SKILL.md` | Decides when a decision is significant; the `decisions` module provides the storage and the template |
 | `references/project-creation-order.md` | The steps the baseline makes executable: A10, B21, D6, and E14 |
 

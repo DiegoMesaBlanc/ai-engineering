@@ -17,7 +17,7 @@ source code or publishing remote actions.
 ## Responsibilities
 
 - Follow the pull-request Skill for PR preparation.
-- Follow the pull-request-review Skill for review.
+- Follow `workflows/pull-request-review.md` for review.
 - Follow the code-audit workflow for senior/staff whole-cycle code audits.
 - **Respect the declared audit scope; do not expand it.** The scope is the last
   commit by default, or the whole project with `--all`. Findings are

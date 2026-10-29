@@ -44,7 +44,6 @@ Check for the existence of:
 - commands/system-check.md
 - commands/validate.md
 - commands/code-audit.md
-- commands/external-audit.md
 - commands/checkpoint.md
 - commands/resume-work.md
 - commands/provider-check.md
@@ -69,7 +68,6 @@ Check for the existence of:
 - workflows/task-to-code.md
 - workflows/pull-request-review.md
 - workflows/code-audit.md
-- workflows/external-audit.md
 - workflows/commit.md
 - workflows/system-validation.md
 - workflows/project-validation.md
@@ -115,7 +113,6 @@ At minimum inspect:
 - git-workflow
 - repository-strategy
 - pull-request
-- pull-request-review
 - review-memory
 - accessibility
 - seo
@@ -507,6 +504,218 @@ Identify:
 
 Do not flag a reference as broken merely because a file is intentionally
 provided by the client rather than by the canonical repository.
+
+### 6.0 Executable structural checks
+
+These checks are the structural audit of the whole repository. They are
+executed by every run of `workflows/system-audit.md` (its Phase 3) and by
+`/system-check`. A check reports `PASS`, `FAIL`, or `NOT VERIFIED` with the
+reason and the evidence. Run them over the whole repository, not only the
+changed files.
+
+### 6.1 Reference integrity
+
+Every local Markdown link resolves, and every repository file path in
+backticks exists. A reference to an artifact installed in a target project,
+such as an ESLint configuration, is not a failure.
+
+A path cited precisely **because it must not exist** is a negative
+assertion, not a broken reference. It is a `FAIL` when the file exists, and
+a `PASS` when it does not. Read the sentence before classifying it.
+
+```sh
+grep -rhoE '\]\([^)#[:space:]]+\.md\)' --include='*.md' . |
+  sed 's/^](//; s/)$//' | sort -u
+```
+
+**The version guide is consulted.** The **version guide** of the ecosystem
+is the source of truth for what is current. An audit that checks a
+framework-specific convention confirms that the guide was consulted for the
+target version, and that the consulted source covers it.
+
+**Pinned sources are registered.** A source that documents one specific
+release can silently become stale. Every URL that contains a version number
+must appear in the **Version-Pinned Sources** table of
+`references/official-documentation.md`, with its version and its review
+rule. An unregistered pinned URL is a `FAIL`: it can age without anyone
+noticing.
+
+```sh
+grep -oE 'https?://[^ )]+' references/official-documentation.md |
+  tr -d '`' | sed 's/[.,]$//' | sort -u |
+  grep -E '/v?[0-9]+\.[0-9]+|version-[0-9]+|/en/[0-9]+\.[0-9]+/' |
+  while read -r url; do
+    grep -qF "$url" references/official-documentation.md ||
+      echo "FAIL pinned source not registered: $url"
+  done
+
+# The extraction above can carry trailing markdown; compare on the URL alone.
+# Compare against the pinned table, not against the whole document.
+# No temporary file: the table is piped straight into the comparison.
+pinned_table() {
+  awk '/^## Version-Pinned Sources/{found=1} found' \
+    references/official-documentation.md
+}
+
+grep -oE 'https?://[^ )[:space:]]+' references/official-documentation.md |
+  tr -d '`' | sed 's/[.,]$//' | sort -u |
+  grep -E '/v?[0-9]+\.[0-9]+|version-[0-9]+|/en/[0-9]+\.[0-9]+/' |
+  while read -r url; do
+    pinned_table | grep -qF "$url" ||
+      echo "FAIL pinned source not registered: $url"
+  done
+```
+
+**External URLs resolve.** A documentation reference that points nowhere
+makes the consultation mandate unsatisfiable, and the agent falls back to
+guessing. Check every URL in the changed files, and every URL in
+`references/official-documentation.md` when that file is touched:
+
+```sh
+grep -rhoE 'https?://[^ )[:space:]]+' references/official-documentation.md |
+  tr -d '`' | sed 's/[.,]$//' | sort -u | while read -r url; do
+    code=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 20 "$url")
+    [ "$code" = "200" ] || echo "FAIL $code $url"
+  done
+```
+
+A status that is not `200` is a finding to investigate. A `403` from a known
+host is bot protection rather than a dead link, and a `000` is a transient
+failure; record those as `NOT VERIFIED` with the reason instead of silently
+passing them.
+
+When the environment has no `curl`, the URL check is `NOT VERIFIED` with the
+tool named. It is never a pass. The same applies to any other tool the
+environment lacks.
+
+### 6.2 Command catalog
+
+Every command in `commands/` has its own description in the README, so the
+catalog does not drift from the commands that exist.
+
+```sh
+for command in commands/*.md; do
+  name=$(basename "$command" .md)
+  grep -q "^- \`/$name\`:" README.md ||
+    echo "FAIL command /$name has no description in README.md"
+done
+
+for name in $(grep -oE '^- `/[a-z-]+`:' README.md | sed 's/^- `//; s/`:$//'); do
+  [ -f "commands/$name.md" ] ||
+    echo "FAIL README describes /$name but commands/$name.md does not exist"
+done
+```
+
+A command without a README description is a `FAIL`: the catalog a reader
+consults is incomplete. A README entry without a command is a `FAIL` too: it
+is a dangling reference left by a rename, and a reader would invoke a
+command that does not exist.
+
+### 6.3 Portability
+
+The system must work on every client and operating system. The shared
+procedures assume a **POSIX shell**; when the environment does not provide
+one, the check is `NOT VERIFIED` with the reason. Verify:
+
+- Every workflow is reachable **without** the `commands/` adapters, so a
+  client without slash commands still reaches it.
+- No shared procedure contains any of the **non-portable constructs**
+  listed in `references/portability.md`. That list is the single source;
+  it is not repeated here.
+- No shared procedure hardcodes an operating-system path or a client
+  configuration directory.
+
+```sh
+# Workflows reachable without the commands/ adapters
+for workflow in workflows/*.md; do
+  name="workflows/$(basename "$workflow")"
+  grep -rl "$name" --include='*.md' . |
+    grep -v '^./commands/' | grep -q . ||
+    echo "FAIL $name is only reachable from commands/"
+done
+
+# Non-portable constructs in shared procedures.
+# The patterns live in references/portability.md, so they are defined once.
+# The character classes keep this pattern from matching itself.
+grep -rnE '/[t]mp/|/var/[f]olders/|~?/\.[c]onfig/opencode|~?/\.[c]laude' \
+  workflows/ references/ skills/ commands/ 2>/dev/null |
+  grep -v 'references/portability.md' |
+  grep -v 'README.md' |
+  sed 's/^/  /'
+```
+
+A hardcoded path is a `FAIL` when it appears in a shared procedure, and a
+`PASS` when it appears in the setup instructions, which are per environment
+by nature.
+
+### 6.4 Index, inventory, and numbering
+
+- The `V2.x` index and the `V2.x` sections match exactly: no orphan entry
+  and no unindexed section.
+- Every file in the required-file inventory exists.
+- The `R-nn` identifiers have no gap and no duplicate.
+
+### 6.5 Rule reachability and cross-client reach
+
+For every row of `references/mandatory-rules.md`, the anchor is present on
+every required surface, and the canonical wording is present in `AGENTS.md`.
+`AGENTS.md` is the only file every client reads, so a rule absent from it
+does not reach every client.
+
+```sh
+normalize() { tr '\n' ' ' | tr 'A-Z' 'a-z' | tr '-' ' ' | tr -s ' ' ' '; }
+trim() { sed 's/`//g; s/^[[:space:]]*//; s/[[:space:]]*$//'; }
+
+grep -E '^\| M-[0-9]+ \|' references/mandatory-rules.md |
+while IFS='|' read -r _ id _ _ anchor surfaces; do
+  id="$(printf '%s' "$id" | trim)"
+  anchor="$(printf '%s' "$anchor" | trim)"
+  normalized_anchor="$(printf '%s' "$anchor" | normalize)"
+  printf '%s' "$surfaces" | tr ',' '\n' | while read -r surface; do
+    surface="$(printf '%s' "$surface" | trim)"
+    [ -z "$surface" ] && continue
+    if [ ! -f "$surface" ]; then
+      echo "FAIL $id [$anchor] surface missing: $surface"
+      continue
+    fi
+    if ! normalize < "$surface" | grep -qF "$normalized_anchor"; then
+      echo "FAIL $id [$anchor] not reachable in: $surface"
+    fi
+  done
+done
+```
+
+### 6.6 Retired wordings and duplication
+
+**A retired wording must not come back.** The registry lists the superseded
+phrasings in `references/mandatory-rules.md` ("Superseded Phrasings"). Each
+one is a rule that changed, and its previous wording must not reappear in the
+canonical content.
+
+```sh
+awk '/^## Superseded Phrasings/{found=1; next} /^## /{found=0} found' \
+  references/mandatory-rules.md |
+  grep -E '^\| [^-|]' | tail -n +2 | cut -d'|' -f2 |
+  sed 's/^ *//; s/ *$//' |
+  while read -r retired; do
+    [ -z "$retired" ] && continue
+    grep -rqiF "$retired" --include='*.md' . \
+      --exclude='mandatory-rules.md' &&
+      echo "FAIL retired wording is back: $retired"
+  done
+```
+
+The check reads the retired wordings from the registry, so it never drifts
+from it, and it excludes the registry itself, where they are recorded. A retired wording that reappears is a `FAIL`: the system would
+apply a rule that no longer exists.
+
+### 6.7 Duplication and contradiction (judgment)
+
+- Two files must not carry the same normative wording. A surface that
+  restates a rule is a drift risk; it must reference the canonical source.
+- Two files must not carry incompatible wording of the same rule. Search the
+  superseded phrasings when a rule changed, and confirm each is gone.
+- A command must not copy a block from the workflow it delegates to.
 
 ## 7. Provider State
 
@@ -2174,53 +2383,47 @@ count-agnostic:
   a small flow and 32+ for a program, and the catalog has at least 100
   patterns.
 
-## V2.50 Regression — External Audit of Our Own Deliverable
+## V2.50 Regression — Independent Mode of Our Own Deliverable
 
-Verify that the external audit exists as a separate, independent, read-only
-flow and does not replace or duplicate the code audit:
+Verify that the independent audit of a deliverable we produced is a mode of
+the single code-audit flow, not a second flow:
 
-- `workflows/external-audit.md` exists and defines the independence contract
-  (I-1 to I-7): a separate session, cold input, read-only, adversarial
-  stance, re-execution, frozen scope, and the declared epistemic limit
-- the workflow lists the **allowed** and **denied** input explicitly; the
-  denied list includes the implementation conversation, the task plan, the
-  pattern selection record, the validation claims, and the PR description
-- Phase 0 refuses to audit when the context already contains implementation
+- `workflows/code-audit.md` defines the **Independent Mode** with the
+  independence contract (I-1 to I-7), the allowed and denied input lists,
+  Phases I0 to I3, and the independent verdict rule
+- the Independent Mode states that it is not a third scope mode, and the
+  scope is still chosen in its Phase 2
+- Phase I0 refuses to audit when the context already contains implementation
   history, reporting `NOT INDEPENDENT — FRESH SESSION REQUIRED`
-- Phase 1 resolves the **artifact root** and the **Git root** separately and
-  never uses `AI_ENGINEERING_HOME` as the artifact root
-- Phase 2 rebuilds the acceptance criteria from the original requirement and
+- Phase I1 rebuilds the acceptance criteria from the original requirement and
   forbids deriving them from the implementation
-- Phase 4 re-executes the project's gates and the structural compliance
-  checks, and a skipped check is `NOT_VERIFIED`, never a pass
-- Phase 5 falsifies every delivery claim with `CONFIRMED`, `FALSIFIED`, or
+- Phase I2 re-executes the gates through `workflows/project-validation.md` and
+  the structural checks through `workflows/output-compliance.md`, and a skipped
+  check is `NOT VERIFIED`, never a pass
+- Phase I3 falsifies every delivery claim with `CONFIRMED`, `FALSIFIED`, or
   `NOT VERIFIED`; a falsified claim is a P1 finding
-- Phase 6 applies the `workflows/code-audit.md` dimensions **by reference**
-  and does not restate them; the workflow does not duplicate
-  `workflows/output-compliance.md`
-- the verdict taxonomy is `ACCEPTED`, `ACCEPTED WITH FINDINGS`, `REJECTED`,
-  or `NOT VERIFIED`, and an acceptance criterion cannot be silently skipped
-- `commands/external-audit.md` exists, delegates to the workflow without
-  restating it, names `external-auditor`, and sets `subtask: true`
-- `agents/external-auditor.md` exists as a read-only agent with
-  `mode: all`: selectable as the Auditor mode with Tab in a new session, and
-  invocable as a subagent by the command. The agent states that switching
-  mode inside the implementing session does not create independence and does
-  not restate the workflow
-- `skills/external-audit/SKILL.md` exists, names the concrete triggers, and
-  delegates to the workflow
-- the flow is distinct from `code-audit` (foreign code), `pull-request-review`
-  (a colleague's PR), `project-validation` (gate execution), and
-  `system-audit` (the system itself)
-- `agents/reviewer.md` is unchanged and `code-audit` keeps its current
-  behavior, agent, and scope
-- `README.md` distinguishes `/external-audit` from `/code-audit`,
-  `/validate`, and `/review-pr`
+- the verdict taxonomy is the single one of `workflows/code-audit.md`:
+  `PASS`, `PASS WITH FINDINGS`, `FAIL`, or `NOT VERIFIED`
+- `workflows/external-audit.md`, `commands/external-audit.md`, and
+  `skills/external-audit/SKILL.md` do not exist: the flow is not duplicated
+- `agents/external-auditor.md` exists with `mode: all`, follows the Independent
+  Mode of `workflows/code-audit.md` without restating it, states that a fresh
+  subagent or a new session is the path to independence, states that switching
+  mode inside the implementing session does not create independence, and does
+  not reference a command that no longer exists
+- `commands/code-audit.md` states that auditing our own deliverable is not a
+  scope and names the `external-auditor` agent
+- the Independent Mode is distinct from `pull-request-review` (a colleague's
+  PR), `project-validation` (gate execution), and `system-audit` (the system
+  itself)
+- `agents/reviewer.md` is unchanged in behavior and `code-audit` keeps its
+  scope and agent
+- `README.md` describes the Independent Mode of `/code-audit` and does not list
+  `/external-audit`
 - `references/system-workflow-regression-matrix.md` includes R-72
-- the behavioral pilot is reproducible: a synthetic artifact that contains
-  each targeted violation is detected with `file:line`, corrected, and
-  re-verified as PASS; the pilot runs outside the repository and its
-  temporary directory is deleted when finished
+- the behavioral pilot is reproducible: the `external-auditor` agent started as
+  a fresh subagent without any command passes Phase I0 and reads the Independent
+  Mode of `workflows/code-audit.md`
 - no new package.json, dependency, or competing orchestrator was introduced
 
 ## V2.51 Regression — Opt-In Engineering Baseline
@@ -2287,9 +2490,9 @@ conventions:
 - `references/mandatory-rules.md` includes M-32 with its canonical anchor and
   required surfaces
 - the baseline is distinct from `project-validation`, `secure-delivery`,
-  `external-audit`, `code-audit`, and `system-audit`
+  the Independent Mode of `code-audit`, and `system-audit`
 - `README.md` lists `/adopt-baseline` and distinguishes it from
-  `/create-project`, `/validate`, and `/external-audit`
+  `/create-project`, `/validate`, and the Independent Mode of `/code-audit`
 - `commands/task.md` and `agents/orchestrator.md` reference the **opt-in
   engineering baseline** gate at the entry point, with the four conditions and
   the four answers; a task surface that never mentions it is a `FAIL`

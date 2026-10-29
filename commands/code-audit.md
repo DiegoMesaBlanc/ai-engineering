@@ -25,6 +25,9 @@ Rules:
   applied automatically and do not block a commit by themselves.
 - No other scope mode exists. Do not add a third mode or a fallback between
   them.
+- Auditing a deliverable **we** produced is not a scope of this command. It
+  is the Independent Mode of the same workflow, invoked through the
+  `external-auditor` agent in a fresh context (see `agents/external-auditor.md`).
 
 ## Behavior
 

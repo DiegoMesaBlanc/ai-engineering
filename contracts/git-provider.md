@@ -93,7 +93,7 @@ The following operations are not enabled in the current workflow:
 
 The pull-request Skill prepares copy-ready text.
 
-The pull-request-review Skill produces copy-ready feedback.
+The pull-request review workflow (`workflows/pull-request-review.md`) produces copy-ready feedback.
 
 The human user performs the actual publication.
 
