@@ -21,25 +21,34 @@ deterministic checks over the change set and returns `PASS` / `FAIL` with
 
 ### FUNC-001 — Prefer arrow functions (TypeScript/JavaScript)
 
-A source file must not declare a function with the `function` keyword when
-an arrow function is equivalent. `function` is allowed only with a
-legitimate reason: generators (`function*`), recursion that needs
-self-reference by name, a required `this` binding that arrow syntax cannot
-provide, use of `arguments`, or use of `new.target`.
+Code the change set **creates** must not declare a function with the
+`function` keyword when an arrow function is equivalent. `function` is
+allowed only with a legitimate reason: generators (`function*`), recursion
+that needs self-reference by name, a required `this` binding that arrow syntax
+cannot provide, use of `arguments`, or use of `new.target`.
 
-**Detection:**
+**Scope.** The check applies to the functions the change set creates. A
+declaration that already exists in the base revision is **pre-existing**: it
+is a finding recorded with its file and line, never a `FAIL`, and never a
+reason to convert it inside this task. A wholesale reformat that makes
+pre-existing lines appear as additions does not change that — the base
+revision decides.
+
+**Detection** — added lines of the change set only:
 
 ```sh
-grep -rnE '(^|[[:space:]])(export[[:space:]]+)?(default[[:space:]]+)?(async[[:space:]]+)?function[[:space:]]+[A-Za-z_$]' \
-  <changed-paths> --include='*.ts' --include='*.tsx' --include='*.js' \
-  --include='*.jsx' --include='*.mts' --include='*.cts' \
-  --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build
+git diff -U0 --diff-filter=ACM "$BASE" -- \
+    '*.ts' '*.tsx' '*.js' '*.jsx' '*.mts' '*.cts' |
+  grep -E '^\+' | grep -v '^+++' | sed 's/^+//' |
+  grep -nE '(^|[[:space:]])(export[[:space:]]+)?(default[[:space:]]+)?(async[[:space:]]+)?function[[:space:]]+[A-Za-z_$]'
 ```
 
 The pattern does not match `function*`, so generators are not flagged.
-Each match is then reviewed for the allowed reasons. A match without a
-legitimate reason is `FAIL` (P3). A match with a legitimate reason is
-`PASS` with the reason recorded.
+Each added declaration is then reviewed: if an equivalent declaration exists
+in `$BASE`, it is pre-existing and becomes a finding; otherwise it is
+reviewed for the allowed reasons. A new declaration without a legitimate
+reason is `FAIL` (P3). A declaration with a legitimate reason is `PASS` with
+the reason recorded.
 
 ### TYPE-001 — No file mixes type declarations and runtime behavior
 

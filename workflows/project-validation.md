@@ -187,6 +187,13 @@ solely to satisfy this policy.
      rule file, a local plugin, or a checker script, and do not add a
      dependency for the structural policy. The placement rules are verified by
      `workflows/output-compliance.md`, not by project tooling.
+   - **Existing code with `function` declarations:** do not convert it to
+     satisfy the arrow functions rule, and do not let it turn the build red.
+     Enable the rule for code written from now on and apply one of the patterns in
+     `references/linter-rules.md` ("Existing projects with legacy
+     declarations"): freeze the named legacy files with a documented override,
+     or lint the change set. The legacy declarations are recorded as findings,
+     and the conversion is a task of its own.
    - **Other ecosystems:** use the ecosystem-standard formatter and linter.
      Where that linter ships a documented rule for separating types from
      runtime (Checkstyle `OneTopLevelClass`, StyleCop `SA1402`,
@@ -218,7 +225,9 @@ solely to satisfy this policy.
 7. Format files within the task scope only when necessary and safe, without
    rewriting unrelated user-owned files.
 8. Run the formatter's non-mutating check and the linter, capturing exit
-   codes and output.
+   codes and output. A violation that pre-existed the change set is a
+   finding, not a gate failure; only the violations the change set introduces
+   block the task.
 9. Disclose every configuration, script, and dependency change, together
    with the resulting tool lifecycle states.
 

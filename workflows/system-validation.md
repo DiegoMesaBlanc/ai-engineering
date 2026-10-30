@@ -971,6 +971,7 @@ Return:
 - V2.53 Clean Architecture mapping and unit style checks:
 - V2.54 live phase checklist and native task surface checks:
 - V2.55 entry-point independence and operating contract checks:
+- V2.56 arrow function scope and legacy code checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -2637,5 +2638,41 @@ grep -q "Re-emit the phase plan and the current checklist" workflows/session-res
 grep -q "independent of the entry point" commands/task.md || { echo "FAIL V2.55: task adapter does not restate the rule"; failures=1; }
 grep -q "M-36" references/mandatory-rules.md || { echo "FAIL V2.55: no M-36"; failures=1; }
 grep -q "R-77" references/system-workflow-regression-matrix.md || { echo "FAIL V2.55: no R-77"; failures=1; }
+exit "$failures"
+```
+
+## V2.56 Regression — Arrow Function Scope and Legacy Code
+
+Verify that the arrow functions convention applies to the code a task creates
+and never rewrites code that already exists:
+
+- `AGENTS.md` scopes the rule to the functions a task creates, states that a
+  pre-existing declaration is never converted, and treats a violation that
+  pre-existed the change set as a finding rather than a blocker.
+- `skills/implementation-recipes/SKILL.md` carries the same scope.
+- `references/linter-rules.md` documents the two patterns for an existing
+  project with legacy declarations, so the setup does not turn working code
+  red.
+- `workflows/output-compliance.md` FUNC-001 reads the added lines of the
+  change set and classifies a declaration present in the base revision as
+  pre-existing.
+- `workflows/project-validation.md` keeps a pre-existing violation out of the
+  gate.
+- `references/mandatory-rules.md` includes M-01 with the scope, and the
+  regression matrix includes R-78.
+- Proof: a diff that edits a `function` body without converting it passes; a
+  new `function` declaration without a legitimate reason fails; a legacy repo
+  keeps a green lint through a documented freeze.
+
+```sh
+failures=0
+grep -q "A pre-existing declaration is never converted" AGENTS.md || { echo "FAIL V2.56: no scope in AGENTS.md"; failures=1; }
+grep -q "pre-existed the change set" AGENTS.md || { echo "FAIL V2.56: no pre-existing rule in AGENTS.md"; failures=1; }
+grep -q "governs the functions the task" skills/implementation-recipes/SKILL.md || { echo "FAIL V2.56: no scope in the recipes"; failures=1; }
+grep -q "Existing projects with legacy declarations" references/linter-rules.md || { echo "FAIL V2.56: no legacy pattern"; failures=1; }
+grep -q "added lines of the change set only" workflows/output-compliance.md || { echo "FAIL V2.56: FUNC-001 not scoped"; failures=1; }
+grep -q "finding, not a gate failure" workflows/project-validation.md || { echo "FAIL V2.56: gate does not exempt pre-existing"; failures=1; }
+grep -q "M-01" references/mandatory-rules.md || { echo "FAIL V2.56: no M-01"; failures=1; }
+grep -q "R-78" references/system-workflow-regression-matrix.md || { echo "FAIL V2.56: no R-78"; failures=1; }
 exit "$failures"
 ```

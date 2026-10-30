@@ -260,7 +260,7 @@ src/server/<domain>/        # or src/features/<feature>/server/
 - Manage state with the project's existing solution; avoid introducing a new one without justification.
 - Handle loading, empty, and error states in data access.
 - Follow the framework's data-fetching and caching conventions.
-- **Function style**: use **arrow functions** (`const fn = () => {}`) for components, hooks, utilities, and callbacks. The `function` keyword is reserved for the legitimate reasons listed in `AGENTS.md` (a generator, a `this` binding that arrow syntax cannot provide, the `arguments` object, or `new.target`). This applies to `.ts`, `.tsx`, `.js`, and `.jsx`.
+- **Function style**: use **arrow functions** (`const fn = () => {}`) for components, hooks, utilities, and callbacks. The `function` keyword is reserved for the legitimate reasons listed in `AGENTS.md` (a generator, a `this` binding that arrow syntax cannot provide, the `arguments` object, or `new.target`). This applies to `.ts`, `.tsx`, `.js`, and `.jsx`, and it governs the functions the task **creates**: an existing declaration is never converted as a side effect, editing its body leaves the declaration unchanged, and converting it is a task of its own. A lint violation that pre-existed the change set is a finding, not a blocker.
 - **Component style**: Prefer `const Component = ({ props }) => {}` over `function Component({ props }) {}`.
 - **Hook style**: `const useHook = () => {}` not `function useHook() {}`.
 - **Callback style**: `const handleClick = () => {}` not `function handleClick() {}`.

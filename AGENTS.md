@@ -50,7 +50,10 @@ Do not duplicate Skills, workflows, or architecture definitions.
 - Write TypeScript and JavaScript with **arrow functions**. Use the
   `function` keyword only when it is genuinely required (a generator, a
   `this` binding that arrow syntax cannot provide, the `arguments` object,
-  or `new.target`) and state the reason in a comment.
+  or `new.target`) and state the reason in a comment. The rule governs the
+  functions a task **creates**. A pre-existing declaration is never converted
+  to satisfy it: editing its body leaves the declaration as it is, and a
+  conversion happens only in a task whose explicit purpose is the conversion.
 - Keep interfaces, types, enums, and contracts in a **dedicated file** in
   the folder of the layer or module that owns them, never in the same file
   as runtime behavior. One type per file is the default; group several
@@ -60,7 +63,10 @@ Do not duplicate Skills, workflows, or architecture definitions.
   convention that violates them**. A convention that produces `function`
   declarations, or files that mix type declarations with runtime behavior,
   is a defect to correct in the code you write — not a convention to
-  preserve and copy.
+  preserve and copy. "The code you write" means the code the task creates:
+  existing code that already works is **reported as a finding, never
+  corrected as a side effect**, and it never blocks the task that discovered
+  it.
 - **Design quality is evaluated at a Staff bar.** Every change is judged on
   SOLID — one reason to change per unit, extension without editing callers,
   substitutable implementations, small interfaces owned by their consumer, and
@@ -434,6 +440,10 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
   never inside a support location. A `FAIL`
   result is a defect of the task, not a finding to defer.
 - Format and lint changes with the project's configured tools.
+- A lint or structural violation that **pre-existed the change set** is a
+  finding, not a blocker: it is recorded with its file and line, and only the
+  violations the change set introduces block the task. The structural check
+  reads the change set, never the whole file.
 - Report checks that were not run.
 - Never claim a test or build passed without evidence.
 - Keep unrelated refactoring out of scope.
@@ -580,6 +590,14 @@ Default tool choices by ecosystem:
   rules `func-style: ["error", "expression"]` and the `no-restricted-syntax`
   selector for function expressions. Never impose it on an ecosystem that has
   no arrow syntax; the detected ecosystem's own convention prevails.
+- In a project that **already contains `function` declarations**, the rule is
+  introduced without turning working legacy code into a build failure: the
+  legacy declarations are counted and recorded as a finding, and the gate
+  either lints the change set or freezes the legacy files with an explicit
+  per-file override that names the reason. Converting them is never part of
+  the task that introduced the tooling, and it happens only when a task's
+  explicit purpose is the conversion. A project with no legacy code
+  configures the rule as an error, with nothing to exempt.
 - Type-only imports are configured with
   `@typescript-eslint/consistent-type-imports` when `typescript-eslint` is
   already part of the setup, or with `verbatimModuleSyntax` in the TypeScript

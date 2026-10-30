@@ -77,6 +77,31 @@ are core rules.
 For a legacy `.eslintrc` project, use the equivalent `rules` entries in the
 format the detected ESLint major expects.
 
+### Existing projects with legacy declarations
+
+The configuration above judges the whole repository the moment it is enabled,
+so a project that already declares functions with the `function` keyword turns
+red on code that works. The arrow rule governs the functions a task **creates**,
+so the configuration adapts to what already exists:
+
+- **No legacy declarations**: enable `func-style` and `no-restricted-syntax`
+  as `error`. There is nothing to exempt.
+- **Legacy declarations**: the legacy code is not converted. Pick one pattern
+  and record the choice:
+  - **Frozen legacy files (recommended for a small, known surface)** — an
+    explicit override turns the two rules off for the named files, with a
+    comment that states the reason and the count. New files stay strict, and
+    the override is removed only by the task whose purpose is the conversion.
+  - **Change-set gate (for a large or unknown surface)** — the validation
+    lints the files and lines the change set touches, and the legacy
+    declarations are recorded as findings. No configuration exception is
+    needed, at the cost of a repo-wide lint run that stays red until the
+    conversion task exists.
+
+Converting the legacy declarations is a task of its own: it is never part of
+the task that introduced the tooling, and it is never a precondition for
+delivering a feature.
+
 ## What the standard configuration can and cannot express
 
 | Rule | Expressable by standard configuration? | Mechanism |
