@@ -311,9 +311,12 @@ repository's `commands/` directory.
 - Every task shows a phase plan before the work starts, with at least one
   phase and a live checklist per phase: it leads every update, is refreshed at
   every step transition rather than only at the end, and mirrors to the
-  client's task panel when the client exposes one. Each phase boundary is the
-  phase gate: the next phase starts only after the user approves in the
-  current conversation. The task request is never approval to continue.
+  client's task panel when the client exposes one. The obligation is
+  independent of the entry point — a plain session, a resumed one, or a
+  subagent carries it exactly as a command does — and no tool call precedes the
+  plan. Each phase boundary is the phase gate: the next phase starts only after
+  the user approves in the current conversation. The task request is never
+  approval to continue.
 - Plans are session state by default; a durable artifact is created only when
   traceability, approval, or an explicit request requires it.
 

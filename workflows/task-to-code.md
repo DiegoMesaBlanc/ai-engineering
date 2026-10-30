@@ -5,6 +5,13 @@
 Transform an engineering task and available design context into a validated
 implementation on a user-provided task branch.
 
+This workflow is the canonical procedure for any request that changes work and
+is **independent of the entry point**: a command, a plain message, a resumed
+session, and a subagent all follow it. **Before Phase 1 runs any tool**, the
+phase plan and the initial checklist of the first phase are shown, per
+`workflows/session-resilience.md` ("Phase Plan"). A command is an adapter that
+restates the obligation; it is never the condition for it.
+
 ## Phase 1 — Detect
 
 **Read the applicable learnings first.** Before any analysis or

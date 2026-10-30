@@ -98,6 +98,9 @@ A checkpoint records at least:
 - Git status summary.
 - Staged, unstaged, and untracked changes.
 - Objective.
+- Phase plan, with the phases completed and the one in progress.
+- The current checklist, with the state of every step.
+- The pending approval gate, when one is open.
 - Completed work.
 - Decisions and rationale.
 - Changed files.
@@ -144,7 +147,10 @@ does not authorize any commit, push, merge, or remote action.
    uncommitted changes to match the checkpoint.
 6. Continue from the first incomplete action instead of repeating completed
    phases.
-7. Never claim a prior validation passed without recorded evidence; when
+7. Re-emit the phase plan and the current checklist, and re-populate the
+   client's native task surface when it exposes one, **before the next tool
+   call**. A resumed session that continues silently has lost the contract.
+8. Never claim a prior validation passed without recorded evidence; when
    evidence is missing or stale, re-execute the relevant check or report it
    as not verified.
 
@@ -165,6 +171,13 @@ ask which to resume instead of guessing.
 - Do not introduce undocumented context-threshold configuration keys.
 - Use focused file reads, bounded tool output, and concise subagent
   summaries to limit context growth.
+- **The operating contract survives compaction.** The summary preserves the
+  phase plan, the current checklist, and any pending gate. A summary that keeps
+  the objective and drops them leaves the session without the rules it was
+  following.
+- **After a compaction, a server restart, or an automatic model switch**, the
+  plan and the checklist are re-emitted and the native surface re-populated
+  before the next tool call, so the session continues under the same contract.
 - Checkpoint at logical phase boundaries, before expensive validations, and
   before a context reset when needed.
 - Do not depend solely on a displayed context percentage to decide when to
@@ -266,6 +279,14 @@ the user knows the sequence, the outcome of each phase, and where the work can
 stop. A task with one phase still shows its one-phase plan: a plan with zero
 phases is a defect, and there is no maximum number of phases.
 
+The obligation is **independent of the entry point**. A command, a plain
+message in a new session, a resumed checkpoint, a subagent, and an automation
+all start the same way: the phase plan and the initial checklist of the first
+phase are emitted **before the first tool call**. Inspecting the repository in
+order to plan later is a tool call, so it happens after the plan, never
+before. A command only restates the obligation at its invocation point; a
+session that shows the plan only when a command was used has failed the rule.
+
 The **phase plan** is the sequence of phases. It is not the **task plan**,
 which is the planning artifact of `workflows/task-planning.md` and says what
 the task does. The phase plan says in which order it happens, and the
@@ -352,6 +373,11 @@ of the phase and are never reused.
 - `[   ]` the step is pending.
 - `[ ! ]` the step is blocked or failed, followed by the reason.
 
+The canonical rendering is `[   ]` with three spaces, so the states align. The
+checks accept a single space (`[ ]`) as the same pending state, because a
+spacing difference is never the defect worth reporting; the meaning of the
+state is.
+
 The checklist is **session state**. It is shown in the conversation and is
 not written to the repository, so following the work never requires a
 commit.
@@ -402,6 +428,7 @@ re-emitted at every step transition:
 | Moment | What is emitted |
 |---|---|
 | The phase starts | The full derived checklist, every step pending |
+| A step is about to change the repository | The checklist, so the panel shows the step in progress before it runs |
 | A step is completed | The checklist with `[ x ]` on that step, leading the update |
 | A step is blocked or fails | The checklist with `[ ! ]` and the reason, leading the update |
 | A new step is discovered | The checklist with the step inserted in execution order |
@@ -417,6 +444,9 @@ Rules:
 - The cadence is a lower bound, not a schedule: when several steps complete
   between two messages, the next message carries the checklist with all of
   them marked.
+- A mutating step is announced by the checklist before it runs, not after it
+  succeeds. A panel that only changes once the result is known is a history,
+  not a live view.
 - It is the same format everywhere: the creation tracker, an implementation
   phase, a review, and a validation run.
 - A phase that ends with pending steps reports them, so the next session
@@ -425,13 +455,17 @@ Rules:
 ### Native task surfaces
 
 When the client exposes a native task or todo surface — a `todowrite` tool
-that renders a persistent todo panel, or an equivalent — the checklist is
-mirrored there on the same transitions and the two copies stay in sync, so
-progress is visible without reading every message.
+that renders a persistent todo panel, or an equivalent — the mirror is
+**mandatory, not optional**. It is populated with the initial checklist and
+updated on the same transitions, before each mutating step, so progress is
+visible without reading every message.
 
 - The **conversation copy is the authority**. When the mirror is disabled,
   unavailable, or fails, the checklist continues in the conversation and the
   failure is reported instead of being silently dropped.
+- A surface that exists but is never populated is a **defect of the session**,
+  even when the conversation carries the checklist. Two calls at the start and
+  the end are not a live mirror.
 - A surface that renders only the client's own state — the list of configured
   MCP connections, a status bar, a model selector — is **not writable**. No
   instruction makes an agent able to write into it, and the agent never claims

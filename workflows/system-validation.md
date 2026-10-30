@@ -970,6 +970,7 @@ Return:
 - V2.52 design quality and dependency direction checks:
 - V2.53 Clean Architecture mapping and unit style checks:
 - V2.54 live phase checklist and native task surface checks:
+- V2.55 entry-point independence and operating contract checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -2603,5 +2604,38 @@ grep -q "every step transition" workflows/task-to-code.md || { echo "FAIL V2.54:
 grep -q "every step transition" agents/orchestrator.md || { echo "FAIL V2.54: no cadence in orchestrator.md"; failures=1; }
 grep -q "M-35" references/mandatory-rules.md || { echo "FAIL V2.54: no M-35"; failures=1; }
 grep -q "R-76" references/system-workflow-regression-matrix.md || { echo "FAIL V2.54: no R-76"; failures=1; }
+exit "$failures"
+```
+
+## V2.55 Regression — Entry-Point Independence and Operating Contract
+
+Verify that the plan and the checklist do not depend on a command, that no
+tool call precedes them, and that they survive a degraded session:
+
+- `AGENTS.md` states that the obligation is **independent of the entry point**
+  and that no tool call is made before the phase plan and the initial
+  checklist.
+- `workflows/session-resilience.md` carries the same obligation, the checkpoint
+  fields for the plan, the checklist, and the pending gate, the re-emission on
+  recovery, and the compaction, restart, and model-switch contract.
+- `commands/task.md` declares itself an adapter and restates the obligation
+  without becoming its condition.
+- `references/mandatory-rules.md` includes M-36 and
+  `references/system-workflow-regression-matrix.md` includes R-77.
+- Proof: a session started by a plain message shows the plan before its first
+  tool call; a compacted or restarted session re-emits the checklist before
+  continuing.
+
+```sh
+failures=0
+grep -q "independent of the entry point" AGENTS.md || { echo "FAIL V2.55: no entry-point rule in AGENTS.md"; failures=1; }
+grep -q "No tool call is made before the phase plan" AGENTS.md || { echo "FAIL V2.55: no ordering rule in AGENTS.md"; failures=1; }
+grep -q "independent of the entry point" workflows/session-resilience.md || { echo "FAIL V2.55: no entry-point rule in session-resilience.md"; failures=1; }
+grep -q "survives compaction" workflows/session-resilience.md || { echo "FAIL V2.55: no compaction contract"; failures=1; }
+grep -q "The current checklist, with the state of every step" workflows/session-resilience.md || { echo "FAIL V2.55: checkpoint misses the checklist"; failures=1; }
+grep -q "Re-emit the phase plan and the current checklist" workflows/session-resilience.md || { echo "FAIL V2.55: no re-emission on recovery"; failures=1; }
+grep -q "independent of the entry point" commands/task.md || { echo "FAIL V2.55: task adapter does not restate the rule"; failures=1; }
+grep -q "M-36" references/mandatory-rules.md || { echo "FAIL V2.55: no M-36"; failures=1; }
+grep -q "R-77" references/system-workflow-regression-matrix.md || { echo "FAIL V2.55: no R-77"; failures=1; }
 exit "$failures"
 ```

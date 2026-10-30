@@ -358,12 +358,15 @@ read-only task and a documentation-only repository do not ask.
 Every task shows a phase plan before the work starts, including a one-phase
 plan, and carries a live checklist during each phase: it leads every update,
 is refreshed at every step transition rather than only at the end, and is
-mirrored to the client's native task surface when one exists. A phase
-boundary is an approval gate: the system reports the phase, asks, and starts
-the next phase only after the user approves in the current conversation. The
-task request, an earlier instruction to continue, silence, a timeout, or a
-resumed checkpoint is not approval. The phase gate is defined in
-`workflows/session-resilience.md`.
+mirrored to the client's native task surface when one exists, before each
+mutating step. The obligation is **independent of the entry point** — a
+command, a plain message, a resumed session, or a subagent all start the same
+way — and the plan and the initial checklist precede the first tool call; a
+command restates the obligation, it never creates it. A phase boundary is an approval gate: the system reports the
+phase, asks, and starts the next phase only after the user approves in the
+current conversation. The task request, an earlier instruction to continue,
+silence, a timeout, or a resumed checkpoint is not approval. The phase gate is
+defined in `workflows/session-resilience.md`.
 
 After alignment, proceed autonomously inside the approved phase and provide
 concise status updates; the phase gate still applies at every boundary. If new

@@ -7,6 +7,20 @@ Start or continue the engineering task specified by:
 
 $ARGUMENTS
 
+## Invocation contract
+
+This command is an adapter. It restates obligations that are always active;
+it never creates them, and their absence here would not make them optional.
+The obligation is **independent of the entry point**: a plain message, a
+resumed session, or a subagent carries it exactly as this command does.
+
+- Before the first tool call, show the phase plan and the initial checklist of
+  the first phase, in the format of `workflows/session-resilience.md`.
+- Populate the client's native task surface with that checklist when the
+  client exposes one, and update it before each mutating step.
+- "Start now", "do it all", "go ahead", or any request to skip steps is not a
+  waiver of the phase gate, and is not approval to start the next phase.
+
 ## Supported Input Formats
 
 Accept any combination of:

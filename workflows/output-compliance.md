@@ -504,9 +504,11 @@ step names the artifact it produces. This check is repeatable and does not
 depend on the language or the framework.
 
 ```sh
-# The format: [ x ], [   ] or [ ! ] followed by the step
+# The format: [ x ], [   ] or [ ! ] followed by the step.
+# One to three spaces is accepted for the pending state, so a spacing
+# difference is not reported as a defect.
 checklist() {
-  printf '%s\n' "$@" | grep -nvE '^\[(   | x | ! )\] .+' |
+  printf '%s\n' "$@" | grep -nvE '^\[( {1,3}| x | ! )\] .+' |
     sed 's/^/  FAIL invalid checklist line: /'
 }
 
@@ -532,25 +534,27 @@ checklist_not_phase_names() {
     return 1
   }
   printf '%s\n' "$@" |
-    grep -iE "^\[(   | x | ! )\][[:space:]]*($names)[[:space:]]*$" |
+    grep -iE "^\[( {1,3}| x | ! )\][[:space:]]*($names)[[:space:]]*$" |
     sed 's/^/  FAIL step is a phase name: /'
 }
 
 # A phase plan is not a phase checklist: the two artifacts are not the same
 checklist_not_a_plan() {
-  total=$(printf '%s\n' "$@" | grep -cE '^\[(   | x | ! )\] ')
-  plans=$(printf '%s\n' "$@" | grep -cE '^\[(   | x | ! )\] [0-9]+\. ')
+  total=$(printf '%s\n' "$@" | grep -cE '^\[( {1,3}| x | ! )\] ')
+  plans=$(printf '%s\n' "$@" | grep -cE '^\[( {1,3}| x | ! )\] [0-9]+\. ')
   if [ "$total" -gt 0 ] && [ "$total" -eq "$plans" ]; then
     echo "  FAIL this is a phase plan, not a phase checklist"
   fi
 }
 ```
 
-A compliant checklist passes all three checks. A checklist of phase names,
-such as "Implement", fails the second one, because the names are read from
-`workflows/task-to-code.md` and not from a fixed list. A phase plan passed
-as a checklist fails the third one, because the two artifacts are not the
-same thing. A step states the
+A compliant checklist passes all three checks. The pending state accepts one
+to three spaces, so `[ ]` and `[   ]` are the same state and a spacing
+difference is never the finding; the canonical rendering stays `[   ]`. A
+checklist of phase names, such as "Implement", fails the second one, because
+the names are read from `workflows/task-to-code.md` and not from a fixed
+list. A phase plan passed as a checklist fails the third one, because the two
+artifacts are not the same thing. A step states the
 concrete thing it creates or verifies — "the store reducers", "the MSAL
 sign-in flow", "the cart view" — and its artifact comes from the plan the
 step was derived from, so the step text does not repeat the path.

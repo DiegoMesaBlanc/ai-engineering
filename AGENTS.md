@@ -358,6 +358,15 @@ gate, applied to the boundary instead of to the commit.
 Stopping is a deliberate choice the user can make at any boundary, in any
 task and any language or framework.
 
+**The phase plan and the checklist are independent of the entry point.** They
+apply to every task, whatever starts it: a command, a plain message in a new
+session, a resumed checkpoint, a subagent, or an automation. A command is an
+adapter that restates the obligation at its invocation point; it is never the
+source of it, and showing the plan only when a command was used is a defect.
+No tool call is made before the phase plan and the initial checklist of the
+first phase are shown: reading the repository in order to plan later is the
+same defect as skipping the plan.
+
 **Show the phase checklist, in every task, without exception.** While a
 phase is in progress, every status update carries a checklist of the
 concrete steps of that phase:
@@ -391,12 +400,14 @@ each user turn while the phase is open, and the end of the phase. Holding
 it back until the task or the phase is finished is a defect.
 
 When the client exposes a native task or todo surface — for example a
-`todowrite` tool that renders a persistent todo panel — the checklist is
-mirrored there and kept in sync, so progress is visible without reading
-every message. The copy in the conversation remains the authority. A panel
-that renders only the client's own state, such as the list of configured
-MCP connections, is not a writable surface: the agent never claims to have
-updated it.
+`todowrite` tool that renders a persistent todo panel — the mirror is
+**mandatory, not optional**: it is populated with the first checklist and
+updated before each step that changes the repository, so the panel shows the
+step in progress instead of trailing it. The copy in the conversation remains
+the authority, and a surface that exists but is never populated is a defect.
+A panel that renders only the client's own state, such as the list of
+configured MCP connections, is not a writable surface: the agent never claims
+to have updated it.
 
 The checklist is session state rather than a file, and following the work
 never requires a commit. This applies to every task, every phase, and every
