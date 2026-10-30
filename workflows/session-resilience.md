@@ -393,16 +393,55 @@ A step that is only the name of a phase is **not a step**. Phase names are
 not steps, and a checklist of phase names tells the user nothing. A checklist
 whose steps are all generic is a defect.
 
-### Emission
+### Emission and cadence
 
-- Every progress update raised during a phase carries the checklist with its
-  current state.
-- The checklist is refreshed as its steps complete, not only at the end of
-  the phase.
+The checklist is a **live view of the work in progress**, not a summary shown
+when the work is over. It leads every update that reports a change, and it is
+re-emitted at every step transition:
+
+| Moment | What is emitted |
+|---|---|
+| The phase starts | The full derived checklist, every step pending |
+| A step is completed | The checklist with `[ x ]` on that step, leading the update |
+| A step is blocked or fails | The checklist with `[ ! ]` and the reason, leading the update |
+| A new step is discovered | The checklist with the step inserted in execution order |
+| Each user turn while the phase is open | The checklist as it currently stands |
+| The phase ends | The final state, with every pending step reported |
+
+Rules:
+
+- The checklist leads the update. It is never appended as a closing summary
+  after the work it describes.
+- It is never held back until the task or the phase is finished. A change
+  reported without its checklist is an incomplete update.
+- The cadence is a lower bound, not a schedule: when several steps complete
+  between two messages, the next message carries the checklist with all of
+  them marked.
 - It is the same format everywhere: the creation tracker, an implementation
   phase, a review, and a validation run.
 - A phase that ends with pending steps reports them, so the next session
   resumes from the same place.
+
+### Native task surfaces
+
+When the client exposes a native task or todo surface — a `todowrite` tool
+that renders a persistent todo panel, or an equivalent — the checklist is
+mirrored there on the same transitions and the two copies stay in sync, so
+progress is visible without reading every message.
+
+- The **conversation copy is the authority**. When the mirror is disabled,
+  unavailable, or fails, the checklist continues in the conversation and the
+  failure is reported instead of being silently dropped.
+- A surface that renders only the client's own state — the list of configured
+  MCP connections, a status bar, a model selector — is **not writable**. No
+  instruction makes an agent able to write into it, and the agent never claims
+  an update there that it cannot perform.
+- A surface that only a client plugin can extend is reported as such, with the
+  plugin as the path, instead of being simulated or described as done.
+
+The mirror never replaces the cadence above: it makes the same checklist
+persistent, and an out-of-date mirror is corrected on the next transition
+rather than trusted.
 
 ### Scope
 

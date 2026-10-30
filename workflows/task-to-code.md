@@ -396,10 +396,13 @@ Implement on the requested branch and only within the target project.
 
 **Show the phase checklist.** Detect the concrete steps of this phase from
 the **task plan** and the File Responsibility Map, never from the phase
-plan, and carry the checklist in every status update, refreshing it as its
-steps complete. Each step names the artifact it produces. The format and
-the derivation are defined in `workflows/session-resilience.md` ("Phase
-Checklist").
+plan, and carry the checklist in every status update, leading the update and
+refreshing it at every step transition — start, step done, step blocked, new
+step, each user turn, phase end. Mirror it to the client's native task or
+todo surface when one exists, and never hold it back until the phase is
+finished. Each step names the artifact it produces. The format, the
+derivation, the cadence, and the client surface are defined in
+`workflows/session-resilience.md` ("Phase Checklist").
 
 **Structural policy — non-negotiable while writing code.** Follow the
 non-negotiable quality baseline in `skills/implementation-recipes/SKILL.md`:

@@ -378,17 +378,31 @@ The steps are **detected from the work of the phase**, never from a fixed
 template: the **task plan** and the file responsibility map name the
 artifacts the phase produces, the phase scope narrows them, and one step
 is emitted per artifact in the order it is executed. The source is the
-task plan, never the phase plan.
-artifact it produces: a file, a type, a contract, an endpoint, a migration, a
-test, a configuration value, or a document section. A step that cannot name
-the artifact it produces is a phase name, not a step, and a checklist of
-phase names is a defect.
+task plan, never the phase plan. Each step names the artifact it produces:
+a file, a type, a contract, an endpoint, a migration, a test, a
+configuration value, or a document section. A step that cannot name the
+artifact it produces is a phase name, not a step, and a checklist of phase
+names is a defect.
 
-The checklist is refreshed as its steps complete, it is session state rather
-than a file, and following the work never requires a commit. This applies to
-every task, every phase, and every language and framework. The format, the
-derivation, and the covered scenarios are defined in
-`workflows/session-resilience.md` ("Phase Checklist").
+The checklist is **live, not a closing summary.** It leads the update that
+reports a change, and it is re-emitted at every step transition: the start
+of the phase, a step completed, a step blocked, a newly discovered step,
+each user turn while the phase is open, and the end of the phase. Holding
+it back until the task or the phase is finished is a defect.
+
+When the client exposes a native task or todo surface — for example a
+`todowrite` tool that renders a persistent todo panel — the checklist is
+mirrored there and kept in sync, so progress is visible without reading
+every message. The copy in the conversation remains the authority. A panel
+that renders only the client's own state, such as the list of configured
+MCP connections, is not a writable surface: the agent never claims to have
+updated it.
+
+The checklist is session state rather than a file, and following the work
+never requires a commit. This applies to every task, every phase, and every
+language and framework. The format, the derivation, the cadence, and the
+covered scenarios are defined in `workflows/session-resilience.md` ("Phase
+Checklist").
 
 If new evidence changes a material requirement or approved design, pause and explain the reason before continuing beyond the approved scope. Otherwise, proceed autonomously.
 

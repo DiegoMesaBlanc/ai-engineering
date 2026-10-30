@@ -969,6 +969,7 @@ Return:
 - V2.51 engineering baseline checks:
 - V2.52 design quality and dependency direction checks:
 - V2.53 Clean Architecture mapping and unit style checks:
+- V2.54 live phase checklist and native task surface checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -2567,5 +2568,40 @@ grep -q "Clean Architecture mapping" references/folder-architectures.md || { ech
 grep -q "Hexagonal / Clean, per ecosystem" references/folder-architectures.md || { echo "FAIL V2.53: no per-ecosystem table"; failures=1; }
 grep -q "Unit style: functions or classes" skills/implementation-recipes/SKILL.md || { echo "FAIL V2.53: no unit-style table"; failures=1; }
 grep -q "same dependency rule" skills/architecture-advisor/SKILL.md || { echo "FAIL V2.53: no equivalence statement"; failures=1; }
+exit "$failures"
+```
+
+## V2.54 Regression — Live Phase Checklist and Native Task Surface
+
+Verify that the checklist is a live view, emitted at every step transition,
+and that its client mirror degrades honestly:
+
+- `AGENTS.md` states that the checklist is live, leads every update, and is
+  re-emitted at every step transition, and that a client-rendered panel such
+  as the MCP connection list is not a writable surface.
+- `workflows/session-resilience.md` contains **Emission and cadence** with the
+  transition table, and **Native task surfaces** with the conversation copy as
+  the authority, the failure of the mirror reported, and the plugin path for a
+  surface only a plugin can extend.
+- `workflows/task-to-code.md` and `agents/orchestrator.md` carry the
+  operational instruction, including the mirror and the prohibition on
+  holding the checklist back until the phase ends.
+- `references/mandatory-rules.md` includes M-35 and
+  `references/system-workflow-regression-matrix.md` includes R-76.
+- Proof: a session with the native surface available shows the checklist in
+  the conversation and in the panel on the same transitions; a session without
+  it reports the tool as absent instead of claiming the panel was updated.
+
+```sh
+failures=0
+grep -q "every step transition" AGENTS.md || { echo "FAIL V2.54: no cadence in AGENTS.md"; failures=1; }
+grep -q "not a writable surface" AGENTS.md || { echo "FAIL V2.54: no non-writable panel rule in AGENTS.md"; failures=1; }
+grep -q "Emission and cadence" workflows/session-resilience.md || { echo "FAIL V2.54: no cadence section"; failures=1; }
+grep -q "Native task surfaces" workflows/session-resilience.md || { echo "FAIL V2.54: no native surface section"; failures=1; }
+grep -q "conversation copy is the authority" workflows/session-resilience.md || { echo "FAIL V2.54: no authority statement"; failures=1; }
+grep -q "every step transition" workflows/task-to-code.md || { echo "FAIL V2.54: no cadence in task-to-code.md"; failures=1; }
+grep -q "every step transition" agents/orchestrator.md || { echo "FAIL V2.54: no cadence in orchestrator.md"; failures=1; }
+grep -q "M-35" references/mandatory-rules.md || { echo "FAIL V2.54: no M-35"; failures=1; }
+grep -q "R-76" references/system-workflow-regression-matrix.md || { echo "FAIL V2.54: no R-76"; failures=1; }
 exit "$failures"
 ```
