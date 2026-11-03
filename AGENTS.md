@@ -443,6 +443,40 @@ checklist, and the delegating agent mirrors it. A delegated result that
 carries no checklist is incomplete, and the delegating agent asks for it
 before it reports the phase.
 
+**A phase is never a bulk change.** A phase is a unit the user can validate,
+not a unit of volume. Every phase that modifies code is divided into
+**increments**, and each increment is verified on its own (formatting, lint,
+typecheck, and the tests of the files it touches) before the next one starts,
+and is reported with its exact file list and its validation evidence.
+
+The size of an increment is **measured, not counted**. The system inspects the
+change set of the increment and classifies its **review load** from:
+
+- the files created or modified, and how many units and layers they span;
+- the number of distinct concerns (a unit, a contract, a behavior, a wiring);
+- whether the change is **mechanical and uniform** (the same edit repeated in
+  many consumers) or **behavioral** (different logic in each file);
+- the contracts it changes and the consumers those contracts reach;
+- the lines altered and the risk of the change.
+
+The classification is one of three verdicts:
+
+- **REVIEWABLE**: one concern, and the user can review every file of the
+  increment in one pass. The increment proceeds.
+- **REVIEWABLE WITH JUSTIFICATION**: many files, but one concern and a
+  mechanical, uniform change. It is allowed, with the uniformity recorded and
+  one verification command that covers every file.
+- **SPLIT REQUIRED**: more than one concern, a contract change together with
+  behavior change across its consumers, or a set the user cannot review in one
+  pass. The increment is split before it starts, and the split appears in the
+  phase plan.
+
+Crossing roughly 25 files is the review trigger: the system always examines an
+increment of that size and records the verdict, and below it the measurement
+still runs. The trigger is never a cap. Only the verdict decides, so a large
+mechanical change can pass and a small mixed change can be split. A project or
+the user may set a different trigger explicitly, never silently.
+
 If new evidence changes a material requirement or approved design, pause and explain the reason before continuing beyond the approved scope. Otherwise, proceed autonomously.
 
 Use checkpoints for long-running tasks according to `workflows/session-resilience.md`. Do not require the user to restart the terminal as the normal recovery method.

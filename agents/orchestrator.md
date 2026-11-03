@@ -375,6 +375,14 @@ current conversation. The task request, an earlier instruction to continue,
 silence, a timeout, or a resumed checkpoint is not approval. The phase gate is
 defined in `workflows/session-resilience.md`.
 
+Phases are small enough to validate. A code-changing phase is divided into
+increments, each verified before the next one starts. Each increment's size is
+measured and given a review-load verdict, and the verdicts appear in the phase
+plan. The rule is defined in AGENTS.md ("A phase is never a bulk change") and
+`workflows/session-resilience.md` ("Phase size and increments"). A SPLIT
+REQUIRED increment is divided before it starts, and a phase that cannot be
+divided is returned to the user as a scope problem.
+
 After alignment, proceed autonomously inside the approved phase and provide
 concise status updates; the phase gate still applies at every boundary. If new
 evidence changes a material requirement or approved design, pause and explain

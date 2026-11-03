@@ -20,6 +20,10 @@ resumed session, or a subagent carries it exactly as this command does.
   client exposes one, and update it before each mutating step.
 - "Start now", "do it all", "go ahead", or any request to skip steps is not a
   waiver of the phase gate, and is not approval to start the next phase.
+- Divide each code-changing phase into increments, measure each one's review
+  load, and show the increments and their verdicts in the phase plan (AGENTS.md,
+  "A phase is never a bulk change"; `workflows/session-resilience.md`, "Phase
+  size and increments"). A SPLIT REQUIRED increment is divided before it starts.
 
 ## Supported Input Formats
 

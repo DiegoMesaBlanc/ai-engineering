@@ -346,6 +346,35 @@ A phase that ends with pending work is not a failure to report as done.
 The boundary report is what makes stopping a deliberate choice, and stopping
 requires no commit.
 
+### Phase size and increments
+
+A phase is the unit of approval, and it must be small enough for the user to
+validate it. A phase that rewrites 100 or 200 files cannot be reviewed step by
+step, so it is not an acceptable phase. The rule is the one defined in AGENTS.md ("A phase is never a bulk change"),
+and its size is decided by measurement, not by a file count:
+
+- a code-changing phase is divided into **increments**;
+- each increment has its own file list and verification command (format,
+  lint, typecheck, and the tests of the files it touches), and it is verified
+  before the next increment starts;
+- before an increment starts, the system measures its change set and records
+  one review-load verdict: **REVIEWABLE**, **REVIEWABLE WITH JUSTIFICATION**
+  (many files, one concern, mechanical and uniform), or **SPLIT REQUIRED**
+  (several concerns, or a contract change spread across behavior changes, or
+  a set the user cannot review in one pass);
+- the verdict is shown in the phase plan. A SPLIT REQUIRED increment is divided
+  before it starts; the split is shown and approved as part of the plan;
+- the boundary report after each increment states the files it changed, the
+  verdict, the evidence that it passed, and the next increment, so the user
+  can stop, review, or continue at that point.
+
+The review trigger is roughly 25 files. The system always runs the
+measurement from that size, and below it the measurement still runs, but the
+number alone never splits or blocks an increment. The increments are derived
+from the File Responsibility Map of the task plan and ordered so that each one
+leaves the project in a valid state (for example, a contract before its
+consumers, and a unit before the code that wires it).
+
 ## Phase Checklist
 
 While a phase is in progress, the agent shows **what it is doing, step by

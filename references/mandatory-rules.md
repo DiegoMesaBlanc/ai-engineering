@@ -83,6 +83,7 @@ It exists to prevent two failures observed in practice:
 | M-38 | Delegated work is mirrored into the delegating agent's panel: a subagent runs in its own session, so before a delegation the delegating agent mirrors the phase plan and the checklist of every delegated phase and step into its own native task surface, rewrites that mirror from the checklist each subagent returns, requires every delegated prompt to return a checklist, and treats a delegated result without one as incomplete | `AGENTS.md` — Progress Updates and Phase Gates | `the delegating agent mirrors` | `AGENTS.md`, `workflows/session-resilience.md`, `workflows/task-to-code.md`, `agents/orchestrator.md`, `references/system-workflow-regression-matrix.md`, `workflows/system-validation.md` |
 | M-39 | Code that a task creates is delivered only when every applicable dimension of the audit matrix is `PASS` against `references/audit-pass-criteria.md`; `WARN` is an auditor observation state and not an accepted terminal state for that code; applicability is decided against the approved requirement and an inapplicable dimension is `N/A` with a reason | `AGENTS.md` — Implementation and Validation | `every applicable dimension is PASS` | `AGENTS.md`, `references/audit-pass-criteria.md`, `workflows/task-to-code.md`, `workflows/code-audit.md`, `skills/engineering-review/SKILL.md` |
 | M-40 | A new task starts a new list: the checklist and its native mirror are rewritten in full from the new task's phase plan before its first tool call, no item of a previous task remains even when that task is unfinished, and what they show is the state of the current task at that moment; an unfinished previous task is reported and preserved by its checkpoint, and the reset is a task boundary, never a mid-task one | `AGENTS.md` — Progress Updates and Phase Gates | `A new task starts a new list` | `AGENTS.md`, `workflows/session-resilience.md`, `workflows/task-to-code.md`, `agents/orchestrator.md`, `references/system-workflow-regression-matrix.md`, `workflows/system-validation.md` |
+| M-41 | A phase is never a bulk change: every code-changing phase is divided into increments, each verified on its own before the next starts and reported with its exact file list; the size of an increment is measured from its change set and given a review-load verdict of REVIEWABLE, REVIEWABLE WITH JUSTIFICATION, or SPLIT REQUIRED, and the file count alone never splits or blocks it; a SPLIT REQUIRED increment is divided before it starts, and a phase that cannot be divided is a scope problem | `AGENTS.md` — Progress Updates and Phase Gates | `A phase is never a bulk change` | `AGENTS.md`, `workflows/session-resilience.md`, `workflows/task-to-code.md`, `agents/orchestrator.md`, `commands/task.md` |
 
 ## Superseded Phrasings
 
@@ -105,6 +106,8 @@ content.
 | When a task has more than one phase, the agent shows the **phase plan** | M-29 |
 | No exceptions | M-02 |
 | for all function declarations | M-01 |
+| at most 10 files per increment | M-41 |
+| a single atomic rename or codemod is the only exception | M-41 |
 | React/Next.js function style | M-01 |
 
 ## Adding a rule
