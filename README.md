@@ -129,7 +129,9 @@ repository's `commands/` directory.
   ways: as a fresh subagent, or as the **Auditor** mode selected with Tab in a
   **new session**. Selecting that mode inside the session that implemented the
   deliverable does **not** create independence: the history persists. In Codex
-  and Claude, start a new process or session.
+  and Claude, start a new process or session. In the same session the audit
+  still runs end to end, but its verdict is capped at `NOT VERIFIED` until a
+  fresh session re-runs it.
 - It rebuilds the acceptance criteria from the requirement, re-executes the
   project's gates and the structural compliance checks, falsifies every
   delivery claim, applies the code-audit dimensions, and issues one verdict:

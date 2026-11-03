@@ -2396,8 +2396,10 @@ the single code-audit flow, not a second flow:
   Phases I0 to I3, and the independent verdict rule
 - the Independent Mode states that it is not a third scope mode, and the
   scope is still chosen in its Phase 2
-- Phase I0 refuses to audit when the context already contains implementation
-  history, reporting `NOT INDEPENDENT — FRESH SESSION REQUIRED`
+- Phase I0 does not stop the audit when the context already contains
+  implementation history: it marks independence `NOT ESTABLISHED`, withholds the
+  implementation material, records it in the Input Manifest, and caps the verdict
+  at `NOT VERIFIED` with the reason `independence not established`
 - Phase I1 rebuilds the acceptance criteria from the original requirement and
   forbids deriving them from the implementation
 - Phase I2 re-executes the gates through `workflows/project-validation.md` and
@@ -2427,6 +2429,12 @@ the single code-audit flow, not a second flow:
 - the behavioral pilot is reproducible: the `external-auditor` agent started as
   a fresh subagent without any command passes Phase I0 and reads the Independent
   Mode of `workflows/code-audit.md`
+- the `external-auditor` agent has no `edit` capability (`edit` denied, `subagent`
+  denied), has shell, webfetch, external directories, and browser or Code Mode
+  execution allowed, and denies the shell commands that write, publish, or
+  install packages
+- a contaminated context does not stop the audit: the agent completes the audit,
+  records the contamination in the Input Manifest, and caps the verdict
 - no new package.json, dependency, or competing orchestrator was introduced
 
 ## V2.51 Regression — Opt-In Engineering Baseline

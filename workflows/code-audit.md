@@ -91,11 +91,17 @@ context already holds that material, stop and request a fresh session.
 
 ### Phase I0 — Independence Gate
 
-1. Confirm the session did not produce the deliverable.
-2. Build the **Input Manifest**: what was received and what was withheld.
-3. If the context contains implementation history, report
-   `NOT INDEPENDENT — FRESH SESSION REQUIRED` and stop.
-4. Record the client, the session, the model, and the date.
+1. Confirm whether the session produced the deliverable.
+2. Build the **Input Manifest**: what was received, what was withheld, and what
+   was received but is implementation material.
+3. If the context contains implementation history, **do not stop**. Mark
+   independence as `NOT ESTABLISHED`, withhold the implementation material from
+   every step (it is never evidence, never a source of criteria, and never
+   replaces a re-execution), and record the contamination in the Input Manifest.
+   The audit then continues from the requirement and the artifact, and the
+   verdict is capped as defined in the Independent Mode Verdict.
+4. Record the client, the session, the model, and the date, and whether the
+   session is fresh.
 
 ### Phase I1 — Requirement and Acceptance Matrix
 
@@ -142,6 +148,12 @@ The Phase 7 verdict applies, with two additions:
 - A criterion left silently `NOT VERIFIED` makes the verdict
   `NOT VERIFIED`. `PASS` requires a passed Phase I0 and every criterion
   `PASS`.
+- When Phase I0 is `NOT ESTABLISHED` (contaminated context), the verdict is
+  `NOT VERIFIED` with the reason `independence not established` when no
+  criterion fails, even when every other check passed. A criterion `FAIL` still
+  makes the verdict `FAIL`, because it is the more severe outcome. The findings, the re-executed results, and the falsification
+  table are still reported in full, so the work is not lost. A fresh subagent
+  or a new session re-runs the audit to obtain a `PASS`.
 
 The report also states the independence declaration (client, session, model,
 date, Input Manifest) and the I-7 limit.
