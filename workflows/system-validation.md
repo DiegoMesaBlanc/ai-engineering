@@ -984,6 +984,7 @@ Return:
 - V2.55 entry-point independence and operating contract checks:
 - V2.56 arrow function scope and legacy code checks:
 - V2.57 delegated work mirrored into the delegating panel checks:
+- V2.58 new task starts a new list checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -2728,5 +2729,39 @@ grep -qi "the delegating agent mirrors" workflows/task-to-code.md || { echo "FAI
 grep -qi "the delegating agent mirrors" agents/orchestrator.md || { echo "FAIL V2.57: no delegation instruction in orchestrator.md"; failures=1; }
 grep -q "M-38" references/mandatory-rules.md || { echo "FAIL V2.57: no M-38"; failures=1; }
 grep -q "R-79" references/system-workflow-regression-matrix.md || { echo "FAIL V2.57: no R-79"; failures=1; }
+exit "$failures"
+```
+
+## V2.58 Regression — New Task Starts a New List
+
+Verify that the checklist and its panel belong to the task in progress and
+never accumulate the previous task's items:
+
+- `AGENTS.md` states that a new task rewrites the checklist and the mirror from
+  its own phase plan, that no item of a previous task remains even when it is
+  unfinished, and that the reset is a task boundary and not a mid-task one.
+- `workflows/session-resilience.md` carries **Task boundary and reset** with the
+  rewrite before the first tool call, the unfinished-task path through the
+  report and the checkpoint, the current-state rule, and the mid-task
+  prohibition.
+- `workflows/task-to-code.md` and `agents/orchestrator.md` carry the operational
+  instruction and reference the session-resilience section.
+- `references/mandatory-rules.md` includes M-40 and
+  `references/system-workflow-regression-matrix.md` includes R-80.
+- Proof: a second task started while the first is unfinished shows only the
+  second task's phases and steps, and the first task's state is reported and
+  preserved by its checkpoint. The check verifies the wording; the user's panel
+  is reported as a limit.
+
+```sh
+failures=0
+grep -q "A new task starts a new list" AGENTS.md || { echo "FAIL V2.58: no reset rule in AGENTS.md"; failures=1; }
+grep -q "no item of a previous task remains" AGENTS.md || { echo "FAIL V2.58: no removal rule in AGENTS.md"; failures=1; }
+grep -q "Task boundary and reset" workflows/session-resilience.md || { echo "FAIL V2.58: no reset section"; failures=1; }
+grep -q "An unfinished previous task is not carried over" workflows/session-resilience.md || { echo "FAIL V2.58: no unfinished-task path"; failures=1; }
+grep -q "Task boundary and reset" workflows/task-to-code.md || { echo "FAIL V2.58: no reset instruction in task-to-code.md"; failures=1; }
+grep -q "A new task starts a new list" agents/orchestrator.md || { echo "FAIL V2.58: no reset instruction in orchestrator.md"; failures=1; }
+grep -q "M-40" references/mandatory-rules.md || { echo "FAIL V2.58: no M-40"; failures=1; }
+grep -q "R-80" references/system-workflow-regression-matrix.md || { echo "FAIL V2.58: no R-80"; failures=1; }
 exit "$failures"
 ```

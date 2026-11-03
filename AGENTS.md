@@ -405,6 +405,16 @@ of the phase, a step completed, a step blocked, a newly discovered step,
 each user turn while the phase is open, and the end of the phase. Holding
 it back until the task or the phase is finished is a defect.
 
+**A new task starts a new list.** When a new task begins, the checklist and
+its native mirror are rewritten in full from that task's own phase plan,
+before its first tool call: no item of a previous task remains, even when that
+task is unfinished, and what they show is the state of the work at that moment
+— done, in progress, and pending — never an accumulation of earlier tasks. An
+unfinished previous task is reported in the conversation and preserved by its
+checkpoint instead of staying in the new task's panel. The reset is a task
+boundary and never a mid-task one: inside one task a completed phase keeps its
+completed steps.
+
 When the client exposes a native task or todo surface — for example a
 `todowrite` tool that renders a persistent todo panel — the mirror is
 **mandatory, not optional**: it is populated with the first checklist and

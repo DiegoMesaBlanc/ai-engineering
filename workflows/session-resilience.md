@@ -452,6 +452,37 @@ Rules:
 - A phase that ends with pending steps reports them, so the next session
   resumes from the same place.
 
+### Task boundary and reset
+
+The checklist and the native mirror describe **the work in progress**, so they
+never accumulate across tasks. A new task starts a new list.
+
+- **A new task rewrites the list.** Before the first tool call of the new task,
+  the checklist and the panel are written from that task's own phase plan and
+  the initial checklist of its first phase. Every item of the previous task is
+  removed, including a phase marked `[ x ]` and a step that was left pending.
+- **An unfinished previous task is not carried over.** Its state is reported
+  once in the conversation — where it stopped, its pending steps, and its
+  resume point — and preserved by its checkpoint. It is never left in the panel
+  of the new task, and the new task inherits none of its phases, steps, or
+  completion state.
+- **The list shows the moment.** What it contains is the state of the current
+  task right now: the phases of its plan, the steps of the phase in progress,
+  and the state each one has. An item that describes work of another task is a
+  defect, even when it is marked `[ x ]`.
+- **The reset is a task boundary, never a mid-task reset.** Inside one task a
+  completed phase keeps its completed steps, and the panel is never truncated
+  to the phase in progress. Refining the scope of the same task is not a new
+  task: the plan is refined, presented, and approved again, and the checklist
+  is updated instead of replaced.
+
+**What counts as a new task.** A request whose objective differs from the task
+in progress — a different ticket, a different project, or an explicit new
+instruction — is a new task. A continuation, a correction, or a refinement of
+the task in progress is not. When a request could be either, the first update
+states which one the agent is treating it as, so the list never mixes two
+tasks.
+
 ### Native task surfaces
 
 When the client exposes a native task or todo surface — a `todowrite` tool
@@ -482,8 +513,9 @@ the top-level items. It is one flat list, populated in this order:
    own item prefixed with the phase number (for example `2.3 Wiring the
    session endpoint`), with the same state as the conversation;
 3. a step discovered later is inserted in execution order, and a completed
-   phase keeps its completed steps in the list, so nothing that was done
-   disappears from the panel.
+   phase keeps its completed steps in the list, so nothing that was done in
+   this task disappears from the panel. A new task replaces the whole list, per
+   **Task boundary and reset** above.
 
 A list that carries only phases, or only the steps of the last phase, is an
 incomplete mirror and a defect. The mirror is rewritten in full on every

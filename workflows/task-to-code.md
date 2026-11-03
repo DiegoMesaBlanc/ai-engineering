@@ -12,6 +12,13 @@ phase plan and the initial checklist of the first phase are shown, per
 `workflows/session-resilience.md` ("Phase Plan"). A command is an adapter that
 restates the obligation; it is never the condition for it.
 
+**A new task starts a new list.** The phase plan, the checklist, and their
+client mirror are rewritten from this task's own plan before its first tool
+call: nothing from a previous task remains in them, even when that task is
+unfinished, and an unfinished previous task is reported in the conversation and
+preserved by its checkpoint. The full procedure is in
+`workflows/session-resilience.md` ("Task boundary and reset").
+
 ## Phase 1 — Detect
 
 **Read the applicable learnings first.** Before any analysis or
