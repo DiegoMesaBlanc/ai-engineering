@@ -473,6 +473,23 @@ visible without reading every message.
 - A surface that only a client plugin can extend is reported as such, with the
   plugin as the path, instead of being simulated or described as done.
 
+**Content of the mirror.** The panel must show the **whole** work, never only
+the top-level items. It is one flat list, populated in this order:
+
+1. every **phase** of the phase plan, with its state (`pending`, `in_progress`,
+   `completed`), so the position in the task is always visible;
+2. under the phase in progress, every **step** of its checklist, each as its
+   own item prefixed with the phase number (for example `2.3 Wiring the
+   session endpoint`), with the same state as the conversation;
+3. a step discovered later is inserted in execution order, and a completed
+   phase keeps its completed steps in the list, so nothing that was done
+   disappears from the panel.
+
+A list that carries only phases, or only the steps of the last phase, is an
+incomplete mirror and a defect. The mirror is rewritten in full on every
+call (the surface replaces its state), so each call must contain the complete
+list, not a delta.
+
 The mirror never replaces the cadence above: it makes the same checklist
 persistent, and an out-of-date mirror is corrected on the next transition
 rather than trusted.
