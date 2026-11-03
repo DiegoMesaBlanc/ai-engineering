@@ -448,6 +448,12 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
   with the failing command and its output, and is never reported as complete
   with observations. A green build or a green subset of tests does not replace
   these gates.
+- Code that a task creates is delivered only when every applicable dimension
+  of the audit matrix is `PASS` against `references/audit-pass-criteria.md`.
+  `WARN` remains an auditor state for non-defect observations, but it is not an
+  accepted terminal state for code the task creates. Applicability is decided
+  against the approved requirement; an inapplicable dimension is `N/A` with a
+  reason.
 - Run the structural compliance check in `workflows/output-compliance.md` over
   the change set before reporting a task as implemented. It verifies the
   mechanical rules that prose cannot enforce: arrow functions over `function`

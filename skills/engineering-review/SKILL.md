@@ -170,6 +170,12 @@ Before finalizing a finding:
    commit, is out of scope.
 6. Avoid duplicating findings that describe the same root cause.
 
+7. Do not demote a violation of a criterion in `references/audit-pass-criteria.md`
+   that the reviewed change introduces. Context can establish that the code is
+   not a violation, that the violation pre-dates the change, or that the
+   requirement does not apply. It cannot turn a real violation into an
+   observation or a `WARN`.
+
 If the evidence is insufficient, omit the finding or place the concern in a
 separately marked section requiring human verification. Do not invent line
 numbers, test results, runtime behavior, requirements, or design

@@ -383,6 +383,12 @@ Provide a concise implementation plan including:
   with its environments, gates, and deployment stages
 - validation
 - risks
+- for each file or unit the change creates or modifies, the criteria of
+  `references/audit-pass-criteria.md` that apply and how the design meets
+  them (for example, which port the consumer depends on, where the composition
+  root wires the concrete implementation, which bound applies to retained
+  data, which timeout applies to each attempt, and which test covers each
+  error path)
 
 The depth of the task plan follows its rigor level: R1 Brief for trivial and low
 tasks, R2 Moderate for medium tasks, R3 Complex for high tasks, and R4
@@ -568,6 +574,17 @@ Review the resulting implementation for:
 - maintainability
 - testing
 - scope
+
+**Pre-delivery PASS gate.** Before the task is reported as complete, audit the
+change set against the 14 dimensions of `workflows/code-audit.md`, using the
+criteria in `references/audit-pass-criteria.md`, with the applicability decided
+from the approved requirement. Every applicable dimension must be `PASS`. A
+criterion the change violates is a defect of the task: fix it within the
+approved scope and re-run the gate. If it cannot be fixed within scope, the
+task is `BLOCKED` with the criterion, the file and line, and the reason. A
+violation is never delivered as a `WARN` or as an observation. Pre-existing
+violations outside the change set are recorded as findings and do not block
+the task.
 
 Perform the post-implementation architectural validation defined in
 `skills/architecture-advisor/SKILL.md`: compare the real architecture with

@@ -28,7 +28,7 @@ A clean PASS requires more than "it runs":
 
 ## Applicability-Gated Dimensions
 
-Each dimension maps to an existing Skill. Only applicable dimensions are audited. Every dimension is reported as `PASS` / `WARN` / `FAIL` / `N/A` with an explicit N/A reason.
+Each dimension maps to an existing Skill. Only applicable dimensions are audited. Every dimension is reported as `PASS` / `WARN` / `FAIL` / `N/A` with an explicit N/A reason. For code the audited change creates, every applicable dimension is judged against the criteria in `references/audit-pass-criteria.md`: `PASS` when all criteria hold, `FAIL` when a criterion is violated, and `WARN` only for a non-defect observation that violates no criterion.
 
 | # | Dimension | Responsible Skill(s) | Applies when |
 |---|---|---|---|
@@ -218,7 +218,7 @@ no third mode; it only prevents an audit from missing work that lives outside
 
 For each of the 14 dimensions:
 - Check the "Applies when" condition.
-- If not applicable, mark `N/A` with a concrete reason (e.g., "no database touched", "not a web-facing surface").
+- If not applicable, mark `N/A` with a concrete reason (e.g., "no database touched", "not a web-facing surface"). Applicability is decided against the approved requirement (its scope and non-goals), never against what the auditor observes in the code. A concern that the requirement does not ask for is `N/A`, not a finding.
 - If applicable, queue the dimension for audit.
 
 ### Phase 5 — Load Skills and Audit
@@ -228,6 +228,7 @@ For each applicable dimension:
 - Audit against the Skill's checks and the senior/staff bar.
 - Collect findings with `file:line`, evidence class (REAL/SIMULATED/STATIC), severity (P0–P3), confidence (High/Medium/Low), impact, and recommended correction.
 - Discard unproven findings (no invented line numbers, no fabricated test results).
+- Judge each applicable dimension against `references/audit-pass-criteria.md`. A violated criterion in the audited change is a `FAIL` with the criterion named; it is not reclassified as `WARN`.
 
 **Dimension 1 — Architecture & folder structure: explicit checks**
 
