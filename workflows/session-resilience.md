@@ -494,6 +494,26 @@ The mirror never replaces the cadence above: it makes the same checklist
 persistent, and an out-of-date mirror is corrected on the next transition
 rather than trusted.
 
+**Delegated work.** A subagent runs in its own session, so the panel it writes
+is not the one the user watches in the delegating session. The delegating
+agent mirrors the checklist of delegated work into its own panel:
+
+1. **Before the delegation**, the delegating agent writes the phase plan and
+   the checklist of the delegated phase into its own panel, with the delegated
+   steps pending.
+2. **The delegated prompt** requires the subagent to keep its own checklist on
+   its native surface when it has one, and to return that checklist with every
+   result, in the format above, with the step states.
+3. **On every return**, the delegating agent rewrites its panel in full from
+   the returned checklist, then reports the phase with the checklist leading.
+4. **A subagent with no native surface** returns the checklist in its result.
+   The delegating agent mirrors it the same way.
+5. **A result without a checklist** is incomplete. The delegating agent asks
+   for the checklist before it reports the phase as done.
+
+The delegating agent's panel is the authority for the user. A subagent's own
+panel is a supporting view, and it never replaces step 3.
+
 ### Scope
 
 The checklist covers the phase in progress. It does not replace the phase

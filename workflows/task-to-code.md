@@ -411,6 +411,12 @@ finished. Each step names the artifact it produces. The format, the
 derivation, the cadence, and the client surface are defined in
 `workflows/session-resilience.md` ("Phase Checklist").
 
+**Delegated implementation is mirrored too.** When this phase or one of its
+steps runs in a subagent, the delegating agent mirrors the subagent's checklist
+into its own panel before the delegation and rewrites it from every returned
+checklist, as `workflows/session-resilience.md` ("Delegated work") defines. A
+delegated result with no checklist is incomplete.
+
 **Structural policy — non-negotiable while writing code.** Follow the
 non-negotiable quality baseline in `skills/implementation-recipes/SKILL.md`:
 

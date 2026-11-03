@@ -359,7 +359,11 @@ Every task shows a phase plan before the work starts, including a one-phase
 plan, and carries a live checklist during each phase: it leads every update,
 is refreshed at every step transition rather than only at the end, and is
 mirrored to the client's native task surface when one exists, before each
-mutating step. The obligation is **independent of the entry point** — a
+mutating step. When a phase or step is delegated to a subagent,
+the delegating agent mirrors that subagent's checklist into its own panel
+before the delegation, and rewrites it from every returned checklist, so the
+user sees every phase and step in this session's panel. The procedure is in
+`workflows/session-resilience.md` ("Delegated work"). The obligation is **independent of the entry point** — a
 command, a plain message, a resumed session, or a subagent all start the same
 way — and the plan and the initial checklist precede the first tool call; a
 command restates the obligation, it never creates it. A phase boundary is an approval gate: the system reports the

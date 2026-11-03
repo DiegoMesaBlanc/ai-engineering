@@ -421,6 +421,18 @@ language and framework. The format, the derivation, the cadence, and the
 covered scenarios are defined in `workflows/session-resilience.md` ("Phase
 Checklist").
 
+**Delegated work is mirrored into the delegating agent's panel.** A subagent
+runs in its own session, and the panel it writes is not the one the user
+watches. Delegating work does not delegate the checklist: before the
+delegation, the delegating agent mirrors the phase plan and the checklist of
+every delegated phase and step into its own native task surface, and it
+rewrites that mirror from the checklist the subagent returns on every return.
+Every delegated prompt requires the subagent to keep its own checklist and to
+return it with its result. A subagent with no native surface returns the
+checklist, and the delegating agent mirrors it. A delegated result that
+carries no checklist is incomplete, and the delegating agent asks for it
+before it reports the phase.
+
 If new evidence changes a material requirement or approved design, pause and explain the reason before continuing beyond the approved scope. Otherwise, proceed autonomously.
 
 Use checkpoints for long-running tasks according to `workflows/session-resilience.md`. Do not require the user to restart the terminal as the normal recovery method.

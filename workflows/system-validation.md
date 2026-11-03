@@ -513,6 +513,12 @@ executed by every run of `workflows/system-audit.md` (its Phase 3) and by
 reason and the evidence. Run them over the whole repository, not only the
 changed files.
 
+**Verdict rule.** Several blocks below report a finding as a line that begins
+with `FAIL` and do not always set a non-zero exit status, so the exit status
+is not evidence on its own. The verdict of a block is read from its output:
+any line beginning with `FAIL` is a `FAIL`; no output with a successful
+status is a `PASS`; a block that cannot run is `NOT VERIFIED` with the reason.
+
 ### 6.1 Reference integrity
 
 Every local Markdown link resolves, and every repository file path in
@@ -639,7 +645,7 @@ done
 # The character classes keep this pattern from matching itself.
 grep -rnE '/[t]mp/|/var/[f]olders/|~?/\.[c]onfig/opencode|~?/\.[c]laude' \
   workflows/ references/ skills/ commands/ 2>/dev/null |
-  grep -v 'references/portability.md' |
+  grep -vE 'references/+portability\.md:' |
   grep -v 'README.md' |
   sed 's/^/  /'
 ```
@@ -666,7 +672,9 @@ does not reach every client.
 normalize() { tr '\n' ' ' | tr 'A-Z' 'a-z' | tr '-' ' ' | tr -s ' ' ' '; }
 trim() { sed 's/`//g; s/^[[:space:]]*//; s/[[:space:]]*$//'; }
 
-grep -E '^\| M-[0-9]+ \|' references/mandatory-rules.md |
+# The findings are captured so that the exit status reports them: a FAIL line
+# inside the pipeline would otherwise leave the status at 0.
+reachability_failures=$(grep -E '^\| M-[0-9]+ \|' references/mandatory-rules.md |
 while IFS='|' read -r _ id _ _ anchor surfaces; do
   id="$(printf '%s' "$id" | trim)"
   anchor="$(printf '%s' "$anchor" | trim)"
@@ -682,7 +690,9 @@ while IFS='|' read -r _ id _ _ anchor surfaces; do
       echo "FAIL $id [$anchor] not reachable in: $surface"
     fi
   done
-done
+done)
+printf '%s\n' "$reachability_failures" | sed '/^$/d'
+[ -z "$reachability_failures" ]
 ```
 
 ### 6.6 Retired wordings and duplication
@@ -699,9 +709,10 @@ awk '/^## Superseded Phrasings/{found=1; next} /^## /{found=0} found' \
   sed 's/^ *//; s/ *$//' |
   while read -r retired; do
     [ -z "$retired" ] && continue
-    grep -rqiF "$retired" --include='*.md' . \
-      --exclude='mandatory-rules.md' &&
+    if grep -rqiF "$retired" --include='*.md' . \
+      --exclude='mandatory-rules.md'; then
       echo "FAIL retired wording is back: $retired"
+    fi
   done
 ```
 
@@ -972,6 +983,7 @@ Return:
 - V2.54 live phase checklist and native task surface checks:
 - V2.55 entry-point independence and operating contract checks:
 - V2.56 arrow function scope and legacy code checks:
+- V2.57 delegated work mirrored into the delegating panel checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -2682,5 +2694,39 @@ grep -q "added lines of the change set only" workflows/output-compliance.md || {
 grep -q "finding, not a gate failure" workflows/project-validation.md || { echo "FAIL V2.56: gate does not exempt pre-existing"; failures=1; }
 grep -q "M-01" references/mandatory-rules.md || { echo "FAIL V2.56: no M-01"; failures=1; }
 grep -q "R-78" references/system-workflow-regression-matrix.md || { echo "FAIL V2.56: no R-78"; failures=1; }
+exit "$failures"
+```
+
+## V2.57 Regression — Delegated Work Mirrored Into the Delegating Panel
+
+Verify that a delegated phase or step is visible in the panel of the agent the
+user is talking to, not only in the subagent's own session:
+
+- `AGENTS.md` states that delegated work is mirrored into the delegating
+  agent's panel and that a delegated result without a checklist is incomplete.
+- `workflows/session-resilience.md` carries **Delegated work** with the five
+  steps: the mirror before the delegation, the prompt that requires the
+  checklist, the rewrite on every return, the no-native-surface path, and the
+  incomplete result.
+- `workflows/task-to-code.md` and `agents/orchestrator.md` carry the operational
+  instruction, referencing the session-resilience section instead of restating
+  it.
+- `references/mandatory-rules.md` includes M-38 and
+  `references/system-workflow-regression-matrix.md` includes R-79.
+- Proof: a delegation to a subagent produces a returned checklist, the
+  delegating panel is rewritten from it, and a return without a checklist is
+  rejected. The check verifies the wording; it cannot observe the user's panel,
+  which is reported as a limit.
+
+```sh
+failures=0
+grep -qi "the delegating agent mirrors" AGENTS.md || { echo "FAIL V2.57: no M-38 wording in AGENTS.md"; failures=1; }
+grep -q "is incomplete" AGENTS.md || { echo "FAIL V2.57: no incomplete-result rule in AGENTS.md"; failures=1; }
+grep -q "Delegated work" workflows/session-resilience.md || { echo "FAIL V2.57: no delegated work section"; failures=1; }
+grep -q "is incomplete" workflows/session-resilience.md || { echo "FAIL V2.57: no incomplete rule in session-resilience.md"; failures=1; }
+grep -qi "the delegating agent mirrors" workflows/task-to-code.md || { echo "FAIL V2.57: no delegation instruction in task-to-code.md"; failures=1; }
+grep -qi "the delegating agent mirrors" agents/orchestrator.md || { echo "FAIL V2.57: no delegation instruction in orchestrator.md"; failures=1; }
+grep -q "M-38" references/mandatory-rules.md || { echo "FAIL V2.57: no M-38"; failures=1; }
+grep -q "R-79" references/system-workflow-regression-matrix.md || { echo "FAIL V2.57: no R-79"; failures=1; }
 exit "$failures"
 ```
