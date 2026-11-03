@@ -375,6 +375,11 @@ executed check is represented accurately.
 
 Explain the reason and the minimum next step.
 
+A failing formatter, linter, typecheck, or test on the change set is never
+reported as a passing validation. The task is not reported as complete while
+those gates fail (M-37): the status is `VALIDATION FAILED` or `VALIDATION
+BLOCKED`, and the failing command and its output are reported.
+
 ## Safety
 
 This workflow validates and configures mandatory formatting and linting;

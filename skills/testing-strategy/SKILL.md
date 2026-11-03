@@ -533,9 +533,40 @@ Choose the validation status defined in `workflows/project-validation.md`
 
 Explain the smallest necessary next step.
 
-## 14. Completion Rule
+## 14. Criterion Traceability
+
+Each acceptance criterion is verified by at least one test that exercises the
+behavior through its real entry point: the HTTP route, the CLI command, the
+public function of the module, or the rendered UI. A test that only exercises
+an internal helper does not verify a criterion that is stated at the entry
+point.
+
+- Map every criterion to the test that verifies it, by name and file.
+- A test name that claims a behavior must exercise that behavior. Example: a
+  test named "slides on authenticated activity" must send activity through
+  every authenticated route the requirement covers, not only one of them.
+- When a registry or configuration table is the source of truth for another
+  artifact (for example, declared routes against a permission matrix), add a
+  test that asserts the two agree, so drift fails instead of passing silently.
+- Report every criterion without a verifying test as not verified.
+
+## 15. Runtime Version
+
+Before running the validation commands, detect the runtime the project pins
+(`.nvmrc`, `engines` in `package.json`, `.python-version`, `go.mod`, or the
+ecosystem equivalent) and use that version. A test failure caused by the wrong
+runtime is an environment problem, not a passing or failing result, and it is
+reported as such.
+
+## 16. Completion Rule
 
 A task is not automatically complete because the code compiles.
 
 Completion requires appropriate validation, review of the changed behavior,
 and honest reporting of remaining risks and unexecuted checks.
+
+A task is not reported as complete while formatting, linting, typecheck, or
+tests fail on the change set. A failing gate sets the task to `BLOCKED`, with
+the failing command and its output, and is never reported as complete with
+observations. A green build or a green subset of tests does not replace these
+gates (M-37).

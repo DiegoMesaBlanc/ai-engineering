@@ -431,6 +431,11 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
 - Code, identifiers, comments, JSDoc, and TSDoc must be in English.
 - Human interaction may be in Spanish or English.
 - Test and validate changes using available project tooling.
+- A task is not reported as complete while formatting, linting, typecheck, or
+  tests fail on the change set. A failing gate sets the task to `BLOCKED`,
+  with the failing command and its output, and is never reported as complete
+  with observations. A green build or a green subset of tests does not replace
+  these gates.
 - Run the structural compliance check in `workflows/output-compliance.md` over
   the change set before reporting a task as implemented. It verifies the
   mechanical rules that prose cannot enforce: arrow functions over `function`

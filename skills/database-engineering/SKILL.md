@@ -75,6 +75,16 @@ tool, or schema style without a justified reason and human approval.
 - Test migrations against realistic data, including rollback, before
   applying them to shared environments.
 - Never edit an already-applied migration; add a new one.
+- A migrated database must end with the same schema as a fresh install:
+  columns, types, defaults, `CHECK` constraints, indexes, and foreign keys. An
+  `ALTER TABLE ... ADD COLUMN` that omits a constraint the fresh schema has
+  leaves two schemas that behave differently. Compare both schemas (for
+  example with `PRAGMA table_info` and `sqlite_master` in SQLite, or the
+  equivalent introspection) and report any difference as a finding.
+- Verify a migration on a copy of a database created by the previous schema,
+  and run it twice to confirm it is idempotent. Report the result as evidence;
+  a migration that was not run against an existing database is reported as not
+  verified.
 
 ## Queries and Performance
 

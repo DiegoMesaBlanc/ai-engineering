@@ -188,6 +188,35 @@ Set-Cookie: session=abc123; Secure; HttpOnly; SameSite=Strict; Path=/
 
 ---
 
+## Session lifecycle
+
+Cookie flags protect the transport. The session lifecycle decides how long a
+credential stays valid, and it is checked separately. For every
+authenticated application, verify:
+
+- **Server-side state.** The session identifier is random, opaque, and
+  resolves to server-side state. The identifier carries no user data.
+- **Idle timeout.** An inactive session expires after a bounded idle period.
+- **Absolute timeout.** A session expires after a bounded total lifetime,
+  even when it is active, so a stolen identifier has a limited life.
+- **Sliding renewal.** Every authenticated request that the requirement
+  covers renews the idle timer, not only one route. A renewal limited to a
+  single route makes active users expire while they use the application.
+  Test renewal through each covered route.
+- **Enforcement point.** Expiry is checked where access is decided, before the
+  handler runs, and an expired session is removed and rejected with a stable
+  error code.
+- **Rotation.** A new session identifier is issued at login and at any
+  privilege change, and the previous identifier is invalidated.
+- **Logout.** Logout destroys the server-side state, not only the cookie.
+- **Cookie flags.** `Secure`, `HttpOnly`, `SameSite`, and a `Max-Age` or
+  `Expires` that matches the server-side policy.
+
+A missing item is a security finding, reported with its file and line, and it
+is not deferred silently.
+
+---
+
 ## Sources
 
 - [MDN web security](https://developer.mozilla.org/en-US/docs/Web/Security)

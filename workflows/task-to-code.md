@@ -489,6 +489,17 @@ Load `skills/testing-strategy/SKILL.md`.
 6. Record commands, outcomes, and limitations.
 7. Report failures and checks that were not executed.
 8. Never claim that validation passed without evidence.
+9. A task is not reported as complete while formatting, linting, typecheck,
+   or tests fail on the change set (M-37). A failing gate sets the task to
+   `BLOCKED`, with the failing command and its output. Fix the failure within
+   the approved scope, or report `BLOCKED` and ask; never report the task as
+   complete with the failure listed as an observation.
+10. Verify each acceptance criterion against a test that exercises the
+    behavior through its real entry point, not through an internal helper
+    (see `skills/testing-strategy/SKILL.md`, "Criterion Traceability").
+11. Run the project's validation commands with the runtime version the project
+    pins (`.nvmrc`, `engines`, or the equivalent). If the active runtime differs,
+    switch to the pinned version before running them.
 
 When the change set touches CI/CD, security, or delivery configuration,
 follow `workflows/secure-delivery.md` for scoped delivery checks and

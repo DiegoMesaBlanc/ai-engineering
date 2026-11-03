@@ -184,6 +184,15 @@ There are exactly two modes. Do not add a third.
 2. **`--all` — the whole project.** Audit every application source file in the
    current working tree, including uncommitted changes.
 
+**Dirty-tree guard.** Before the default mode is applied, run
+`git status --porcelain=v1`. When it lists staged, unstaged, or untracked
+changes, the last commit does not contain the work under review. Do not audit
+the last commit silently: state the uncommitted and untracked files, and ask
+the user whether the scope is the last commit, `--all`, or explicit paths.
+The Scope Manifest lists those files and records the choice. This guard adds
+no third mode; it only prevents an audit from missing work that lives outside
+`HEAD`.
+
 - **The audited scope is never expanded.** Declaration sites outside it are
   read-only context: read them with `git show <sha>:<path>` in commit mode, or
   from the working tree in `--all`; they are not audited and their issues are

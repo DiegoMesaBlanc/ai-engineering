@@ -81,6 +81,10 @@ State each acceptance criterion so it can be verified: observable behavior,
 or a specific artifact or command. Derive criteria from the task and from
 repository evidence. Never invent acceptance criteria.
 
+For each criterion, name the test that will verify it through the real entry
+point (see `skills/testing-strategy/SKILL.md`, "Criterion Traceability"). A
+criterion with no planned verifying test is stated as a gap in the plan.
+
 ## Step 4 — Assumptions, Risks, and Unknowns
 
 Separate facts from assumptions. Make material assumptions, risks, and
