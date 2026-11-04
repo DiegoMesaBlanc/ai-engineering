@@ -533,6 +533,20 @@ visible without reading every message.
 - A surface that only a client plugin can extend is reported as such, with the
   plugin as the path, instead of being simulated or described as done.
 
+**Client prerequisite (OpenCode).** The `todowrite` tool is registered only
+when the client's experimental todo flag is enabled. In the user's global
+OpenCode configuration (`~/.config/opencode/opencode.jsonc`) the tool needs
+both entries, and their absence hides the panel for every model and agent:
+
+- `"experimental": { "todo": true }` — registers the tool; the schema describes
+  it as "Enable the experimental todowrite tool. Defaults to false."
+- `"permission": { "todowrite": "allow" }` — allows its use.
+
+A session that cannot see `todowrite` reports the missing prerequisite and
+does not claim that the panel is updated. The configuration is outside this
+repository, so its presence is verified by `opencode debug config`, not by the
+repository checks.
+
 **Content of the mirror.** The panel must show the **whole** work, never only
 the top-level items. It is one flat list, populated in this order:
 
