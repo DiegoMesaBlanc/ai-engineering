@@ -34,6 +34,36 @@ Proportionality applies to planning rigor and test depth, never to the
 quality of the delivered code. Do not implement a task in a junior way
 because it looks simple.
 
+### Failure Modes the Baseline Must Catch
+
+The concrete, testable criteria are canonical in
+`references/audit-pass-criteria.md`. Apply them while writing code, not only
+at the delivery gate. The failure modes most often missed by a first
+implementation are:
+
+- **Failure isolation in async chains**: a queue, pipeline, or chained
+  promise must not stop processing after one rejected step. Catch and record
+  the failure inside the step, or chain a handler that keeps the chain alive.
+- **Bounded growth**: every in-memory queue, buffer, cache, or retained
+  personal data has an explicit cap (size, count, or time) and a defined
+  behavior at the cap (reject, drop with record, or dead-letter).
+- **Explicit timeouts**: every external call or attempt has its own timeout;
+  a retry loop never waits on a shared worker in a way that stalls independent
+  work.
+- **Error paths tested**: each thrown error, failed dependency, rejected
+  input, failed transaction, and rollback the change introduces has a test
+  through its real entry point. A rollback path without a test is not done.
+- **Shutdown and resource release**: a unit that owns a queue, connection, or
+  worker has a tested stop path that drains or releases it within a bound
+  that matches the documented contract.
+- **Errors keep their cause**: a catch block records the reason it handled.
+  An empty `catch {}` is a defect; a dead-letter record without the cause is
+  incomplete.
+- **One reason to change per unit**: a unit that queues, retries, records
+  dead letters, and logs at once is split by responsibility before delivery.
+- **Contract and documentation agree**: a documented bound, timeout, or
+  shutdown guarantee matches the code, or the contract is corrected.
+
 ## General Procedure
 
 1. Detect the stack, versions, and existing conventions (see

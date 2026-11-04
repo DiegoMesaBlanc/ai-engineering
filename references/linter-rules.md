@@ -52,6 +52,7 @@ export default defineConfig([
         },
       ],
       "@typescript-eslint/consistent-type-imports": "error",
+      "no-empty": ["error", { allowEmptyCatch: false }],
     },
   },
 ]);
@@ -60,6 +61,12 @@ export default defineConfig([
 For a JavaScript-only project, drop the `typescript-eslint` import and the
 rule that depends on it; keep `func-style` and `no-restricted-syntax`, which
 are core rules.
+
+- `no-empty` with `allowEmptyCatch: false` is an ESLint core rule. It rejects
+  an empty `catch {}` block, which is the mechanical part of the rule that
+  errors are never silently discarded. It does not verify that a catch records
+  its cause or that a queue is bounded; those criteria remain in
+  `references/audit-pass-criteria.md` and the review gate.
 
 - `func-style` and `no-restricted-syntax` are **ESLint core rules**. They
   express the arrow function convention and need no project code.

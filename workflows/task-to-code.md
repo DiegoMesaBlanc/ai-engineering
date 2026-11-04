@@ -603,6 +603,23 @@ violation is never delivered as a `WARN` or as an observation. Pre-existing
 violations outside the change set are recorded as findings and do not block
 the task.
 
+**Evidence per criterion.** The gate result is reported as a table with one
+row per applicable criterion of `references/audit-pass-criteria.md`: the
+criterion, the verdict, and the evidence (`file:line`, the test name that
+covers each error path, or the executed command). A dimension marked `PASS`
+without this table is not `PASS`, and the report is incomplete. Every
+criterion in section 7 (testing) names the test that exercises it through its
+real entry point. A criterion that cannot be evidenced is `NOT VERIFIED`, and
+the task is not reported as complete while any applicable criterion is
+`NOT VERIFIED`.
+
+**Independence of the gate.** The gate is the implementer's self-check. It is
+not an independent audit. When the change set is High or Critical, or when the
+user asks for an audit, the independent audit defined in
+`workflows/code-audit.md` (Independent Mode) runs in a fresh session or as the
+`external-auditor` subagent, and it is not run in the session that implemented
+the change.
+
 Perform the post-implementation architectural validation defined in
 `skills/architecture-advisor/SKILL.md`: compare the real architecture with
 the proposal and the approved decision, in addition to the functional
