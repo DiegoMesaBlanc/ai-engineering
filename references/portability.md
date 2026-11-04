@@ -92,6 +92,22 @@ there. When the global directory already exists and holds other Skills, link
 only the canonical ones that are missing, and never overwrite a name that
 already exists.
 
+### Client prerequisites for the native task surface
+
+The "first action of every prompt" rule in `AGENTS.md` reaches every client
+through its instruction file. The client also needs its task tool enabled:
+
+| Client | Instruction file | Task tool | Prerequisite |
+|---|---|---|---|
+| OpenCode | `AGENTS.md` via the global config link | `todowrite` | `integrations/opencode/opencode.example.jsonc`: `experimental.todo` and `permission.todowrite` |
+| Claude Code | `CLAUDE.md` importing `@AGENTS.md` | the client's todo tool | verify in the client's tool list |
+| Codex CLI | `AGENTS.md` from the repository root | the client's plan tool | verify in the client's tool list |
+
+When a client has no equivalent tool, the rule still applies: the agent says
+so instead of skipping the list silently. The prerequisites are verified
+with the client's own config inspection (`opencode debug config` for
+OpenCode), never assumed.
+
 ## Degradation rules
 
 - A tool the environment does not have makes its check `NOT VERIFIED`, with

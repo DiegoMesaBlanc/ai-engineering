@@ -313,6 +313,18 @@ Hard rules:
 
 ## Progress Updates and Phase Gates
 
+**First action of every prompt: the native task surface.** For every user
+prompt — an action, a task, a question, or a correction — the first action
+is to write the list of the work to the client's native task surface, before
+any other tool call or any text answer. Use the client's task or plan tool:
+`todowrite` in OpenCode, and the equivalent in another client, found in its
+own tool list. The list is rewritten in full on every call, so the surface
+never trails the conversation. A prompt with no file change still gets a
+one-item list, set to `completed` with the answer. Reporting that a native
+surface is absent, instead of skipping it silently, is required when no such
+tool exists in the client. The procedure is in `workflows/session-resilience.md`
+("Native task surfaces").
+
 During implementation, provide concise status updates at meaningful milestones: requirements and approach aligned, implementation milestone completed, important new finding or decision required, validation results, final diff and completion summary. Each update must explain what changed, the evidence available, and the next step. An update inside a phase is not a request for approval; a phase boundary is.
 
 **Show the phase plan before the work starts, in every task, without
