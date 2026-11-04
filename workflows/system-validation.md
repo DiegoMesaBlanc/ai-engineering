@@ -2627,6 +2627,9 @@ grep -q "every step transition" workflows/task-to-code.md || { echo "FAIL V2.54:
 grep -q "every step transition" agents/orchestrator.md || { echo "FAIL V2.54: no cadence in orchestrator.md"; failures=1; }
 grep -q "M-35" references/mandatory-rules.md || { echo "FAIL V2.54: no M-35"; failures=1; }
 grep -q "R-76" references/system-workflow-regression-matrix.md || { echo "FAIL V2.54: no R-76"; failures=1; }
+grep -q "Encoding in the flat list" workflows/session-resilience.md || { echo "FAIL V2.54: no flat-list encoding rule"; failures=1; }
+grep -q "step never uses a phase label" workflows/session-resilience.md || { echo "FAIL V2.54: no ban on phase labels as step prefixes"; failures=1; }
+grep -q "Cadence of the mirror" workflows/session-resilience.md || { echo "FAIL V2.54: no per-step mirror cadence"; failures=1; }
 exit "$failures"
 ```
 

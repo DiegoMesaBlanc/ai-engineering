@@ -551,6 +551,25 @@ incomplete mirror and a defect. The mirror is rewritten in full on every
 call (the surface replaces its state), so each call must contain the complete
 list, not a delta.
 
+**Encoding in the flat list.** The `todowrite` surface accepts only
+`content` and `status` per item, with no parent field. The hierarchy is
+therefore encoded in the text, and it is fixed:
+
+- a phase is `N. <phase name>`, for example `2. Implement`;
+- a step is `N.M <artifact it produces>`, for example `2.3 session endpoint
+  in src/auth/session.ts`, always under its phase and always with the number
+  of its phase;
+- the status of a phase or step is the status of the list item: `pending`,
+  `in_progress`, or `completed`; a blocked step is `in_progress` with the
+  reason written after the artifact, and the conversation shows `[ ! ]`;
+- a step never uses a phase label such as `F1:` or `Phase 1 check`; the
+  number pair `N.M` is what the user reads to follow the work.
+
+**Cadence of the mirror.** The mirror is rewritten before each mutating step
+and after each step completes, blocks, or is added, so the panel never trails
+the conversation by a step. Rewriting it only at the phase boundary is a
+defect.
+
 The mirror never replaces the cadence above: it makes the same checklist
 persistent, and an out-of-date mirror is corrected on the next transition
 rather than trusted.
