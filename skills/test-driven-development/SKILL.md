@@ -65,6 +65,36 @@ For new behavior, prefer:
 A test that fails for an unrelated setup error does not establish that the
 intended behavior is missing.
 
+### The Iron Law
+
+For new or changed behavior and for every reproducible bug fix:
+
+```
+A BEHAVIOR CHANGE OR BUG FIX IS NOT COMPLETE UNTIL A TEST THAT CAPTURES IT
+HAS BEEN RUN AGAINST THE CODE AS IT WAS, AND THAT TEST FAILED FOR THE
+EXPECTED REASON
+```
+
+- A test that was never seen failing does not prove the behavior it names.
+  Run it, read the failure, and confirm it is the behavior that is missing.
+- If implementation already exists, the test characterizes it first: write
+  it, run it against the existing implementation, and record the result. Do
+  not delete or silently rewrite that implementation: the Existing
+  Implementation rules below govern it.
+- Exceptions (documentation, formatting, generated files, configuration
+  without behavior, throwaway prototypes) are declared with their reason, not
+  assumed.
+
+Recurring rationalizations, and what they actually mean:
+
+| Rationalization                              | Reality                                                                                  |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| "It is too simple to test"                   | Simple code breaks too, and a focused test is cheap to write and run.                   |
+| "I will add the test after the code works"   | A test written after passing code has never shown it can fail, so it proves little.      |
+| "I already checked it manually"              | Manual checks leave no record and cannot be rerun on the next change.                    |
+| "The test only needs to pass this once"      | A regression test that is not kept protects nothing on the next change.                 |
+| "The focused test passes, so the suite does" | Only the executed suite supports that claim. See Verification Before Completion below. |
+
 ## Existing Implementation and Workspace Safety
 
 If implementation code already exists before a test is written:
@@ -321,6 +351,42 @@ If a meaningful automated test is not feasible, use an appropriate
 alternative validation method and document the limitation.
 
 Never modify or delete unrelated code merely to follow a testing ritual.
+
+### Root Cause Before Fix
+
+Do not propose or apply a fix until the root cause is established:
+
+1. **Read the failure completely**: the full message, the stack trace, and the
+   file and line numbers. Do not skip warnings.
+2. **Reproduce it consistently**. If it is not reproducible, gather more data
+   instead of guessing.
+3. **Check recent changes**: the diff, recent commits, dependencies, config,
+   and environment differences.
+4. **Trace the data backwards** to the point where the bad value or state
+   first appears, and fix it there rather than at the symptom. At component
+   boundaries in a multi-layer system, record what enters and leaves each
+   layer to locate the layer that fails.
+5. **State one hypothesis** ("X is the root cause because Y") and test it with
+   the smallest change that can confirm or refute it. One variable at a time.
+6. **Fix once, with a regression test** written and run first (Iron Law above).
+
+If a hypothesis fails, form a new one from the new evidence. After three failed
+fixes, report the evidence gathered so far: the repeated failure usually points
+to an architectural problem (shared state, coupling, or a pattern that fights
+the design). If the evidence confirms that, apply the architecture Human
+Decision Gate in `AGENTS.md` instead of attempting another fix on assumption.
+
+## Verification Before Completion
+
+A claim of success requires evidence from this run, not from memory or an
+earlier run:
+
+- Before reporting "passing", execute the command and read its full output,
+  including the exit status.
+- A green focused test is not a green suite. Run the project's own test command
+  (or its CI-equivalent subset) when the change can affect other tests. Report
+  any failure by name, including failures the change did not cause.
+- If a check cannot run, say so and name the reason. Never write "should pass".
 
 ## Final Rule
 

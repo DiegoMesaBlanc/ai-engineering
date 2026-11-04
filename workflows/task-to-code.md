@@ -179,7 +179,7 @@ If software implementation:
 1. Understand business objective, task/design/repo context.
 2. Identify acceptance criteria, constraints, non-goals, material unknowns.
 3. Infer routine technical details from codebase, conventions, official docs, policies.
-4. Ask concise questions only for important business requirements missing/conflicting/cannot be inferred. Do not ask about choices inferrable from evidence or already available.
+4. Ask concise questions only for important business requirements missing/conflicting/cannot be inferred. Do not ask about choices inferrable from evidence or already available. Ask **one question at a time**. For each question, state the recommended option, the main trade-off, and the reason the answer changes what gets built. When a default was inferred, state it explicitly as a proposal so the user can reject it; never apply an undeclared default.
 5. Present concise summary of agreed behavior and proposed approach.
 6. Confirm alignment before implementation.
 

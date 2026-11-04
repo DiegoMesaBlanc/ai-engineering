@@ -99,6 +99,11 @@ are written for. When the environment does not provide one, the check is
 Every check reports `PASS`, `FAIL`, or `NOT VERIFIED` with the reason and the
 evidence. A `FAIL` is a defect of the system's own artifact.
 
+A reinforcement of an engineering discipline adopted from an external
+methodology is audited with a behavioral scenario, as `AGENTS.md` requires for
+M-42: the case the discipline must catch, the procedure run against it, and the
+removal probe that proves the check detects a missing step.
+
 The adjustment adds one check of its own:
 
 ### 3.1 Coverage (adjustment-specific)

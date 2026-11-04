@@ -104,6 +104,28 @@ Distinguish among:
 
 Never infer successful execution from the existence of a test file.
 
+## Responding to Review Feedback
+
+When the user receives review comments on their own change, prepare copy-ready
+replies. Do not publish them and do not change code without the user's request.
+
+For each comment:
+
+1. **Verify before agreeing.** Read the cited code and the surrounding callers,
+   then reproduce or test the claim when it is behavioral. Accept it only when
+   the evidence supports it.
+2. **Classify the response**: accepted and fixed, accepted and deferred (with a
+   reason and a follow-up), declined with evidence, or needs clarification.
+3. **Push back with evidence** when the comment is wrong. Cite the test, the
+   requirement, or the code that shows the actual behavior.
+4. **Avoid performative agreement.** Do not reply "good catch" or "you're
+   right" before the claim has been checked. Reply with what was verified.
+5. **Keep the scope.** A request for an unrelated change is a new item, not an
+   implicit requirement of this PR.
+
+Output one block per comment: the comment reference, the verdict, the evidence,
+and the reply text.
+
 ## Strict Read-Only Policy
 
 Do not:

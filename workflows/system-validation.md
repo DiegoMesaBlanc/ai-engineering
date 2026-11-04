@@ -985,6 +985,7 @@ Return:
 - V2.56 arrow function scope and legacy code checks:
 - V2.57 delegated work mirrored into the delegating panel checks:
 - V2.58 new task starts a new list checks:
+- V2.59 discipline reinforcement behavioral scenario checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -2763,5 +2764,43 @@ grep -q "Task boundary and reset" workflows/task-to-code.md || { echo "FAIL V2.5
 grep -q "A new task starts a new list" agents/orchestrator.md || { echo "FAIL V2.58: no reset instruction in orchestrator.md"; failures=1; }
 grep -q "M-40" references/mandatory-rules.md || { echo "FAIL V2.58: no M-40"; failures=1; }
 grep -q "R-80" references/system-workflow-regression-matrix.md || { echo "FAIL V2.58: no R-80"; failures=1; }
+exit "$failures"
+```
+
+## V2.59 Regression — Discipline Reinforcement Requires a Behavioral Scenario
+
+Verify that the disciplines adopted from an external methodology are present in
+their canonical Skills and workflows, that the rule requiring a behavioral
+scenario before a reinforcement is accepted is stated and registered, and that
+the audit can prove the scenario by removing a required step:
+
+- `AGENTS.md` states the rule (M-42) with the phrase `behavioral scenario`.
+- `skills/test-driven-development/SKILL.md` carries the Iron Law, the Root
+  Cause Before Fix procedure, and Verification Before Completion.
+- `skills/pull-request/SKILL.md` carries Responding to Review Feedback.
+- `workflows/task-to-code.md` Phase 5 asks one question at a time with a
+  recommendation.
+- `references/mandatory-rules.md` includes M-42 and
+  `references/system-workflow-regression-matrix.md` includes R-81.
+- Proof: a copy of the repository in which the Iron Law section is removed is
+  detected by this check with `file:line` evidence, and the unmodified
+  repository passes. The behavioral audit runs both halves in a temporary
+  directory.
+
+The check takes the repository root as its argument and defaults to the current
+directory, so the removal probe can run against a copy.
+
+```sh
+root="${1:-.}"
+failures=0
+grep -q "behavioral scenario" "$root/AGENTS.md" || { echo "FAIL V2.59: M-42 is not stated in AGENTS.md"; failures=1; }
+tdd="skills/test-driven-development/SKILL.md"
+grep -q "^### The Iron Law" "$root/$tdd" || { echo "FAIL V2.59: $tdd is missing '### The Iron Law' section (expected after the Red-Green-Refactor overview)"; failures=1; }
+grep -q "^### Root Cause Before Fix" "$root/$tdd" || { echo "FAIL V2.59: $tdd is missing '### Root Cause Before Fix' section"; failures=1; }
+grep -q "^## Verification Before Completion" "$root/$tdd" || { echo "FAIL V2.59: $tdd is missing '## Verification Before Completion' section"; failures=1; }
+grep -q "^## Responding to Review Feedback" "$root/skills/pull-request/SKILL.md" || { echo "FAIL V2.59: skills/pull-request/SKILL.md is missing '## Responding to Review Feedback' section"; failures=1; }
+grep -q "one question at a time" "$root/workflows/task-to-code.md" || { echo "FAIL V2.59: no one-question rule in task-to-code.md"; failures=1; }
+grep -q "^| M-42 |" "$root/references/mandatory-rules.md" || { echo "FAIL V2.59: no M-42 row"; failures=1; }
+grep -q "^| R-81 |" "$root/references/system-workflow-regression-matrix.md" || { echo "FAIL V2.59: no R-81 row"; failures=1; }
 exit "$failures"
 ```

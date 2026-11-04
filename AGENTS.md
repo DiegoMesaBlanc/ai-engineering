@@ -514,6 +514,13 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
 - Report checks that were not run.
 - Never claim a test or build passed without evidence.
 - Keep unrelated refactoring out of scope.
+- A reinforcement of an engineering discipline adopted from an external
+  methodology (test-first discipline, root-cause debugging, verification before
+  completion, response to review feedback, alignment questions) is accepted
+  only with a behavioral scenario: a case the discipline must catch, the
+  procedure run against it with the observed outcome, and evidence that the
+  violation is detected when the required step is removed. A reinforcement
+  without that evidence is not accepted.
 - Reuse previously completed analysis after alignment when proceeding from architecture/estimation to implementation.
 
 ## Context and Session Resilience

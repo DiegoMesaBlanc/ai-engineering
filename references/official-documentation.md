@@ -496,7 +496,7 @@ a framework standard.
   may use and **internal** components that are not supposed to be accessed
   from outside. This is the Java authority for a feature-driven module
   with a public API.
-- Spring Modulith project structure: https://docs.spring.io/spring-modulith/reference/project-structure.html
+- Spring Modulith application module structure verification: https://docs.spring.io/spring-modulith/reference/verification.html
 
 ### Layered Architecture
 
