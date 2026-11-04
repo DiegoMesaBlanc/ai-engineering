@@ -61,6 +61,13 @@ dimension. A criterion is never presented as a framework standard.
   records dead letters, and logs is a violation.
 - Errors are explicit: no swallowed exceptions, typed or documented error
   paths, and boundary input validated.
+- A failure raised by a module uses the module's error model (its typed error
+  class). A generic error crossing a module boundary is a violation unless the
+  module has no error model and that is stated.
+- A secondary (optional) dependency that fails does not change the outcome of
+  the primary operation: a failed read from it is a miss, and a failed write
+  to it is skipped and recorded. A write already committed in the primary store
+  is never reported as failed because a secondary store failed.
 - No dead code, debug output, or unused exports.
 - Names are clear and the code is typed; no `any` without a documented reason.
 
@@ -95,7 +102,14 @@ dimension. A criterion is never presented as a framework standard.
   render or dependency, and rejected input.
 - Shutdown and resource-release behavior is tested when the change owns a
   resource (queues, connections, workers).
-- Bounds (caps, limits, dead-letter size) are tested at the limit.
+- Bounds (caps, limits, dead-letter size) are tested at the limit, through the
+  real entry point, asserting the defined behavior at the cap.
+- Each secondary dependency is tested with that dependency failing, and the
+  primary result is asserted.
+- Every guarantee stated in the documentation the change creates or modifies
+  (bounds, consistency, timeouts, external-system behavior) is backed by a test
+  or an executed check. An external-system claim without evidence is
+  `NOT VERIFIED` and must be stated as an assumption.
 - Tests are deterministic and do not depend on wall-clock sleeps.
 
 ### 8. Performance

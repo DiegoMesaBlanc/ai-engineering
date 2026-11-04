@@ -234,7 +234,11 @@ established). A fresh subagent or a new session is the only path to a `PASS`.
 Never accept, and never read when discoverable:
 
 - the implementation conversation or session history;
-- the task plan, architecture proposal, or pattern selection record;
+- the task plan, architecture proposal, or any pattern selection held outside
+  the change set (the decision note inside the change set is an artifact and is
+  read, see `workflows/code-audit.md`, Allowed artifact);
+- the checkpoints, learning store, and state directory
+  (`AI_ENGINEERING_STATE_HOME`), and any `reports/` directory of the workspace;
 - the implementer's validation claims or PR description;
 - the implementer's rationale.
 

@@ -62,7 +62,23 @@ implementation are:
 - **One reason to change per unit**: a unit that queues, retries, records
   dead letters, and logs at once is split by responsibility before delivery.
 - **Contract and documentation agree**: a documented bound, timeout, or
-  shutdown guarantee matches the code, or the contract is corrected.
+  shutdown guarantee matches the code, or the contract is corrected. A claim
+  about a guarantee of an external system is verified against its contract or
+  stated as an assumption; it is never written as a fact.
+- **Secondary dependencies degrade, never fail the primary outcome**: a
+  cache, metrics, analytics, or notification that is optional must not change
+  the result of the primary operation. A failed read from it is a miss, a
+  failed write to it is skipped and recorded. A write that is already
+  committed in the primary store is never reported as failed because a
+  secondary store failed. Each secondary call is tested with that dependency
+  throwing, and the primary result is asserted.
+- **Bounds tested at the limit**: a cache, buffer, or retained collection with
+  a cap has a test that fills it to the cap and then exercises the read and the
+  write through the real entry point, asserting the defined behavior at the
+  cap.
+- **Errors use the module's error model**: a failure raised from a module uses
+  the module's typed error class, never a generic `Error`, unless the module
+  has no error model and that is stated.
 
 ## General Procedure
 

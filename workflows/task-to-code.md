@@ -250,7 +250,12 @@ candidates, and the derived count. Inventory existing patterns and
 framework mechanisms first. The count is an output: 0, 2, 32, or 100+ are
 all valid. A pattern without a signal is a defect. The selection belongs in
 the task plan (Phase 9); the File Responsibility Map records any file or
-unit introduced to implement a selected pattern.
+unit introduced to implement a selected pattern. Because the independent audit
+reads the selection from the change set, the same selection is also written as
+a **decision note in the change set** (the location is defined in
+`workflows/code-audit.md`, Allowed artifact), with the forces, signals, selected
+and rejected patterns, and the count. The task plan is not a substitute: it is
+session state and is not visible to the auditor.
 
 **Official documentation consultation (mandatory for architecture evaluation):**
 
@@ -606,7 +611,10 @@ the task.
 **Evidence per criterion.** The gate result is reported as a table with one
 row per applicable criterion of `references/audit-pass-criteria.md`: the
 criterion, the verdict, and the evidence (`file:line`, the test name that
-covers each error path, or the executed command). A dimension marked `PASS`
+covers each error path, or the executed command). For every decorator or
+adapter that wraps a dependency, the table includes two rows: the test with
+that dependency failing (asserting the primary result) and the test that fills
+the bound to its cap and exercises the read and the write. A dimension marked `PASS`
 without this table is not `PASS`, and the report is incomplete. Every
 criterion in section 7 (testing) names the test that exercises it through its
 real entry point. A criterion that cannot be evidenced is `NOT VERIFIED`, and

@@ -82,12 +82,21 @@ All seven rules are mandatory.
 requirement wording and its acceptance criteria; the design artifact when the
 task had one; the canonical rules (`AGENTS.md`, Skills, references).
 
+**Allowed artifact (decision record):** the pattern selection is part of the
+deliverable, not a private record. The change set contains a decision note
+that lists the selected patterns, the design force and signal behind each, the
+rejected patterns with their reason, and the count. The auditor reads it as an
+artifact of the change set, like any file in the diff, and judges it with
+Dimension 2. The decision note's location follows the project's own decision
+record convention; if the project has none, the note is `docs/decisions/<task-id>-patterns.md`.
+
 **Denied input** (never received, never read when discoverable): the
 implementation conversation or session history; the task plan, architecture
-proposal, file responsibility map, Folder Architecture Map, or pattern
-selection record; the implementer's final report, validation claims, or PR
-description; the implementer's explanation of why a choice was made. If the
-context already holds that material, stop and request a fresh session.
+proposal, or file responsibility map; the Folder Architecture Map; any pattern
+selection held outside the change set; the implementer's final report,
+validation claims, or PR description; the implementer's explanation of why a
+choice was made. If the context already holds that material, stop and request a
+fresh session. Reading the decision note in the change set is not a breach.
 
 ### Phase I0 — Independence Gate
 
@@ -278,7 +287,8 @@ For each applicable dimension:
 **Dimension 2 — Patterns & complexity: explicit checks**
 
 1. **Selection record check**
-    - Compare the implemented patterns against the recorded selection from `references/design-patterns.md`.
+    - Compare the implemented patterns against the decision note in the change set (see the Allowed artifact rule of Independent Mode), which records the selection made from `references/design-patterns.md`.
+    - A decision note that is absent from the change set is `NOT VERIFIED` for this dimension, not a PASS, and the reason is recorded.
     - A change that introduces or changes a pattern without a selection record is a finding: `PATTERN_UNJUSTIFIED`.
     - A pattern in the code with no recorded signal and force is a finding: `PATTERN_UNJUSTIFIED`.
     - A recorded pattern with no real consumer is a finding: `PATTERN_UNUSED`.

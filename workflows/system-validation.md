@@ -2807,3 +2807,46 @@ grep -q "^| M-42 |" "$root/references/mandatory-rules.md" || { echo "FAIL V2.59:
 grep -q "^| R-81 |" "$root/references/system-workflow-regression-matrix.md" || { echo "FAIL V2.59: no R-81 row"; failures=1; }
 exit "$failures"
 ```
+
+## V2.60 Regression — Audit Criteria, Implementation Rules, and Decision Record Agree
+
+Verify that the rules the independent audit judges are the same rules the
+implementer is told to meet, that the pattern selection reaches the auditor as
+an artifact, and that a dirty session can start a clean audit:
+
+- `references/audit-pass-criteria.md` states the secondary-dependency rule, the
+  module error model rule, and the documentation-claim rule.
+- `skills/implementation-recipes/SKILL.md` states the secondary-dependency
+  rule, the bound-at-cap rule, and the module error model rule.
+- `workflows/code-audit.md` defines the Allowed artifact (decision note) and
+  reads the selection from the change set in Dimension 2.
+- `workflows/task-to-code.md` requires the decision note in the change set.
+- `agents/external-auditor.md` denies the state directory and `reports/` as
+  input.
+- `references/mandatory-rules.md` and the regression matrix include R-82.
+- Proof: a copy of the repository in which the secondary-dependency rule is
+  removed from `references/audit-pass-criteria.md` is detected by this check
+  with file:line evidence, and the unmodified repository passes.
+
+The check takes the repository root as its argument and defaults to the current
+directory.
+
+```sh
+root="${1:-.}"
+failures=0
+ap="references/audit-pass-criteria.md"
+ir="skills/implementation-recipes/SKILL.md"
+ca="workflows/code-audit.md"
+tc="workflows/task-to-code.md"
+ea="agents/external-auditor.md"
+grep -q "secondary (optional) dependency that fails" "$root/$ap" || { echo "FAIL V2.60: $ap is missing the secondary-dependency rule"; failures=1; }
+grep -q "module's error model" "$root/$ap" || { echo "FAIL V2.60: $ap is missing the module error model rule"; failures=1; }
+grep -q "Every guarantee stated in the documentation" "$root/$ap" || { echo "FAIL V2.60: $ap is missing the documentation-claim rule"; failures=1; }
+grep -q "Secondary dependencies degrade" "$root/$ir" || { echo "FAIL V2.60: $ir is missing the secondary-dependency recipe"; failures=1; }
+grep -q "Bounds tested at the limit" "$root/$ir" || { echo "FAIL V2.60: $ir is missing the bound-at-cap recipe"; failures=1; }
+grep -q "Allowed artifact (decision record)" "$root/$ca" || { echo "FAIL V2.60: $ca is missing the Allowed artifact rule"; failures=1; }
+grep -q "decision note in the change set" "$root/$tc" || { echo "FAIL V2.60: $tc does not require the decision note"; failures=1; }
+grep -q "AI_ENGINEERING_STATE_HOME" "$root/$ea" || { echo "FAIL V2.60: $ea does not deny the state directory"; failures=1; }
+grep -q "^| R-82 |" "$root/references/system-workflow-regression-matrix.md" || { echo "FAIL V2.60: no R-82 row"; failures=1; }
+exit "$failures"
+```
