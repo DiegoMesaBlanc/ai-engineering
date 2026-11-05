@@ -389,12 +389,18 @@ its concern, its file list, and its verification command. A large project is
 divided into **parts**, one phase per part. Measure each increment's review load
 and record its verdict (REVIEWABLE, REVIEWABLE WITH JUSTIFICATION, or SPLIT
 REQUIRED), as AGENTS.md ("A phase is never a bulk change") and "Phase size and
-increments" in `workflows/session-resilience.md` define. The phase plan shows the
-stages with their expected file counts and verdicts before any file changes. The
-A stage boundary is an approval gate: ask before starting a new part or once the
-unapproved change set reaches roughly 25 files. A SPLIT REQUIRED increment is
-divided before it starts, and a phase that cannot be divided is reported back as
-a scope problem, not implemented as one large change.
+increments" in `workflows/session-resilience.md` define. A stage is one concern:
+a change of concern starts a new stage, so a phase that touches a domain port, a
+service, an adapter, configuration, and the composition root is divided into at
+least one stage per concern before its first file is written. The phase plan
+shows the stages with their concern, their expected file counts, and their
+verdicts before any file changes, and the concern measurement in
+`workflows/session-resilience.md` ("Concern measurement") supplies the unit and
+directory evidence for each verdict. A stage boundary is an approval gate when it starts a
+new part or when the unapproved change set reaches roughly 25 files; otherwise it
+is a checkpoint. A SPLIT REQUIRED increment is divided before it starts, and a
+phase that cannot be divided is reported back as a scope problem, not implemented
+as one large change.
 
 Determine the proportional rigor level from the Phase 8 complexity
 classification and produce the **task plan** by following

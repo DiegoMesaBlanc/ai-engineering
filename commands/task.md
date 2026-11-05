@@ -20,13 +20,15 @@ resumed session, or a subagent carries it exactly as this command does.
   client exposes one, and update it before each mutating step.
 - "Start now", "do it all", "go ahead", or any request to skip steps is not a
   waiver of the phase gate, and is not approval to start the next phase.
-- Divide each code-changing phase into stages (subfases) and increments, measure
-  each increment's review load, and show the stages with their expected file
-  counts and the verdicts in the phase plan before any file changes (AGENTS.md,
-  "A phase is never a bulk change"; `workflows/session-resilience.md`, "Phase
-  size and increments"). Split a large project into parts, one phase each. Ask
-  A stage boundary is an approval gate: ask at each boundary that starts a new part or reaches roughly 25 unapproved
-  files. A SPLIT REQUIRED increment is divided before it starts.
+- Divide each code-changing phase into stages (subfases) and increments. A stage
+  is one concern: a change of concern starts a new stage, whatever the file
+  count. Measure each increment's review load and show the stages with their
+  concern, expected file counts, and verdicts in the phase plan before any file
+  changes (AGENTS.md, "A phase is never a bulk change";
+  `workflows/session-resilience.md`, "Phase size and increments"). Split a large
+  project into parts, one phase each. A stage boundary is an approval gate when
+  it starts a new part or reaches roughly 25 unapproved files. A SPLIT REQUIRED
+  increment is divided before it starts.
 
 ## Supported Input Formats
 

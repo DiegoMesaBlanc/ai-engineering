@@ -988,6 +988,7 @@ Return:
 - V2.59 discipline reinforcement behavioral scenario checks:
 - V2.60 audit criteria, implementation rules, and decision record checks:
 - V2.61 selected pattern presentation and SOLID coverage checks:
+- V2.62 stage is one concern and concern measurement checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -2899,5 +2900,73 @@ for f in workflows/task-to-code.md workflows/task-planning.md commands/task.md a
 done
 grep -q "^| M-45 |" "$root/references/mandatory-rules.md" || { echo "FAIL V2.61: no M-45 row"; failures=1; }
 grep -q "^| R-84 |" "$root/references/system-workflow-regression-matrix.md" || { echo "FAIL V2.61: no R-84 row"; failures=1; }
+exit "$failures"
+```
+
+## V2.62 Regression — Stage Is One Concern
+
+Verify that the stage decomposition is decided by concern, not by a file count,
+and that the concern measurement works:
+
+- `AGENTS.md` states that a stage is one concern and that the concern decides the
+  split (anchor `the concern decides the split`).
+- `workflows/session-resilience.md` defines the concern rule and the
+  `### Concern measurement` block, and the block is executable: it is extracted
+  from the document and run against two synthetic repositories created in a
+  temporary directory, with no folder convention (no `src/`). One directory of
+  one unit must print one line; several directories of one unit must print at
+  least two; two units must print two distinct units. A block that cannot tell
+  these apart is a `FAIL`.
+- `workflows/task-to-code.md` and `commands/task.md` state the concern rule
+  (anchor `A stage is one concern`).
+- `references/mandatory-rules.md` M-41 and `references/system-workflow-regression-matrix.md`
+  R-83 carry the concern rule and reference V2.62.
+- Proof: a copy of `AGENTS.md` without the concern rule is detected by the anchor
+  check with file:line evidence, and the unmodified repository passes.
+
+The check takes the repository root as its argument and defaults to the current
+directory.
+
+```sh
+root="${1:-.}"
+failures=0
+sr="workflows/session-resilience.md"
+grep -q "the concern decides the split" "$root/AGENTS.md" || { echo "FAIL V2.62: AGENTS.md does not state that the concern decides the split"; failures=1; }
+for f in workflows/task-to-code.md commands/task.md; do
+  tr '\n' ' ' < "$root/$f" | tr -s ' ' | grep -Fq "A stage is one concern" || { echo "FAIL V2.62: $f does not state the concern rule"; failures=1; }
+done
+grep -q "^### Concern measurement" "$root/$sr" || { echo "FAIL V2.62: $sr has no Concern measurement section"; failures=1; }
+grep -q "^| M-41 |.*a stage is one concern" "$root/references/mandatory-rules.md" || { echo "FAIL V2.62: M-41 does not carry the concern rule"; failures=1; }
+grep -q "^| R-83 |.*V2.62" "$root/references/system-workflow-regression-matrix.md" || { echo "FAIL V2.62: R-83 does not reference V2.62"; failures=1; }
+snippet=$(sed -n '/^### Concern measurement/,/^## Phase Checklist/p' "$root/$sr" |
+  awk '/^```sh$/{f=1; next} /^```$/{if (f) exit} f')
+if [ -z "$snippet" ]; then
+  echo "FAIL V2.62: $sr has no executable concern measurement block"
+  failures=1
+else
+  # Fixtures carry a committed baseline, so only the increment's change set is
+  # measured. They use no folder convention: a flat package, a package with
+  # several directories, and two units (services) in one repository.
+  fx=$(mktemp -d "${TMPDIR:-/tmp}/v262.XXXXXX")
+  git_fx() { git -c user.name=v262 -c user.email=v262@local "$@"; }
+  base() { (cd "$1" && git init -q && git add -A && git_fx commit -qm base); }
+  one="$fx/one-dir"; multi="$fx/multi-dir"; units="$fx/two-units"
+  mkdir -p "$one/lib" "$multi/lib" "$multi/features/x" "$units/services/a" "$units/services/b"
+  printf '{}\n' > "$one/package.json"; printf 'x\n' > "$one/lib/a.ts"; printf 'x\n' > "$one/lib/b.ts"
+  printf '{}\n' > "$multi/package.json"; printf 'x\n' > "$multi/lib/a.ts"; printf 'x\n' > "$multi/features/x/y.ts"
+  printf 'module a\n' > "$units/services/a/go.mod"; printf 'module b\n' > "$units/services/b/go.mod"
+  printf 'x\n' > "$units/services/a/main.go"; printf 'x\n' > "$units/services/b/main.go"
+  base "$one"; base "$multi"; base "$units"
+  printf 'y\n' >> "$one/lib/a.ts"; printf 'y\n' >> "$one/lib/b.ts"
+  printf 'y\n' >> "$multi/lib/a.ts"; printf 'y\n' >> "$multi/features/x/y.ts"
+  printf 'y\n' >> "$units/services/a/main.go"; printf 'y\n' >> "$units/services/b/main.go"
+  s=$(sh -c "$snippet" sh "$one" | wc -l | tr -d ' ')
+  m=$(sh -c "$snippet" sh "$multi" | wc -l | tr -d ' ')
+  u=$(sh -c "$snippet" sh "$units" | awk '{print $2}' | sort -u | wc -l | tr -d ' ')
+  rm -rf "$fx"
+  [ "$s" -eq 1 ] || { echo "FAIL V2.62: one directory of one unit is not reported as one line (lines=$s)"; failures=1; }
+  [ "$m" -ge 2 ] || { echo "FAIL V2.62: several directories of one unit are not detected (lines=$m)"; failures=1; }
+  [ "$u" -eq 2 ] || { echo "FAIL V2.62: two units are not reported as two units (units=$u)"; failures=1; }
+fi
 exit "$failures"
 ```

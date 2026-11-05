@@ -508,6 +508,20 @@ stage N?" Within an approved stage, increments run as checkpoints: each one is
 reported with its files and evidence, and no question is asked. The system never
 lets 100 or 200 files accumulate before it asks.
 
+**A stage is one concern, and the concern decides the split, not the file
+count.** Each stage and each increment changes one concern: one unit, one
+contract with its direct consumers, one behavior, or one wiring. A change of
+concern is a new stage, declared in the phase plan with its verdict before the
+first file of that concern is written. A phase that spans several concerns —
+for example a domain port, a service, an infrastructure adapter, configuration,
+and the composition root — is never a single increment, whatever its file
+count. The concerns are measured from the units (packages, services, microfrontends,
+applications) and the directories the change set touches, with the procedure in
+`workflows/session-resilience.md` ("Concern measurement"). The procedure assumes
+no folder convention, so it holds for any language, framework, monorepo, or
+microservice. A change that crosses units is a change of concern. The verdict
+decides, and a small change that mixes concerns is split as well.
+
 The size of an increment is **measured, not counted**. The system inspects the
 change set of the increment and classifies its **review load** from:
 

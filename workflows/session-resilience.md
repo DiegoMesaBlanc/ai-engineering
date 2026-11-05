@@ -369,6 +369,10 @@ and its size is decided by measurement, not by a file count:
 - each increment has its own file list and verification command (format,
   lint, typecheck, and the tests of the files it touches), and it is verified
   before the next increment starts;
+- **a stage is one concern.** A change of concern (a unit, a contract with its
+  consumers, a behavior, or a wiring) is a new stage, and the phase plan shows
+  it before its first file is written. A phase that spans several concerns is
+  never a single increment, regardless of its file count;
 - before an increment starts, the system measures its change set and records
   one review-load verdict: **REVIEWABLE**, **REVIEWABLE WITH JUSTIFICATION**
   (many files, one concern, mechanical and uniform), or **SPLIT REQUIRED**
@@ -391,6 +395,59 @@ number alone never splits or blocks an increment. The increments are derived
 from the File Responsibility Map of the task plan and ordered so that each one
 leaves the project in a valid state (for example, a contract before its
 consumers, and a unit before the code that wires it).
+
+### Concern measurement
+
+The concern input of the verdict is measured, not estimated, and the measurement
+assumes no folder convention: no `src/`, no `app/`, no framework layout. It runs
+from the target project root over the change set of the increment (created,
+modified, deleted, and untracked files).
+
+A **unit** is the nearest ancestor directory that holds the manifest of its
+ecosystem (`package.json`, `pyproject.toml`, `go.mod`, `pom.xml`,
+`build.gradle(.kts)`, `Cargo.toml`, `composer.json`, `Gemfile`, `pubspec.yaml`,
+`Package.swift`, `angular.json`, or a `*.csproj`), or the repository root when
+none exists. A monorepo package, a microfrontend, or a microservice is therefore
+its own unit, whatever its folder name. The procedure prints one line per unit
+and directory touched, with the number of changed paths:
+
+```sh
+manifests='package.json pyproject.toml setup.py setup.cfg go.mod Cargo.toml pom.xml build.gradle build.gradle.kts settings.gradle.kts composer.json Gemfile pubspec.yaml Package.swift angular.json'
+unit_of() {
+  d=$(dirname "$1")
+  while [ "$d" != "." ] && [ "$d" != "/" ]; do
+    for m in $manifests; do [ -f "$d/$m" ] && { echo "$d"; return; }; done
+    for c in "$d"/*.csproj; do [ -f "$c" ] && { echo "$d"; return; }; done
+    d=$(dirname "$d")
+  done
+  echo "."
+}
+root="${1:-.}"
+cd "$root" || exit 1
+git --no-optional-locks status --porcelain=v1 --untracked-files=all |
+  sed 's/^...//; s/^.* -> //' |
+  while IFS= read -r p; do
+    u=$(unit_of "$p")
+    if [ "$u" = "." ]; then rel=$(dirname "$p"); else rel=$(dirname "${p#"$u"/}"); fi
+    printf '%s\t%s\n' "$u" "$rel"
+  done | sort | uniq -c
+```
+
+Reading the output (the output is evidence; the verdict is the judgment on the
+concerns it reveals):
+
+- one unit, the changed paths in one directory that carry one concern: the
+  increment may be **REVIEWABLE**;
+- two or more units (packages, services, microfrontends): a change of unit is a
+  change of concern, so the units are separate stages, unless the same mechanical
+  edit is applied in each unit;
+- one unit with several directories whose changes differ in behavior (a port, its
+  consumer, a wiring, a configuration): **SPLIT REQUIRED**;
+- the same mechanical edit repeated across units or directories: **REVIEWABLE
+  WITH JUSTIFICATION**, with the uniformity recorded;
+- the line count and the number of changed paths never split an increment alone.
+  A manifest changed next to its code adds a line for the root of its unit; that
+  is evidence to read, not a concern by itself.
 
 ## Phase Checklist
 
@@ -556,7 +613,7 @@ visible without reading every message.
 
 **Client prerequisite (OpenCode).** The `todowrite` tool is registered only
 when the client's experimental todo flag is enabled. In the user's global
-OpenCode configuration (`~/.config/opencode/opencode.jsonc`) the tool needs
+global OpenCode configuration file of the user (the `opencode.jsonc` in the client's own configuration directory) the tool needs
 both entries, and their absence hides the panel for every model and agent:
 
 - `"experimental": { "todo": true }` — registers the tool; the schema describes
