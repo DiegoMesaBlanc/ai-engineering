@@ -742,6 +742,8 @@ Before implementation:
 - [ ] Existing mechanisms were inventoried before new patterns were added.
 - [ ] Compositions and conflicts are explicit.
 - [ ] The count is derived and reported, not targeted.
+- [ ] Every selected pattern is named, and the five SOLID rows
+      are present (Presentation Record).
 - [ ] The stack idiom is recorded; no class shape is imposed.
 - [ ] Official documentation is consulted when the idiom is version-sensitive.
 - [ ] The selected set is reflected in the plan; any file or unit introduced
@@ -755,6 +757,102 @@ After implementation:
 - [ ] No existing abstraction was duplicated.
 - [ ] The implemented idiom matches the stack and the project conventions.
 - [ ] The review or audit checks the selection record against the code.
+
+## Presentation Record
+
+A count alone is not a presentation. The selection is shown to the user by
+name, in the proposal, before implementation, and it is the same record kept
+in the change-set decision note (`workflows/code-audit.md`, Allowed artifact).
+The rule is M-45 in `AGENTS.md`, and it applies to every language and
+framework: the table below is stack-neutral, and only the translation column
+changes.
+
+### Required content
+
+1. **Selected patterns by name.** One row per selected pattern, in this form:
+
+   | Pattern | Force | Signal | Stack translation |
+   |---|---|---|---|
+   | Strategy | Several payment providers are interchangeable | BE1 | Interface `PaymentProvider` and a map of provider functions in `services/payment/` |
+
+   The pattern is named by its name only; its catalog identifier is internal
+   to the catalog and is not part of the presentation. The count is the number
+   of rows, stated after the table as `Count: N selected`. A name that does not
+   match a catalog pattern is a defect.
+
+2. **Rejected candidates.** Every rejected candidate by name with its reason:
+   `no signal`, `existing mechanism`, `force already covered`,
+   `cost exceeds benefit`, or `stack idiom`. When nothing was rejected, the
+   record says so.
+
+3. **SOLID coverage.** Exactly five rows, one per principle, each with a
+   status:
+
+   | Principle | Status | Unit or mechanism | Evidence or reason |
+   |---|---|---|---|
+   | SRP | APPLIES | `checkout.service.ts` orchestrates only; the provider call sits in the adapter | Cites the file and the responsibility it keeps |
+
+   - `APPLIES`: the change introduces or relies on the principle, and the unit
+     that carries it is named.
+   - `PRESERVED`: the change touches a unit the principle governs, and keeps it
+     intact. The evidence names the unit.
+   - `NOT APPLICABLE`: no unit in scope carries the force. The reason is
+     stated. A one-line fix still lists all five rows.
+
+   A principle is never claimed by renaming a file. An `APPLIES` row without a
+   unit is a finding of the engineering review (`SOLID_*`).
+
+4. **Empty selection.** A task that selects 0 patterns writes
+   `Design patterns: 0 selected` with the forces it inspected and the reason
+   each candidate family was rejected. The SOLID coverage is still required.
+
+### Example
+
+A TypeScript checkout flow with a payment provider behind a vendor SDK:
+
+| Pattern | Force | Signal | Stack translation |
+|---|---|---|---|
+| Strategy | Several providers are interchangeable | BE1 | Interface plus a map of provider functions |
+| Factory Method | Provider selected from a runtime key | CR2 | `createPaymentProvider(key)` in `services/payment/` |
+| Adapter | The vendor SDK does not match the domain port | ST1 | `stripe.adapter.ts` implements the domain port |
+
+Count: 3 selected. Rejected: Chain of Responsibility, `no signal`
+(there is no ordered handler chain).
+
+| Principle | Status | Unit or mechanism | Evidence or reason |
+|---|---|---|---|
+| SRP | APPLIES | `checkout.service.ts` only orchestrates | Provider calls live in the adapter |
+| OCP | APPLIES | A new provider is a new map entry | No `if` chain added to the caller |
+| LSP | PRESERVED | Every provider honors `PaymentProvider` | No provider throws "not supported" |
+| ISP | APPLIES | `PaymentCharger` is the only interface the checkout consumes | Refunds are not in its surface |
+| DIP | APPLIES | The domain port is owned by `domain/`; the adapter is in `infrastructure/` | Domain imports no vendor SDK |
+
+### SOLID per stack
+
+The principles are the same everywhere. Their mechanism is the stack's idiom,
+and the record names it. The table gives the translation for the supported
+stacks; the detected stack's official documentation wins.
+
+| Principle | TypeScript / JavaScript, React, Next.js | Angular | Vue, Svelte, Solid | Java, Kotlin | C#, .NET | Python | Go | Rust | PHP | Ruby | Mobile (Swift, Kotlin, Flutter, React Native) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| SRP | Separate hook or service from the component | One service per concern | One composable per concern | One class per reason to change | One handler or service per use case | One module or class per concern | One type and package per concern | One module per concern | One class per concern | One class or module per concern | One state holder or use case per concern |
+| OCP | New implementation of an interface or a map entry | New provider under an `InjectionToken` | New composable or store slice | New interface implementation through DI | New implementation through DI | New `Protocol` implementation | New implementation of a consumer-owned interface | New `impl Trait` | New class bound in the container | New object that responds to the contract | New implementation of a protocol or interface |
+| LSP | Same signature and invariants; no throws for "not supported" | Same contract for each provider | Same contract for each variant | No `UnsupportedOperationException` | No `NotImplementedException` | No `NotImplementedError` or narrowed contract | Every method honors the interface | Every impl honors the trait | No `LogicException` for unsupported calls | Each object honors the documented contract | Each implementation honors the protocol |
+| ISP | Props or interface per consumer | Small injection token per consumer | Small composable per consumer | Role interfaces | Role interfaces | `Protocol` per consumer | Interface owned by the consumer | Small traits | Small interfaces | Explicit contract in `sig/` or `rbi/` | Small protocol per consumer |
+| DIP | Port in the inner layer, adapter outside | Abstract provider behind a token | Port in the inner composable | Interface in the domain, implementation in infrastructure | Interface in the application layer | `Protocol` in the domain | Interface in the consumer package | Trait in the domain | Interface bound in the container | Duck contract owned by the domain | Protocol in the domain, implementation in the platform layer |
+
+A framework annotation in a domain model is a documented exception to DIP
+(`skills/engineering-review/SKILL.md`), and the record must say so when it
+occurs.
+
+### Rules
+
+- A record without the five SOLID rows is incomplete.
+- A count without names is a defect. The name is sufficient; the catalog
+  identifier is not shown.
+- The record is shown before implementation and carried into the decision note
+  so the independent audit reads the same selection.
+- Nothing in the record is a target: `Count` is derived from the rows.
 
 ## Sources
 

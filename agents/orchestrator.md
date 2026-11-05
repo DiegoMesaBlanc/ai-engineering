@@ -195,7 +195,11 @@ Before implementation, apply `references/design-patterns.md` to derive the
 pattern set: extract the **design forces**, inventory existing mechanisms,
 select and reject with evidence, compose, translate to the detected stack's
 idiom, and derive the count. The count may be 0 and has no maximum; a
-pattern without a signal is a defect.
+pattern without a signal is a defect. Present the selected patterns by name
+with their names, and the five SOLID rows (SRP, OCP, LSP, ISP, DIP) with
+their status, in the proposal shown before implementation, using the
+Presentation Record in `references/design-patterns.md`; a count alone is not a
+presentation (M-45).
 
 When the task changes a boundary, interface, or integration, load
 `skills/api-contract-design/SKILL.md` to define the contract before

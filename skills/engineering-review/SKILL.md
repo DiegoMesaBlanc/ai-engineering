@@ -114,6 +114,12 @@ Ruby relies on duck typing and explicit contracts in `sig/` or `rbi/`.
 Framework annotations in a domain model are a documented exception, not a
 default.
 
+The presentation record (`references/design-patterns.md`, Presentation Record)
+lists the five principles by status. Check each `APPLIES` row against the code:
+a row with no unit in the change is a finding, and a `NOT APPLICABLE` row with
+no reason is a finding. Selected patterns are checked by name,
+so the reviewed selection is the one the user saw (M-45).
+
 ### Code quality
 
 - readability

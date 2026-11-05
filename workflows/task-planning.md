@@ -64,9 +64,11 @@ Common content for every level:
 
 - files and modules affected
 - existing abstractions to reuse
-- the design forces and the design-pattern selection: selected patterns,
-  rejected candidates, stack translation, and derived count
-  (`references/design-patterns.md`)
+- the design forces and the design-pattern selection: selected patterns by
+  name, rejected candidates, stack translation, and
+  derived count, plus the five SOLID rows (SRP, OCP, LSP, ISP, DIP) with their
+  status, as the Presentation Record in `references/design-patterns.md`
+  defines. A count alone is not a valid plan entry.
 - the dependency outcome and its evidence
 - the selected Secure Delivery Workflow when CI/CD, security, or delivery
   controls are involved

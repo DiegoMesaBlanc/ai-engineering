@@ -76,6 +76,14 @@ Do not duplicate Skills, workflows, or architecture definitions.
   forces. A design that violates a principle is a finding even when it works,
   and the finding names the principle. Pattern selection follows
   `references/design-patterns.md` and is recorded even when it is empty.
+- The **presentation record** of a design names every selected design pattern by
+  name, the force it resolves, and its stack
+  translation, and names the SOLID principles the change implements (SRP,
+  OCP, LSP, ISP, DIP), each with the unit that implements it or the reason it
+  does not apply. A count alone, such as "5 patterns", is a defect. A task that
+  selects no pattern states the empty selection and the forces inspected. This
+  applies to every language and framework, and the record is shown to the user
+  before implementation.
 - A module that consumes a contract does not re-export it. The owning file
   is the single public path of the contract. A **pass-through re-export** —
   a component re-exporting the props it imports from `./types`, a service

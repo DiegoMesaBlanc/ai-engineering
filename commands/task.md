@@ -139,6 +139,11 @@ Key required behaviors within that workflow:
   `references/design-patterns.md`, record the selected and rejected
   candidates and the derived count, and translate each pattern to the
   detected stack's idiom
+- present the selection **by name** in the proposal shown before
+  implementation: every selected pattern with its name, force, and
+  stack translation, and the five SOLID rows (SRP, OCP, LSP, ISP, DIP) with
+  status `APPLIES`, `PRESERVED`, or `NOT APPLICABLE` and the reason. A count
+  alone is a defect (M-45, `references/design-patterns.md`, Presentation Record)
 - apply proportional planning rigor: derive it from the Phase 8 complexity
   classification via `workflows/task-planning.md`, keep simple tasks
   lightweight, and define the expected behavior before implementing complex

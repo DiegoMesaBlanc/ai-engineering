@@ -986,6 +986,8 @@ Return:
 - V2.57 delegated work mirrored into the delegating panel checks:
 - V2.58 new task starts a new list checks:
 - V2.59 discipline reinforcement behavioral scenario checks:
+- V2.60 audit criteria, implementation rules, and decision record checks:
+- V2.61 selected pattern presentation and SOLID coverage checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -2848,5 +2850,54 @@ grep -q "Allowed artifact (decision record)" "$root/$ca" || { echo "FAIL V2.60: 
 grep -q "decision note in the change set" "$root/$tc" || { echo "FAIL V2.60: $tc does not require the decision note"; failures=1; }
 grep -q "AI_ENGINEERING_STATE_HOME" "$root/$ea" || { echo "FAIL V2.60: $ea does not deny the state directory"; failures=1; }
 grep -q "^| R-82 |" "$root/references/system-workflow-regression-matrix.md" || { echo "FAIL V2.60: no R-82 row"; failures=1; }
+exit "$failures"
+```
+
+## V2.61 Regression — Selected Pattern Presentation and SOLID Coverage
+
+Verify that the proposal shown before implementation names the design patterns
+by name and states the five SOLID principles, not a count alone, for every
+language and framework:
+
+- `AGENTS.md` states the presentation record rule (M-45), with the anchor
+  `presentation record`, and names SRP, OCP, LSP, ISP, and DIP.
+- `references/design-patterns.md` contains the `## Presentation Record` section,
+  the selected-patterns table with the `Count:` line, the rejected-candidates
+  rule, the five SOLID rows with `APPLIES`, `PRESERVED`, and `NOT APPLICABLE`,
+  and the `### SOLID per stack` table covering every supported stack family.
+- `workflows/task-to-code.md`, `workflows/task-planning.md`,
+  `commands/task.md`, `agents/orchestrator.md`, and
+  `skills/engineering-review/SKILL.md` each reference the presentation record.
+- `references/mandatory-rules.md` contains the M-45 row, and the regression
+  matrix contains the R-84 row.
+- Proof: a copy of the repository in which the SOLID table is removed from
+  `references/design-patterns.md` is detected by this check with file:line
+  evidence, and the unmodified repository passes.
+
+The check takes the repository root as its argument and defaults to the current
+directory.
+
+```sh
+root="${1:-.}"
+failures=0
+dp="references/design-patterns.md"
+grep -q "presentation record" "$root/AGENTS.md" || { echo "FAIL V2.61: AGENTS.md does not state the presentation record rule"; failures=1; }
+for p in SRP OCP LSP ISP DIP; do
+  grep -q "$p" "$root/AGENTS.md" || { echo "FAIL V2.61: AGENTS.md does not name $p"; failures=1; }
+done
+grep -n "^## Presentation Record" "$root/$dp" >/dev/null || { echo "FAIL V2.61: $dp has no '## Presentation Record' section"; failures=1; }
+grep -n "^### SOLID per stack" "$root/$dp" >/dev/null || { echo "FAIL V2.61: $dp has no '### SOLID per stack' table"; failures=1; }
+grep -q "Count: N selected" "$root/$dp" || { echo "FAIL V2.61: $dp has no Count line"; failures=1; }
+for status in APPLIES PRESERVED "NOT APPLICABLE"; do
+  grep -q "$status" "$root/$dp" || { echo "FAIL V2.61: $dp does not define status $status"; failures=1; }
+done
+for p in SRP OCP LSP ISP DIP; do
+  grep -q "^| $p | " "$root/$dp" || { echo "FAIL V2.61: $dp has no SOLID row for $p"; failures=1; }
+done
+for f in workflows/task-to-code.md workflows/task-planning.md commands/task.md agents/orchestrator.md skills/engineering-review/SKILL.md; do
+  grep -qi "presentation record" "$root/$f" || { echo "FAIL V2.61: $f does not reference the presentation record"; failures=1; }
+done
+grep -q "^| M-45 |" "$root/references/mandatory-rules.md" || { echo "FAIL V2.61: no M-45 row"; failures=1; }
+grep -q "^| R-84 |" "$root/references/system-workflow-regression-matrix.md" || { echo "FAIL V2.61: no R-84 row"; failures=1; }
 exit "$failures"
 ```

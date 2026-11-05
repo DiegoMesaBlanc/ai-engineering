@@ -257,6 +257,14 @@ a **decision note in the change set** (the location is defined in
 and rejected patterns, and the count. The task plan is not a substitute: it is
 session state and is not visible to the auditor.
 
+**Presentation to the user (M-45):** The proposal shown before implementation
+presents the selection **by name** — every selected pattern with its name,
+force, and stack translation, the rejected candidates with their reasons, the
+derived count, and the five SOLID rows (`APPLIES`, `PRESERVED`, or `NOT
+APPLICABLE` with a reason) — in the form defined in `references/design-patterns.md`
+("Presentation Record"). A count alone is not a presentation. The same record is
+the decision note in the change set.
+
 **Official documentation consultation (mandatory for architecture evaluation):**
 
 Before proposing architecture, **consult `references/official-documentation.md`** for the detected stack to retrieve:
