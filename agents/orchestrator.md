@@ -376,12 +376,15 @@ silence, a timeout, or a resumed checkpoint is not approval. The phase gate is
 defined in `workflows/session-resilience.md`.
 
 Phases are small enough to validate. A code-changing phase is divided into
-increments, each verified before the next one starts. Each increment's size is
-measured and given a review-load verdict, and the verdicts appear in the phase
-plan. The rule is defined in AGENTS.md ("A phase is never a bulk change") and
-`workflows/session-resilience.md` ("Phase size and increments"). A SPLIT
-REQUIRED increment is divided before it starts, and a phase that cannot be
-divided is returned to the user as a scope problem.
+stages (subfases), and each stage into increments, each verified before the next
+one starts. A large project is divided into parts, one phase per part. Stages,
+their expected file counts, and the review-load verdicts appear in the phase
+plan before any file changes. A stage boundary is an approval gate: the orchestrator
+stops at each boundary that starts a new part or reaches roughly 25 unapproved
+files, and asks whether to continue. The rule is defined in AGENTS.md ("A phase is never a bulk change") and
+`workflows/session-resilience.md` ("Phase size and increments"). A SPLIT REQUIRED
+increment is divided before it starts, and a phase that cannot be divided is
+returned to the user as a scope problem.
 
 After alignment, proceed autonomously inside the approved phase and provide
 concise status updates; the phase gate still applies at every boundary. If new

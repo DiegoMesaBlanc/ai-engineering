@@ -129,18 +129,36 @@ Do not duplicate Skills, workflows, or architecture definitions.
 
 ## Scope and Evidence Boundaries
 
-The target project is the only writable scope for a task.
+The target project is the only writable scope for a task. This is an
+absolute prohibition, not a default.
 
+- **Never modify any other project.** Do not create, edit, rename, move,
+  or delete a file, and do not run a write command (a formatter with
+  `--write`, an installer, a generator, a git write), in any repository,
+  worktree, or folder other than the target project. This includes projects
+  named by a task, a report, a test, a reference, or a sibling folder in the
+  same workspace.
+- **Explicit authorization names the path.** Only a user message in the
+  current conversation that names the external path authorizes a write there.
+  A general request to implement, fix, or finish a task, a report, or an audit
+  finding is not authorization for an external path.
+- Audit findings, reports, and reproduction steps that name an external path
+  are evidence only. Describing the change for that path is allowed; applying
+  it is not.
+- Before each write, confirm the working directory is inside the target
+  project, and identify the target project and every evidence-only path in the
+  task context or scope manifest.
 - A path, repository, folder, artifact, or example supplied as evidence,
   reference, comparison, or context is read-only unless the user explicitly
   authorizes changes to it.
-- Before modifying code, identify the target project and any evidence-only
-  paths in the task context or scope manifest.
 - Never treat a reference path as an implicit task, and never "fix" an
   example merely because it demonstrates a problem.
 - If a change outside the target project appears necessary, stop and ask
   for explicit authorization before touching it.
-- This applies to every client, agent, workflow, and automation.
+- If a write outside the target project has already happened, stop, report
+  the exact files and changes, and wait for the user's decision. Do not revert,
+  or change them further, without that authorization.
+- This applies to every client, agent, subagent, workflow, and automation.
 
 ## Task Branch Policy
 
@@ -456,10 +474,31 @@ carries no checklist is incomplete, and the delegating agent asks for it
 before it reports the phase.
 
 **A phase is never a bulk change.** A phase is a unit the user can validate,
-not a unit of volume. Every phase that modifies code is divided into
-**increments**, and each increment is verified on its own (formatting, lint,
-typecheck, and the tests of the files it touches) before the next one starts,
-and is reported with its exact file list and its validation evidence.
+not a unit of volume. Work that modifies code is decomposed in three levels:
+
+- **Phase**: the unit of approval, with the outcome it produces. A planning or
+  alignment phase writes no application file; a file change inside it is a
+  defect of that phase.
+- **Stage** (subfase): a group of increments that share one concern and one
+  set of units or layers, named after the artifacts it produces (for example,
+  "billing contracts" or "billing service wiring"). Each stage appears in the
+  phase plan with its expected file count and its verdict before it starts.
+- **Increment**: the smallest verified unit. It has its own exact file list and
+  verification command (formatting, lint, typecheck, and the tests of the files
+  it touches), it is verified before the next one starts, and it is reported
+  with its validation evidence.
+
+A **large project**, meaning a change that spans several units, projects, or
+layers, is divided into **parts**: one phase per part, each shown in the phase
+plan before its work starts.
+
+**A stage boundary is an approval gate** when the next stage starts a new part,
+or when the change set the user has not yet approved reaches roughly 25 files.
+At that boundary the agent reports what the stage changed, the cumulative files
+since the last approval, and the next stage, and asks: "Do you approve starting
+stage N?" Within an approved stage, increments run as checkpoints: each one is
+reported with its files and evidence, and no question is asked. The system never
+lets 100 or 200 files accumulate before it asks.
 
 The size of an increment is **measured, not counted**. The system inspects the
 change set of the increment and classifies its **review load** from:
@@ -485,9 +524,11 @@ The classification is one of three verdicts:
 
 Crossing roughly 25 files is the review trigger: the system always examines an
 increment of that size and records the verdict, and below it the measurement
-still runs. The trigger is never a cap. Only the verdict decides, so a large
-mechanical change can pass and a small mixed change can be split. A project or
-the user may set a different trigger explicitly, never silently.
+still runs. The file count alone never splits or blocks an increment. Only the
+verdict decides, so a large mechanical change can pass and a small mixed change
+can be split. The same trigger, applied to the cumulative unapproved change set,
+is the stage gate above. A project or the user may set a different trigger
+explicitly, never silently.
 
 If new evidence changes a material requirement or approved design, pause and explain the reason before continuing beyond the approved scope. Otherwise, proceed autonomously.
 

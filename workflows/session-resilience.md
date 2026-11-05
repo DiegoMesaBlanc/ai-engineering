@@ -353,7 +353,19 @@ validate it. A phase that rewrites 100 or 200 files cannot be reviewed step by
 step, so it is not an acceptable phase. The rule is the one defined in AGENTS.md ("A phase is never a bulk change"),
 and its size is decided by measurement, not by a file count:
 
-- a code-changing phase is divided into **increments**;
+- a code-changing phase is divided into **stages** (subfases), and each stage
+  into **increments**. A planning or alignment phase writes no application
+  file. A large project (several units, projects, or layers) is divided into
+  **parts**, one phase per part;
+- the phase plan shows the stages with their expected file count and verdict
+  before any file is changed, so the user sees the whole path, not only the
+  current step;
+- **A stage boundary is an approval gate**: the agent stops at the next stage
+  boundary and asks "Do you approve starting stage N?" when the next stage starts
+  a new part, or when the unapproved cumulative change set reaches roughly 25
+  files. Inside an
+  approved stage, increments run as checkpoints without a question. The gate is
+  never deferred until 100 or 200 files have changed;
 - each increment has its own file list and verification command (format,
   lint, typecheck, and the tests of the files it touches), and it is verified
   before the next increment starts;
@@ -365,8 +377,13 @@ and its size is decided by measurement, not by a file count:
 - the verdict is shown in the phase plan. A SPLIT REQUIRED increment is divided
   before it starts; the split is shown and approved as part of the plan;
 - the boundary report after each increment states the files it changed, the
-  verdict, the evidence that it passed, and the next increment, so the user
-  can stop, review, or continue at that point.
+  verdict, the evidence that it passed, and the next increment. The boundary
+  report of each stage adds the cumulative files changed since the last
+  approval and the next stage, so the user can stop, review, or continue at
+  that point;
+- the checklist lists the stages and their increments, each with its file
+  count, and the checkpoint records the exact file list of every increment, so
+  a task of thousands of files can still be reconstructed step by step.
 
 The review trigger is roughly 25 files. The system always runs the
 measurement from that size, and below it the measurement still runs, but the
@@ -513,6 +530,10 @@ states which one the agent is treating it as, so the list never mixes two
 tasks.
 
 ### Native task surfaces
+
+**First action of every prompt:** for every user prompt, whether an action, a
+task, a question, or a correction, the first action is to write the work list to
+the client's native task surface, before any other tool call or text answer.
 
 When the client exposes a native task or todo surface — a `todowrite` tool
 that renders a persistent todo panel, or an equivalent — the mirror is

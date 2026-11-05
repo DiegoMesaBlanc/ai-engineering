@@ -68,6 +68,10 @@ from the adjustment text, never from an external scope argument.
 If the adjustment does not fit any row, derive the check from the rule it
 implements and state it in the report.
 
+A check of a framework or language convention consults the **version guide** of
+the ecosystem first, for the confirmed target version, and records the version
+and the date consulted (AGENTS.md, Human Decision Gates).
+
 ## Phase 2 — Implement
 
 Apply the adjustment with the normal engineering flow, not with a shortcut:

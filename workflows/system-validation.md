@@ -679,7 +679,7 @@ while IFS='|' read -r _ id _ _ anchor surfaces; do
   id="$(printf '%s' "$id" | trim)"
   anchor="$(printf '%s' "$anchor" | trim)"
   normalized_anchor="$(printf '%s' "$anchor" | normalize)"
-  printf '%s' "$surfaces" | tr ',' '\n' | while read -r surface; do
+  printf '%s\n' "${surfaces%%|*}" | tr ',' '\n' | while read -r surface; do
     surface="$(printf '%s' "$surface" | trim)"
     [ -z "$surface" ] && continue
     if [ ! -f "$surface" ]; then
@@ -1808,7 +1808,7 @@ failures="$(
     id="$(printf '%s' "$id" | trim)"
     anchor="$(printf '%s' "$anchor" | trim)"
     normalized_anchor="$(printf '%s' "$anchor" | normalize)"
-    printf '%s' "$surfaces" | tr ',' '\n' | while read -r surface; do
+    printf '%s\n' "${surfaces%%|*}" | tr ',' '\n' | while read -r surface; do
       surface="$(printf '%s' "$surface" | trim)"
       [ -n "$surface" ] || continue
       if [ ! -f "$surface" ]; then

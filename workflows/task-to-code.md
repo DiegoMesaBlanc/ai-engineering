@@ -374,15 +374,19 @@ only after an affirmative answer. The format, the boundary report, and the
 phase gate are defined in `workflows/session-resilience.md` ("Phase Plan" and
 "Phase boundary report and phase gate").
 
-**Slice the implementation into increments.** Before Phase 10 starts, divide
-the implementation phase into increments, each with its concern, its file list,
-and its verification command. Measure each increment's review load and record
-its verdict (REVIEWABLE, REVIEWABLE WITH JUSTIFICATION, or SPLIT REQUIRED), as
-AGENTS.md ("A phase is never a bulk change") and "Phase size and increments" in
-`workflows/session-resilience.md` define. The phase plan shows the increments and
-their verdicts, so the user can approve the work step by step. A SPLIT REQUIRED
-increment is divided before it starts, and a phase that cannot be divided is
-reported back as a scope problem, not implemented as one large change.
+**Slice the implementation into stages and increments.** Before Phase 10
+starts, divide the implementation phase into **stages** (subfases), each named
+after the artifacts it produces, and each stage into **increments**, each with
+its concern, its file list, and its verification command. A large project is
+divided into **parts**, one phase per part. Measure each increment's review load
+and record its verdict (REVIEWABLE, REVIEWABLE WITH JUSTIFICATION, or SPLIT
+REQUIRED), as AGENTS.md ("A phase is never a bulk change") and "Phase size and
+increments" in `workflows/session-resilience.md` define. The phase plan shows the
+stages with their expected file counts and verdicts before any file changes. The
+A stage boundary is an approval gate: ask before starting a new part or once the
+unapproved change set reaches roughly 25 files. A SPLIT REQUIRED increment is
+divided before it starts, and a phase that cannot be divided is reported back as
+a scope problem, not implemented as one large change.
 
 Determine the proportional rigor level from the Phase 8 complexity
 classification and produce the **task plan** by following

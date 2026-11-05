@@ -5,6 +5,11 @@
 Define the standard formatter and linter configuration a target project
 receives, and state where the structural policy of this system is verified.
 
+Every software project must have a configured linter and a configured formatter
+(AGENTS.md, Formatting and Linting Policy). The configuration below is the
+standard for that requirement, and the target project receives it as its
+configured linter.
+
 The project receives **configuration only**: `eslint.config.*`, the Prettier
 configuration file, and their ignore files. The structural policy lives here,
 in `ai-engineering`, and is verified here by `workflows/output-compliance.md`.
