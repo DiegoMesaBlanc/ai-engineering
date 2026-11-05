@@ -365,7 +365,7 @@ and types, the direction of dependencies, and the pending decisions; stating
 "architecture evaluated" is not sufficient. The canonical requirement is in
 `skills/architecture-advisor/SKILL.md`.
 
-Require human approval for significant architectural changes per the Human Decision Gates in AGENTS.md. Do not treat routine component choices as significant architectural decisions. Consult the user when a styling-system decision significantly affects architecture, dependencies, or the visual experience.
+Require human approval for significant architectural changes per the Human Decision Gates in AGENTS.md. Do not treat routine component choices as significant architectural decisions. Consult the user when a styling-system decision significantly affects architecture, dependencies, or the visual experience. For a new frontend or mobile project the styling approach is not decided here: it is the first question of the creation, asked in Phase 2b of `workflows/project-initialization.md`, from the options of the detected framework in `references/styling-options.md` (M-46). An existing project is detected and keeps the styling approach it already uses, without a question.
 
 ## Phase 9 — Plan
 

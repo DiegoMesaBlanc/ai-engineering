@@ -34,7 +34,11 @@ Optional arguments in `$ARGUMENTS`:
    what a detected convention governs, state what takes a defensible
    default, and ask the user **once**, grouped by theme, only for the
    decisions that materially change the outcome. The architectural style is
-   always asked, and asked first.
+   always asked, and asked first. For a frontend or mobile project, the
+   styling approach is the first question of the creation, asked before the
+   other decisions and before any scaffold step, from the options of the
+   detected framework in `references/styling-options.md` (M-46). An existing
+   project is not asked: its styling approach is detected and followed.
 5. Agree the **scope catalog**: the modules, the public surfaces, and the
    dependencies with their reasons. It is a ceiling, not a floor.
 6. Create the project **one step at a time**, following

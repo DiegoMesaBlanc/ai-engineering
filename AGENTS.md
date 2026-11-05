@@ -267,6 +267,17 @@ Ask the user before proceeding only when the decision materially requires human 
   what the next step would add, and **wait**. Do not generate the remaining
   steps to "finish" the project, and never exceed the agreed scope without
   asking. Stopping at a checkpoint is a normal outcome, not a defect.
+- The **styling approach** of a new frontend or mobile project is the first
+  question of its creation: asked once the framework is confirmed, before any
+  other decision is asked and before any scaffold step runs, from the options
+  that the detected framework supports (`references/styling-options.md`). Its
+  answer is an input to the scaffold, because a scaffold tool can fix a styling
+  mechanism on its own. An option the framework does not support is never
+  offered or defaulted: Styled Components is not offered in an Angular project,
+  and CSS files are not offered in a React Native project. An **existing**
+  project is not asked: the system detects the styling approach the repository
+  already uses and continues with it. Mixed approaches are reported as a
+  finding, never asked.
 - Creating a project from zero requires the explicit `create-project` command.
   Without it, do not create a project from scratch; ask the user first.
 - The **opt-in engineering baseline** is offered once for a software project

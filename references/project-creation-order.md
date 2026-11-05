@@ -190,8 +190,9 @@ Applies to every project type, in this order.
 
 | # | Step | Produces | Verify | Growth rule |
 |---|---|---|---|---|
+| C0 | Styling approach | The styling approach recorded in Phase 2b of `workflows/project-initialization.md`, with its source; nothing is scaffolded before it is recorded | The answer or the detected approach is recorded, and the scaffold flags follow it | The scaffold uses the recorded approach only; a tool default is never accepted silently |
 | C1 | Repository, tooling, and scripts | The app skeleton with its entry point, the formatter, the linter configuration, the test runner, pinned to the **confirmed target version**; no custom rule file, plugin, or checker script | Every check passes against the entry point, and the toolchain reports the confirmed version | A new page is a route, not a new build setup |
-| C2 | Design tokens and the styling approach | The tokens, the global styles, the theme, the reset | The lint passes and the tokens are documented | A new color, spacing, or radius is a token, not a literal in a component |
+| C2 | Design tokens for the styling approach | The tokens, the global styles, the theme, and the reset, for the approach recorded in C0; no other styling mechanism is introduced | The lint passes and the tokens are documented | A new color, spacing, or radius is a token, not a literal in a component |
 | C3 | Application shell | The layout, the navigation, the providers, the error boundary, the loading boundary | The shell renders in every state, including the error state | A new provider is added at the shell, once |
 | C4 | Data layer | The API client, the query client, the typed endpoints, the error mapping, the cache policy | A typed endpoint test proves the request and the error path | A new endpoint is a typed function in the data layer, never called from a component |
 | C5 | Shared components | The primitives and the shared UI, with their states | The accessibility check of the component library passes | A component is shared only after a second consumer exists |
@@ -219,6 +220,7 @@ Applies to every project type, in this order.
 
 | # | Step | Produces | Verify | Growth rule |
 |---|---|---|---|---|
+| E0 | Styling approach | The styling approach recorded in Phase 2b of `workflows/project-initialization.md`, with its source; nothing is scaffolded before it is recorded | The answer or the detected approach is recorded, and the scaffold flags follow it | The scaffold uses the recorded approach only; a tool default is never accepted silently |
 | E1 | Project, tooling, and build pipeline | The app skeleton with its entry point, the formatter, the linter configuration, the test runner, pinned to the **confirmed target version**; no custom rule file, plugin, or checker script | Every check passes against the entry point, and the toolchain reports the confirmed version | A new screen is a route, not a new setup |
 | E2 | Identity and signing | The bundle or package identifier, the signing keys, the version scheme, the build flavors | A release build is signed and installs | The identifier and the signing keys change once, at the start |
 | E3 | Navigation and shell | The navigator, the design system, the providers, the deep link routing | The shell renders in every state | The shell owns the shared providers and the deep link handling |
@@ -293,7 +295,8 @@ the user ends the session at that point.
 ### Frontend steps
 
 - [ ] C1 Repository, tooling, and scripts, all checks passing
-- [ ] C2 Design tokens and the styling approach documented
+- [ ] C0 Styling approach recorded before the scaffold
+- [ ] C2 Design tokens for the recorded styling approach documented
 - [ ] C3 Application shell with the navigation, the providers, and the error and loading boundaries
 - [ ] C4 Data layer with the typed endpoints, the error mapping, and the cache policy
 - [ ] C5 Shared components with their states and their accessibility check
@@ -317,6 +320,7 @@ the user ends the session at that point.
 
 ### Mobile steps
 
+- [ ] E0 Styling approach recorded before the scaffold
 - [ ] E1 Project, tooling, and build pipeline
 - [ ] E2 Identity and signing, with a signed release build that installs
 - [ ] E3 Navigation, shell, and deep link routing

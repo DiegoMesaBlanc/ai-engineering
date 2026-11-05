@@ -60,6 +60,11 @@ folders before they exist.
   project policies already settle.**
 - The architectural style is always asked, and is asked first, because it
   determines the shape of every other decision.
+- The styling approach of a new frontend or mobile project is the **first
+  question** of its creation: asked once the framework is confirmed, before
+  the other decisions and before any scaffold step, with the options of that
+  framework only (`references/styling-options.md`). It is never resolved by a
+  default from another framework, and an existing project is never asked.
 
 ---
 
@@ -161,7 +166,7 @@ Applies to every project type.
 | Routing | The framework's file-based router | The application is a single embedded view |
 | State management | Server state in the data layer, local state in the component, a store only when shared state demands it | The product has complex cross-screen state |
 | Data fetching | The framework's server data layer, or the ecosystem's query client | The application is a real-time dashboard or an offline-first app |
-| Styling approach | The framework's recommended approach with CSS custom properties | The design system is an existing in-house system |
+| Styling approach | Asked first, at the start of creation, once the framework is confirmed. The options of the detected framework from `references/styling-options.md`, with the framework's built-in mechanism as the recommendation; never an option the framework does not support | Always for a new project (M-46). An existing project is detected and continued, never asked |
 | Component library | The organization's library, or none with local primitives | The visual language is a brand decision |
 | Forms | The framework's form solution with schema validation | The forms are highly dynamic |
 | Accessibility target | WCAG 2.2 AA | A different conformance level is contractual |
@@ -197,6 +202,7 @@ Applies to every project type.
 | Navigation | The framework's navigator | The navigation model is product specific |
 | Local storage | The platform secure store for credentials, an ordinary store for preferences | The data is large or offline-first |
 | Push notifications | The platform push service | The product has no user notifications |
+| Styling approach | Asked first, at the start of creation, once the framework is confirmed. The options of the detected framework from `references/styling-options.md`, with `StyleSheet` as the recommendation; never an option the framework does not support | Always for a new mobile project (M-46). An existing project is detected and continued, never asked |
 | Crash reporting | The platform service plus the organization's provider | The organization mandates a different provider |
 | Release channel | The platform store, staged rollout for mobile | The organization uses an enterprise distribution channel |
 | Device support matrix | The two most recent major versions of the platform | The audience is defined by a contracted device fleet |
@@ -218,5 +224,9 @@ categories is resolved:
 - [ ] Every decision from categories 1 to 3 is stated in the proposal.
 - [ ] Every decision from category 4 was asked, with its recommendation.
 - [ ] The architectural style was asked, and answered.
+- [ ] For a new frontend or mobile project, the styling approach was asked
+      first, before any scaffold step, with the options of the detected framework.
+- [ ] For an existing project, the styling approach was detected and recorded,
+      and no question was asked about it.
 - [ ] No question was asked that the source analysis already answers.
 - [ ] No decision was left implicit in a default that was never stated.

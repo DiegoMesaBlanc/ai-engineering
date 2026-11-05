@@ -528,7 +528,12 @@ is reasonable.
 
 If no styling solution exists and the task requires one, compare relevant
 alternatives and consult the user when the choice has significant
-consequences for design, dependencies, or the visual experience.
+consequences for design, dependencies, or the visual experience. The options
+of each framework, and the options a framework excludes, are defined in
+`references/styling-options.md`. The styling approach of a new frontend or
+mobile project is the first question of its creation, before any scaffold
+step (M-46); an existing styling approach is detected and followed, not
+replaced and not asked.
 
 Do not install new dependencies without the approval required by the
 existing policies.

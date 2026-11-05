@@ -88,7 +88,7 @@ Determine:
 - build system
 - state management
 - UI/component library
-- styling system
+- styling system: the styling approach already in use, detected with the signals in `references/styling-options.md`; an existing styling approach is detected and followed without a question; a new frontend or mobile project asks it first, before any scaffold step (M-46)
 - testing framework
 - E2E framework
 - formatter

@@ -182,7 +182,10 @@ when the architecture-first evaluation requires its detailed criteria.
 Architecture is evaluated before implementation, as part of the canonical
 Task-to-Code sequence, and covers code organization, reuse, module
 conventions, types and contracts, and styling decisions — not only the
-architectural style.
+architectural style. The styling approach of a new frontend or mobile project
+is the first question of its creation, asked before any scaffold step, from the
+options of the detected framework (`references/styling-options.md`, M-46); an
+existing project's styling approach is detected and followed, never asked.
 
 Base the diagnosis on implementation evidence, distinguishing detected,
 inferred, and absent architecture. If no coherent architecture is detected,

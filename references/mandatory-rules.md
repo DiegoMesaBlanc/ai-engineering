@@ -88,6 +88,7 @@ It exists to prevent two failures observed in practice:
 | M-43 | First action of every prompt: for every user prompt, whether an action, a task, a question, or a correction, the first action is to write the work list to the client's native task surface (`todowrite` in OpenCode, the equivalent elsewhere), before any other tool call or text answer; the list is rewritten in full on each call, and a prompt with no file change still gets a one-item list | `AGENTS.md` — Progress Updates and Phase Gates | `First action of every prompt` | `AGENTS.md`, `workflows/session-resilience.md`, `references/portability.md` |
 | M-44 | Stage gate and parts: the phase plan shows the stages with their expected file counts and verdicts before any file changes; a stage boundary is an approval gate that asks "Do you approve starting stage N?" when the next stage starts a new part or when the unapproved cumulative change set reaches roughly 25 files; inside an approved stage increments run as checkpoints without a question; a large project is divided into parts, one phase per part; the gate is never deferred until 100 or 200 files have changed | `AGENTS.md` — Progress Updates and Phase Gates | `A stage boundary is an approval gate` | `AGENTS.md`, `workflows/session-resilience.md`, `workflows/task-to-code.md`, `agents/orchestrator.md`, `commands/task.md` |
 | M-45 | Presentation record: the proposal shown before implementation names every selected design pattern by name, with its force and stack translation, names the five SOLID principles (SRP, OCP, LSP, ISP, DIP) with the unit that implements each or the reason it does not apply, and never states a count alone; a task with no pattern states the empty selection and the forces inspected; this applies to every language and framework | `AGENTS.md` — Engineering Principles | `presentation record` | `AGENTS.md`, `references/design-patterns.md`, `workflows/task-to-code.md`, `workflows/task-planning.md`, `commands/task.md`, `agents/orchestrator.md`, `skills/engineering-review/SKILL.md`, `references/system-workflow-regression-matrix.md` |
+| M-46 | The styling approach of a new frontend or mobile project is the first question of its creation, asked once the framework is confirmed and before any other decision or scaffold step, from the options that the detected framework supports; an option the framework does not support is never offered or defaulted; an existing project is detected and continued without a question, and mixed approaches are reported as a finding | `AGENTS.md` — Human Decision Gates | `styling approach` | `AGENTS.md`, `references/styling-options.md`, `references/project-startup-decisions.md`, `references/project-creation-order.md`, `workflows/project-initialization.md`, `workflows/task-to-code.md`, `skills/architecture-advisor/SKILL.md`, `skills/stack-detection/SKILL.md`, `commands/create-project.md`, `agents/orchestrator.md`, `references/system-workflow-regression-matrix.md`, `workflows/system-validation.md` |
 
 ## Superseded Phrasings
 
@@ -113,6 +114,9 @@ content.
 | at most 10 files per increment | M-41 |
 | a single atomic rename or codemod is the only exception | M-41 |
 | React/Next.js function style | M-01 |
+| framework's recommended approach with CSS custom properties | M-46 |
+| a conflict between two approaches is reported and asked | M-46 |
+| is asked, once, in the startup decision set | M-46 |
 
 ## Adding a rule
 

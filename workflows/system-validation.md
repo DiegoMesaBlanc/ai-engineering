@@ -2972,3 +2972,131 @@ else
 fi
 exit "$failures"
 ```
+
+## V2.63 Regression — Styling Approach by Framework and Timing
+
+Verify that the styling approach of a new frontend or mobile project is the
+first question of its creation, asked from the options of the detected
+framework, that no option is offered for a framework that does not support it,
+and that an existing project is detected and continued without a question:
+
+- `AGENTS.md` states the rule (anchor `styling approach`, with the phrase
+  `first question`) under Human Decision Gates, with the framework exclusion and
+  the existing-project rule.
+- `references/styling-options.md` defines the detection signals in order, the
+  options of each framework with their verification status, and the excluded
+  options with their reason. Its Angular section offers no Styled Components,
+  Emotion, or NativeWind; its React Native section offers no CSS Modules or
+  Sass; its Excluded table names Styled Components for Angular and CSS files for
+  React Native.
+- The timing is enforced: `references/project-creation-order.md` has a step C0
+  (frontend) and E0 (mobile) before the scaffold step C1 and E1, and
+  `workflows/project-initialization.md` has a Phase 2b before Phase 3 and before
+  Phase 4.
+- The superseded wordings in `references/mandatory-rules.md` (the retired
+  frontend default, the mid-creation question, and the existing-project conflict
+  question) are absent from the canonical content, checked by V2.63 and 6.6.
+- The surfaces of M-46 carry the anchor `styling approach`.
+- `references/system-workflow-regression-matrix.md` includes R-85.
+- Proof: the block below runs over the canonical files and over temporary copies.
+  A copy in which an incompatible option is injected into the Angular section is
+  detected with `file:line`; a copy in which C0 is moved after C1 is detected as a
+  timing defect; a copy without the Phase 2b heading is detected. The repaired
+  copies pass. The temporary directory is removed.
+
+The check takes the repository root as its argument and defaults to the current
+directory.
+
+```sh
+root="${1:-.}"
+failures=0
+so="$root/references/styling-options.md"
+pc="$root/references/project-creation-order.md"
+pi="$root/workflows/project-initialization.md"
+
+[ -f "$so" ] || { echo "FAIL V2.63: references/styling-options.md is missing"; failures=1; }
+grep -q "^| M-46 |.*styling approach" "$root/references/mandatory-rules.md" || { echo "FAIL V2.63: M-46 is not in the registry"; failures=1; }
+grep -q "^| R-85 |" "$root/references/system-workflow-regression-matrix.md" || { echo "FAIL V2.63: R-85 is not in the matrix"; failures=1; }
+grep -qi "styling approach" "$root/AGENTS.md" || { echo "FAIL V2.63: AGENTS.md does not state the styling approach rule"; failures=1; }
+tr '\n' ' ' < "$root/AGENTS.md" | tr -s ' ' | grep -qi "project is the first question of its creation" || { echo "FAIL V2.63: AGENTS.md does not state that the styling approach is the first question"; failures=1; }
+
+for surface in references/styling-options.md references/project-startup-decisions.md references/project-creation-order.md workflows/project-initialization.md workflows/task-to-code.md skills/architecture-advisor/SKILL.md skills/stack-detection/SKILL.md commands/create-project.md agents/orchestrator.md; do
+  grep -qi "styling approach" "$root/$surface" || { echo "FAIL V2.63: $surface does not carry the styling approach rule"; failures=1; }
+done
+
+# The registry and this check record the superseded wordings on purpose; they are excluded.
+retired=$(grep -rlF -e "recommended approach with CSS custom" -e "conflict between two approaches is reported" -e "asked, once, in the startup" "$root" --include="*.md" | grep -v "references/mandatory-rules.md" | grep -v "workflows/system-validation.md" | grep -v "/node_modules/" || true)
+[ -z "$retired" ] || { echo "FAIL V2.63: superseded styling wording still present in: $retired"; failures=1; }
+
+grep -q "^| Angular | Styled Components" "$so" || { echo "FAIL V2.63: the Excluded table does not exclude Styled Components for Angular"; failures=1; }
+grep -q "^| React Native | CSS files" "$so" || { echo "FAIL V2.63: the Excluded table does not exclude CSS files for React Native"; failures=1; }
+
+prev=0
+for fw in "Ionic" "Angular" "React Native" "Next.js" "Vue" "React (web)"; do
+  n=$(grep -n "^| [0-9] | $fw |" "$so" | head -1 | cut -d: -f1)
+  if [ -z "$n" ] || [ "$n" -le "$prev" ]; then
+    echo "FAIL V2.63: detection order is missing or broken at $fw in references/styling-options.md"
+    failures=1
+  else
+    prev=$n
+  fi
+done
+
+# timing FILE: the styling step must exist and precede the scaffold step of each
+# UI project type, and the Phase 2b heading must precede Phase 3 and Phase 4.
+timing() {
+  c0=$(grep -n "^| C0 | Styling approach" "$1" | head -1 | cut -d: -f1)
+  c1=$(grep -n "^| C1 | " "$1" | head -1 | cut -d: -f1)
+  e0=$(grep -n "^| E0 | Styling approach" "$1" | head -1 | cut -d: -f1)
+  e1=$(grep -n "^| E1 | " "$1" | head -1 | cut -d: -f1)
+  [ -n "$c0" ] && [ -n "$c1" ] && [ "$c0" -lt "$c1" ] || { echo "FAIL V2.63: $1 has no styling step C0 before the scaffold step C1"; return 1; }
+  [ -n "$e0" ] && [ -n "$e1" ] && [ "$e0" -lt "$e1" ] || { echo "FAIL V2.63: $1 has no styling step E0 before the scaffold step E1"; return 1; }
+  return 0
+}
+phases() {
+  p2b=$(grep -n "^## Phase 2b " "$1" | head -1 | cut -d: -f1)
+  p3=$(grep -n "^## Phase 3 " "$1" | head -1 | cut -d: -f1)
+  p4=$(grep -n "^## Phase 4 " "$1" | head -1 | cut -d: -f1)
+  [ -n "$p2b" ] && [ -n "$p3" ] && [ -n "$p4" ] && [ "$p2b" -lt "$p3" ] && [ "$p3" -lt "$p4" ] || { echo "FAIL V2.63: $1 does not place Phase 2b between Phase 2 and Phase 3"; return 1; }
+  return 0
+}
+timing "$pc" || failures=1
+phases "$pi" || failures=1
+
+# forbid FILE START STOP PATTERN LABEL: reports every line of the section that
+# offers an option matching PATTERN, with its file and line.
+forbid() {
+  awk -v start="$2" -v stop="$3" -v pat="$4" -v label="$5" '
+    $0 == start { on = 1; next }
+    on && index($0, stop) == 1 { on = 0 }
+    on && $0 ~ pat { printf "FAIL V2.63: %s:%d: %s is offered for %s\n", FILENAME, NR, $0, label; bad = 1 }
+    END { exit bad }
+  ' "$1"
+}
+
+forbid "$so" "### Angular" "### React (web)" "Styled Components|Emotion|NativeWind" "Angular" || failures=1
+forbid "$so" "### React Native (Expo or bare)" "### Ionic" "CSS Modules|Sass|Stylus" "React Native" || failures=1
+
+# Behavioral proof on temporary copies.
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v263.XXXXXX")
+cp "$so" "$fx/styling-options.md"
+awk '{ print } index($0, "| Tailwind CSS | Utility classes in templates") == 1 { print "| Styled Components | Styles written in JavaScript | injected | NOT VERIFIED |" }' "$so" > "$fx/injected.md"
+forbid "$fx/styling-options.md" "### Angular" "### React (web)" "Styled Components|Emotion|NativeWind" "Angular" >/dev/null || { echo "FAIL V2.63: the compliant copy is rejected"; failures=1; }
+out=$(forbid "$fx/injected.md" "### Angular" "### React (web)" "Styled Components|Emotion|NativeWind" "Angular" 2>&1 || true)
+printf '%s\n' "$out" | grep -q "^FAIL V2.63: $fx/injected.md:[0-9]*: | Styled Components" || { echo "FAIL V2.63: the injected Styled Components option was not detected with file:line"; failures=1; }
+grep -v "| injected |" "$fx/injected.md" > "$fx/repaired.md"
+forbid "$fx/repaired.md" "### Angular" "### React (web)" "Styled Components|Emotion|NativeWind" "Angular" >/dev/null || { echo "FAIL V2.63: the repaired copy is rejected"; failures=1; }
+
+# Timing: the scaffold step moved before the styling step is a defect; the repaired copy passes.
+awk '/^\| C0 \| Styling approach/{next} {print}' "$pc" > "$fx/creation-no-c0.md"
+timing "$fx/creation-no-c0.md" >/dev/null 2>&1 && { echo "FAIL V2.63: a creation order without C0 is accepted"; failures=1; }
+awk '/^\| C0 \| Styling approach/{held=$0; next} /^\| C1 \| /{print; print held; next} {print}' "$pc" > "$fx/creation-late.md"
+timing "$fx/creation-late.md" >/dev/null 2>&1 && { echo "FAIL V2.63: a styling step placed after the scaffold C1 is accepted"; failures=1; }
+timing "$pc" >/dev/null || { echo "FAIL V2.63: the canonical order is rejected"; failures=1; }
+awk '/^## Phase 2b /{skip=1} /^## Phase 3 /{skip=0} !skip' "$pi" > "$fx/init-no-2b.md"
+phases "$fx/init-no-2b.md" >/dev/null 2>&1 && { echo "FAIL V2.63: an initialization without Phase 2b is accepted"; failures=1; }
+phases "$pi" >/dev/null || { echo "FAIL V2.63: the canonical initialization is rejected"; failures=1; }
+rm -rf "$fx"
+
+exit "$failures"
+```

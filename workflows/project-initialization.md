@@ -70,6 +70,35 @@ from the task itself and confirm the scope with the user.
 - A stack assumption in the analysis that conflicts with the detected
   environment is a material question for the user, not a silent correction.
 
+## Phase 2b — Styling Approach First (frontend and mobile only)
+
+The styling approach is the **first question of the creation**, and it is
+asked before the startup decision set (Phase 3) and before any scaffold step
+(Phase 4). A scaffold tool can fix a styling mechanism on its own, so an answer
+given after the skeleton exists is too late. The Next.js scaffold, for
+example, includes Tailwind CSS by default.
+
+Run this phase only when the project has a UI: a frontend, a mobile
+application, or a hybrid. A backend or a library without a UI has no styling
+decision and skips it.
+
+1. Confirm the framework from Phase 2 and detect it with the signals in
+   `references/styling-options.md` ("Detection"). Never infer it from a
+   default.
+2. **New project**: ask the question once, with only the options that
+   framework supports, from "Options by framework", the recommendation, the
+   trade-off, and the excluded options with their reason. Do not offer an
+   option the framework does not support, such as Styled Components in an
+   Angular project. A user who does not choose gets the recommendation, stated
+   as a proposal, and it is recorded.
+3. **Existing project**: do not ask. Detect the styling approach the repository
+   already uses, record it with its evidence, and continue. Mixed approaches are
+   reported as a finding with their files, not asked.
+4. Record the answer or the detected approach, and mark any option whose
+   documentation was not consulted as `NOT VERIFIED`.
+
+Only after this phase does Phase 3 begin.
+
 ## Phase 3 — Startup Decision Set
 
 Settle every decision that creating this project entails, in one pass, before
@@ -160,6 +189,8 @@ asking. See "Scope Control" in `references/project-creation-order.md`.
 ### 3.6 Record
 
 - Record the chosen style, the reason, and the rejected alternatives.
+- Record the styling approach from Phase 2b, the framework it was offered for,
+  and the options rejected as excluded.
 - Record every decision resolved by categories 1 to 3, with its source.
 - Record each decision the user answered, with the answer.
 - Do not create the repository structure, and do not write code, before the
@@ -189,6 +220,10 @@ Record the answer in the decision set:
 The baseline never expands the catalog beyond the user's answer.
 
 ## Phase 4 — Create the Project, Step by Step, Stopping at Every Checkpoint
+
+No step starts before the styling approach of a frontend or mobile project is
+recorded (Phase 2b): step C0 or E0 of `references/project-creation-order.md`
+is the first step of those project types.
 
 Create the project in the order defined by
 `references/project-creation-order.md`. The order matters: each step depends
@@ -289,6 +324,8 @@ Report:
   creation did not exceed it;
 - the resume point: the next `pending` step and what it would add;
 - the architectural style chosen by the user, and the alternatives rejected;
+- the styling approach chosen by the user for a frontend or mobile project,
+  or the existing approach that was followed;
 - the structure created, step by step, and the extension point each layer
   leaves for the next feature;
 - the tooling installed and the commands to run it;
