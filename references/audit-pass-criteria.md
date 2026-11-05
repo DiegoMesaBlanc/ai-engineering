@@ -30,6 +30,13 @@ dimension. A criterion is never presented as a framework standard.
   no criterion. It is not an accepted terminal state for code the task creates.
 - A criterion violated by code that already existed before the change set is
   a recorded finding with file and line. It does not block the task.
+- A criterion that the approved requirement does not settle is `AMBIGUOUS`:
+  the auditor states the open question and does not judge it `FAIL` by its own
+  interpretation, nor `PASS` by assumption. An `AMBIGUOUS` criterion is
+  resolved by the user, not by the auditor.
+- A dimension is judged only after this file has been read in full in the
+  current audit. A dimension judged without that read is `NOT VERIFIED` with
+  the reason, never `PASS` or `FAIL`.
 
 ## Criteria
 
@@ -111,6 +118,10 @@ dimension. A criterion is never presented as a framework standard.
   or an executed check. An external-system claim without evidence is
   `NOT VERIFIED` and must be stated as an assumption.
 - Tests are deterministic and do not depend on wall-clock sleeps.
+- Platform-dependent behavior has an assertion on its rendered result for each
+  branch: safe-area insets, orientation or viewport-height branches (for example
+  a compact layout below a height threshold), and keyboard avoidance. A test
+  helper that injects a value without asserting its effect is not coverage.
 
 ### 8. Performance
 
@@ -126,6 +137,10 @@ dimension. A criterion is never presented as a framework standard.
   modifies. Otherwise `N/A` with that reason.
 - Semantic structure, keyboard operation, focus, labels, and contrast meet
   WCAG 2.2 A/AA for the changed surface.
+- Error text is associated with its field through a programmatic relation: an
+  error role, a label, or the platform's equivalent. An accessibility hint or
+  description is never used to carry error text, because it describes an
+  action, not a state.
 
 ### 10. SEO
 
@@ -148,6 +163,14 @@ dimension. A criterion is never presented as a framework standard.
 ### 13. Mobile
 
 - Applicable only to mobile work. Otherwise `N/A`.
+- Every input declares its keyboard type, its return-key action, and its
+  dismissal path. A keyboard type without a return key (for example a number
+  pad on iOS) has an explicit dismissal path that the code provides; the
+  absence of a return key is never a reason to leave the keyboard without one.
+- Safe areas, touch targets, and layouts for each supported orientation are
+  implemented in code. Where the behavior depends on a device value that the
+  test environment cannot produce, the check is `NOT VERIFIED` on device, with
+  that reason, and is not reported as `PASS`.
 
 ### 14. Organization boundaries
 

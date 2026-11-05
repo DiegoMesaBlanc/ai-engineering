@@ -991,6 +991,8 @@ Return:
 - V2.60 audit criteria, implementation rules, and decision record checks:
 - V2.61 selected pattern presentation and SOLID coverage checks:
 - V2.62 stage is one concern and concern measurement checks:
+- V2.63 styling approach by framework and timing checks:
+- V2.64 audit criteria read gate and platform criteria checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -3096,6 +3098,67 @@ timing "$pc" >/dev/null || { echo "FAIL V2.63: the canonical order is rejected";
 awk '/^## Phase 2b /{skip=1} /^## Phase 3 /{skip=0} !skip' "$pi" > "$fx/init-no-2b.md"
 phases "$fx/init-no-2b.md" >/dev/null 2>&1 && { echo "FAIL V2.63: an initialization without Phase 2b is accepted"; failures=1; }
 phases "$pi" >/dev/null || { echo "FAIL V2.63: the canonical initialization is rejected"; failures=1; }
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.64 Regression — Audit Criteria Read Gate and Platform Criteria
+
+Verify that the code audit reads the pass criteria before it judges any
+dimension, that an unsettled criterion is `AMBIGUOUS` and not judged by the
+auditor, and that the criteria cover the platform behavior a mobile audit
+otherwise misses: assertions on platform-dependent branches, error text
+associated with its field, and the keyboard dismissal path.
+
+- `references/audit-pass-criteria.md` states the read gate, the `AMBIGUOUS`
+  rule, the platform assertion criterion (Dimension 7), the error association
+  criterion (Dimension 9), and the keyboard criterion (Dimension 13).
+- `workflows/code-audit.md` requires the read before judging, in Phase 5.
+- `references/system-workflow-regression-matrix.md` contains the R-86 row.
+- Proof: a copy in which the error association criterion is removed is detected
+  with the criteria section location, and the unmodified repository passes.
+
+The check takes the repository root as its argument and defaults to the current
+directory.
+
+```sh
+root="${1:-.}"
+failures=0
+ap="references/audit-pass-criteria.md"
+ca="workflows/code-audit.md"
+rmx="references/system-workflow-regression-matrix.md"
+
+criteria_gate() {
+  r="$1"
+  flat_ap=$(tr '\n' ' ' < "$r/$ap" | tr -s ' ')
+  flat_ca=$(tr '\n' ' ' < "$r/$ca" | tr -s ' ')
+  miss=0
+  printf '%s' "$flat_ap" | grep -q "is resolved by the user, not by the auditor" || { echo "FAIL V2.64: $ap is missing the AMBIGUOUS rule"; miss=1; }
+  printf '%s' "$flat_ap" | grep -q "A dimension is judged only after this file has been read in full" || { echo "FAIL V2.64: $ap is missing the read gate"; miss=1; }
+  printf '%s' "$flat_ap" | grep -q "Platform-dependent behavior has an assertion on its rendered result" || { echo "FAIL V2.64: $ap is missing the platform assertion criterion"; miss=1; }
+  printf '%s' "$flat_ap" | grep -q "never used to carry error text" || { echo "FAIL V2.64: $ap is missing the error association criterion"; miss=1; }
+  printf '%s' "$flat_ap" | grep -q "A keyboard type without a return key" || { echo "FAIL V2.64: $ap is missing the keyboard dismissal criterion"; miss=1; }
+  printf '%s' "$flat_ca" | grep -q "Before judging any dimension" || { echo "FAIL V2.64: $ca does not require the read before judging"; miss=1; }
+  grep -q "^| R-86 |" "$r/$rmx" || { echo "FAIL V2.64: no R-86 row"; miss=1; }
+  return "$miss"
+}
+
+criteria_gate "$root" || failures=1
+
+# Behavioral proof: a copy with the error association criterion removed must be
+# detected, and the unmodified copy must pass.
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v264.XXXXXX")
+mkdir -p "$fx/references" "$fx/workflows"
+cp "$root/$ap" "$fx/$ap"
+cp "$root/$ca" "$fx/$ca"
+cp "$root/$rmx" "$fx/$rmx"
+criteria_gate "$fx" >/dev/null || { echo "FAIL V2.64: the unmodified copy is rejected"; failures=1; }
+sed -i.bak '/never used to carry error text/d; /description is never used/d; /error role, a label, or the platform/d' "$fx/$ap"
+out=$(criteria_gate "$fx" 2>&1) && { echo "FAIL V2.64: a copy without the error association criterion is accepted"; failures=1; }
+printf '%s\n' "$out" | grep -q "FAIL V2.64: $ap is missing the error association criterion" || { echo "FAIL V2.64: the removed criterion was not detected"; failures=1; }
+section=$(grep -n "^### 9. Accessibility" "$fx/$ap" | cut -d: -f1)
+echo "V2.64 probe detected: $fx/$ap section 9 starts at line ${section:-unknown}"
 rm -rf "$fx"
 
 exit "$failures"

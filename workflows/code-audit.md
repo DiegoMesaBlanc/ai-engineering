@@ -232,6 +232,12 @@ For each of the 14 dimensions:
 
 ### Phase 5 — Load Skills and Audit
 
+**Before judging any dimension**, read `references/audit-pass-criteria.md` in
+full in this audit. Record in the report that it was read. A dimension judged
+without that read is `NOT VERIFIED` with the reason, not `PASS` or `FAIL`.
+Criteria the approved requirement does not settle are `AMBIGUOUS` and are
+reported as questions for the user.
+
 For each applicable dimension:
 - Load the responsible Skill(s) only (bounded context).
 - Audit against the Skill's checks and the senior/staff bar.
