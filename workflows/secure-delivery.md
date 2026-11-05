@@ -104,6 +104,12 @@ gates passed.
 Select security controls according to the actual application, stack,
 risk, and existing tooling. Do not force every check onto every project.
 
+This phase covers pipeline, delivery, and configuration controls. Source-level
+vulnerability analysis is in `skills/security-review/SKILL.md`, and the
+supply-chain and CI/CD categories are in
+`skills/vulnerability-catalog/SKILL.md` (categories 3 and 4). Use them here
+rather than restating them.
+
 ### Secrets
 
 - Exposed credentials or sensitive tokens in source, configuration, logs,

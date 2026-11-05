@@ -157,6 +157,8 @@ commit; they are evaluated for consistency and policy alignment through
 - `design-analysis`
 - `testing-strategy`
 - `engineering-review`
+- `security-review`
+- `vulnerability-catalog`
 - `git-workflow`
 - `discovery`
 - `project-analysis`
@@ -404,6 +406,10 @@ test framework's documentation.
 - OWASP Cheat Sheet Series: https://cheatsheetseries.owasp.org/
 - Status: DOCS_ONLY
 - Decision: Retrieve relevant guidance based on the application's threat model.
+- Internal Skills: `security-review` (method) and `vulnerability-catalog`
+  (categories, mapped to the OWASP Top 10:2025, API Security Top 10 2023,
+  OWASP LLM Top 10 2025, ASVS 5.0.0, and CWE Top 25 2025). They apply these
+  sources; they do not replace them. They are internal, not external candidates.
 
 ## CI/CD and Delivery
 

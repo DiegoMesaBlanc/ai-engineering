@@ -139,7 +139,12 @@ so the reviewed selection is the one the user saw (M-45).
 
 ### Security
 
-Look for relevant vulnerabilities based on the technology stack.
+Look for relevant vulnerabilities based on the technology stack. For application
+and backend code, use `skills/security-review/SKILL.md` for the evidence bar and
+verdicts, and `skills/vulnerability-catalog/SKILL.md` to select the categories
+that apply to the changed surface. Browser headers and CSP belong to
+`skills/best-practices/SKILL.md`, and pipeline controls to
+`workflows/secure-delivery.md`.
 
 ### Performance
 

@@ -120,6 +120,8 @@ At minimum inspect:
 - core-web-vitals
 - best-practices
 - engineering-baseline
+- security-review
+- vulnerability-catalog
 
 Do not require a dedicated Next.js Skill.
 

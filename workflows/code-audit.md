@@ -37,7 +37,7 @@ Each dimension maps to an existing Skill. Only applicable dimensions are audited
 | 3 | **Code quality & separation** — naming, SRP, separation of concerns, duplication, dead/debug code, errors, boundary validation, typing, docs, config, logging | `implementation-recipes`, `engineering-review` | Always |
 | 4 | **API & contracts** — schemas, error model, versioning, auth, idempotency, no leakage | `api-contract-design` | Boundary/integration changes |
 | 5 | **Data & database** — integrity, safe migrations, parameterized queries, indexes, N+1, transactions | `database-engineering` | Schema/query changes |
-| 6 | **Security** — authn/authz, input validation, encoding, secrets, supply chain, OWASP basics | `best-practices` | Always |
+| 6 | **Security** — authn/authz, input validation, encoding, secrets, supply chain, OWASP basics | `security-review`, `vulnerability-catalog`, `best-practices` (browser headers and Lighthouse) | Always |
 | 7 | **Testing & validation** — adequacy, behavior over implementation, edge cases, regression, determinism | `testing-strategy`, `test-driven-development` | Always |
 | 8 | **Performance** — CWV, bundles, caching; query plans, N+1, concurrency | `performance`, `core-web-vitals` | Web/hot paths |
 | 9 | **Accessibility** — WCAG 2.2 A/AA, keyboard, semantics, ARIA, focus, contrast | `accessibility` | UI/web/mobile |
