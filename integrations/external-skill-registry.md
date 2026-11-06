@@ -140,6 +140,32 @@ each external Skill used by the AI Engineering System.
   `web-quality-audit` orchestration Skill, which is intentionally not
   imported; no other content change
 
+## 8. UI/UX Design (referenced, not copied)
+
+- Name: ui-ux-pro-max (used through `skills/ui-ux-design/SKILL.md`)
+- Repository: https://github.com/nextlevelbuilder/ui-ux-pro-max-skill
+- Integration mode: **referenced**. No file from the upstream repository is
+  copied into this repository. The user installs the upstream skill in their
+  own environment, pinned to the commit below.
+- License: MIT (upstream LICENSE at the pinned commit). No license copy is
+  needed because nothing is redistributed here.
+- Upstream commit (pin): b7d5353e0130feb8c5574ef1251f8a1db1873ccb
+  (commit date 2026-11-05)
+- Local file: `skills/ui-ux-design/SKILL.md`, the only file of this skill.
+- Local corrections: listed in the `Corrections` section of SKILL.md, each with
+  its source. They apply to the upstream data whatever the installed version.
+- Verification at the pin (2026-11-06):
+  - Web stacks: React (3 rows checked, one incomplete), Next.js (4 rows checked,
+    one missing security rule added), Tailwind (1 row checked). Other web stacks
+    had version checks only. The per-row evidence is recorded in the corrections
+    of SKILL.md and in the stage 4A report, not in repository files.
+  - Mobile and desktop stacks: not verified.
+- Update procedure: on demand only, see `Updating the pin (on demand)` in
+  SKILL.md. Last check: 2026-11-06, upstream head identical to the pin, no
+  changes since the pin.
+- Scope: this procedure applies only to ui-ux-design. Other external skills
+  keep their current integration mode and are not covered here.
+
 ## Not Imported from This Repository
 
 - `web-quality-audit` (Skill and `scripts/analyze.sh`): intentionally not
