@@ -137,9 +137,10 @@ Run after Phase 2 and before the dimension audit.
 
 Run the project's own gates before any semantic judgment, following
 `workflows/project-validation.md` (Phases 2, 5, and 7) and the structural
-checks of `workflows/output-compliance.md` (`FUNC-001`, `TYPE-001` to
-`TYPE-003`, `TYPE-004`, `FILE-001`, `STRUCT-001`, `STRUCT-006`, `STRUCT-007`) in the form
-the detected ecosystem supports. Record for every check the command, the exit
+checks of `workflows/output-compliance.md`: the Procedure's coverage table, every row
+whose condition holds for the change set. A detector or check that a workflow defines is a control only when the procedure that a verdict cites runs it on the scope it covers (M-75). A row that applies and is not run is
+`NOT VERIFIED` for its scope, never a pass. The structural checks run in the form the
+detected ecosystem supports. Record for every check the command, the exit
 code, and the relevant output. A check that cannot run is `NOT VERIFIED` with
 the missing tool named. **A skipped check is never a pass.**
 
@@ -163,7 +164,11 @@ The Phase 7 verdict applies, with two additions:
 - Any acceptance criterion `FAIL` makes the verdict `FAIL`.
 - A criterion left silently `NOT VERIFIED` makes the verdict
   `NOT VERIFIED`. `PASS` requires a passed Phase I0 and every criterion
-  `PASS`.
+  `PASS`, and each `PASS` cites its evidence (command and exit code, `file:line`, or
+  measurement).
+- A criterion `AMBIGUOUS` on an applicable dimension makes that dimension and the
+  verdict `NOT VERIFIED` until the user resolves it. The auditor never resolves it by
+  judging a different interpretation, such as measuring another query (M-75).
 - When Phase I0 is `NOT ESTABLISHED` (contaminated context), the verdict is
   `NOT VERIFIED` with the reason `independence not established` when no
   criterion fails, even when every other check passed. A criterion `FAIL` still
@@ -402,7 +407,7 @@ Checks that could not be performed and why (e.g., "Lighthouse not available, CWV
 #### 5. Verdict
 
 One of:
-- `PASS` — all applicable dimensions PASS, no P0/P1 findings.
+- `PASS` — all applicable dimensions PASS, each with cited evidence, no P0/P1 findings, and no `AMBIGUOUS` criterion left open.
 - `PASS WITH FINDINGS` — no P0, at most one P1, rest P2/P3.
 - `FAIL` — any P0, or multiple P1s.
 - `NOT VERIFIED` — critical evidence unavailable.

@@ -105,7 +105,10 @@ tool, or schema style without a justified reason and human approval.
 - Avoid `SELECT *` and fetching more than is needed.
 - Paginate large result sets; never load unbounded collections.
 - Verify the plan for slow or critical queries (`EXPLAIN`) rather than
-  guessing.
+  guessing. A performance change is proven by a before-and-after measurement of
+  the named query on a stated dataset, and a claim of a covering or index-only
+  access is proven by its plan (M-65). Without that measurement the claim is not
+  evidence.
 - Keep raw SQL isolated and justified when the ORM is insufficient.
 
 ## Transactions and Concurrency

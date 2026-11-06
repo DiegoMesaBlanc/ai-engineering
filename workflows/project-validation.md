@@ -396,6 +396,12 @@ Run each check, and record its command, status, and evidence:
    mode). Each is a finding
    that never blocks an unrelated task, and the probe never reports one as passing.
    A missing manifest is `NOT VERIFIED` for M-61, never clean.
+   The same sweep also reports schema DDL outside a migration (`DB-001`, M-70),
+   a migration with no deploy-order test (`DB-002`, M-69), and every universal,
+   artifact, compatibility, performance, or technical-property claim in the
+   documents and the source comments as `NOT VERIFIED CLAIM-001` (M-65, M-68, M-69).
+   A pre-existing DDL statement in a store file is a finding of the probe, never a
+   pass, and a performance or plan claim is never reported as verified by the probe.
 7. **Outbound timeouts and cleartext endpoints (M-54, M-55).** The sweep of item 6
    covers `SAFE-001` and `SAFE-002` over the project source. Every external call
    has an explicit timeout (M-54), so an outbound call with no timeout is a

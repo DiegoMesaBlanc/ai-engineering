@@ -1129,7 +1129,7 @@ project_safety_sweep() {
   a11y_android_path_check . $src
   platform_side_effect_check . $src
   decision_record_check . $decisions
-  claim_check . $mds
+  claim_check . $mds $src
   db_runtime_ddl_check . $src
   db_deploy_order_check . $migrations -- $tests
   [ -n "$manifests" ] || echo "NOT VERIFIED M-61: no build manifest or app configuration is tracked, so backup is not verified"
@@ -1359,6 +1359,17 @@ the repository before it is kept. The check cannot decide a claim, so every
 match is reported as `NOT VERIFIED` with its line: the verifier enumerates every element of the
 scope with a search, or confirms that the artifact exists, and cites the result.
 
+A correction to a claim is searched across the change set and the sweep: a surviving
+occurrence is a finding, even when the test or the contract was already corrected (M-75).
+
+M-65 extends the same rule to two claims the check cannot decide from text: a
+**performance claim** (`faster`, `más rápido`, `speeds up`) needs a before-and-after
+measurement of the named query, and a **technical property** (`covering index`,
+`index-only`, `constant time`) needs the query plan or the code that decides it. Both
+are `NOT VERIFIED` with their line until the evidence is cited. The sweep reads the
+source comments as well as the documents, so a claim in a `.ts` comment is not
+skipped (`project_safety_sweep` passes `$src` to `claim_check`).
+
 ```sh
 # $1 = repository root; $2... = documents or source files, relative to it.
 claim_check() {
@@ -1371,6 +1382,10 @@ claim_check() {
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (claim that cites an artifact: confirm the artifact is in the repository, M-68)#"
     grep -nEi "order-safe|order safe|either order|any deployment order|both directions|ambas direcciones|cualquier orden|en ambos sentidos" "$root/$f" 2>/dev/null |
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (compatibility claim: keep it only with a test that executes each deployment order, M-69)#"
+    grep -nEi "(^|[^A-Za-z])(faster|más rápid[oa]s?|speed(s|ed)? up|accelerat(es|ed|e))([^A-Za-z]|$)" "$root/$f" 2>/dev/null |
+      sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (performance claim: cite the before and after measurement of the named query, M-65)#"
+    grep -nEi "covering index|index[- ]only|índice (cubriente|de cobertura)|constant[- ]time|tiempo constante|O\(1\)|O\(log n\)" "$root/$f" 2>/dev/null |
+      sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (technical property claim: cite the query plan or the code that decides it, M-65)#"
   done
 }
 ```
@@ -1838,29 +1853,61 @@ evidence.
 
 ## Procedure
 
-1. Resolve the target project root and the change set (staged, unstaged,
-   untracked).
+1. Resolve the target project root, the base revision, and the change set
+   (staged, unstaged, untracked). Record HEAD and the branch.
 2. Exclude generated output, dependencies, and build artifacts.
-3. Run `FUNC-001` over the change set.
-4. Run `TYPE-001` over the change set.
-5. Run `TYPE-002` over the contract files identified in `TYPE-001`.
-6. Run `TYPE-003` over the change set, in the form the detected ecosystem
-   uses to forward a contract, and `TYPE-004` over the source files, so a
-   contract declared in two files is found.
-7. Run `FILE-001` over the change set and the source tree: unit folders, test
-   placement, and support locations.
-8. Run `STRUCT-001` and `STRUCT-006` over every feature folder.
-9. Run `STRUCT-007` over every contract file in a feature folder.
-10. Run `STRUCT-002` and `STRUCT-003` when the project is feature-driven.
-11. Run `LAYER-001` over the source tree when the architecture declares layers.
-12. Run `SAFE-001`, `SAFE-002`, and `SAFE-003` over the changed files, listed
-    from `git` (M-54, M-55, M-58), and `SAFE-004` to `SAFE-007`, `AUTH-001`, and
-    `DEP-001` over the same files (M-52, M-56, M-57, M-59, M-60, M-61). The whole
-    project is swept by `project_safety_sweep` in the health probe, not only the
-    change set.
-13. Review each match against the allowed reasons before reporting it.
-14. Report every finding with `file:line`, the rule id, the severity, and the
-    concrete fix.
+3. Run **every row of the coverage table below whose "Applies when" holds**.
+   The table is the complete list of the detectors this file defines. A detector or check that a workflow defines is a control only when the procedure that a verdict cites runs it on the scope it covers (M-75). A row
+   that applies and is not run is a skipped check: it is reported as
+   `NOT VERIFIED` with its reason and never as passing. A detector that
+   exists in this file and is absent from the table is a defect of this file,
+   and `V2.77` in `workflows/system-validation.md` reports it.
+4. Run `TYPE-002` over the contract files identified by `TYPE-001`.
+5. When a claim, a contract, or a pattern is corrected, search its text across
+   the change set and the project sweep. Every surviving occurrence is a finding
+   with its `file:line`, so a correction in a test or a contract is not complete
+   while a source comment still states the old claim (M-75, M-68).
+6. Review each match against the allowed reasons before reporting it.
+7. Report every finding with `file:line`, the rule id, the severity, and the
+   concrete fix.
+
+### Coverage table
+
+| Rule | Scope | Applies when |
+|---|---|---|
+| `FUNC-001` | change set | TypeScript or JavaScript source is created or modified |
+| `TYPE-001` | change set | TypeScript or JavaScript source is created or modified |
+| `TYPE-002` | contract files named by `TYPE-001` | a contract file is in the change set |
+| `TYPE-003` | change set | a contract is forwarded by a re-export or alias |
+| `TYPE-004` | source tree | any contract is declared in the change set |
+| `FILE-001` | change set and source tree | source is created or modified |
+| `STRUCT-001`, `STRUCT-006` | every feature folder | the project is feature-driven |
+| `STRUCT-002`, `STRUCT-003` | feature imports and public APIs | the project is feature-driven |
+| `STRUCT-004` | created tree | a new tree is created |
+| `STRUCT-005` | repository topology | the project is a monorepo |
+| `STRUCT-007` | contract files in feature folders | the project is feature-driven |
+| `CONFIG-001` | added configuration and lint files | the change adds lint or configuration files |
+| `LAYER-001` | source tree | the architecture declares layers |
+| `TEST-001`, `TEST-002` | created and modified test files | a test file is created or modified |
+| `DEAD-EXPORT-001` | modules that add an export | an export is added |
+| `SAFE-001`, `SAFE-002`, `SAFE-003` | changed files | outbound calls, endpoints, or temporary paths change |
+| `SAFE-004`, `SAFE-005`, `SAFE-006`, `SAFE-007`, `AUTH-001` | changed files | URLs, cache, credentials, backup, or identity change |
+| `DEP-001` | manifest and lockfile diff | a manifest or lockfile changes |
+| `SAFE-008`, `SAFE-009` | changed files | cross-origin, development tools, uploads, or file writes change |
+| `I18N-001`, `I18N-002`, `I18N-003`, `I18N-004` | changed UI and formatter files | the approved requirement includes locales or RTL |
+| `CONSUME-001` | changed units | a changed unit consumes another unit |
+| `DEC-001` | decision records in the change set | a record or pattern table is in the change set |
+| `CLAIM-001` | documents and source comments in the change set | a changed file contains text |
+| `DB-001` | source files in the change set | any source file is created or modified |
+| `DB-002` | migrations and tests in the change set | a migration is created or modified |
+| `SCOPE-001` | change set against the approved manifest | an approved scope manifest exists |
+| `INV-001` | reports or analyses that list an inventory | the change set contains such a report |
+| `STATE-001` | read-only gates | a read-only gate runs |
+| `A11Y-001`, `A11Y-002` | changed UI and platform files | accessibility applies |
+| `DIP-002` | changed logic modules | a logic module imports platform code |
+| `CHECK-001`, `CHECK-002` | phase reports | the work reports phases or checklists |
+| `GATE-001` | installation proposals | a dependency or tooling installation is proposed |
+| Whole-project sweep | project, health probe | the health probe runs; the sweep is not a change-set check |
 
 ## Reporting
 
@@ -1868,7 +1915,7 @@ evidence.
 ### OUTPUT COMPLIANCE
 
 - Scope: <paths, branch, commit>
-- Checks executed: FUNC-001, TYPE-001, TYPE-002, TYPE-003, TYPE-004, FILE-001, STRUCT-001, STRUCT-006, STRUCT-007, LAYER-001, SAFE-001 to SAFE-007, AUTH-001, DEP-001
+- Checks executed: every coverage-table row whose condition held, with its result
 - Result: PASS | FAIL
 - Findings:
   - <file>:<line> — <RULE> — <severity> — <reason> — <fix>

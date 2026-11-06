@@ -1004,6 +1004,8 @@ Return:
 - V2.73 locale direction, consumed-code inheritance, enumerated claims, decision-record patterns, and platform live-region checks:
 - V2.74 deploy order, application-side schema ownership, and scope-manifest checks:
 - V2.75 inventory enumeration, repository state, and unexecuted-step checks:
+- V2.76 performance claims, technical-property claims, and sweep coverage checks:
+- V2.77 detector coverage in the change-set procedure, and the AMBIGUOUS and evidence rules of the code audit:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -4737,6 +4739,219 @@ snap="$(mktemp -d "${TMPDIR:-/tmp}/v275snap.XXXXXX")"
 
 echo "V2.75 probe: fixtures in $fx and $snap were checked and are removed"
 rm -rf "$fx" "$snap"
+
+exit "$failures"
+```
+
+## V2.76 Regression — Performance Claims, Technical-Property Claims, and Sweep Coverage
+
+Verify that the rule added after the external audit of a database-performance
+finding is canonical, reachable, and effective, and that the detector reads the
+claims the external audit found:
+
+- M-65: a performance claim (a query, index, or path said to be faster or fixed)
+  is kept only with a before-and-after measurement of the named query, and a
+  technical property in a comment or document (a covering index, an index-only scan,
+  a constant-time operation) is kept only with the plan or the code that decides it
+  (R-126). The external audit marked a query fixed with a `PASS` and no measurement,
+  and a source comment claimed a covering index that the query did not have.
+- `CLAIM-001` reports both claim kinds as `NOT VERIFIED` with `file:line`, in documents
+  and in source comments, and the whole-project sweep passes the source files to it
+  (`claim_check . $mds $src`), so a comment in `.ts` is not skipped.
+- The health probe lists `DB-001`, `DB-002`, and `CLAIM-001` among the sweep items, so a
+  pre-existing schema statement in a store is reported by the probe.
+
+The text checks run on the repository. The behavioral part extracts the `CLAIM-001`
+block of `workflows/output-compliance.md`, builds a fixture outside the repository
+with a `.ts` comment and a README that make the claims, verifies each is reported
+with `file:line`, verifies a compliant twin is silent, and removes the fixture. It
+needs `awk`, `grep`, `sed`, and `mktemp`; without them the behavioral part is
+`NOT VERIFIED`, and the text checks still run.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+ap="references/audit-pass-criteria.md"
+pv="workflows/project-validation.md"
+db="skills/database-engineering/SKILL.md"
+vs="workflows/system-validation.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.76: $1 is missing $3"; failures=1; }
+}
+
+# M-65 performance and technical-property wording on every required surface.
+for surface in "$ag" "$mr" "$ap" "$db" "$rmx" "$vs"; do
+  need "$surface" "before-and-after measurement of the named query" "the performance anchor (M-65)"
+done
+for surface in "$ag" "$mr" "$ap" "$rmx" "$vs"; do
+  need "$surface" "covering index" "the technical-property anchor (M-65)"
+done
+grep -q "^| R-126 |" "$root/$rmx" || { echo "FAIL V2.76: no R-126 row"; failures=1; }
+
+# The detector is defined, the sweep passes source files to it, and the probe lists the sweep items.
+grep -q "^### CLAIM-001 " "$root/$oc" || { echo "FAIL V2.76: $oc has no CLAIM-001 section"; failures=1; }
+grep -qF 'claim_check . $mds $src' "$root/$oc" || { echo "FAIL V2.76: the sweep does not pass source files to CLAIM-001"; failures=1; }
+need "$pv" "the same sweep also reports schema DDL outside a migration" "the probe sweep items"
+need "$pv" "DB-001" "the probe item for DB-001"
+need "$pv" "DB-002" "the probe item for DB-002"
+need "$pv" "NOT VERIFIED CLAIM-001" "the probe item for CLAIM-001"
+
+command -v awk >/dev/null 2>&1 && command -v grep >/dev/null 2>&1 && command -v sed >/dev/null 2>&1 \
+  && command -v mktemp >/dev/null 2>&1 || {
+  echo "NOT VERIFIED V2.76: awk, grep, sed, or mktemp is not available, the behavioral fixture was not run"; exit 2; }
+
+# Extracts the sh block of the CLAIM-001 section of workflows/output-compliance.md.
+extract() {
+  awk '
+    /^### CLAIM-001 / { on = 1; next }
+    /^### / { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v276.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  mkdir -p src
+  extract > check.sh
+  . ./check.sh || { echo "FAIL V2.76: CLAIM-001 does not load"; exit 1; }
+
+  # The defective fixture: a source comment that claims a covering index, and a README that claims a faster query.
+  printf '%s\n' "// The index is a covering index, so this query reads no table row." "export const find = () => 1;" > src/store.ts
+  printf '%s\n' "# App" "The order query is faster after the change." > README.md
+  defects="$(claim_check . src/store.ts README.md)"
+  printf '%s\n' "$defects" | grep -qF 'NOT VERIFIED CLAIM-001: src/store.ts:1:' \
+    || { echo "FAIL V2.76: CLAIM-001 did not report the covering-index comment with file:line: $defects"; exit 1; }
+  printf '%s\n' "$defects" | grep -qF 'technical property claim' \
+    || { echo "FAIL V2.76: CLAIM-001 did not label the technical-property claim"; exit 1; }
+  printf '%s\n' "$defects" | grep -qF 'NOT VERIFIED CLAIM-001: README.md:2:' \
+    || { echo "FAIL V2.76: CLAIM-001 did not report the performance claim with file:line: $defects"; exit 1; }
+  printf '%s\n' "$defects" | grep -qF 'performance claim' \
+    || { echo "FAIL V2.76: CLAIM-001 did not label the performance claim"; exit 1; }
+  printf '%s\n' "$defects" | grep -q '^FAIL' \
+    && { echo "FAIL V2.76: CLAIM-001 reports a claim as FAIL instead of NOT VERIFIED"; exit 1; }
+
+  # The compliant twin: the same files with the claim replaced by the evidence that decides it.
+  printf '%s\n' "// The query plan is recorded in docs/plan.md." "export const find = () => 1;" > src/store.ts
+  printf '%s\n' "# App" "The order query timing is recorded in docs/measure.md." > README.md
+  [ -z "$(claim_check . src/store.ts README.md)" ] \
+    || { echo "FAIL V2.76: CLAIM-001 reports the compliant twin"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.76 probe: fixture in $fx was checked and is removed"
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.77 Regression — Detector Coverage, Open Ambiguity, and Propagated Corrections
+
+Verify that a detector the system defines cannot be skipped by the procedure that a
+verdict cites, and that a dimension with an open `AMBIGUOUS` criterion or a `PASS`
+without evidence cannot be reported as passing. The external audit found a database
+finding that the change-set procedure did not run, a performance criterion judged
+`PASS` with no measurement, an ambiguity resolved by the auditor, and a claim corrected
+in the test and the contract but left in a source comment:
+
+- M-75: a detector or check the workflow defines is a control only when the procedure
+  runs it (R-127). `V2.77` reads every rule heading of `workflows/output-compliance.md`
+  and fails when the Procedure's coverage table does not name its identifier. The
+  removal probe proves the check reports a row that is taken out.
+- M-75: a criterion `AMBIGUOUS` on an applicable dimension is never `PASS`, and a `PASS`
+  cites its evidence (R-128), in the criteria and in the code audit.
+- M-75: a corrected claim is searched across the change set and the sweep (`CLAIM-001`
+  and the Procedure step 5).
+
+The text checks run on the repository. The mechanical part reads the headings and the
+Procedure section, and the removal probe runs on a copy outside the repository. It needs
+`awk`, `grep`, `sed`, `mktemp`, and `cp`; without them the probe is `NOT VERIFIED`.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+cg="workflows/code-audit.md"
+ap="references/audit-pass-criteria.md"
+vs="workflows/system-validation.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.77: $1 is missing $3"; failures=1; }
+}
+
+# Prints a FAIL line for every rule identifier of the headings that the Procedure does not name.
+# $1 = the output-compliance file to check.
+coverage_missing() {
+  file="$1"
+  proc="$(awk '/^## Procedure$/{on=1;next} /^## /{on=0} on' "$file")"
+  rules="$(awk '/^### /' "$file")"
+  printf '%s\n' "$rules" | while IFS= read -r h; do
+    head="$(printf '%s' "$h" | sed 's/^### //; s/ —.*//')"
+    for id in $(printf '%s' "$head" | grep -oE '[A-Z][A-Z0-9]*-[0-9]+'); do
+      printf '%s\n' "$proc" | grep -qF -- "$id" \
+        || echo "FAIL V2.77: the Procedure coverage table does not name $id (heading: $head)"
+    done
+  done
+}
+
+# The coverage check on the repository: every detector heading is named by the Procedure.
+missing="$(coverage_missing "$root/$oc")"
+[ -z "$missing" ] || { printf '%s\n' "$missing"; failures=1; }
+grep -qF '| `DB-001` |' "$root/$oc" || { echo "FAIL V2.77: the coverage table has no DB-001 row"; failures=1; }
+grep -q '^## Procedure$' "$root/$oc" || { echo "FAIL V2.77: $oc has no Procedure section"; failures=1; }
+
+# M-75 wording and reachability.
+for surface in "$ag" "$mr" "$rmx" "$vs" "$oc" "$cg" "$ap"; do
+  need "$surface" "is a control only when the procedure that a verdict cites runs it" "the M-75 anchor"
+done
+for surface in "$ag" "$mr" "$ap" "$rmx" "$vs"; do
+  need "$surface" 'is never `PASS`' "the AMBIGUOUS-is-never-PASS rule (M-75)"
+done
+need "$cg" "makes that dimension and the verdict" "the AMBIGUOUS verdict rule (M-75)"
+need "$cg" "every row whose condition holds" "the coverage-table step of the code audit (M-75)"
+need "$ap" "cites its evidence" "the PASS-with-evidence rule (M-75)"
+for id in R-127 R-128; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.77: no $id row"; failures=1; }
+done
+grep -q "^| M-75 |" "$root/$mr" || { echo "FAIL V2.77: no M-75 row"; failures=1; }
+
+command -v awk >/dev/null 2>&1 && command -v grep >/dev/null 2>&1 && command -v sed >/dev/null 2>&1 \
+  && command -v mktemp >/dev/null 2>&1 && command -v cp >/dev/null 2>&1 || {
+  echo "NOT VERIFIED V2.77: awk, grep, sed, mktemp, or cp is not available, the removal probe was not run"; exit 2; }
+
+# Removal probe: a copy with the DB-001 row taken out must be reported; the repaired copy must not.
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v277.XXXXXX")"
+(
+  cp "$root/$oc" "$fx/removed.md"
+  sed '/^| `DB-001` |/d' "$root/$oc" > "$fx/removed.md"
+  removed="$(coverage_missing "$fx/removed.md")"
+  printf '%s\n' "$removed" | grep -qF 'FAIL V2.77: the Procedure coverage table does not name DB-001' \
+    || { echo "FAIL V2.77: the removed DB-001 row was not reported: $removed"; exit 1; }
+  printf '%s\n' "$removed" | grep -qF 'DB-002' \
+    && { echo "FAIL V2.77: the probe reports a row that was not removed"; exit 1; }
+  cp "$root/$oc" "$fx/repaired.md"
+  [ -z "$(coverage_missing "$fx/repaired.md")" ] \
+    || { echo "FAIL V2.77: the repaired copy is still reported"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.77 probe: fixture in $fx was checked and is removed"
+rm -rf "$fx"
 
 exit "$failures"
 ```

@@ -18,7 +18,12 @@ dimension. A criterion is never presented as a framework standard.
 
 ## Judgment Rules
 
-- A dimension is `PASS` when every applicable criterion holds on the change set.
+- A dimension is `PASS` when every applicable criterion holds on the change set,
+  and each criterion's `PASS` cites its evidence: a command with its exit code, a
+  `file:line`, or a measurement. An assertion without cited evidence is not a `PASS`;
+  it is `NOT VERIFIED` (M-75).
+- A dimension with a criterion `AMBIGUOUS` is never `PASS`. It stays open until the user
+  resolves the criterion (M-75). A detector or check that a workflow defines is a control only when the procedure that a verdict cites runs it on the scope it covers (M-75).
 - A criterion that is violated by the change set is a defect of the task. It
   is fixed in the task, or the task is `BLOCKED` with the reason. It is not
   delivered as a `WARN` or as an observation.
@@ -28,6 +33,9 @@ dimension. A criterion is never presented as a framework standard.
   requirement does not ask for locales.
 - `WARN` remains an auditor state for a non-defect observation that violates
   no criterion. It is not an accepted terminal state for code the task creates.
+- A claim the change makes about performance or a technical property is evidence,
+  not an assertion (M-65): it is `PASS` only with the measurement or the plan that
+  decides it, and without it the dimension is `FAIL` at the line of the claim.
 - A criterion violated by code that already existed before the change set is
   a recorded finding with file and line. It does not block the task, unless the
   change set consumes a pre-existing unit which violates a requirement the change
@@ -148,6 +156,11 @@ dimension. A criterion is never presented as a framework standard.
   cites the search (M-68). A claim the enumeration contradicts is a finding with both lines, and
   a claim that cites an artifact the repository does not hold is `NOT VERIFIED`
   (`CLAIM-001` in `workflows/output-compliance.md`).
+- A correction to a claim, a contract, or a pattern is applied to every surface that
+  states it. The change set and the project sweep are searched for the old text, and a
+  surviving occurrence in a source comment or a document is a finding with its
+  `file:line`, even when the test or the contract was already corrected (M-75,
+  `CLAIM-001` in `workflows/output-compliance.md`).
 - A comment, JSDoc, or document that states a behavior of the code, a workflow,
   or a pipeline is checked against the code it describes. A statement the code
   contradicts is a finding: `P3` when it has no runtime effect, `P2` when it
@@ -164,7 +177,10 @@ dimension. A criterion is never presented as a framework standard.
   retries it, and a permanent failure is reported as permanent.
 - A documented timing, size, or limit has a test, and its unit matches the unit
   the code measures. A comment that claims a unit the code does not measure is
-  a `FAIL` of the documentation (M-65 and the comment-accuracy rule).
+  a `FAIL` of the documentation (M-65 and the comment-accuracy rule). A technical
+  property in a comment (a covering index, an index-only scan, a constant-time
+  operation) is checked against the plan or the code that decides it, and it is
+  `NOT VERIFIED` until that evidence is cited (`CLAIM-001`).
 - A listener, subscription, or controller created for an identity is released
   when the identity changes or signs out.
 
@@ -197,6 +213,21 @@ dimension. A criterion is never presented as a framework standard.
   enumeration does not return is a `FAIL`, and an enumerated item that is neither
   listed nor excluded with a reason is a `FAIL` (`INV-001` in
   `workflows/output-compliance.md`).
+- A performance claim (a query, index, or path said to be faster or fixed) is
+  `PASS` only with a before-and-after measurement of the named query: its plan
+  (`EXPLAIN`) and its timing, recorded before and after the change, on a dataset of
+  stated size and environment (M-65). A claim with no measurement is a `FAIL` at the
+  line of the claim, and a production claim with no production measurement is
+  `NOT VERIFIED` for that part. A development measurement does not establish a
+  production effect.
+- When the requirement does not identify which query is slow, the criterion is
+  `AMBIGUOUS`: the auditor does not choose a query and measure that one instead.
+  The user identifies the query (see the `AMBIGUOUS` rule above).
+- A technical property of a query or structure (a covering index, an index-only
+  scan, a constant-time operation) stated in code, a comment, or a document is
+  checked against the plan or the code that decides it (`CLAIM-001` in
+  `workflows/output-compliance.md`). A property the plan contradicts is a `FAIL` of
+  this dimension with both lines.
 
 ### 6. Security
 
