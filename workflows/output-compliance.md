@@ -721,7 +721,7 @@ These detections enforce the delivery-safety rules of `AGENTS.md`:
   named as a local development address.
 - **SAFE-003 (M-58).** No hardcoded environment endpoint and no fixed shared
   temporary path. A `localhost` or `127.0.0.1` URL in non-test TypeScript or
-  JavaScript source is a `FAIL`, and a `/tmp/` path literal in a changed script is
+  JavaScript source is a `FAIL`, and a fixed temporary-directory path literal in a changed script is
   a `FAIL` unless the line also reads `TMPDIR` (the `${TMPDIR:-/tmp}` fallback of
   a `mktemp` call is not a fixed path).
 
@@ -774,7 +774,7 @@ safe_endpoint_check() {
         grep -nE 'https?://(localhost|127\.0\.0\.1)' "$root/$f" 2>/dev/null |
           sed "s#^#FAIL SAFE-003: $f:#" ;;
       *.sh|*.bash|*.zsh)
-        grep -nE '/tmp/' "$root/$f" 2>/dev/null | grep -v 'TMPDIR' |
+        grep -nE '/[t]mp/' "$root/$f" 2>/dev/null | grep -v 'TMPDIR' |
           sed "s#^#FAIL SAFE-003: $f:#" ;;
     esac
   done
@@ -784,6 +784,228 @@ safe_endpoint_check() {
 The detections use `awk`, `grep`, and `sed`, present on macOS and Linux. Where a
 changed file is missing they report nothing for it, so the caller lists the
 changed files from `git`, never by hand.
+
+### SAFE-004 to SAFE-007, AUTH-001, DEP-001 — Encoding, Cache Partitions, Rejected Credentials, Backup, Identity Source, and Downgrade
+
+These detections enforce the delivery-safety rules that the external audits found
+missed, and they are candidate generators: the reviewer confirms each match before
+reporting it.
+
+- **SAFE-002 scheme form (M-55).** A file that validates a URL setting with `.url()`
+  and has no scheme refinement accepts `http://`, so a token can travel in cleartext.
+  The configuration validates the scheme (`https` only for a non-local build).
+- **SAFE-004 (M-59).** A value interpolated into a URL path is encoded with the
+  encoder of its context, for example `encodeURIComponent`, before the request is
+  built. A raw identifier in a path is a `FAIL`; the encoded form passes.
+- **SAFE-005 (M-56).** A cache or storage key with no identity partition (user,
+  account, tenant, or owner) is a candidate: the reviewer classifies whether the
+  data is identity-owned or public. Payment data written to plain storage is a
+  `FAIL`. A sign-out definition that clears no cache partition within 25 lines is a
+  `FAIL`, so a sign-out that removes only the token is caught.
+- **SAFE-006 (M-60).** A `401` answer that does not end the session within 15 lines
+  (sign-out, session end, or cache-partition clear) is a `FAIL`: a rejected
+  credential ends the session, and cached data is never served to it.
+- **SAFE-007 (M-61).** A build manifest or app configuration that sets
+  `allowBackup` to true lets device backup extract the app data. An app that holds
+  personal or payment data does not allow backup of personal data, so the setting
+  is a `FAIL`, and a manifest that does not exist is `NOT VERIFIED`, never clean.
+- **AUTH-001 (M-52).** An identity read from a client-controlled header
+  (`x-user-id`) or query (`userId` in a stream URL) is not authentication.
+
+**Scope limit.** The detectors read TypeScript, JavaScript, and POSIX shell, plus the
+manifests named above. A semantic ownership check (an object written without a
+verified owner) and a device-level run are reviewed under Dimension 6 and are never
+reported as passing by these detectors.
+
+```sh
+# $1 = repository root; $2... = changed or tracked files, relative to it.
+# SAFE-004 (M-59): a template literal that builds a URL path interpolates an
+# identifier with no encoder around it.
+id_encoding_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    (cd "$root" && perl -ne '
+      next unless /`[^`]*\/[^`]*\$\{(?!\s*encodeURIComponent\()\s*[\w.]*(?:Id|ID|id|Slug|slug)\s*\}/;
+      print "FAIL SAFE-004: $ARGV:$.: identifier interpolated into a URL path with no encoder (M-59)\n";
+    ' "$f")
+  done
+}
+
+# SAFE-002 scheme form (M-55): a file that validates a URL setting with no
+# scheme refinement accepts cleartext http://.
+url_scheme_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    grep -qE '\.url\(' "$root/$f" 2>/dev/null || continue
+    grep -qE 'refine|superRefine|startsWith|protocol' "$root/$f" && continue
+    awk -v file="$f" '/\.url\(/ {
+      printf "FAIL SAFE-002: %s:%d: a URL setting accepts any scheme, so cleartext http:// passes (M-55)\n", file, NR
+    }' "$root/$f"
+  done
+}
+
+# SAFE-005 (M-56): a cache or storage key with no identity partition, and
+# payment data written to plain storage.
+cache_partition_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    (cd "$root" && perl -ne '
+      next unless /(?:cacheKey\s*:|(?:readCache|writeCache|clearCache|setItem|getItem|removeItem|multiSet)\s*\()\s*[`"\x27]([^`"\x27]*)/;
+      my $key = $1;
+      if ($key !~ /user|account|tenant|identity|owner|session|subject/i && !/\$\{[^}]*(?:user|account|tenant|identity|owner|session|subject)/i) {
+        print "FAIL SAFE-005: $ARGV:$.: cache key \"$key\" has no identity partition (M-56)\n";
+      }
+      if ($key =~ /payment|card|iban|cvv/i) {
+        print "FAIL SAFE-005: $ARGV:$.: payment data written to plain storage under \"$key\" (M-56)\n";
+      }
+    ' "$f")
+  done
+}
+
+# SAFE-005 (M-56), sign-out form: a sign-out definition whose body, within 25
+# lines, clears no cache partition of the identity.
+signout_clear_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    awk -v file="$f" '
+      { lines[NR] = $0 }
+      /((const|let|var)[[:space:]]+|function[[:space:]]+)(signOut|logOut|logout)[[:space:]]*[=(]/ { defs[++n] = NR }
+      END {
+        for (i = 1; i <= n; i++) {
+          d = defs[i]; ok = 0
+          for (k = d; k <= d + 25 && k <= NR; k++)
+            if (lines[k] ~ /clear[A-Za-z]*(Cache|Partition|Identity)|clearAll|multiRemove/) ok = 1
+          if (!ok) printf "FAIL SAFE-005: %s:%d: sign-out clears no cache partition of the identity (M-56)\n", file, d
+        }
+      }' "$root/$f"
+  done
+}
+
+# SAFE-006 (M-60): a 401 answer that a client does not handle by ending the
+# session. Test files are excluded because a test may assert a 401 on purpose,
+# and server route handlers are excluded because they emit a 401 to their client
+# rather than handling one; the client side is the one reviewed here.
+rejected_credential_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*|*/route.ts|*/route.js|server.ts|*/server.ts|*/server/*) continue ;; esac
+    awk -v file="$f" '
+      { lines[NR] = $0 }
+      /(===?|!==?|:)[[:space:]]*401([^0-9]|$)/ { hits[++n] = NR }
+      END {
+        for (i = 1; i <= n; i++) {
+          h = hits[i]; ok = 0
+          for (k = h; k <= h + 15 && k <= NR; k++)
+            if (lines[k] ~ /signOut|logOut|logout|endSession|clear[A-Za-z]*(Cache|Partition|Identity)/) ok = 1
+          if (!ok) printf "FAIL SAFE-006: %s:%d: a 401 answer does not end the session (M-60)\n", file, h
+        }
+      }' "$root/$f"
+  done
+}
+
+# AUTH-001 (M-52): an identity read from a client-controlled header or query.
+# Test files are excluded: a test sets the header on purpose to exercise the route.
+identity_source_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*) continue ;; esac
+    (cd "$root" && perl -ne '
+      print "FAIL AUTH-001: $ARGV:$.: identity read from a client-controlled header or query, not from a verified credential (M-52)\n"
+        if /headers(?:\.get\(|\[)\s*["\x27](?:x-user-id|x-user|x-account-id|x-tenant-id)|searchParams\.get\(\s*["\x27](?:userId|user_id|uid|accountId)|(?:query|params)\.(?:userId|user_id)\b/i;
+    ' "$f")
+  done
+}
+
+# SAFE-007 (M-61): a build manifest or app configuration that allows backup, or
+# that does not set it. On Android the default allows backup, so an unset value
+# is a finding too, and the built manifest confirms it.
+backup_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    grep -nE 'allowBackup"?[[:space:]]*[:=][[:space:]]*"?true' "$root/$f" 2>/dev/null |
+      sed "s#^#FAIL SAFE-007: $f:#"
+    grep -qE 'allowBackup' "$root/$f" 2>/dev/null && continue
+    grep -qE '<application|android"?[[:space:]]*:' "$root/$f" 2>/dev/null &&
+      echo "FAIL SAFE-007: $f:1: allowBackup is not set, and the Android default allows backup (M-61)"
+  done
+}
+
+# DEP-001 (M-57): a manifest change that moves a dependency to an older major.
+# $1 = repository root; $2 = base revision; $3... = changed package.json files.
+dependency_downgrade_check() {
+  root="$1"; base="$2"; shift 2
+  for f in "$@"; do
+    case "$f" in */package.json|package.json) ;; *) continue ;; esac
+    old=$(mktemp) || return 1
+    if git -C "$root" show "$base:$f" > "$old" 2>/dev/null; then
+      (cd "$root" && perl -MJSON::PP -e '
+        my ($oldf, $newf, $name) = @ARGV;
+        my $read = sub { open my $h, "<", $_[0] or die "$_[0]: $!"; local $/; my $t = <$h>; close $h; JSON::PP->new->decode($t) };
+        my ($o, $n) = ($read->($oldf), $read->($newf));
+        for my $sec (qw(dependencies devDependencies optionalDependencies)) {
+          next unless ref $o->{$sec} eq "HASH" && ref $n->{$sec} eq "HASH";
+          for my $dep (sort keys %{ $o->{$sec} }) {
+            next unless exists $n->{$sec}{$dep};
+            my ($om) = ($o->{$sec}{$dep} =~ /(\d+)/);
+            my ($nm) = ($n->{$sec}{$dep} =~ /(\d+)/);
+            next unless defined $om && defined $nm && $nm < $om;
+            my $ln = 0;
+            open my $fh, "<", $newf or die "$newf: $!";
+            while (my $l = <$fh>) { $ln++; last if $l =~ /"\Q$dep\E"\s*:/ }
+            close $fh;
+            print "FAIL DEP-001: $name:$ln: $dep moves from $o->{$sec}{$dep} to $n->{$sec}{$dep} in $sec, a downgrade (M-57)\n";
+          }
+        }
+      ' "$old" "$f" "$f")
+    fi
+    rm -f "$old"
+  done
+}
+```
+
+### Whole-project sweep (health probe)
+
+The health probe (`workflows/project-validation.md`, Phase 8a items 6 and 7)
+must scan the **whole project**, not only the change set: a pre-existing
+violation in unrelated code is a finding, and it is reported without blocking
+the task. This sweep is one command that lists every tracked and untracked file,
+so no file is skipped by hand, runs every delivery-safety detector, and prints
+what it scanned and what it excluded (M-51). It runs from the project root. A
+check that needs a base revision is reported as `NOT VERIFIED` for the sweep and
+runs on the change set instead.
+
+```sh
+# Run from the project root. Falls back to find when the project is not a git repository.
+project_safety_sweep() {
+  files=$( (git ls-files --cached --others --exclude-standard 2>/dev/null) || (find . -type f | sed 's#^\./##') )
+  files=$(printf '%s\n' "$files" | sed '/^$/d' | grep -vE '(^|/)(node_modules|dist|build|\.next|coverage|\.git)/')
+  src=$(printf '%s\n' "$files" | grep -E '\.(ts|tsx|js|jsx|mjs|cjs)$' | grep -vE '\.d\.ts$')
+  shells=$(printf '%s\n' "$files" | grep -E '\.(sh|bash|zsh)$')
+  manifests=$(printf '%s\n' "$files" | grep -E '(^|/)(AndroidManifest\.xml|app\.json|app\.config\.(js|ts|json))$')
+  nonbarrel=$(printf '%s\n' "$src" | grep -vE '(^|/)index\.(ts|tsx|js|jsx|mjs|cjs)$')
+  echo "SWEEP scanned: $(printf '%s\n' "$src" | sed '/^$/d' | wc -l | tr -d ' ') source files, $(printf '%s\n' "$shells" | sed '/^$/d' | wc -l | tr -d ' ') shell scripts, $(printf '%s\n' "$manifests" | sed '/^$/d' | wc -l | tr -d ' ') build manifests"
+  echo "SWEEP excluded: node_modules, dist, build, .next, coverage, .git, and declaration files (*.d.ts)"
+  safe_timeout_check . $src
+  safe_cleartext_check . $src $shells
+  safe_endpoint_check . $src $shells
+  url_scheme_check . $src
+  id_encoding_check . $src
+  cache_partition_check . $src
+  signout_clear_check . $src
+  rejected_credential_check . $src
+  identity_source_check . $src
+  backup_check . $manifests
+  dead_export_check . $nonbarrel
+  [ -n "$manifests" ] || echo "NOT VERIFIED M-61: no build manifest or app configuration is tracked, so backup is not verified"
+  echo "NOT VERIFIED M-57 (downgrade): needs a base revision; run dependency_downgrade_check on the change set"
+}
+```
 
 ### CHECK-001 — Phase checklist format and derivation
 
@@ -1033,7 +1255,10 @@ evidence.
 10. Run `STRUCT-002` and `STRUCT-003` when the project is feature-driven.
 11. Run `LAYER-001` over the source tree when the architecture declares layers.
 12. Run `SAFE-001`, `SAFE-002`, and `SAFE-003` over the changed files, listed
-    from `git` (M-54, M-55, M-58).
+    from `git` (M-54, M-55, M-58), and `SAFE-004` to `SAFE-007`, `AUTH-001`, and
+    `DEP-001` over the same files (M-52, M-56, M-57, M-59, M-60, M-61). The whole
+    project is swept by `project_safety_sweep` in the health probe, not only the
+    change set.
 13. Review each match against the allowed reasons before reporting it.
 14. Report every finding with `file:line`, the rule id, the severity, and the
     concrete fix.
@@ -1044,7 +1269,7 @@ evidence.
 ### OUTPUT COMPLIANCE
 
 - Scope: <paths, branch, commit>
-- Checks executed: FUNC-001, TYPE-001, TYPE-002, TYPE-003, TYPE-004, FILE-001, STRUCT-001, STRUCT-006, STRUCT-007, LAYER-001, SAFE-001, SAFE-002, SAFE-003
+- Checks executed: FUNC-001, TYPE-001, TYPE-002, TYPE-003, TYPE-004, FILE-001, STRUCT-001, STRUCT-006, STRUCT-007, LAYER-001, SAFE-001 to SAFE-007, AUTH-001, DEP-001
 - Result: PASS | FAIL
 - Findings:
   - <file>:<line> — <RULE> — <severity> — <reason> — <fix>

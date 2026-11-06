@@ -354,7 +354,9 @@ Run each check, and record its command, status, and evidence:
    configured audit is a finding. When the vulnerability database is unavailable,
    the check is `NOT_RUN`, never clean. A suggested fix that moves a package to an
    older major version is not a remediation: a dependency remediation never
-   downgrades (M-57). The fix is the fixed version of the package, the direct
+   downgrades (M-57). A remediation diff is checked by `DEP-001` in
+   `workflows/output-compliance.md`, which fails a manifest change that moves a
+   dependency to an older major. The fix is the fixed version of the package, the direct
    dependency that brings it in, or a documented override of that one package, and
    a blocker without a fixed version is reported as such.
 4. **Gates.** Run the formatter's non-mutating check, the linter, the typecheck,
@@ -367,21 +369,32 @@ Run each check, and record its command, status, and evidence:
 5. **Duplicated source trees.** When sibling projects contain source trees with
    the same name and different content, run `diff -rq` on them and record each
    as a `DUPLICATE-TREE` finding, following `skills/repository-strategy/SKILL.md`.
-6. **Dead exports and hardcoded configuration (M-49, M-58).** Run
-   `DEAD-EXPORT-001` from `workflows/output-compliance.md` over every non-barrel
-   source file of the project, not only the change set: an export with no
-   importer outside a barrel is a `DEAD-EXPORT-001` finding with `file:line`, and
-   it never blocks an unrelated task. No hardcoded environment endpoint and no
-   fixed shared temporary path (M-58) is a finding in the same way: each literal
-   `localhost` or `127.0.0.1` URL in non-test source and each fixed `/tmp/` path
-   in a project script is reported with its `file:line`, as `SAFE-003`.
-7. **Outbound timeouts and cleartext endpoints (M-54, M-55).** Run `SAFE-001` and
-   `SAFE-002` from `workflows/output-compliance.md` over the project source.
-   Every external call has an explicit timeout (M-54), so an outbound call with
-   no timeout is a `SAFE-001` finding, and `http://` is rejected for every
-   non-local build (M-55), so a cleartext endpoint outside a local address is a
-   `SAFE-002` finding. Each is reported with its `file:line`. Both are reported without blocking
-   an unrelated task, and the probe never reports them as passing.
+6. **Whole-project safety sweep (M-49, M-52, M-54 to M-61).** Run
+   `project_safety_sweep` from `workflows/output-compliance.md` from the project
+   root. It scans every tracked and untracked file, not only the change set, and
+   prints what it scanned and what it excluded, so the probe never skips a file
+   by hand. It reports, each with `file:line`: dead exports (`DEAD-EXPORT-001`),
+   no hardcoded environment endpoint and no fixed shared temporary path (M-58,
+   `SAFE-003`), outbound calls with no timeout (`SAFE-001`), cleartext endpoints
+   and schemes that accept
+   `http://` (`SAFE-002`), a URL path that interpolates an identifier whose value
+   is not encoded (`SAFE-004`; the rule is that a value is encoded with the encoder
+   of its context), cache keys and sign-out paths without identity partitions and
+   payment data in plain storage (`SAFE-005`), a `401` that does not end the session
+   (`SAFE-006`), a build manifest that enables backup (`SAFE-007`; an app that holds
+   personal or payment data does not allow backup of personal data), and an identity
+   read from a client-controlled header or query (`AUTH-001`). Each is a finding
+   that never blocks an unrelated task, and the probe never reports one as passing.
+   A missing manifest is `NOT VERIFIED` for M-61, never clean.
+7. **Outbound timeouts and cleartext endpoints (M-54, M-55).** The sweep of item 6
+   covers `SAFE-001` and `SAFE-002` over the project source. Every external call
+   has an explicit timeout (M-54), so an outbound call with no timeout is a
+   `SAFE-001` finding, and `http://` is rejected for every non-local build (M-55),
+   so a cleartext endpoint or a URL setting that accepts any scheme is a `SAFE-002`
+   finding. Each is reported with its `file:line`, without blocking an unrelated
+   task, and the probe never reports them as passing. A rejected credential ends
+   the session (M-60): the sweep's `SAFE-006` finding covers it, and the device
+   behavior is `NOT VERIFIED` until it is run.
 
 The report lists every check with its status and evidence. A failing check is
 never reported as passing, and a finding in unrelated code is reported with its

@@ -119,7 +119,10 @@ implementation are:
   base URL is read from the environment configuration of the build or the
   runtime, and a script or test writes its temporary files to a unique per-run
   path (for example `mktemp -d`), never to a fixed name such as
-  `/tmp/<name>.log`, so parallel runs never collide.
+  `<name>.log` in a shared temporary directory, so parallel runs never collide.
+- **Identifiers in URL paths** (M-59): every value interpolated into a path or query is encoded with the encoder of its context, and each API client routes its path parameters through one encoding point. Rule: a value that is interpolated into a path, for example a product, order, or payment method identifier, is encoded with the encoder of its context (for example `encodeURIComponent`) before the request is built.
+- **Rejected credentials** (M-60): a `401` answer ends the session. The client clears the session and every cache partition of that identity and returns to sign-in. Rule: a rejected credential ends the session, and cached personal or payment data is never served to it.
+- **Backup of personal data** (M-61): an app that holds personal or payment data does not allow backup of personal data. The Android manifest sets `allowBackup="false"` or excludes the storage through data-extraction rules; the build configuration carries the setting, and a build that has not been produced is `NOT VERIFIED`. Rule: an app that holds personal or payment data does not allow backup of personal data.
 
 ## General Procedure
 

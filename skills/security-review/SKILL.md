@@ -131,6 +131,14 @@ concrete damage, the severity is lower than it feels.
       identity on a device that can hold more than one identity is a `confirmed`
       candidate, and personal or payment data in plain storage is a `confirmed`
       candidate in the data-storage category.
+       For every request path built from a value the client supplies, confirm that
+       the value is encoded with the encoder of its context (M-59); a raw interpolation
+       is a `confirmed` candidate in the injection category. For every authenticated
+       request, confirm that a `401` answer ends the session and clears the identity's
+       partitions (M-60): a rejected credential ends the session, and the trace goes
+       from the response handler to the sign-out path. For every application that holds
+       personal or payment data, confirm that the build does not allow backup of
+       personal data (M-61) and report `NOT VERIFIED` when no build exists.
    - **Scan coverage.** A secret or content scan that excludes inputs by extension,
      path, or size reports every input it did not read as `NOT VERIFIED`, never as
      clean. List those inputs. An excluded input that could hold a secret blocks

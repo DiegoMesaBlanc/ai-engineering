@@ -176,6 +176,10 @@ dimension. A criterion is never presented as a framework standard.
   shared temporary path (M-58). A `FAIL` of this Dimension names the file and line
   of the literal.
 
+- A request path built from a value the client supplies is encoded with the encoder of its context (M-59). A raw interpolation of an identifier into a path is a `FAIL` of this Dimension at the file and line of the template literal.
+- A `401` answer ends the session: a rejected credential ends the session, the client clears that identity's cache partitions and returns to sign-in, and cached personal or payment data is never served to it (M-60). A `401` that leaves the session active is a `FAIL` of this Dimension at the severity of the data exposure.
+- An application that holds personal or payment data does not allow backup of personal data (M-61): the build manifest or configuration sets the backup off. A build that enables backup is a `FAIL` of this Dimension; when no build exists the bullet is `NOT VERIFIED`, never passed.
+
 ### 7. Testing & validation
 
 - Every behavior the change adds or modifies has a test that exercises it

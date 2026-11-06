@@ -998,6 +998,7 @@ Return:
 - V2.67 contract duplication, scan coverage, probe isolation, and comment accuracy checks:
 - V2.68 identity, health probe, and audit signal checks:
 - V2.69 delivery safety checks: timeouts, cleartext, client cache, downgrade, hardcoded endpoints, temporary paths, and probe dead exports:
+- V2.70 path encoding, rejected credentials, backup, and whole-project sweep checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -3573,7 +3574,7 @@ fixture, and verifies it passes. The fixture needs `awk`, `grep`, `sed`, and
 still run.
 
 ```sh
-root="${1:-.}"
+root="$(cd "${1:-.}" && pwd)"
 failures=0
 ag="AGENTS.md"
 mr="references/mandatory-rules.md"
@@ -3654,11 +3655,7 @@ export const load = async (url: string) => {
 export const base = "http://shop.example.net";
 export const dev = "http://localhost:8080";
 TS
-  cat > scripts/run.sh <<'SH'
-#!/bin/sh
-LOG=/tmp/shoplite-run.log
-OK="${TMPDIR:-/tmp}/run.$$"
-SH
+  printf '%s\n' '#!/bin/sh' "LOG=/$(printf tmp)/shoplite-run.log" 'OK="${TMPDIR:-/tmp}/run.$$"' > scripts/run.sh
   printf 'export const clearCache = () => undefined;\n' > src/cache.ts
   printf "export * from './cache';\n" > src/index.ts
   printf 'import { load } from "./ok";\nconsole.log(load);\n' > src/consumer.ts
@@ -3705,6 +3702,217 @@ SH
 ) || failures=1
 
 echo "V2.69 probe: fixture in $fx was checked and is removed"
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.70 Regression — Path Encoding, Rejected Credentials, Backup, and the Whole-Project Sweep
+
+Verify that the rules added after the second external audit of the mobile and
+demo projects are canonical, reachable, and effective, and that the delivery-safety
+detectors cover the whole project and not only the change set:
+
+- M-59: a value interpolated into a URL path is encoded with the encoder of its context.
+- M-60: a rejected credential ends the session, and cached data is not served to it.
+- M-61: an app that holds personal or payment data does not allow backup of personal data.
+- The detectors `SAFE-002` (scheme form), `SAFE-004` to `SAFE-007`, `AUTH-001`, and
+  `DEP-001` exist in `workflows/output-compliance.md`, and the health probe runs them
+  over the whole project through `project_safety_sweep` (Phase 8a, item 6).
+
+The text checks run on the repository. The behavioral part extracts the detector
+and sweep blocks from `workflows/output-compliance.md`, builds a fixture git
+repository outside the repository, verifies each violation is detected with
+`file:line` and each compliant twin is not, runs the sweep, repairs the fixture,
+verifies the repair passes, and removes the fixture. It needs `awk`, `perl`, `git`,
+`grep`, and `sed`; without them the behavioral part is `NOT VERIFIED`, and the text
+checks still run.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+pv="workflows/project-validation.md"
+ir="skills/implementation-recipes/SKILL.md"
+sr="skills/security-review/SKILL.md"
+ap="references/audit-pass-criteria.md"
+sa="workflows/system-audit.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.70: $1 is missing $3"; failures=1; }
+}
+
+need "$ag" "is encoded with the encoder of its context" "the M-59 wording"
+need "$ag" "a rejected credential ends the session" "the M-60 wording"
+need "$ag" "does not allow backup of personal" "the M-61 wording"
+need "$ir" "is encoded with the encoder of its context" "the M-59 recipe"
+need "$ir" "a rejected credential ends the session" "the M-60 recipe"
+need "$ir" "does not allow backup of personal" "the M-61 recipe"
+need "$sr" "a rejected credential ends the session" "the M-60 review step"
+need "$sr" "does not allow backup of personal" "the M-61 review step"
+need "$ap" "a rejected credential ends the session" "the M-60 Dimension 6 criterion"
+need "$ap" "does not allow backup of personal" "the M-61 Dimension 6 criterion"
+need "$oc" "### SAFE-004 to SAFE-007, AUTH-001, DEP-001" "the new detector section"
+need "$oc" "### Whole-project sweep" "the sweep section"
+need "$oc" "project_safety_sweep()" "the sweep function"
+need "$oc" "url_scheme_check()" "the SAFE-002 scheme detector"
+need "$oc" "id_encoding_check()" "the SAFE-004 detector"
+need "$oc" "cache_partition_check()" "the SAFE-005 detector"
+need "$oc" "signout_clear_check()" "the SAFE-005 sign-out detector"
+need "$oc" "rejected_credential_check()" "the SAFE-006 detector"
+need "$oc" "identity_source_check()" "the AUTH-001 detector"
+need "$oc" "backup_check()" "the SAFE-007 detector"
+need "$oc" "dependency_downgrade_check()" "the DEP-001 detector"
+need "$oc" "no build manifest or app configuration is tracked" "the M-61 NOT VERIFIED rule"
+need "$pv" "project_safety_sweep" "the probe running the sweep"
+need "$pv" "not only the change set" "the whole-project scope of the probe"
+need "$pv" "DEP-001" "the manifest downgrade check in the probe"
+need "$sa" "A delivery-safety detector, or the whole-project sweep" "the audit area row"
+for id in M-59 M-60 M-61; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.70: no $id row"; failures=1; }
+done
+for id in R-105 R-106 R-107; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.70: no $id row"; failures=1; }
+done
+
+command -v awk >/dev/null 2>&1 && command -v perl >/dev/null 2>&1 && command -v git >/dev/null 2>&1 || {
+  echo "NOT VERIFIED V2.70: awk, perl, or git is not available, the behavioral fixture was not run"; exit 2; }
+
+# Extracts the first sh block of a section of workflows/output-compliance.md.
+extract() {
+  awk -v start="$1" '
+    $0 ~ "^### " start { on = 1; next }
+    on && /^### / { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; exit }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v270.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  git init -q .
+  git config user.email "fixture@example.invalid"
+  git config user.name "fixture"
+  mkdir -p src android/app/src/main
+  extract "SAFE-001, SAFE-002, SAFE-003" > safe.sh
+  extract "DEAD-EXPORT-001" > dead.sh
+  extract "SAFE-004 to SAFE-007" > new.sh
+  extract "Whole-project sweep" > sweep.sh
+  [ -s safe.sh ] && [ -s dead.sh ] && [ -s new.sh ] && [ -s sweep.sh ] || {
+    echo "FAIL V2.70: a detector or sweep block was not extracted"; exit 1; }
+  . ./safe.sh
+  . ./dead.sh
+  . ./new.sh
+  . ./sweep.sh
+
+  # Compliant twins.
+  printf '%s\n' 'export const productPath = (productId: string) => `/api/v1/products/${encodeURIComponent(productId)}`;' > src/ok-path.ts
+  printf '%s\n' 'import { z } from "zod";' 'export const apiBaseUrlSchema = z.string().url().refine((value) => value.startsWith("https://"), "https only");' > src/config-ok.ts
+  printf '%s\n' 'export const load = (cache: any, userId: string) => {' '  cache.writeCache(`${userId}:cart`, {});' '};' > src/cache-ok.ts
+  printf '%s\n' 'export const signOut = async (userId: string) => {' '  await deleteToken();' '  await clearCacheForIdentity(userId);' '};' > src/session-ok.ts
+  printf '%s\n' 'export const check = async (response: Response, signOut: () => Promise<void>) => {' '  if (response.status === 401) {' '    await signOut();' '    return null;' '  }' '  return response.json();' '};' > src/auth-ok.ts
+  printf '%s\n' '<manifest xmlns:android="http://schemas.android.com/apk/res/android">' '  <application android:allowBackup="false" android:label="app">' '  </application>' '</manifest>' > android/app/src/main/AndroidManifest.xml
+  printf '%s\n' '{' '  "dependencies": {' '    "expo": "^54.0.0"' '  }' '}' > package.json
+
+  # Violations.
+  printf '%s\n' 'export const productPath = (productId: string) => `/api/v1/products/${productId}`;' > src/bad-path.ts
+  printf '%s\n' 'import { z } from "zod";' 'export const apiBaseUrlSchema = z.string().url();' > src/config-bad.ts
+  printf '%s\n' 'export const load = (cache: any) => {' '  cache.writeCache("cart", {});' '  cache.writeCache("payment-methods", {});' '};' > src/cache-bad.ts
+  printf '%s\n' 'export const signOut = async () => {' '  await deleteToken();' '};' > src/session-bad.ts
+  printf '%s\n' 'export const check = async (response: Response) => {' '  if (response.status === 401) {' '    return null;' '  }' '  return response.json();' '};' > src/auth-bad.ts
+  printf '%s\n' 'export const userOf = (request: Request) => request.headers.get("x-user-id");' > src/identity-bad.ts
+  printf '%s\n' '{ "expo": { "android": { "allowBackup": true } } }' > app.json
+  git add -A && git commit -q -m base
+
+  # 1. The compliant twins pass the detectors.
+  out="$(url_scheme_check . src/config-ok.ts)$(id_encoding_check . src/ok-path.ts)$(cache_partition_check . src/cache-ok.ts)$(signout_clear_check . src/session-ok.ts)$(rejected_credential_check . src/auth-ok.ts)$(identity_source_check . src/ok-path.ts)"
+  [ -z "$out" ] || { echo "FAIL V2.70: a compliant twin is reported: $out"; exit 1; }
+  out="$(backup_check . android/app/src/main/AndroidManifest.xml)"
+  [ -z "$out" ] || { echo "FAIL V2.70: the compliant manifest is reported: $out"; exit 1; }
+
+  # 2. Each violation is detected with file:line.
+  i="$(id_encoding_check . src/bad-path.ts)"
+  printf '%s\n' "$i" | grep -q '^FAIL SAFE-004: src/bad-path.ts:1:' \
+    || { echo "FAIL V2.70: SAFE-004 did not detect src/bad-path.ts:1: $i"; exit 1; }
+  u="$(url_scheme_check . src/config-bad.ts)"
+  printf '%s\n' "$u" | grep -q '^FAIL SAFE-002: src/config-bad.ts:2:' \
+    || { echo "FAIL V2.70: SAFE-002 did not detect the scheme-free URL setting: $u"; exit 1; }
+  c="$(cache_partition_check . src/cache-bad.ts)"
+  printf '%s\n' "$c" | grep -q '^FAIL SAFE-005: src/cache-bad.ts:2:' \
+    || { echo "FAIL V2.70: SAFE-005 did not detect the cache key without identity: $c"; exit 1; }
+  printf '%s\n' "$c" | grep -q '^FAIL SAFE-005: src/cache-bad.ts:3:.*payment data' \
+    || { echo "FAIL V2.70: SAFE-005 did not detect payment data in plain storage: $c"; exit 1; }
+  s="$(signout_clear_check . src/session-bad.ts)"
+  printf '%s\n' "$s" | grep -q '^FAIL SAFE-005: src/session-bad.ts:1:' \
+    || { echo "FAIL V2.70: SAFE-005 did not detect the sign-out with no cache clear: $s"; exit 1; }
+  a="$(rejected_credential_check . src/auth-bad.ts)"
+  printf '%s\n' "$a" | grep -q '^FAIL SAFE-006: src/auth-bad.ts:2:' \
+    || { echo "FAIL V2.70: SAFE-006 did not detect the 401 branch that keeps the session: $a"; exit 1; }
+  d="$(identity_source_check . src/identity-bad.ts)"
+  printf '%s\n' "$d" | grep -q '^FAIL AUTH-001: src/identity-bad.ts:1:' \
+    || { echo "FAIL V2.70: AUTH-001 did not detect the identity from a header: $d"; exit 1; }
+  b="$(backup_check . app.json)"
+  printf '%s\n' "$b" | grep -q '^FAIL SAFE-007: app.json:1:' \
+    || { echo "FAIL V2.70: SAFE-007 did not detect allowBackup true: $b"; exit 1; }
+  printf '%s\n' '<manifest>' '  <application android:label="app">' '  </application>' '</manifest>' > android/app/src/main/LegacyManifest.xml
+  b2="$(backup_check . android/app/src/main/LegacyManifest.xml)"
+  printf '%s\n' "$b2" | grep -q '^FAIL SAFE-007: android/app/src/main/LegacyManifest.xml:1: allowBackup is not set' \
+    || { echo "FAIL V2.70: SAFE-007 did not detect an unset allowBackup, which the Android default allows: $b2"; exit 1; }
+  rm -f android/app/src/main/LegacyManifest.xml
+
+  # 3. The manifest downgrade is detected against the base revision.
+  printf '%s\n' '{' '  "dependencies": {' '    "expo": "^52.0.49"' '  }' '}' > package.json
+  g="$(dependency_downgrade_check . HEAD package.json)"
+  printf '%s\n' "$g" | grep -q '^FAIL DEP-001: package.json:3: expo moves from \^54.0.0 to \^52.0.49' \
+    || { echo "FAIL V2.70: DEP-001 did not detect the downgrade: $g"; exit 1; }
+
+  # 4. The whole-project sweep reports every violation, and no compliant twin.
+  sw="$(project_safety_sweep)"
+  printf '%s\n' "$sw" | grep -q '^SWEEP scanned: ' \
+    || { echo "FAIL V2.70: the sweep did not state what it scanned"; exit 1; }
+  for expect in \
+    'FAIL SAFE-004: src/bad-path.ts:1:' \
+    'FAIL SAFE-002: src/config-bad.ts:2:' \
+    'FAIL SAFE-005: src/cache-bad.ts:2:' \
+    'FAIL SAFE-005: src/session-bad.ts:1:' \
+    'FAIL SAFE-006: src/auth-bad.ts:2:' \
+    'FAIL AUTH-001: src/identity-bad.ts:1:' \
+    'FAIL SAFE-007: app.json:1:'; do
+    printf '%s\n' "$sw" | grep -qF "$expect" \
+      || { echo "FAIL V2.70: the sweep did not report: $expect"; exit 1; }
+  done
+  for ok in src/ok-path.ts src/config-ok.ts src/cache-ok.ts src/session-ok.ts src/auth-ok.ts; do
+    printf '%s\n' "$sw" | grep -E '^FAIL (SAFE-00[2456]|AUTH-001):' | grep -qF "$ok:" \
+      && { echo "FAIL V2.70: the sweep reports the compliant twin $ok"; exit 1; }
+  done
+  printf '%s\n' "$sw" | grep -q 'NOT VERIFIED M-57' \
+    || { echo "FAIL V2.70: the sweep does not mark the downgrade check as NOT VERIFIED without a base"; exit 1; }
+
+  # 5. The repaired fixture passes.
+  printf '%s\n' 'export const productPath = (productId: string) => `/api/v1/products/${encodeURIComponent(productId)}`;' > src/bad-path.ts
+  printf '%s\n' 'import { z } from "zod";' 'export const apiBaseUrlSchema = z.string().url().refine((value) => value.startsWith("https://"), "https only");' > src/config-bad.ts
+  printf '%s\n' 'export const load = (cache: any, userId: string) => {' '  cache.writeCache(`${userId}:cart`, {});' '};' > src/cache-bad.ts
+  printf '%s\n' 'export const signOut = async (userId: string) => {' '  await deleteToken();' '  await clearCacheForIdentity(userId);' '};' > src/session-bad.ts
+  printf '%s\n' 'export const check = async (response: Response, signOut: () => Promise<void>) => {' '  if (response.status === 401) {' '    await signOut();' '    return null;' '  }' '  return response.json();' '};' > src/auth-bad.ts
+  printf '%s\n' 'export const userOf = (session: { userId: string }) => session.userId;' > src/identity-bad.ts
+  printf '%s\n' '{ "expo": { "android": { "allowBackup": false } } }' > app.json
+  printf '%s\n' '{' '  "dependencies": {' '    "expo": "^55.0.0"' '  }' '}' > package.json
+  r="$(project_safety_sweep)"
+  printf '%s\n' "$r" | grep -E '^FAIL (SAFE-00[24567]|AUTH-001):' | grep -E 'bad-path|config-bad|cache-bad|session-bad|auth-bad|identity-bad|app.json' \
+    && { echo "FAIL V2.70: the repaired fixture is still reported"; exit 1; }
+  g="$(dependency_downgrade_check . HEAD package.json)"
+  [ -z "$g" ] || { echo "FAIL V2.70: a major upgrade is reported as a downgrade: $g"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.70 probe: fixture in $fx was checked and is removed"
 rm -rf "$fx"
 
 exit "$failures"
