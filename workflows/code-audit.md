@@ -131,7 +131,7 @@ Run after Phase 2 and before the dimension audit.
 Run the project's own gates before any semantic judgment, following
 `workflows/project-validation.md` (Phases 2, 5, and 7) and the structural
 checks of `workflows/output-compliance.md` (`FUNC-001`, `TYPE-001` to
-`TYPE-003`, `FILE-001`, `STRUCT-001`, `STRUCT-006`, `STRUCT-007`) in the form
+`TYPE-003`, `TYPE-004`, `FILE-001`, `STRUCT-001`, `STRUCT-006`, `STRUCT-007`) in the form
 the detected ecosystem supports. Record for every check the command, the exit
 code, and the relevant output. A check that cannot run is `NOT VERIFIED` with
 the missing tool named. **A skipped check is never a pass.**
@@ -272,7 +272,7 @@ For each applicable dimension:
       - SQL: schema/table types (N/A for code interfaces).
     - Map consumers via imports/references/implementations **within the audited scope**.
     - Follow declaration sites outside the change set **only as read-only context** to judge import correctness; do not expand the audit scope.
-    - Flag: shared contract in implementation folder; consumer importing contract from implementation folder solely for types; duplicated/divergent contracts; type-only cycles; language-idiom violations (e.g., forcing provider-side interface in Go). **Pass-through re-export**: flag a module that re-exports a contract it only consumes — a component re-exporting the props it imports from `./types`, a service re-exporting the contracts it imports from `./contracts`. The owning file is the single public path. A barrel that aggregates several modules is exempt. Severity: P2. Tag `TYPE_OWNERSHIP`. **Evidence required:** run the `TYPE-001`, `TYPE-002`, and `TYPE-003` detection in `workflows/output-compliance.md` over the audited scope and report the matched `file:line`.
+    - Flag: shared contract in implementation folder; consumer importing contract from implementation folder solely for types; duplicated/divergent contracts; type-only cycles; language-idiom violations (e.g., forcing provider-side interface in Go). **Pass-through re-export**: flag a module that re-exports a contract it only consumes — a component re-exporting the props it imports from `./types`, a service re-exporting the contracts it imports from `./contracts`. The owning file is the single public path. A barrel that aggregates several modules is exempt. Severity: P2. Tag `TYPE_OWNERSHIP`. **Evidence required:** run the `TYPE-001`, `TYPE-002`, `TYPE-003`, and `TYPE-004` detection in `workflows/output-compliance.md` over the audited scope and report the matched `file:line`.
     - **Do not flag**: Go consumer-side interfaces; nested/private helper types; Ruby RBS signatures.
     - **A type is shared when it is imported/referenced from another file**. It must then live in a dedicated `types.ts`/`contracts.ts`/`schemas.ts`, not in a file that also exports runtime behavior. Mere export without external reuse is WARN/observation, not a defect.
     - **Schema + inferred type pair**: Zod/Joi/Yup schemas and their `infer` types must stay together in `schemas.ts`/`contracts.ts`; validators, converters, and HTTP clients must be in a separate file.

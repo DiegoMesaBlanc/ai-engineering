@@ -625,6 +625,10 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
   convention, or in `docs/decisions/` when the project has none. A missing record
   is a Dimension 2 `FAIL`, never `NOT VERIFIED`, and the record is shown before
   implementation.
+- A secret or content scan that excludes inputs by extension, path, or size
+  reports every input it did not read as `NOT VERIFIED`, never as clean. An
+  excluded input that could hold a secret blocks the delivery gate until it is
+  scanned, and a scanner never prints the secret value it finds.
 - Keep unrelated refactoring out of scope.
 - A reinforcement of an engineering discipline adopted from an external
   methodology (test-first discipline, root-cause debugging, verification before

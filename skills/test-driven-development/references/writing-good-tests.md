@@ -147,6 +147,33 @@ BEFORE adding a mock or test helper:
     Unmock it or delete the assertion.
 ```
 
+## Isolate Each Negative Probe
+
+A negative probe is an input that must be rejected. It proves a rule only when
+the rule under test is what rejects it. A probe rejected by a different rule
+passes for the wrong reason: an ignore pattern that excludes the fixture's path,
+a `.gitignore` entry, a missing import, or a broader rule that happens to match.
+
+Before a probe counts as evidence:
+
+- **Name the rule it must trigger**, and state the expected rejection.
+- **Isolate the path.** Place the fixture where no other rule applies. A fixture
+  under an ignored directory tests that directory's ignore rule, not the
+  extension or name rule the probe claims to test.
+- **Run a control probe.** The same fixture without the violation passes through
+  the same path. If the control is also rejected, the path rejects it, not the
+  rule.
+- **One probe per rule.** When two rules could reject the same file, write one
+  probe for each, and let each trigger only its own rule.
+
+```text
+// ❌ Rejected by the ignore rule for /android, so it proves nothing about *.keystore
+android/app/release.keystore
+
+// ✅ Outside every ignored path; only the *.keystore rule can reject it
+release.keystore
+```
+
 ## Tests Ship With the Implementation
 
 The TDD cycle — failing test, minimal implementation, refactor — is what
@@ -196,3 +223,4 @@ test as tautological.
 - A method is called only from test files
 - Mock setup is more than half the test, or you can't explain why the mock is needed
 - Mocking "just to be safe"
+- A negative probe passes only because another rule, path, or ignore pattern rejects it

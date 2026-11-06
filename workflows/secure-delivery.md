@@ -116,6 +116,10 @@ rather than restating them.
   and delivery definitions.
 - Use of approved secret injection mechanisms.
 - Risk of leaking secrets in pipeline output or artifacts.
+- Scan coverage: a secret scan that excludes inputs by extension, path, or size
+  reports every excluded input as `NOT VERIFIED`, never as clean. An excluded
+  input that could hold a secret blocks the delivery gate until it is scanned
+  (M-51).
 
 Never print, reproduce, or store discovered secret values. Redact
 sensitive evidence and report only the location and type of concern

@@ -99,6 +99,14 @@ dimension. A criterion is never presented as a framework standard.
   set. The auditor names the responsibilities of each unit the change touches; a
   unit with a second reason to change is a `FAIL` of SOLID SRP, not a `WARN`.
 - Names are clear and the code is typed; no `any` without a documented reason.
+- A comment, JSDoc, or document that states a behavior of the code, a workflow,
+  or a pipeline is checked against the code it describes. A statement the code
+  contradicts is a finding: `P3` when it has no runtime effect, `P2` when it
+  misleads a gate, a security boundary, or a pipeline decision. The auditor cites
+  the comment line and the line that contradicts it.
+- A contract name declared in more than one file of the change set is a `FAIL` of
+  the Type/contract ownership check (`TYPE-004` in `workflows/output-compliance.md`)
+  unless the declarations have different consumers and the reason is recorded.
 
 ### 4. API & contracts
 
@@ -121,6 +129,10 @@ dimension. A criterion is never presented as a framework standard.
 - Personal data is retained only as long as needed: any in-memory or
   persistent store that holds it has an explicit bound (size, time, or count).
 - Input from outside the process is validated at the boundary.
+- A secret or content scan that excludes inputs by extension, path, or size
+  reports every input it did not read as `NOT VERIFIED`, never as clean (M-51).
+  A scan that reports clean without listing its exclusions is a `FAIL` of this
+  Dimension when an excluded input could hold a secret.
 - A validator, parser, sanitizer, or guard the change creates or exports is a
   control only when every external input it guards reaches it on the path from
   the trust boundary to the sink (M-48). The auditor follows each exported control to its call sites from the

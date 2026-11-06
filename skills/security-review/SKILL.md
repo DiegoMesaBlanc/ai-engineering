@@ -113,6 +113,11 @@ concrete damage, the severity is lower than it feels.
      line as evidence when a claim exists. A documentation claim the code does
      not support is reported even when the impact is low, because the claim
      misleads the next reviewer.
+   - **Scan coverage.** A secret or content scan that excludes inputs by extension,
+     path, or size reports every input it did not read as `NOT VERIFIED`, never as
+     clean. List those inputs. An excluded input that could hold a secret blocks
+     the delivery gate until it is scanned (M-51). Report the scan's exclusion
+     rules next to the result, so a clean scan states what it covered.
 4. **Verify independently.** Attempt to disprove each candidate by reading the
    code paths that would stop it, including middleware, framework defaults, and
    tests. A candidate that survives becomes `confirmed`, a blocked one becomes

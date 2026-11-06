@@ -123,6 +123,7 @@ delivering a feature.
 | One type per file, types separated from runtime behavior | No | Verified by `TYPE-001` in `workflows/output-compliance.md` |
 | Contract grouping by consumer | No | Verified by `TYPE-002` |
 | No pass-through re-export | No | Verified by `TYPE-003` |
+| A contract name declared in one file only | No | Verified by `TYPE-004` |
 | Unit folders and co-located tests | No | Verified by `FILE-001` and `workflows/code-audit.md` |
 
 ESLint core has no rule for "a file declares types or runtime behavior", and

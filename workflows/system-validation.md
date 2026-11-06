@@ -995,6 +995,7 @@ Return:
 - V2.64 audit criteria read gate and platform criteria checks:
 - V2.65 test API import and test-case form checks:
 - V2.66 unwired control, dead export, decision record, and modified-test scope checks:
+- V2.67 contract duplication, scan coverage, probe isolation, and comment accuracy checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -3333,6 +3334,108 @@ grep -q "^dead_export_check() {" "$fx/check.sh" || { echo "FAIL V2.66: dead_expo
 ) || failures=1
 
 echo "V2.66 probe: fixtures in $fx were checked and are removed"
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.67 Regression — Contract Duplication, Scan Coverage, Probe Isolation, and Comment Accuracy
+
+Verify that the four changes made after the second external audit are canonical
+and reachable, and that the contract-duplication detection runs on fixtures:
+
+- M-51: a scan that excludes inputs reports them as `NOT VERIFIED`. The wording is
+  in `AGENTS.md`, registered in `references/mandatory-rules.md`, and present in the
+  security procedure, the secure-delivery Secrets section, and Dimension 6.
+- TYPE-004: a contract name declared in more than one file is a `FAIL` with
+  `file:line` for each copy. The detection is run on fixtures: a TypeScript
+  interface and a JSDoc `@typedef` declared in two files are detected, a name
+  declared once is not, and a same-file declaration is not counted.
+- Probe isolation: the test reference states that a negative probe is evidence
+  only when its own rule rejects it, and it lists the warning sign.
+- Comment accuracy: the criteria and the engineering review compare comments with
+  the code they describe.
+
+The fixture part needs only `awk` and `sh`, so it does not depend on a runtime.
+The check takes the repository root as its argument.
+
+```sh
+root="${1:-.}"
+failures=0
+ag="AGENTS.md"
+ap="references/audit-pass-criteria.md"
+sr="skills/security-review/SKILL.md"
+sd="workflows/secure-delivery.md"
+oc="workflows/output-compliance.md"
+er="skills/engineering-review/SKILL.md"
+lr="references/linter-rules.md"
+wgt="skills/test-driven-development/references/writing-good-tests.md"
+co="workflows/code-audit.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' '; }
+
+flat_ag=$(flat "$ag")
+flat_ap=$(flat "$ap")
+flat_er=$(flat "$er")
+flat_sr=$(flat "$sr")
+flat_sd=$(flat "$sd")
+
+grep -qF "excludes inputs by extension, path, or size" <<< "$flat_ag" || { echo "FAIL V2.67: $ag is missing the M-51 wording"; failures=1; }
+grep -qF "never as clean" <<< "$flat_ag" || { echo "FAIL V2.67: $ag is missing the M-51 never-clean wording"; failures=1; }
+for id in M-51; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.67: no $id row"; failures=1; }
+done
+for id in R-91 R-92 R-93 R-94; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.67: no $id row"; failures=1; }
+done
+grep -qF "**Scan coverage.**" <<< "$flat_sr" || { echo "FAIL V2.67: $sr has no scan-coverage step"; failures=1; }
+grep -qF "Scan coverage:" <<< "$flat_sd" || { echo "FAIL V2.67: $sd has no scan-coverage bullet"; failures=1; }
+grep -qF "excludes inputs by extension, path, or size" <<< "$flat_ap" || { echo "FAIL V2.67: $ap Dimension 6 has no scan-coverage criterion"; failures=1; }
+grep -qF "A comment, JSDoc, or document that states a behavior" <<< "$flat_ap" || { echo "FAIL V2.67: $ap has no comment-accuracy criterion"; failures=1; }
+grep -qF "Comment and document accuracy" <<< "$flat_er" || { echo "FAIL V2.67: $er has no comment-accuracy bullet"; failures=1; }
+grep -qF "Duplicate contract declarations" <<< "$flat_er" || { echo "FAIL V2.67: $er has no duplicate-contract bullet"; failures=1; }
+grep -q "^### TYPE-004 " "$root/$oc" || { echo "FAIL V2.67: $oc does not define TYPE-004"; failures=1; }
+grep -q "TYPE-004" "$root/$co" || { echo "FAIL V2.67: $co does not run TYPE-004 as evidence"; failures=1; }
+grep -qF "| A contract name declared in one file only | No | Verified by \`TYPE-004\` |" "$root/$lr" || { echo "FAIL V2.67: $lr has no TYPE-004 row"; failures=1; }
+grep -q "^## Isolate Each Negative Probe" "$root/$wgt" || { echo "FAIL V2.67: $wgt has no probe-isolation section"; failures=1; }
+grep -qF "A negative probe passes only because another rule" "$root/$wgt" || { echo "FAIL V2.67: $wgt has no probe-isolation warning sign"; failures=1; }
+
+command -v awk >/dev/null 2>&1 || { echo "NOT VERIFIED V2.67: awk is not available, the TYPE-004 fixture was not run"; exit 2; }
+
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v267.XXXXXX")
+awk '/^duplicate_contract_check\(\) \{/{on=1} on{print} on && /^\}$/{exit}' "$root/$oc" > "$fx/check.sh"
+grep -q "^duplicate_contract_check() {" "$fx/check.sh" || { echo "FAIL V2.67: duplicate_contract_check is not defined in $oc"; failures=1; }
+
+(
+  cd "$fx" || exit 1
+  mkdir -p src
+  . "$fx/check.sh" || exit 1
+  printf '/**\n * @typedef {Object} TextEntry\n */\nexport const a = 1;\n' > src/workspace.mjs
+  printf '/**\n * @typedef {Object} TextEntry\n */\nexport const b = 2;\n' > src/secrets.mjs
+  printf 'export interface Shared { x: number }\n' > src/a.ts
+  printf 'export type Shared = { y: string };\n' > src/b.ts
+  printf 'export interface Once { x: number }\nexport interface Once2 { x: number }\n' > src/c.ts
+  printf 'export interface Twice { x: number }\nexport type Twice = { y: number };\n' > src/d.ts
+  out=$(duplicate_contract_check src/workspace.mjs src/secrets.mjs src/a.ts src/b.ts src/c.ts src/d.ts)
+  printf '%s\n' "$out" | grep -q "FAIL TYPE-004: src/workspace.mjs:2: TextEntry is also declared in another file" \
+    || { echo "FAIL V2.67: the JSDoc typedef in workspace.mjs is not detected with file:line"; exit 1; }
+  printf '%s\n' "$out" | grep -q "FAIL TYPE-004: src/secrets.mjs:2: TextEntry is also declared in another file" \
+    || { echo "FAIL V2.67: the JSDoc typedef in secrets.mjs is not detected with file:line"; exit 1; }
+  printf '%s\n' "$out" | grep -q "FAIL TYPE-004: src/a.ts:1: Shared is also declared in another file" \
+    || { echo "FAIL V2.67: the TypeScript interface is not detected with file:line"; exit 1; }
+  printf '%s\n' "$out" | grep -q "FAIL TYPE-004: src/b.ts:1: Shared is also declared in another file" \
+    || { echo "FAIL V2.67: the TypeScript type alias is not detected with file:line"; exit 1; }
+  [ "$(printf '%s\n' "$out" | grep -c '^FAIL TYPE-004')" = 4 ] \
+    || { echo "FAIL V2.67: a name declared once or in one file is reported: $out"; exit 1; }
+  printf 'export const c = 3;\n' > src/secrets.mjs
+  out=$(duplicate_contract_check src/workspace.mjs src/secrets.mjs src/c.ts)
+  [ -z "$out" ] || { echo "FAIL V2.67: a name declared in one file is still reported: $out"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.67 probe: fixtures in $fx were checked and are removed"
 rm -rf "$fx"
 
 exit "$failures"

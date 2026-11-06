@@ -79,6 +79,14 @@ Review the actual changes, not the entire repository unless required.
   `./types`, a service re-exporting the contracts it imports from
   `./contracts`. The owning file is the single public path; a barrel that
   aggregates several modules is exempt.
+- **Duplicate contract declarations**: a contract name declared in more than one
+  file is `TYPE-004` in `workflows/output-compliance.md`; the owning file is the
+  only declaration unless the declarations have different consumers and the
+  reason is recorded.
+- **Comment and document accuracy**: a comment or document that states what the
+  code, a workflow, or a pipeline does is compared with that code. A contradiction
+  is a finding, cited with both lines (`P3`, or `P2` when it misleads a gate, a
+  security boundary, or a pipeline decision).
 - **TypeScript/JavaScript function style**: prefer arrow functions; flag the `function` keyword when an arrow function would work equally well, in `.ts`, `.tsx`, `.js`, and `.jsx` files. Allow `function` for a generator, a `this` binding that arrow syntax cannot provide, the `arguments` object, or `new.target`, with the reason stated in a comment. Severity: P3. Tag: `TS_FUNCTION_STYLE`.
 - **Unnecessary abstraction or fragmentation is a finding that must be
   resolved: revert the change or justify it with evidence against the

@@ -236,6 +236,72 @@ re-exposed and not part of that module's own API surface. A forwarding
 mechanism used with a documented purpose — an assembly migration in C#/.NET,
 a conditional class alias in PHP — is not a pass-through.
 
+### TYPE-004 — A contract name is declared in one file only
+
+A contract has one owning declaration. The same contract name declared in
+more than one file of the project is the duplicated contract that
+`skills/engineering-review/SKILL.md` and `references/audit-pass-criteria.md`
+(Dimension 3) report: two copies drift apart and make the owner ambiguous. It
+is the declaration counterpart of `TYPE-003`, which covers re-exports.
+
+The detection covers TypeScript and JavaScript declarations: `interface`,
+`type`, and `enum` (exported), and JSDoc `@typedef` in `.js`, `.mjs`, and `.cjs`
+files, where contracts are declared without TypeScript syntax. Declarations in
+the same file are not counted, because they are one declaration.
+
+**Detection** (a candidate generator over the files of the change set and the
+source tree, excluding dependencies and build output):
+
+```sh
+duplicate_contract_check() {
+  for f in "$@"; do
+    awk -v file="$f" '
+      /^export (declare )?(interface|type|enum) [A-Za-z_$]/ {
+        name = $0
+        sub(/^export (declare )?(interface|type|enum) /, "", name)
+        sub(/[^A-Za-z0-9_$].*$/, "", name)
+        print name "\t" file "\t" NR
+      }
+      /@typedef/ {
+        name = $0
+        sub(/.*@typedef[[:space:]]+(\{[^}]*\}[[:space:]]+)?/, "", name)
+        sub(/[^A-Za-z0-9_$].*$/, "", name)
+        if (name != "") print name "\t" file "\t" NR
+      }' "$f"
+  done | awk -F '\t' '
+    {
+      name[NR] = $1; file[NR] = $2; line[NR] = $3
+      key = $1 SUBSEP $2
+      if (!(key in seen)) { seen[key] = 1; files[$1]++ }
+    }
+    END {
+      for (i = 1; i <= NR; i++)
+        if (files[name[i]] > 1)
+          printf "FAIL TYPE-004: %s:%s: %s is also declared in another file\n", file[i], line[i], name[i]
+    }'
+}
+```
+
+Run it over the source files of the project, for example:
+`duplicate_contract_check $(find src -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) -not -path '*/node_modules/*')`.
+
+**Classification.** Every `FAIL` line is a candidate, and each one is
+classified before it is reported:
+
+- The declarations are copies of one contract: `FAIL` (P2). Keep the declaration
+  in the owning file, import it from there in every consumer, and remove the
+  copy. The owning file is the one in the layer or module that owns the contract.
+- A JSDoc alias `@typedef {import("...").Name} Name` in a consumer is a second
+  path to the owner's contract, not a new contract. It is `FAIL` and is removed:
+  the consumer writes `import("...").Name` inline, without the alias, so the
+  owning file stays the only declaration.
+- The same name names two different contracts with different consumers (for
+  example two `Props` types of unrelated components): not a defect. Record the
+  reason in the report, so the exception is visible and not silently ignored.
+
+A check that reports no candidate is `PASS` for `TYPE-004`. Never report `PASS`
+for a project whose files were not listed.
+
 ### STRUCT-001 — One folder per unit inside its responsibility folder
 
 A responsibility folder never holds a flat pile of implementation files and
@@ -878,7 +944,8 @@ evidence.
 4. Run `TYPE-001` over the change set.
 5. Run `TYPE-002` over the contract files identified in `TYPE-001`.
 6. Run `TYPE-003` over the change set, in the form the detected ecosystem
-   uses to forward a contract.
+   uses to forward a contract, and `TYPE-004` over the source files, so a
+   contract declared in two files is found.
 7. Run `FILE-001` over the change set and the source tree: unit folders, test
    placement, and support locations.
 8. Run `STRUCT-001` and `STRUCT-006` over every feature folder.
@@ -895,7 +962,7 @@ evidence.
 ### OUTPUT COMPLIANCE
 
 - Scope: <paths, branch, commit>
-- Checks executed: FUNC-001, TYPE-001, TYPE-002, TYPE-003, FILE-001, STRUCT-001, STRUCT-006, STRUCT-007, LAYER-001
+- Checks executed: FUNC-001, TYPE-001, TYPE-002, TYPE-003, TYPE-004, FILE-001, STRUCT-001, STRUCT-006, STRUCT-007, LAYER-001
 - Result: PASS | FAIL
 - Findings:
   - <file>:<line> — <RULE> — <severity> — <reason> — <fix>
