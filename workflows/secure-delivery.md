@@ -165,6 +165,11 @@ Do not install paid services, activate paid plans, introduce billable
 usage, or install additional MCP integrations without explicit
 authorization.
 
+A read-only assessment records the state of the target repository before and
+after its run (M-73), and a state change observed during it is an unattributed
+anomaly that leaves the assessment `NOT VERIFIED` until the user attributes it
+(`STATE-001` in `workflows/output-compliance.md`).
+
 A read-only assessment must not install dependencies or alter project
 configuration merely to improve its own report. When implementation is
 authorized, set up missing tools as part of the scoped work and report

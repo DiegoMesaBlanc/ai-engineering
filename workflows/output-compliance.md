@@ -1454,6 +1454,76 @@ scope_file_check() {
 }
 ```
 
+### INV-001 — An inventory is the enumeration of the target
+
+M-72: an inventory in a report, gate, or analysis is produced by an enumeration of
+the target in the same session. The detector compares two files: the **enumeration**
+(one name per line, written by the command the report cites) and the **claim**
+(one name per line, extracted from the report). A claimed name the enumeration does
+not return is a `FAIL` with its line in the claim: it is a name from memory or from an
+earlier draft. An enumerated item the claim neither lists nor excludes is a `FAIL`: the
+inventory is incomplete. An exclusion is written in the claim as `# excluded <name>
+<reason>`, and it is the only way an enumerated item may be left out. The count is
+the number of enumerated items; the report states its definition next to it.
+
+```sh
+# $1 = enumeration file, one name per line; $2 = claim file, one name per line,
+# plus `# excluded <name> <reason>` lines.
+inventory_check() {
+  enum="$1"; claim="$2"
+  n=0
+  while IFS= read -r c; do
+    n=$((n + 1))
+    case "$c" in ''|'#'*) continue ;; esac
+    grep -qxF -- "$c" "$enum" || echo "FAIL INV-001: $claim:$n: $c is claimed and not returned by the enumeration (M-72)"
+  done < "$claim"
+  m=0
+  while IFS= read -r e; do
+    m=$((m + 1))
+    [ -n "$e" ] || continue
+    grep -qxF -- "$e" "$claim" && continue
+    grep -qE "^# excluded $e( |\$)" "$claim" && continue
+    echo "FAIL INV-001: $enum:$m: $e is enumerated by the target and neither listed nor excluded with a reason (M-72)"
+  done < "$enum"
+}
+```
+
+### STATE-001 — A read-only gate leaves the target state unchanged
+
+M-73: a read-only gate records the state of the target repository before and after its
+run. The snapshot holds HEAD, the branch, a checksum of `git status --porcelain`, and the
+latest reflog entry. A difference between the snapshots is not attributed to anyone: the
+detector prints the change and the last reflog entries with their dates, and the result is
+`NOT VERIFIED` until the user attributes the change or it is reverted with authorization.
+A snapshot that does not change is clean. The snapshot file is written **outside** the
+target repository: a file the snapshot creates inside it is an untracked change that the
+snapshot itself records, so the gate would report its own output as an anomaly.
+
+```sh
+# $1 = repository root. Prints the state snapshot to stdout.
+repo_state_snapshot() {
+  root="$1"
+  echo "HEAD $(git -C "$root" rev-parse HEAD 2>/dev/null)"
+  echo "BRANCH $(git -C "$root" symbolic-ref --short HEAD 2>/dev/null)"
+  echo "STATUS $(git -C "$root" status --porcelain 2>/dev/null | cksum)"
+  echo "REFLOG $(git -C "$root" reflog -n 1 --format='%H %gs' 2>/dev/null)"
+}
+
+# $1 = repository root; $2 = snapshot file written before the gate.
+state_check() {
+  root="$1"; before="$2"
+  repo_state_snapshot "$root" > "$before.after" || return 1
+  if cmp -s "$before" "$before.after"; then
+    rm -f "$before.after"; return 0
+  fi
+  echo "NOT VERIFIED STATE-001: $root:1: the target state changed during a read-only gate; unattributed anomaly, the author is not named (M-73)"
+  diff "$before" "$before.after" | sed 's/^/  /'
+  git -C "$root" reflog -n 3 --format='  reflog %gd %gs (%ci)' 2>/dev/null
+  rm -f "$before.after"
+  return 1
+}
+```
+
 ### A11Y-001 — A live region announced on Android only
 
 Audit Dimension 9 and `skills/accessibility/SKILL.md`. On React Native,

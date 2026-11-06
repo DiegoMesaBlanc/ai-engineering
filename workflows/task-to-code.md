@@ -687,6 +687,13 @@ again. If the approved scope or message changes, re-present the proposal.
 
 Do not push automatically.
 
+Before the proposal, compare the approved requirement with the end state the
+change set reaches. A required step that the agent does not execute, such as a
+teardown, reset, cleanup, or rollback, is reported as `NOT DONE` with its reason
+and put to the user as a question (M-74). An end state reached by a side effect
+is not completion: the step's own evidence verifies it, or the user accepts the
+equivalence in the current conversation.
+
 ## Phase 14 — PR Preparation
 
 When requested, generate:

@@ -431,4 +431,11 @@ Never:
 - install dependencies
 - claim a test or check passed without evidence
 
+The audit records the state of the target repository before and after it: HEAD,
+the branch, `git status --porcelain`, and the reflog tail. A state change observed
+during the audit is an unattributed anomaly: the report prints the reflog entry and
+its time window, does not name the author, and the verdict stays `NOT VERIFIED`
+until the user attributes the change or it is reverted with authorization (M-73,
+`STATE-001` in `workflows/output-compliance.md`).
+
 The human user performs any corrections manually.

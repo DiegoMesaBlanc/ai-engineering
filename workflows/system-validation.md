@@ -1003,6 +1003,7 @@ Return:
 - V2.72 visible failures, verified claims, test-only consumers, entry identity, and composition checks:
 - V2.73 locale direction, consumed-code inheritance, enumerated claims, decision-record patterns, and platform live-region checks:
 - V2.74 deploy order, application-side schema ownership, and scope-manifest checks:
+- V2.75 inventory enumeration, repository state, and unexecuted-step checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -4586,6 +4587,156 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v274.XXXXXX")"
 
 echo "V2.74 probe: fixture in $fx was checked and is removed"
 rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.75 Regression — Inventory Enumeration, Repository State, and Unexecuted Steps
+
+Verify that the rules added after the external audit of a destructive-operation
+analysis are canonical, reachable, and effective, and that the detectors close the
+gaps that let its findings through:
+
+- M-72: an inventory in a report is produced by an enumeration of the target in the
+  same session, cited with its command and count, and every listed name is returned by
+  it (R-123). `INV-001` reports a claimed name the enumeration does not return and an
+  enumerated item the claim neither lists nor excludes. The external audit found three
+  claimed database files absent on disk and three existing ones omitted.
+- M-73: a read-only gate records the state of the target repository before and after
+  its run, and a state change is an unattributed anomaly, not a claim of authorship
+  (R-124). `STATE-001` reports the change with its reflog entry as `NOT VERIFIED`. The
+  external audit found a commit in the target during its gate, and a README that named
+  its author without evidence.
+- M-74: a required step the agent does not execute is `NOT DONE` with its reason and is
+  put to the user, and an end state reached by a side effect is not completion (R-125).
+  The external audit found a teardown omitted and the clean tree attributed to a commit
+  instead. Its enforcement is the flow and the text checks below, not a detector: this
+  check verifies the wording and reachability, and the limit is stated in the report.
+
+The text checks run on the repository. The behavioral part extracts the detector
+blocks of `workflows/output-compliance.md`, builds git and inventory fixtures outside
+the repository that reproduce the external findings, verifies each defect is reported
+with `file:line`, verifies the compliant twin is clean, and removes the fixture. It
+needs `awk`, `grep`, `sed`, `mktemp`, `cmp`, `cksum`, and `git`; without them the
+behavioral part is `NOT VERIFIED`, and the text checks still run.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+ap="references/audit-pass-criteria.md"
+db="skills/database-engineering/SKILL.md"
+cg="workflows/code-audit.md"
+sd="workflows/secure-delivery.md"
+tc="workflows/task-to-code.md"
+vs="workflows/system-validation.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.75: $1 is missing $3"; failures=1; }
+}
+
+# Canonical wording and reachability of M-72, M-73, and M-74 on every required surface.
+for surface in "$ag" "$db" "$ap" "$oc" "$rmx" "$mr" "$vs"; do
+  need "$surface" "produced by an enumeration of the target" "the M-72 anchor"
+done
+for surface in "$ag" "$cg" "$sd" "$ap" "$rmx" "$mr" "$vs"; do
+  need "$surface" "records the state of the target repository" "the M-73 anchor"
+done
+for surface in "$ag" "$tc" "$ap" "$rmx" "$mr" "$vs"; do
+  need "$surface" "a required step that the agent does not execute" "the M-74 anchor"
+done
+
+for id in M-72 M-73 M-74; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.75: no $id row"; failures=1; }
+done
+for id in R-123 R-124 R-125; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.75: no $id row"; failures=1; }
+done
+
+# Both detectors are defined, and the criteria name them so an auditor finds them.
+for det in INV-001 STATE-001; do
+  grep -q "^### $det " "$root/$oc" || { echo "FAIL V2.75: $oc has no $det section"; failures=1; }
+  grep -q "$det" "$root/$ap" || { echo "FAIL V2.75: the criteria do not name $det"; failures=1; }
+done
+
+command -v awk >/dev/null 2>&1 && command -v grep >/dev/null 2>&1 && command -v sed >/dev/null 2>&1 \
+  && command -v mktemp >/dev/null 2>&1 && command -v git >/dev/null 2>&1 \
+  && command -v cmp >/dev/null 2>&1 && command -v cksum >/dev/null 2>&1 || {
+  echo "NOT VERIFIED V2.75: awk, grep, sed, mktemp, cmp, cksum, or git is not available, the behavioral fixtures were not run"; exit 2; }
+
+# Extracts the sh blocks of the INV-001 and STATE-001 sections of workflows/output-compliance.md.
+extract() {
+  awk '
+    /^### (INV-001|STATE-001) / { on = 1; next }
+    /^### / { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v275.XXXXXX")"
+snap="$(mktemp -d "${TMPDIR:-/tmp}/v275snap.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  extract > detectors.sh
+  [ -s detectors.sh ] || { echo "FAIL V2.75: the detector blocks were not extracted"; exit 1; }
+  . ./detectors.sh
+
+  # INV-001, defective: the claim names three files that are not on disk and omits three that are.
+  printf '%s\n' orders.sqlite receipts.sqlite loyalty.sqlite payments.sqlite sessions.sqlite catalog.sqlite > enum.txt
+  printf '%s\n' auth.sqlite imports.sqlite order-callbacks.sqlite payments.sqlite sessions.sqlite catalog.sqlite > claim.txt
+  defects="$(inventory_check enum.txt claim.txt)"
+  for want in \
+    'FAIL INV-001: claim.txt:1: auth.sqlite is claimed' \
+    'FAIL INV-001: claim.txt:2: imports.sqlite is claimed' \
+    'FAIL INV-001: claim.txt:3: order-callbacks.sqlite is claimed' \
+    'FAIL INV-001: enum.txt:1: orders.sqlite is enumerated' \
+    'FAIL INV-001: enum.txt:2: receipts.sqlite is enumerated' \
+    'FAIL INV-001: enum.txt:3: loyalty.sqlite is enumerated'; do
+    printf '%s\n' "$defects" | grep -qF -- "$want" \
+      || { echo "FAIL V2.75: the inventory defect was not reported with file:line: $want"; exit 1; }
+  done
+  # Negative control: a name both lists and the enumeration share is not reported.
+  printf '%s\n' "$defects" | grep -q 'payments.sqlite' \
+    && { echo "FAIL V2.75: INV-001 reports a name the enumeration and the claim share"; exit 1; }
+
+  # INV-001, repaired: the claim equals the enumeration, and a dropped store is excluded with its reason.
+  cp enum.txt claim-exact.txt
+  [ -z "$(inventory_check enum.txt claim-exact.txt)" ] \
+    || { echo "FAIL V2.75: INV-001 reports a claim that equals the enumeration"; exit 1; }
+  printf '%s\n' orders.sqlite receipts.sqlite payments.sqlite sessions.sqlite catalog.sqlite '# excluded loyalty.sqlite test fixture, not production data' > claim-excluded.txt
+  [ -z "$(inventory_check enum.txt claim-excluded.txt)" ] \
+    || { echo "FAIL V2.75: INV-001 reports a store excluded with a reason"; exit 1; }
+
+  # STATE-001: an unchanged snapshot is clean; a commit made during the gate is an unattributed anomaly.
+  git init -q . || { echo "FAIL V2.75: git init failed in the fixture"; exit 1; }
+  printf 'a\n' > f.txt
+  git add -A && git -c user.email=probe@local -c user.name=probe commit -qm base || exit 1
+  repo_state_snapshot . > "$snap/before.txt"
+  state_check . "$snap/before.txt" > "$snap/clean.txt"
+  [ -z "$(cat "$snap/clean.txt")" ] && state_check . "$snap/before.txt" >/dev/null \
+    || { echo "FAIL V2.75: STATE-001 reports an unchanged state"; exit 1; }
+
+  printf 'b\n' > f.txt
+  git add -A && git -c user.email=probe@local -c user.name=probe commit -qm during-gate || exit 1
+  anomaly="$(state_check . "$snap/before.txt")"
+  printf '%s\n' "$anomaly" | grep -qF 'NOT VERIFIED STATE-001' \
+    || { echo "FAIL V2.75: STATE-001 did not report the change made during the gate: $anomaly"; exit 1; }
+  printf '%s\n' "$anomaly" | grep -q '^FAIL' \
+    && { echo "FAIL V2.75: STATE-001 reports the unattributed change as FAIL instead of NOT VERIFIED"; exit 1; }
+  printf '%s\n' "$anomaly" | grep -qF 'during-gate' \
+    || { echo "FAIL V2.75: STATE-001 did not print the reflog entry of the change"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.75 probe: fixtures in $fx and $snap were checked and are removed"
+rm -rf "$fx" "$snap"
 
 exit "$failures"
 ```

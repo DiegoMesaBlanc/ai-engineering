@@ -143,6 +143,12 @@ Prefer reversible steps and confirm a recovery path (backup or rollback)
 before destructive operations. Never run destructive database commands on
 shared or production resources without authorization.
 
+Before proposing a destructive or data operation, enumerate the stores, tables,
+and files it touches from the target in the same session. The inventory is
+produced by an enumeration of the target, cited with its command and its count,
+and its definition is stated (M-72). A store name that the enumeration does not
+return is not listed, and an enumerated store is listed or excluded with a reason.
+
 ## Relation to Other Components
 
 - `architecture-advisor` decides where data access belongs and how it is
@@ -176,6 +182,8 @@ operation only with human approval.
 - Deploy-order evidence: the test that runs the new release against the
   unmigrated database and the previous release against the migrated one (M-69)
 - Destructive steps and required approvals
+- Data-store inventory produced by an enumeration of the target, with the
+  command, the count, and its definition (M-72)
 - Risks and deviations
 
 ## Safety

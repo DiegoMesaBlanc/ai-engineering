@@ -52,6 +52,11 @@ dimension. A criterion is never presented as a framework standard.
   version is derived from the evidence it cites and re-derived before it is
   reported. A statement copied from memory or from an earlier draft is a finding
   of the report, `FAIL` for the dimension that owns the claim (M-65).
+- A required step that the agent does not execute, such as a teardown, reset,
+  cleanup, or rollback, is `NOT DONE` in the report with its reason and is put to
+  the user. An end state reached by a side effect is not completion: the step's own
+  evidence verifies it, or the user accepts the equivalence in the current
+  conversation (M-74, `workflows/task-to-code.md`, Phase 13).
 
 ## Criteria
 
@@ -186,6 +191,12 @@ dimension. A criterion is never presented as a framework standard.
 - Application code never changes the schema (M-70). A `CREATE`, `ALTER`, or
   `DROP` at startup, boot, or in a request path is a `FAIL` of this Dimension at
   the file and line of the statement (`DB-001` in `workflows/output-compliance.md`).
+- An inventory of stores, tables, files, or commits in a report is produced by an
+  enumeration of the target in the same session (M-72). The report cites the
+  enumeration command and its count with its definition. A listed name the
+  enumeration does not return is a `FAIL`, and an enumerated item that is neither
+  listed nor excluded with a reason is a `FAIL` (`INV-001` in
+  `workflows/output-compliance.md`).
 
 ### 6. Security
 
@@ -398,3 +409,10 @@ dimension. A criterion is never presented as a framework standard.
   formatter or linter rewrite that the approved scope does not own and that was
   not reverted before the change set was proposed (`SCOPE-001` in
   `workflows/commit.md`).
+
+- A read-only audit records the state of the target repository before and after
+  its run (M-73): HEAD, the branch, `git status --porcelain`, and the reflog tail.
+  A state change observed during the audit is an unattributed anomaly with its
+  reflog entry. The report does not name its author, and the verdict is
+  `NOT VERIFIED` until the user attributes the change or it is reverted with
+  authorization (`STATE-001` in `workflows/output-compliance.md`).
