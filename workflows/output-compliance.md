@@ -506,6 +506,64 @@ finding unless the project documents the exception and the review records it.
 A `FAIL` is P1 when it crosses a module boundary with runtime risk, P2
 otherwise. The check reports `file:line`; it never rewrites code.
 
+### TEST-001 and TEST-002 — Test APIs are imported explicitly; the case is declared with `test`
+
+A TypeScript or JavaScript test file the change set creates or modifies
+imports every test API it uses explicitly from the framework module that
+declares it (`vitest`, or `@jest/globals` for Jest), so the type checker
+accepts it without a global test declaration (M-47, `AGENTS.md`). Without
+the import the file fails with `Cannot find name 'describe'` (TS2593). A
+test case is declared with `test`, not `it`.
+
+**Scope.** The check reads the test files the change set adds or modifies,
+never the whole repository. A test file that already exists in the base
+revision and is not modified by the task is a finding, never a `FAIL`.
+
+**Detection.** The function reads each file and reports the first line where
+each test API is called or read as a member, `(?<![.\w$])NAME(` or
+`NAME.identifier`. The name must appear in an import from `vitest` or
+`@jest/globals`. Prose such as `the test. Next` does not match, because a
+member access has no space after the dot.
+
+```sh
+test_api_check() {
+  findings=$(for f in "$@"; do
+    perl -e '
+      local $/; my $f = shift @ARGV;
+      open my $h, "<", $f or die "$f: $!"; my $s = <$h>; close $h;
+      my %imp;
+      while ($s =~ /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["\x27](?:vitest|\@jest\/globals)["\x27]/g) {
+        for my $n (split /,/, $1) { $n =~ s/^\s+|\s+$//g; $n =~ s/\s+as\s+\S+$//; $imp{$n} = 1 if length $n; }
+      }
+      for my $n (qw(describe test it expect vi beforeEach afterEach beforeAll afterAll)) {
+        if ($s =~ /(?<![.\w\$])\Q$n\E(?:\s*\(|\.[A-Za-z_])/g) {
+          my $line = 1 + (substr($s, 0, $-[0]) =~ tr/\n//);
+          print "FAIL TEST-001: $f:$line: $n is used without an explicit import\n" unless $imp{$n};
+        }
+      }
+      while ($s =~ /(?<![.\w\$])it\s*\(/g) {
+        my $line = 1 + (substr($s, 0, $-[0]) =~ tr/\n//);
+        print "FAIL TEST-002: $f:$line: the case is declared with it, not test\n";
+      }
+    ' "$f"
+  done)
+  [ -n "$findings" ] && { printf '%s\n' "$findings"; return 1; }
+  return 0
+}
+
+changed_tests=$({
+  git diff --name-only --diff-filter=ACM "$BASE"
+  git ls-files --others --exclude-standard
+} | sort -u | grep -E '\.(test|spec)\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$')
+printf '%s\n' "$changed_tests" | sed '/^$/d' |
+  while IFS= read -r f; do test_api_check "$f"; done
+```
+
+The check uses `perl`, present on macOS and Linux. Where `perl` is absent the
+check is `NOT VERIFIED` with that reason, never a pass. The check does not
+detect an aliased import (`import { test as t }`) or a test API hidden behind
+a local wrapper; such a file is reported for review.
+
 ### CHECK-001 — Phase checklist format and derivation
 
 A phase checklist is valid when every line uses the state format and every

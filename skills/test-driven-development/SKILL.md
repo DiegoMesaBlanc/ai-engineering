@@ -162,6 +162,8 @@ Always use the language, test framework, and conventions detected in the
 actual project.
 
 ```typescript
+import { expect, test } from "@jest/globals";
+
 test("retries failed operations three times", async () => {
   let attempts = 0;
 
@@ -245,6 +247,9 @@ When writing or changing any test, read [writing-good-tests.md](references/writi
 - Assert on real behavior, never on mock behavior
 - Keep test-only code in test utilities, out of production classes
 - Understand a dependency's side effects before mocking it
+- Import every test API explicitly from its framework module, and declare the
+  case with `test` rather than `it` (`AGENTS.md`, M-47: imported explicitly
+  from the framework module, never test globals)
 
 ## Common Testing Decisions
 
@@ -286,6 +291,8 @@ task scope, or human approval requirements.
 **RED**
 
 ```typescript
+import { expect, test } from "@jest/globals";
+
 test("rejects empty email", async () => {
   const result = await submitForm({ email: "" });
   expect(result.error).toBe("Email required");

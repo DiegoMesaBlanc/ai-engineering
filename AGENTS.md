@@ -599,6 +599,14 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
   reads the change set, never the whole file.
 - Report checks that were not run.
 - Never claim a test or build passed without evidence.
+- In a TypeScript or JavaScript test file that a task creates, every test API
+  the file uses — `describe`, `test`, `it`, `expect`, `vi`, and the hooks — is
+  imported explicitly from the module of the framework that declares it (for
+  Vitest, `vitest`; for Jest, `@jest/globals`). Test globals are never relied
+  on, so the type checker needs no global test declaration to accept a test.
+  A test case is declared with `test`, not `it`: in Vitest `it` is an alias of
+  `test`, and one form keeps the suite uniform. Existing test files are not
+  converted as a side effect of another task.
 - Keep unrelated refactoring out of scope.
 - A reinforcement of an engineering discipline adopted from an external
   methodology (test-first discipline, root-cause debugging, verification before

@@ -993,6 +993,7 @@ Return:
 - V2.62 stage is one concern and concern measurement checks:
 - V2.63 styling approach by framework and timing checks:
 - V2.64 audit criteria read gate and platform criteria checks:
+- V2.65 test API import and test-case form checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -3159,6 +3160,87 @@ out=$(criteria_gate "$fx" 2>&1) && { echo "FAIL V2.64: a copy without the error 
 printf '%s\n' "$out" | grep -q "FAIL V2.64: $ap is missing the error association criterion" || { echo "FAIL V2.64: the removed criterion was not detected"; failures=1; }
 section=$(grep -n "^### 9. Accessibility" "$fx/$ap" | cut -d: -f1)
 echo "V2.64 probe detected: $fx/$ap section 9 starts at line ${section:-unknown}"
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.65 Regression — Test API Imports and the Test Case Form
+
+Verify that the test API rule is canonical in `AGENTS.md`, registered as M-47
+with the anchor "imported explicitly from the module of the framework", and
+that the detection in `workflows/output-compliance.md` (TEST-001 and TEST-002)
+finds a test API used without an import and a case declared with `it`, with
+`file:line` evidence, and accepts the compliant form.
+
+- `AGENTS.md` states the canonical wording under Implementation and Validation.
+- `references/mandatory-rules.md` contains the M-47 row, and the regression
+  matrix contains the R-87 row.
+- The implementation recipe and the TDD skill carry the import rule, and every
+  TypeScript example in the TDD skill that calls `test(` imports it.
+- Proof: the detection function is extracted from `workflows/output-compliance.md`
+  itself, not copied, and run on temporary fixtures: a compliant file passes, a
+  file with no import and an `it` case is detected with `file:line`, and the
+  repaired file passes.
+
+The behavioral proof needs `perl`, which the detection uses. Where it is
+absent the check is `NOT VERIFIED`. The TypeScript compiler result (TS2593) is
+not part of this check; it is established by the behavioral audit of
+`workflows/system-audit.md` on a real Vitest project.
+
+The check takes the repository root as its argument and defaults to the current
+directory.
+
+```sh
+root="${1:-.}"
+failures=0
+ag="AGENTS.md"
+ir="skills/implementation-recipes/SKILL.md"
+tdd="skills/test-driven-development/SKILL.md"
+oc="workflows/output-compliance.md"
+rmx="references/system-workflow-regression-matrix.md"
+mr="references/mandatory-rules.md"
+
+grep -q "imported explicitly from the module of the framework" "$root/$ag" || { echo "FAIL V2.65: $ag is missing the M-47 canonical wording"; failures=1; }
+grep -q "^| M-47 |" "$root/$mr" || { echo "FAIL V2.65: no M-47 row"; failures=1; }
+grep -q "^| R-87 |" "$root/$rmx" || { echo "FAIL V2.65: no R-87 row"; failures=1; }
+grep -q "Import every identifier the file uses" "$root/$ir" || { echo "FAIL V2.65: $ir is missing the import recipe"; failures=1; }
+grep -q "Import every test API explicitly" "$root/$tdd" || { echo "FAIL V2.65: $tdd is missing the import bullet"; failures=1; }
+grep -q "TEST-001" "$root/$oc" && grep -q "TEST-002" "$root/$oc" || { echo "FAIL V2.65: $oc does not define TEST-001 and TEST-002"; failures=1; }
+
+# Every TypeScript example in the TDD skill that calls test( must import it.
+awk '
+  /^```typescript/ { on = 1; blk = ""; start = NR; next }
+  /^```/ && on {
+    if (blk ~ /test\(/ && blk !~ /import \{/) {
+      printf "FAIL V2.65: %s:%d: a TypeScript example calls test without an import\n", FILENAME, start
+      bad = 1
+    }
+    on = 0; next
+  }
+  on { blk = blk $0 "\n" }
+  END { exit bad }
+' "$root/$tdd" || failures=1
+
+command -v perl >/dev/null 2>&1 || { echo "NOT VERIFIED V2.65: perl is not available, the behavioral proof was not run"; exit 2; }
+
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v265.XXXXXX")
+awk '/^test_api_check\(\) \{/{on=1} on{print} on && /^\}$/{exit}' "$root/$oc" > "$fx/check.sh"
+grep -q "^test_api_check() {" "$fx/check.sh" || { echo "FAIL V2.65: test_api_check is not defined in $oc"; failures=1; }
+
+(
+  . "$fx/check.sh" || exit 1
+  printf "import { describe, expect, test } from 'vitest';\ndescribe('a', () => {\n  test('b', () => {\n    expect(1).toBe(1);\n  });\n});\n" > "$fx/compliant.test.ts"
+  printf "describe('a', () => {\n  it('b', () => {\n    expect(1).toBe(1);\n  });\n});\n" > "$fx/violation.test.ts"
+  test_api_check "$fx/compliant.test.ts" || { echo "FAIL V2.65: the compliant test is rejected"; exit 1; }
+  out=$(test_api_check "$fx/violation.test.ts" 2>&1) && { echo "FAIL V2.65: the violating test is accepted"; exit 1; }
+  printf '%s\n' "$out" | grep -q "FAIL TEST-001: $fx/violation.test.ts:1: describe is used without an explicit import" || { echo "FAIL V2.65: describe without an import is not detected with file:line"; exit 1; }
+  printf '%s\n' "$out" | grep -q "FAIL TEST-002: $fx/violation.test.ts:2: the case is declared with it" || { echo "FAIL V2.65: an it case is not detected with file:line"; exit 1; }
+  { printf "import { describe, expect, test } from 'vitest';\n"; sed 's/it(/test(/' "$fx/violation.test.ts"; } > "$fx/repaired.test.ts"
+  test_api_check "$fx/repaired.test.ts" || { echo "FAIL V2.65: the repaired test is rejected"; exit 1; }
+) || failures=1
+
+echo "V2.65 probe: fixtures in $fx were checked and are removed"
 rm -rf "$fx"
 
 exit "$failures"

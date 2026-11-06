@@ -231,6 +231,33 @@ layout. A single trivial file with no test, styles, or subcomponents may
 remain a single file. Do not impose a rule the detected ecosystem does not
 support.
 
+### Test Files (TypeScript and JavaScript)
+
+Every test file a task creates has each test API it uses imported explicitly
+from the framework module that declares it, so the type checker accepts the
+file without a global test declaration (`AGENTS.md`, M-47). Vitest does not expose
+test globals unless the project opts in, and a missing import fails the type
+check with `Cannot find name 'describe'` (TS2593).
+
+- Import every identifier the file uses: `describe`, `test`, `expect`, `vi`,
+  and the hooks. For Vitest the module is `vitest`; for Jest it is
+  `@jest/globals`.
+- Declare a test case with `test`, not `it`. In Vitest `it` is an alias of
+  `test`; the form is uniform across the suite.
+- Do not convert an existing test file to this form as a side effect of
+  another task; report it as a finding.
+
+```typescript
+import { describe, expect, test } from 'vitest';
+import { add } from './math';
+
+describe('add', () => {
+  test('adds two numbers', () => {
+    expect(add(1, 1)).toBe(2);
+  });
+});
+```
+
 ## Cross-Cutting Concerns
 
 Apply these consistently regardless of stack:
