@@ -85,6 +85,17 @@ tool, or schema style without a justified reason and human approval.
   and run it twice to confirm it is idempotent. Report the result as evidence;
   a migration that was not run against an existing database is reported as not
   verified.
+- A database change is compatible in either deployment order (M-69). Prove both
+  orders with tests that execute the code: the new release against a database
+  that has not yet received the migration, and the previous release against the
+  migrated database. A test named for the legacy or previous schema is the
+  evidence; a claim of order-safety with no such test is a false claim and is
+  reported as `NOT VERIFIED`.
+- Application code never changes the schema (M-70). A `CREATE`, `ALTER`, or
+  `DROP` statement, including `CREATE ... IF NOT EXISTS`, is written only in a
+  migration and run only by the migration tooling. Startup, boot, and request
+  paths do not issue DDL, so a release never mutates a database it did not
+  migrate.
 
 ## Queries and Performance
 
@@ -162,6 +173,8 @@ operation only with human approval.
 - Transaction and concurrency considerations
 - Security and data-classification impact
 - Validation approach (tests, `EXPLAIN`, migration dry run)
+- Deploy-order evidence: the test that runs the new release against the
+  unmigrated database and the previous release against the migrated one (M-69)
 - Destructive steps and required approvals
 - Risks and deviations
 
@@ -171,4 +184,7 @@ operation only with human approval.
   production data without explicit human approval.
 - Never store secrets or sensitive data in code, migrations, or logs.
 - Never bypass the project's migration tooling or edit applied migrations.
+- Never issue DDL from application code: a schema statement at startup or in a
+  request path bypasses the migration tooling and breaks the deployment order
+  (M-70, M-69).
 - Never weaken integrity constraints to make a change easier.

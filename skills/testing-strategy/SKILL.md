@@ -93,7 +93,8 @@ Examples:
 
 - authentication or authorization changes
 - payment or financial behavior
-- data migrations
+- data migrations, with a deploy-order test that runs the new code on a database
+  without the migration and the previous code on the migrated database (M-69)
 - shared libraries
 - public API contracts
 - changes affecting multiple modules

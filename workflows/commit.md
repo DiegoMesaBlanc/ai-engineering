@@ -152,6 +152,12 @@ Group the scoped changes into atomic commits:
 
 - One logical change per commit.
 - Separate unrelated changes.
+- Every file in the change set is named in its approved scope manifest (M-71).
+  Run `scope_file_check` (SCOPE-001 in `workflows/output-compliance.md`) against
+  the manifest before grouping. A file it reports that the manifest does not name
+  is removed from the proposal. When its diff is a formatter or linter rewrite
+  alone, that rewrite is reverted for that file; any other change in it is
+  preserved and reported to the user, never discarded.
 - Do not create commits merely because a file changed.
 - Prefer small, atomic commits.
 - Stage only the intended files/hunks for each commit.

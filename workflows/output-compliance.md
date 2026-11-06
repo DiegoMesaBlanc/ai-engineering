@@ -1104,6 +1104,8 @@ project_safety_sweep() {
   nonbarrel=$(printf '%s\n' "$src" | grep -vE '(^|/)index\.(ts|tsx|js|jsx|mjs|cjs)$')
   mds=$(printf '%s\n' "$files" | grep -E '\.md$')
   decisions=$(printf '%s\n' "$files" | grep -E '(^|/)docs/decisions/.*\.md$')
+  migrations=$(printf '%s\n' "$files" | grep -E '(^|/)(migrations?|db/migrate)/')
+  tests=$(printf '%s\n' "$files" | grep -E '(\.test\.|\.spec\.|(^|/)(tests?|__tests__)/)')
   echo "SWEEP scanned: $(printf '%s\n' "$src" | sed '/^$/d' | wc -l | tr -d ' ') source files, $(printf '%s\n' "$shells" | sed '/^$/d' | wc -l | tr -d ' ') shell scripts, $(printf '%s\n' "$manifests" | sed '/^$/d' | wc -l | tr -d ' ') build manifests"
   echo "SWEEP excluded: node_modules, dist, build, .next, coverage, .git, and declaration files (*.d.ts)"
   safe_timeout_check . $src
@@ -1128,6 +1130,8 @@ project_safety_sweep() {
   platform_side_effect_check . $src
   decision_record_check . $decisions
   claim_check . $mds
+  db_runtime_ddl_check . $src
+  db_deploy_order_check . $migrations -- $tests
   [ -n "$manifests" ] || echo "NOT VERIFIED M-61: no build manifest or app configuration is tracked, so backup is not verified"
   echo "NOT VERIFIED M-57 (downgrade): needs a base revision; run dependency_downgrade_check on the change set"
 }
@@ -1365,6 +1369,87 @@ claim_check() {
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (universal or exclusive claim: enumerate its scope before keeping it, M-68)#"
     grep -nEi "capturas?|screenshots?|\.png|\.jpe?g|\.gif|evidence|evidencia" "$root/$f" 2>/dev/null |
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (claim that cites an artifact: confirm the artifact is in the repository, M-68)#"
+    grep -nEi "order-safe|order safe|either order|any deployment order|both directions|ambas direcciones|cualquier orden|en ambos sentidos" "$root/$f" 2>/dev/null |
+      sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (compatibility claim: keep it only with a test that executes each deployment order, M-69)#"
+  done
+}
+```
+
+### DB-001 — Application code issues no schema DDL
+
+M-70: application code never changes the schema. A schema statement belongs to a
+migration and runs only from the migration tooling. A `CREATE`, `ALTER`, or `DROP` of a table or index in an application
+source file, outside a migration folder and outside a test, is a `FAIL` with its
+line, because it runs at startup or in a request path and bypasses the tooling.
+The detector matches the SQL keywords, so a prose mention in a comment is a
+candidate: the reviewer confirms each match before reporting it.
+
+**Scope limit.** The detector reads source files by extension and excludes the
+migration folders (`migrations/`, `migrate/`) and the test files. A schema
+statement built from a language-level query builder with no SQL keyword is not
+matched; that case is reviewed under Dimension 5 of `references/audit-pass-criteria.md`.
+
+```sh
+# $1 = repository root; $2... = source files, relative to it.
+db_runtime_ddl_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.py|*.go|*.java|*.kt|*.cs|*.rb|*.php|*.swift|*.dart) ;; *) continue ;; esac
+    case "$f" in *migration*|*migrate*|*/test/*|*/tests/*|*__tests__*|*.test.*|*.spec.*) continue ;; esac
+    grep -niE "(^|[^A-Za-z])(create|alter|drop)[[:space:]]+(unique[[:space:]]+)?(table|index)([^A-Za-z]|$)|(^|[^A-Za-z])alter[[:space:]]+table([^A-Za-z]|$)" "$root/$f" 2>/dev/null |
+      sed "s#^#FAIL DB-001: $f:#; s#\$#  (schema DDL in application code: move it to a migration, M-70)#"
+  done
+}
+```
+
+### DB-002 — A deploy-order test accompanies a migration
+
+M-69: a database change is compatible in either deployment order, so a test must
+execute the code against a database created by the other schema, in each order.
+The detector finds the migrations and the test files of the project. When a
+migration exists and no test file names the legacy, previous, or unmigrated
+schema, the migration is a `FAIL` with its file. When such a test is named, the
+result is `NOT VERIFIED`: the presence of the name is a signal, and the test must
+be executed and its result read before the order is claimed.
+
+```sh
+# $1 = repository root; $2... = migration files, then `--`, then test files, relative to it.
+DEPLOY_ORDER_TEST_RE='legacy|previous (release|schema|version)|unmigrated|not yet migrated|pre-?migration|old schema|before (the )?migration|sin migrar|esquema anterior'
+db_deploy_order_check() {
+  root="$1"; shift
+  migs=""
+  while [ "$#" -gt 0 ] && [ "$1" != "--" ]; do migs="$migs $1"; shift; done
+  [ "$#" -gt 0 ] && shift
+  [ -n "$migs" ] || return 0
+  found=""
+  for t in "$@"; do
+    grep -qiE "$DEPLOY_ORDER_TEST_RE" "$root/$t" 2>/dev/null && found="$found $t"
+  done
+  for m in $migs; do
+    if [ -n "$found" ]; then
+      echo "NOT VERIFIED DB-002: $m:1: a deploy-order test is named ($(echo $found | cut -d' ' -f1)); execute it in both orders before claiming order-safety (M-69)"
+    else
+      echo "FAIL DB-002: $m:1: no test executes this migration in either deployment order (M-69)"
+    fi
+  done
+}
+```
+
+### SCOPE-001 — Every changed file is in the approved scope manifest
+
+M-71: the change set is compared with the scope manifest the user approved. This
+check runs on the change set, not on the project, because the approved scope is a
+property of one task. A changed file the manifest does not name is a `FAIL`,
+which catches the formatter rewrite of an unrelated file. The check reads file
+names; a hunk that changes an unrelated line of an approved file is judged by
+review under Dimension 14 of `references/audit-pass-criteria.md`.
+
+```sh
+# $1 = repository root; $2 = scope manifest file, one approved path per line.
+scope_file_check() {
+  root="$1"; manifest="$2"
+  git -C "$root" diff --name-only HEAD 2>/dev/null | sed '/^$/d' | while read -r f; do
+    grep -qxF -- "$f" "$manifest" || echo "FAIL SCOPE-001: $f:1: changed but not named in the approved scope manifest (M-71)"
   done
 }
 ```

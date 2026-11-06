@@ -1002,6 +1002,7 @@ Return:
 - V2.71 cross-origin, development tools, owner-only writes, and absence claim checks:
 - V2.72 visible failures, verified claims, test-only consumers, entry identity, and composition checks:
 - V2.73 locale direction, consumed-code inheritance, enumerated claims, decision-record patterns, and platform live-region checks:
+- V2.74 deploy order, application-side schema ownership, and scope-manifest checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -4411,6 +4412,179 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v273.XXXXXX")"
 ) || failures=1
 
 echo "V2.73 probe: fixture in $fx was checked and is removed"
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.74 Regression — Deploy Order, Application-Side Schema Ownership, and Scope Manifest
+
+Verify that the rules added after the external audit of a SQLite-backed change
+are canonical, reachable, and effective, and that the detectors close the gaps
+that let its findings through:
+
+- M-69: a database change is compatible in either deployment order, and a claim
+  of order-safety is kept only with a test that executes each order (R-120).
+  `DB-002` reports a migration with no deploy-order test, and `CLAIM-001`
+  reports an order-safety claim as `NOT VERIFIED` with its line. The external
+  audit found the claim "order-safe in both directions" false, and the migration
+  with no test that executes the new release on the unmigrated database.
+- M-70: application code never changes the schema; `CREATE`, `ALTER`, and `DROP`
+  run only from the migration tooling, including `CREATE ... IF NOT EXISTS` (R-121).
+  `DB-001` reports a store that creates its unique index at open with `file:line`,
+  and passes the same statement in a migration folder. The external audit found
+  this statement at store startup, which crashed the new release on an unmigrated
+  database.
+- M-71: every file in a change set is named in its approved scope manifest, and a
+  formatter rewrite of an unnamed file is reverted for that file (R-122).
+  `SCOPE-001` reports the unrelated reformatted file. The external audit found it
+  as a scope change.
+
+The text checks run on the repository. The behavioral part extracts the detector
+blocks of `workflows/output-compliance.md`, builds a git fixture outside the
+repository that reproduces each external finding, verifies each defect is
+reported with `file:line`, rebuilds the fixture in its repaired form, and
+verifies it is clean of `FAIL`. It needs `awk`, `grep`, `sed`, `find`, `mktemp`,
+and `git`; without them the behavioral part is `NOT VERIFIED`, and the text
+checks still run.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+ap="references/audit-pass-criteria.md"
+ir="skills/implementation-recipes/SKILL.md"
+db="skills/database-engineering/SKILL.md"
+tc="workflows/task-to-code.md"
+cm="workflows/commit.md"
+pv="workflows/project-validation.md"
+vs="workflows/system-validation.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.74: $1 is missing $3"; failures=1; }
+}
+
+# Canonical wording and reachability of M-69, M-70, and M-71 on every required surface.
+for surface in "$ag" "$db" "$ir" "$ap" "$oc" "$tc" "$rmx" "$mr" "$vs"; do
+  need "$surface" "compatible in either deployment order" "the M-69 anchor"
+done
+for surface in "$ag" "$db" "$ir" "$ap" "$oc" "$tc" "$rmx" "$mr" "$vs"; do
+  need "$surface" "application code never changes the schema" "the M-70 anchor"
+done
+for surface in "$ag" "$cm" "$pv" "$ap" "$rmx" "$mr" "$vs"; do
+  need "$surface" "named in its approved scope manifest" "the M-71 anchor"
+done
+
+for id in M-69 M-70 M-71; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.74: no $id row"; failures=1; }
+done
+for id in R-120 R-121 R-122; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.74: no $id row"; failures=1; }
+done
+
+# Every detector is defined, the health probe sweep runs the two project-wide ones,
+# and the criteria name them so an auditor finds them from the matrix.
+for det in DB-001 DB-002 SCOPE-001; do
+  grep -q "^### $det " "$root/$oc" || { echo "FAIL V2.74: $oc has no $det section"; failures=1; }
+done
+for call in db_runtime_ddl_check db_deploy_order_check; do
+  grep -q "^  $call \. " "$root/$oc" || { echo "FAIL V2.74: the sweep does not run $call"; failures=1; }
+done
+grep -q "compatibility claim: keep it only with a test that executes each deployment order" "$root/$oc" \
+  || { echo "FAIL V2.74: CLAIM-001 does not flag order-safety claims"; failures=1; }
+for det in DB-001 DB-002 SCOPE-001; do
+  grep -q "$det" "$root/$ap" || { echo "FAIL V2.74: the criteria do not name $det"; failures=1; }
+done
+
+command -v awk >/dev/null 2>&1 && command -v grep >/dev/null 2>&1 && command -v find >/dev/null 2>&1 \
+  && command -v mktemp >/dev/null 2>&1 && command -v git >/dev/null 2>&1 || {
+  echo "NOT VERIFIED V2.74: awk, grep, find, mktemp, or git is not available, the behavioral fixture was not run"; exit 2; }
+
+# Extracts the sh blocks of the detector sections of workflows/output-compliance.md.
+extract() {
+  awk '
+    /^### (DB-001|DB-002|SCOPE-001|CLAIM-001) / { on = 1; next }
+    /^### / { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v274.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  mkdir -p src/adapters migrations src/config src/features
+  extract > detectors.sh
+  [ -s detectors.sh ] || { echo "FAIL V2.74: the detector blocks were not extracted"; exit 1; }
+  . ./detectors.sh
+
+  # The defective fixture: the external audit's store, its migration, its test, and its claim.
+  printf '%s\n' "export const openStore = (db: Db) => {" \
+    "  db.exec(\"CREATE UNIQUE INDEX IF NOT EXISTS idx_default_method ON auth_users(default_method_id)\");" \
+    "};" > src/adapters/sqlite-auth-store.ts
+  printf '%s\n' "export const up = (db: Db) => db.exec(\"CREATE UNIQUE INDEX IF NOT EXISTS idx_default_method ON auth_users(default_method_id)\");" \
+    > migrations/003-default-method.ts
+  printf '%s\n' "import { test } from 'vitest';" "test('opens the store', () => {});" > src/adapters/sqlite-auth-store.test.ts
+  printf '%s\n' "// Expand is order-safe in both directions." "export const expand = () => 1;" > src/adapters/expand.ts
+
+  defects="$( {
+    db_runtime_ddl_check . src/adapters/sqlite-auth-store.ts migrations/003-default-method.ts src/adapters/sqlite-auth-store.test.ts
+    db_deploy_order_check . migrations/003-default-method.ts -- src/adapters/sqlite-auth-store.test.ts
+    claim_check . src/adapters/expand.ts
+  } )"
+  for want in \
+    'FAIL DB-001: src/adapters/sqlite-auth-store.ts:2:' \
+    'FAIL DB-002: migrations/003-default-method.ts:1:' \
+    'NOT VERIFIED CLAIM-001: src/adapters/expand.ts:1:'; do
+    printf '%s\n' "$defects" | grep -qF -- "$want" \
+      || { echo "FAIL V2.74: the defect was not reported with file:line: $want"; exit 1; }
+  done
+  # Negative control: the same statement in a migration folder is not runtime DDL.
+  printf '%s\n' "$defects" | grep -q 'FAIL DB-001: migrations/' \
+    && { echo "FAIL V2.74: DB-001 reports the migration that owns the statement"; exit 1; }
+
+  # The repaired twin: the store has no DDL, a named legacy-schema test exists, and the claim is reworded.
+  printf '%s\n' "export const openStore = (db: Db) => db.prepare('SELECT 1').get();" > src/adapters/sqlite-auth-store.ts
+  printf '%s\n' "import { test } from 'vitest';" "test('new code on a legacy database without the migration fails closed', () => {});" \
+    > src/adapters/sqlite-auth-store.test.ts
+  printf '%s\n' "// Expand adds a nullable column; the legacy-schema test covers the other order." "export const expand = () => 1;" > src/adapters/expand.ts
+
+  repaired="$( {
+    db_runtime_ddl_check . src/adapters/sqlite-auth-store.ts migrations/003-default-method.ts src/adapters/sqlite-auth-store.test.ts
+    db_deploy_order_check . migrations/003-default-method.ts -- src/adapters/sqlite-auth-store.test.ts
+    claim_check . src/adapters/expand.ts
+  } )"
+  printf '%s\n' "$repaired" | grep -q '^FAIL' \
+    && { echo "FAIL V2.74: the repaired fixture still reports a failure: $repaired"; exit 1; }
+  printf '%s\n' "$repaired" | grep -qF 'NOT VERIFIED DB-002: migrations/003-default-method.ts:1:' \
+    || { echo "FAIL V2.74: a named deploy-order test is not reported as NOT VERIFIED"; exit 1; }
+
+  # SCOPE-001 on a git fixture: an unrelated reformatted file is reported, the approved file is not.
+  git init -q . || { echo "FAIL V2.74: git init failed in the fixture"; exit 1; }
+  printf 'a\n' > src/config/job-env.ts
+  printf 'b\n' > src/features/payment.ts
+  git add -A && git -c user.email=probe@local -c user.name=probe commit -qm base || exit 1
+  printf 'a2\n' > src/config/job-env.ts
+  printf 'b2\n' > src/features/payment.ts
+  printf '%s\n' src/features/payment.ts > approved.txt
+  scope="$(scope_file_check . approved.txt)"
+  printf '%s\n' "$scope" | grep -qF 'FAIL SCOPE-001: src/config/job-env.ts:1:' \
+    || { echo "FAIL V2.74: SCOPE-001 did not report the unnamed file: $scope"; exit 1; }
+  printf '%s\n' "$scope" | grep -q 'src/features/payment.ts' \
+    && { echo "FAIL V2.74: SCOPE-001 reports the file the manifest names"; exit 1; }
+  printf '%s\n' src/features/payment.ts src/config/job-env.ts > approved.txt
+  [ -z "$(scope_file_check . approved.txt)" ] \
+    || { echo "FAIL V2.74: SCOPE-001 reports a file after the manifest names it"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.74 probe: fixture in $fx was checked and is removed"
 rm -rf "$fx"
 
 exit "$failures"

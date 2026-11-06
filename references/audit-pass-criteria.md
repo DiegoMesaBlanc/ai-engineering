@@ -177,6 +177,15 @@ dimension. A criterion is never presented as a framework standard.
   or transactions. Otherwise `N/A` with that reason.
 - Queries are parameterized, migrations are reversible or justified, no N+1
   pattern is introduced, and transaction boundaries are explicit.
+- A database change is compatible in either deployment order (M-69): the new
+  release starts on a database that has not received its migration, and the
+  previous release keeps working on the migrated one. A migration with no test
+  that executes both orders is `NOT VERIFIED`, and a `FAIL` when the change set
+  states order-safety with no such test (`DB-002` in
+  `workflows/output-compliance.md`).
+- Application code never changes the schema (M-70). A `CREATE`, `ALTER`, or
+  `DROP` at startup, boot, or in a request path is a `FAIL` of this Dimension at
+  the file and line of the statement (`DB-001` in `workflows/output-compliance.md`).
 
 ### 6. Security
 
@@ -269,6 +278,12 @@ dimension. A criterion is never presented as a framework standard.
   sees is asserted (M-54). A test that makes the dependency return a timeout result
   does not cover the guarantee: it proves the dependency, not the bound. A
   missing one is a `FAIL` of this Dimension at the test file that claims the bound.
+- Every compatibility scenario the change declares has a test that executes it,
+  for each deployment order (M-69): a schema change has a test in which the new
+  code runs against a database without the migration and a test in which the
+  previous code runs against the migrated database. A declared scenario with no
+  executing test is a `FAIL` of this Dimension at the test file that claims it,
+  or at the document that declares it when no test exists.
 - Tests are deterministic and do not depend on wall-clock sleeps.
 - When the approved requirement includes right-to-left support, each
   direction-dependent unit the change creates or modifies has a rendered assertion
@@ -378,3 +393,8 @@ dimension. A criterion is never presented as a framework standard.
 - Applicable only to multi-package or multi-project changes. Otherwise `N/A`.
 - Changes stay inside the target project; package boundaries and dependency
   direction are respected.
+- Every file in the change set is named in its approved scope manifest (M-71).
+  A file the manifest does not name is a `FAIL` of this Dimension, and so is a
+  formatter or linter rewrite that the approved scope does not own and that was
+  not reverted before the change set was proposed (`SCOPE-001` in
+  `workflows/commit.md`).

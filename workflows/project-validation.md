@@ -223,7 +223,12 @@ solely to satisfy this policy.
    compatible versions, project-locally; never install globally. Update the
    lockfile when installation succeeds.
 7. Format files within the task scope only when necessary and safe, without
-   rewriting unrelated user-owned files.
+   rewriting unrelated user-owned files. Every file in a change set is named in
+   its approved scope manifest (M-71), and a formatter or linter run that
+   rewrites a file the approved scope does not name is reverted for that file
+   before the change set is proposed (`SCOPE-001` in
+   `workflows/output-compliance.md`). Run the formatter in its non-mutating check
+   mode first, so the write is limited to the files the task owns.
 8. Run the formatter's non-mutating check and the linter, capturing exit
    codes and output. A violation that pre-existed the change set is a
    finding, not a gate failure; only the violations the change set introduces

@@ -556,6 +556,14 @@ src/server/<domain>/        # or src/features/<feature>/server/
 - Coordinate schema changes through the project's migration tooling; when a
   change touches the schema, migrations, queries, indexes, or transactions,
   load `database-engineering` for the safe, backward-compatible procedure.
+- Application code never changes the schema (M-70). Startup, boot, and request
+  paths issue no `CREATE`, `ALTER`, or `DROP`, including `CREATE ... IF NOT
+  EXISTS`; the migration is the only place a schema change is written. A store
+  that creates its tables or indexes when it opens is a defect of the change
+  that introduces it.
+- A database change is compatible in either deployment order (M-69): the new
+  release is tested against a database without its migration, and the previous
+  release against the migrated one.
 
 ## Mobile
 

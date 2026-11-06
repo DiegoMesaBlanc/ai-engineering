@@ -337,7 +337,11 @@ When the task changes a boundary, interface, or integration, load
 `skills/api-contract-design/SKILL.md` and include the contract in the
 proposal. When the task touches the database — schema, migration, query,
 index, or transaction — load `skills/database-engineering/SKILL.md` and
-include the database plan in the proposal. Use
+include the database plan in the proposal. The plan states that the database
+change is compatible in either deployment order (M-69), names the test that
+executes both orders, and states that application code never changes the schema
+(M-70): every schema statement is a migration, never a startup or request-path
+statement. Use
 `skills/implementation-recipes/SKILL.md` for stack-appropriate
 implementation guidance, and record a significant, hard-to-reverse decision
 following the Decision Records guidance in
