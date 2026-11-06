@@ -61,6 +61,12 @@ dimension. A criterion is never presented as a framework standard.
   a second consumer or a stated reason.
 - Each mechanism that the design needs (retry, queue, dead letter, routing) is
   either explicit and named, or absent with a stated reason.
+- A significant, hard-to-reverse decision that meets the recording threshold of
+  `skills/architecture-advisor/SKILL.md` ("Decision Records") is recorded: in
+  the project's existing records convention, or, when the project has none, in
+  the presentation record shown before implementation. A decision that meets the
+  threshold and has no record is a finding of this dimension, never an implicit
+  approval.
 
 ### 3. Code quality & separation (SRP)
 
@@ -68,6 +74,11 @@ dimension. A criterion is never presented as a framework standard.
   records dead letters, and logs is a violation.
 - Errors are explicit: no swallowed exceptions, typed or documented error
   paths, and boundary input validated.
+- A `catch` that converts a failure into a fallback value, state, or default
+  records the cause through the project's logger or error model. Discarding the
+  cause while keeping the fallback is a violation, even when the user-facing
+  behavior is correct. Sibling units of the same kind use the same logging
+  convention, and a deviation from it is a violation.
 - A failure raised by a module uses the module's error model (its typed error
   class). A generic error crossing a module boundary is a violation unless the
   module has no error model and that is stated.
@@ -100,6 +111,15 @@ dimension. A criterion is never presented as a framework standard.
   persistent store that holds it has an explicit bound (size, time, or count).
 - Input from outside the process is validated at the boundary.
 - Authentication and authorization are not weakened.
+- An access gate applies exactly to the paths that the approved requirement
+  names. A path the requirement does not gate is not gated by default. When the
+  requirement does not settle which paths are gated, the scope is `AMBIGUOUS`
+  and is resolved by the user before delivery.
+- Development-only entry points (debug routes, development URL schemes or hosts,
+  dev tooling endpoints) are enabled only in development builds, through the
+  build or environment configuration, and are never reachable in production
+  builds. A broader acceptance rule than the production surface needs is a
+  finding.
 
 ### 7. Testing & validation
 
@@ -107,6 +127,10 @@ dimension. A criterion is never presented as a framework standard.
   through its real entry point.
 - Every error path the change introduces has a test: thrown error, failed
   render or dependency, and rejected input.
+- Every access gate the change adds or modifies has a test for each side of its
+  scope: a path it gates is blocked without the credential, and a path the
+  requirement leaves ungated is asserted to work without the credential. A gate
+  tested only on the gated path is not covered.
 - Shutdown and resource-release behavior is tested when the change owns a
   resource (queues, connections, workers).
 - Bounds (caps, limits, dead-letter size) are tested at the limit, through the

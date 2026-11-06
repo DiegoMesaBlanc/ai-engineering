@@ -56,9 +56,16 @@ implementation are:
 - **Shutdown and resource release**: a unit that owns a queue, connection, or
   worker has a tested stop path that drains or releases it within a bound
   that matches the documented contract.
-- **Errors keep their cause**: a catch block records the reason it handled.
-  An empty `catch {}` is a defect; a dead-letter record without the cause is
-  incomplete.
+- **Errors keep their cause**: a catch block records the reason it handled,
+  including a catch that returns a fallback value or state. An empty `catch {}`
+  is a defect; a dead-letter record or fallback without the cause is incomplete.
+  Use the logging convention of sibling units of the same kind.
+- **Access gates match the requirement**: an authentication or authorization
+  check applies only to the paths the approved requirement names, and each
+  gated and ungated side has a test.
+- **Development-only surfaces stay out of production**: debug routes, dev URL
+  schemes or hosts, and dev tooling are enabled by build or environment
+  configuration and are verified absent from the production build.
 - **One reason to change per unit**: a unit that queues, retries, records
   dead letters, and logs at once is split by responsibility before delivery.
 - **Contract and documentation agree**: a documented bound, timeout, or
