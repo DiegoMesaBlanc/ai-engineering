@@ -1001,6 +1001,7 @@ Return:
 - V2.70 path encoding, rejected credentials, backup, and whole-project sweep checks:
 - V2.71 cross-origin, development tools, owner-only writes, and absence claim checks:
 - V2.72 visible failures, verified claims, test-only consumers, entry identity, and composition checks:
+- V2.73 locale direction, consumed-code inheritance, enumerated claims, decision-record patterns, and platform live-region checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -3806,7 +3807,14 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v270.XXXXXX")"
   extract "SAFE-001, SAFE-002, SAFE-003" > safe.sh
   extract "DEAD-EXPORT-001" > dead.sh
   { extract "SAFE-004 to SAFE-007"; extract "SAFE-008, SAFE-009"; } > new.sh
-  extract "Whole-project sweep" > sweep.sh
+  # The sweep calls the V2.73 detectors too, so they are loaded with it.
+  { extract "Whole-project sweep"
+    awk '/^### (I18N-00[1-4]|DEC-001|CLAIM-001|A11Y-001) / { on = 1; next }
+      /^### / { on = 0 }
+      on && /^```sh$/ { inb = 1; next }
+      inb && /^```$/ { inb = 0; next }
+      inb { print }' "$root/$oc"
+  } > sweep.sh
   [ -s safe.sh ] && [ -s dead.sh ] && [ -s new.sh ] && [ -s sweep.sh ] || {
     echo "FAIL V2.70: a detector or sweep block was not extracted"; exit 1; }
   . ./safe.sh
@@ -4213,6 +4221,181 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v272.XXXXXX")"
 ) || failures=1
 
 echo "V2.72 probe: fixture in $fx was checked and is removed"
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.73 Regression — Direction, Locale, Consumed Code, Claims, Records, and Platform Gaps
+
+Verify that the rules added after the external audit of an internationalized
+React Native change are canonical, reachable, and effective, and that the
+detectors close the gaps that let its findings through:
+
+- M-66: a direction-dependent unit resolves its direction from the active
+  direction, has an RTL assertion of its own, and no formatter takes a default
+  locale (R-116, `I18N-001` to `I18N-004`).
+- M-67: a changed unit that consumes a pre-existing violating unit is part of the
+  change set, and the task is `BLOCKED` until the consumed unit is corrected (R-117);
+  `CONSUME-001` resolves the relative imports of each changed file and reports the
+  inherited defect with both lines.
+- M-68: a universal or exclusive claim, or a cited artifact, is enumerated before
+  it is kept (R-118, `CLAIM-001`).
+- M-50 and M-39, amended: a decision record names its patterns and the five SOLID
+  rows, and a `NOT VERIFIED` on an applicable dimension blocks delivery (R-119,
+  `DEC-001`). The live-region platform gap is reported as `A11Y-001` (R-119).
+
+The text checks run on the repository. The behavioral part extracts the seven
+detector blocks from `workflows/output-compliance.md`, builds a fixture outside the
+repository that reproduces each finding of the external audit, verifies each
+defect is reported with `file:line`, rebuilds the fixture in its repaired form, and
+verifies it is clean. It needs `awk`, `grep`, `sed`, and `find`; without them the
+behavioral part is `NOT VERIFIED`, and the text checks still run.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+ap="references/audit-pass-criteria.md"
+ir="skills/implementation-recipes/SKILL.md"
+ii="skills/internationalization/SKILL.md"
+er="skills/engineering-review/SKILL.md"
+tc="workflows/task-to-code.md"
+ca="workflows/code-audit.md"
+vs="workflows/system-validation.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.73: $1 is missing $3"; failures=1; }
+}
+
+# Canonical wording and reachability of M-66, M-67, and M-68 on every required surface.
+for surface in "$ag" "$ii" "$ir" "$ap" "$oc" "$rmx" "$mr" "$vs"; do
+  need "$surface" "resolves its layout direction from the active direction" "the M-66 anchor"
+done
+for surface in "$ag" "$ap" "$tc" "$ca" "$er" "$rmx" "$mr" "$vs"; do
+  need "$surface" "consumes a pre-existing unit which violates a requirement" "the M-67 anchor"
+done
+for surface in "$ag" "$ap" "$er" "$oc" "$rmx" "$mr" "$vs"; do
+  need "$surface" "enumerates every element of the scope" "the M-68 anchor"
+done
+
+# Amended canonical wording of M-39 and M-50.
+need "$ag" "a \`NOT VERIFIED\` verdict on an applicable dimension blocks delivery" "the M-39 blocking wording"
+need "$ag" "names every selected pattern with its force" "the M-50 record wording"
+need "$oc" "its record is in the change set" "the M-50 anchor on the record check"
+need "$ap" "a \`NOT VERIFIED\` verdict on an applicable dimension blocks delivery" "the M-39 wording in the criteria"
+
+for id in M-66 M-67 M-68; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.73: no $id row"; failures=1; }
+done
+for id in R-116 R-117 R-118 R-119; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.73: no $id row"; failures=1; }
+done
+
+# Every detector is defined, and the health probe sweep runs each one.
+for det in I18N-001 I18N-002 I18N-003 I18N-004 CONSUME-001 DEC-001 CLAIM-001 A11Y-001; do
+  grep -q "^### $det " "$root/$oc" || { echo "FAIL V2.73: $oc has no $det section"; failures=1; }
+done
+for call in i18n_default_locale_check i18n_direction_check i18n_rtl_test_check i18n_copy_check \
+  a11y_live_region_check decision_record_check claim_check; do
+  grep -q "^  $call \. " "$root/$oc" || { echo "FAIL V2.73: the sweep does not run $call"; failures=1; }
+done
+
+# The criteria name the detectors, so an auditor finds them from the matrix.
+for det in I18N-001 I18N-003 DEC-001 CLAIM-001 A11Y-001; do
+  grep -q "$det" "$root/$ap" || { echo "FAIL V2.73: the criteria do not name $det"; failures=1; }
+done
+
+command -v awk >/dev/null 2>&1 && command -v grep >/dev/null 2>&1 && command -v find >/dev/null 2>&1 || {
+  echo "NOT VERIFIED V2.73: awk, grep, or find is not available, the behavioral fixture was not run"; exit 2; }
+
+# Extracts the sh blocks of the seven detector sections of workflows/output-compliance.md.
+extract() {
+  awk '
+    /^### (I18N-00[1-4]|CONSUME-001|DEC-001|CLAIM-001|A11Y-001) / { on = 1; next }
+    /^### / { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v273.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  mkdir -p src/app src/shared/utils/format-currency src/features/payment/components/checkbox-row \
+    src/features/payment/components/payment-screen src/features/notifications/services/demo-push docs/decisions
+  extract > detectors.sh
+  [ -s detectors.sh ] || { echo "FAIL V2.73: the detector blocks were not extracted"; exit 1; }
+  . ./detectors.sh
+
+  # The defective fixture: the findings of the external audit, in their form.
+  printf '%s\n' "import { I18nManager } from 'react-native';" "export const boot = () => I18nManager.allowRTL(false);" > src/app/app.tsx
+  printf '%s\n' "export const formatCurrency = (value: number, currency: string, locale = 'en-US') =>" "  new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value);" "export const shortDate = (d: Date) => d.toLocaleDateString();" > src/shared/utils/format-currency/format-currency.ts
+  printf '%s\n' "import { View } from 'react-native';" "export const CheckboxRow = () => <View style={{ flexDirection: 'row' }} />;" > src/features/payment/components/checkbox-row/checkbox-row.tsx
+  printf '%s\n' "import { test } from 'vitest';" "test('renders', () => {});" > src/features/payment/components/checkbox-row/checkbox-row.test.tsx
+  printf '%s\n' "import { CheckboxRow } from '../checkbox-row/checkbox-row';" "export const PaymentScreen = () => <CheckboxRow />;" > src/features/payment/components/payment-screen/payment-screen.tsx
+  printf '%s\n' "import { test } from 'vitest';" "test('renders in es', () => {});" > src/features/payment/components/payment-screen/payment-screen.test.tsx
+  printf '%s\n' "export const message = (amount: string) => \`We received \${amount} for order 42.\`;" > src/features/notifications/services/demo-push/demo-push.ts
+  printf '%s\n' "# MB-09" "Forces and decisions only. Five patterns were considered." > docs/decisions/mb-09.md
+  printf '%s\n' "# App" "Cada unidad conserva sus aserciones RTL. Capturas en simulador iOS 16.2." > README.md
+  printf '%s\n' "export const Live = () => <View accessibilityLiveRegion=\"polite\" />;" > src/features/notifications/services/live.tsx
+
+  defects="$( {
+    i18n_default_locale_check . src/shared/utils/format-currency/format-currency.ts
+    i18n_direction_check . src/features/payment/components/checkbox-row/checkbox-row.tsx
+    i18n_rtl_test_check . src/features/payment/components/checkbox-row/checkbox-row.tsx src/features/payment/components/payment-screen/payment-screen.tsx
+    i18n_copy_check . src/features/notifications/services/demo-push/demo-push.ts
+    consumed_defect_check . src/features/payment/components/payment-screen/payment-screen.tsx
+    decision_record_check . docs/decisions/mb-09.md
+    claim_check . README.md
+    a11y_live_region_check . src/features/notifications/services/live.tsx
+  } )"
+  for want in \
+    'FAIL I18N-001: src/shared/utils/format-currency/format-currency.ts:1:' \
+    'FAIL I18N-001: src/shared/utils/format-currency/format-currency.ts:3:' \
+    'FAIL I18N-002: src/features/payment/components/checkbox-row/checkbox-row.tsx:2:' \
+    'FAIL I18N-003: src/features/payment/components/checkbox-row/checkbox-row.tsx:1:' \
+    'NOT VERIFIED I18N-003: src/features/payment/components/payment-screen/payment-screen.tsx:1:' \
+    'FAIL I18N-004: src/features/notifications/services/demo-push/demo-push.ts:1:' \
+    'FAIL CONSUME-001: src/features/payment/components/payment-screen/payment-screen.tsx:1: imports ../checkbox-row/checkbox-row' \
+    'FAIL DEC-001: docs/decisions/mb-09.md:1: no SOLID row for SRP' \
+    'NOT VERIFIED CLAIM-001: README.md:2:' \
+    'NOT VERIFIED A11Y-001: src/features/notifications/services/live.tsx:1:'; do
+    printf '%s\n' "$defects" | grep -qF -- "$want" \
+      || { echo "FAIL V2.73: the defect was not reported with file:line: $want"; exit 1; }
+  done
+
+  # The repaired twin: the same files in their compliant form.
+  printf '%s\n' "export const formatCurrency = (value: number, currency: string, locale: string) =>" "  new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value);" "export const shortDate = (d: Date, locale: string) => d.toLocaleDateString(locale);" > src/shared/utils/format-currency/format-currency.ts
+  printf '%s\n' "import { I18nManager } from 'react-native';" "export const CheckboxRow = () => <View style={{ flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row' }} />;" > src/features/payment/components/checkbox-row/checkbox-row.tsx
+  printf '%s\n' "import { test } from 'vitest';" "test('renders under ar', () => { expect('ar').toBeDefined(); });" > src/features/payment/components/checkbox-row/checkbox-row.test.tsx
+  printf '%s\n' "import { test } from 'vitest';" "test('renders under ar', () => { expect('ar').toBeDefined(); });" > src/features/payment/components/payment-screen/payment-screen.test.tsx
+  printf '%s\n' "export const message = (t: (key: string) => string, amount: string) => t('notifications.received').replace('{amount}', amount);" > src/features/notifications/services/demo-push/demo-push.ts
+  printf '%s\n' "# MB-09" "| Pattern | Force | Signal | Stack translation |" "|---|---|---|---|" "| Adapter | Locale source | BE1 | expo-localization adapter |" "Count: 1 selected" "| Principle | Status | Unit | Evidence |" "|---|---|---|---|" "| SRP | APPLIES | locale adapter | one reason to change |" "| OCP | PRESERVED | locale adapter | no edit |" "| LSP | NOT APPLICABLE | no substitution | none |" "| ISP | PRESERVED | locale port | small |" "| DIP | APPLIES | composition root | adapter behind port |" > docs/decisions/mb-09.md
+  printf '%s\n' "# App" "Las pruebas RTL de checkbox-row y payment-screen usan el locale ar." > README.md
+  printf '%s\n' "export const announce = (m: string) => AccessibilityInfo.announceForAccessibility(m);" > src/features/notifications/services/announce.ts
+
+  repaired="$( {
+    i18n_default_locale_check . src/shared/utils/format-currency/format-currency.ts
+    i18n_direction_check . src/features/payment/components/checkbox-row/checkbox-row.tsx
+    i18n_rtl_test_check . src/features/payment/components/checkbox-row/checkbox-row.tsx src/features/payment/components/payment-screen/payment-screen.tsx
+    i18n_copy_check . src/features/notifications/services/demo-push/demo-push.ts
+    consumed_defect_check . src/features/payment/components/payment-screen/payment-screen.tsx
+    decision_record_check . docs/decisions/mb-09.md
+    claim_check . README.md
+    a11y_live_region_check . src/features/notifications/services/live.tsx
+  } )"
+  [ -z "$repaired" ] || { echo "FAIL V2.73: the repaired fixture is still reported: $repaired"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.73 probe: fixture in $fx was checked and is removed"
 rm -rf "$fx"
 
 exit "$failures"

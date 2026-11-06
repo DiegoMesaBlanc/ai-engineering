@@ -639,6 +639,9 @@ real entry point. A criterion that cannot be evidenced is `NOT VERIFIED`, and
 the task is not reported as complete while any applicable criterion is
 `NOT VERIFIED`.
 
+**Consumed code and NOT VERIFIED.** A criterion violated by a pre-existing unit the
+change consumes is fixed in the change set, because the change consumes a pre-existing unit which violates a requirement the change states (M-67). A `NOT VERIFIED` verdict on an applicable dimension blocks delivery, and a dimension whose review was not executed is run before its verdict is written (M-39).
+
 **Independence of the gate.** The gate is the implementer's self-check. It is
 not an independent audit. When the change set is High or Critical, or when the
 user asks for an audit, the independent audit defined in

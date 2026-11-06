@@ -578,6 +578,12 @@ src/server/<domain>/        # or src/features/<feature>/server/
   module instead of being duplicated per platform.
 - Native modules and device APIs sit behind a service adapter, never called
   directly from a component.
+- **Direction.** A direction-dependent unit resolves its layout direction from the
+  active direction (M-66). Where the app disables automatic mirroring
+  (`I18nManager.allowRTL(false)`), a `flexDirection: 'row'` literal does not flip
+  under an RTL locale: the row direction is read from `I18nManager.isRTL` or the
+  project's resolver and passed to the row. Its test renders the unit under an
+  RTL locale and asserts the order of the children or the row direction.
 - **Tests** sit next to the unit; shared support lives in `testing/`.
 
 ### Ionic and Capacitor

@@ -155,6 +155,21 @@ so the reviewed selection is the one the user saw (M-45).
 - integration tests where required
 - E2E tests where required
 - regression coverage
+- direction-dependent units and RTL: when the requirement includes RTL, each
+  changed unit that lays out content by direction has a test under an RTL locale
+  of its own (M-66, `I18N-003` in `workflows/output-compliance.md`)
+
+### Consumed code and claims
+
+- **Consumed code (M-67).** When a changed unit consumes a pre-existing unit which
+  violates a requirement the change states, the consumed unit is part of the review:
+  it is corrected in the change set, or the verdict is `BLOCKED`. Name the consumer
+  and the consumed unit with `file:line` for each.
+- **Claims in comments and documents (M-68).** A claim of universal or exclusive
+  scope (`only`, `every`, `each`, `all`) or a cited artifact is enumerated before the
+  review keeps it: the reviewer enumerates every element of the scope with a search,
+  and a claim the enumeration contradicts is a finding with both lines. A claim whose
+  artifact the repository does not hold is `NOT VERIFIED`, never true.
 
 ### Security
 

@@ -42,10 +42,17 @@ Each dimension maps to an existing Skill. Only applicable dimensions are audited
 | 8 | **Performance** — CWV, bundles, caching; query plans, N+1, concurrency | `performance`, `core-web-vitals` | Web/hot paths |
 | 9 | **Accessibility** — WCAG 2.2 A/AA, keyboard, semantics, ARIA, focus, contrast | `accessibility` | UI/web/mobile |
 | 10 | **SEO** — meta, canonical, robots, sitemap, structured data, hreflang | `seo` | Public web pages |
-| 11 | **Internationalization** — externalized strings, plurals, locale formatting, RTL | `internationalization` | User-facing text |
+| 11 | **Internationalization** — externalized strings, plurals, locale formatting, RTL: each direction-dependent unit resolves its direction from the active direction and has an RTL assertion of its own (M-66) | `internationalization` | User-facing text |
 | 12 | **Frontend/UI** — intentional design, responsive, fidelity | `frontend-design`, `design-analysis` | UI work |
 | 13 | **Mobile** — navigation, touch targets, safe areas, keyboard, offline | `design-analysis`, `implementation-recipes` | Mobile work |
 | 14 | **Organization boundaries** — package/module boundaries, dependency direction | `repository-strategy` | Multi-package |
+
+**Consumed code and NOT VERIFIED (M-67, M-39).** A criterion violated by a pre-existing
+unit that the audited change consumes is a `FAIL` of the consumer's dimension, with the
+consumed unit named by `file:line`, because the change consumes a pre-existing unit which
+violates a requirement the change states. The verdict is `BLOCKED` until the consumed unit
+is corrected in the change set. A dimension that is `NOT VERIFIED` while applicable blocks
+delivery; its review is run before the verdict is written, and skipping it is never a verdict.
 
 ## Independent Mode — Our Own Deliverable
 

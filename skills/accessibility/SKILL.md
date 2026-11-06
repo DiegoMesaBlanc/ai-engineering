@@ -409,7 +409,8 @@ for iOS (see the React Native Accessibility and AccessibilityInfo pages). A
 change that sets only `accessibilityLiveRegion` and claims the banner is
 announced on both platforms is `NOT VERIFIED` for iOS, never `PASS`. Consult the
 current React Native documentation for the target version before relying on
-either property.
+either property. The detector `A11Y-001` in `workflows/output-compliance.md` reports
+each such file with its line.
 
 ---
 

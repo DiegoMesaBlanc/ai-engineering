@@ -589,7 +589,9 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
   `WARN` remains an auditor state for non-defect observations, but it is not an
   accepted terminal state for code the task creates. Applicability is decided
   against the approved requirement; an inapplicable dimension is `N/A` with a
-  reason.
+  reason. A `NOT VERIFIED` verdict on an applicable dimension blocks delivery,
+  and a dimension whose review was not executed is run before its verdict is
+  written: skipping the review is never recorded as a verdict.
 - Run the structural compliance check in `workflows/output-compliance.md` over
   the change set before reporting a task as implemented. It verifies the
   mechanical rules that prose cannot enforce: arrow functions over `function`
@@ -631,9 +633,30 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
   responsibility the change adds is named in the presentation record.
 - When a significant decision meets the recording threshold, or a design
   pattern is selected, its record is in the change set: in the project's records
-  convention, or in `docs/decisions/` when the project has none. A missing record
-  is a Dimension 2 `FAIL`, never `NOT VERIFIED`, and the record is shown before
-  implementation.
+  convention, or in `docs/decisions/` when the project has none. The record names
+  every selected pattern with its force, and the five SOLID rows (SRP, OCP, LSP,
+  ISP, DIP) with their status; a record that states a count alone is incomplete.
+  A missing or incomplete record is a Dimension 2 `FAIL`, never `NOT VERIFIED`,
+  and the record is shown before implementation.
+- When the approved requirement includes right-to-left or locale support, every
+  direction-dependent unit the change creates or modifies resolves its layout
+  direction from the active direction, not from a literal row, left, or right
+  value. On React Native, where the app disables automatic mirroring, the
+  resolved direction is read from `I18nManager.isRTL` or the project's resolver.
+  Each direction-dependent unit has a rendered assertion under an RTL locale, and
+  no formatter takes a default locale: the locale is a required parameter.
+- A changed unit that consumes a pre-existing unit which violates a requirement
+  the change states is part of the change set: the consumed unit is corrected in
+  the same change set, within the approved scope, and the task is `BLOCKED` until
+  it is. A violation in pre-existing code that the change does not consume remains
+  a finding that does not block the task.
+- A statement in a document, README, comment, or report that claims a universal
+  or exclusive scope (`only`, `every`, `each`, `all`, or the equivalent in the
+  document's language), or that cites an artifact such as a screenshot, capture,
+  log, or report file, is kept only after the verifier enumerates every element of
+  the scope with a search or a file check and cites the result. A claim whose
+  artifact is not in the repository is `NOT VERIFIED`, never true, and a claim the
+  enumeration contradicts is corrected in the same change set.
 - A secret or content scan that excludes inputs by extension, path, or size
   reports every input it did not read as `NOT VERIFIED`, never as clean. An
   excluded input that could hold a secret blocks the delivery gate until it is

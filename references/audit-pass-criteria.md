@@ -29,11 +29,20 @@ dimension. A criterion is never presented as a framework standard.
 - `WARN` remains an auditor state for a non-defect observation that violates
   no criterion. It is not an accepted terminal state for code the task creates.
 - A criterion violated by code that already existed before the change set is
-  a recorded finding with file and line. It does not block the task.
+  a recorded finding with file and line. It does not block the task, unless the
+  change set consumes a pre-existing unit which violates a requirement the change
+  states: then the consumed unit is part of the change set and the task is
+  `BLOCKED` until it is corrected (M-67). `CONSUME-001` in
+  `workflows/output-compliance.md` reports the inherited defect with both lines. A consumer that renders the
+  violating unit inherits its violation, so the consumer is `FAIL` as well.
 - A criterion that the approved requirement does not settle is `AMBIGUOUS`:
   the auditor states the open question and does not judge it `FAIL` by its own
   interpretation, nor `PASS` by assumption. An `AMBIGUOUS` criterion is
   resolved by the user, not by the auditor.
+- A `NOT VERIFIED` verdict on an applicable dimension blocks delivery (M-39). A
+  dimension whose review was not executed is run before its verdict is written;
+  "no review was made" is never a `NOT VERIFIED` reason. A device-only limit is
+  the reason for a `NOT VERIFIED` that stays after the review ran.
 - A dimension is judged only after this file has been read in full in the
   current audit. A dimension judged without that read is `NOT VERIFIED` with
   the reason, never `PASS` or `FAIL`.
@@ -80,6 +89,11 @@ dimension. A criterion is never presented as a framework standard.
   record, and its absence is the verdict. The same applies to a selected design
   pattern that has no record of its forces: its record is in the change set
   (M-50).
+- The record in the change set names every selected pattern by name with its
+  force and stack translation, and it has the five SOLID rows (SRP, OCP, LSP, ISP,
+  DIP) with their status. A record that states a count alone, or lacks a SOLID row,
+  is a `FAIL` of this dimension at the file and line of the record (`DEC-001` in
+  `workflows/output-compliance.md`, M-50 and M-45).
 
 ### 3. Code quality & separation (SRP)
 
@@ -109,6 +123,12 @@ dimension. A criterion is never presented as a framework standard.
   set. The auditor names the responsibilities of each unit the change touches; a
   unit with a second reason to change is a `FAIL` of SOLID SRP, not a `WARN`.
 - Names are clear and the code is typed; no `any` without a documented reason.
+- A comment, JSDoc, README, or document that claims a universal or exclusive scope
+  (`only`, `every`, `each`, `all`, or the equivalent in its language) is verified by
+  the verifier enumerates every element of the scope with a search, and the verdict
+  cites the search (M-68). A claim the enumeration contradicts is a finding with both lines, and
+  a claim that cites an artifact the repository does not hold is `NOT VERIFIED`
+  (`CLAIM-001` in `workflows/output-compliance.md`).
 - A comment, JSDoc, or document that states a behavior of the code, a workflow,
   or a pipeline is checked against the code it describes. A statement the code
   contradicts is a finding: `P3` when it has no runtime effect, `P2` when it
@@ -231,6 +251,12 @@ dimension. A criterion is never presented as a framework standard.
   or an executed check. An external-system claim without evidence is
   `NOT VERIFIED` and must be stated as an assumption.
 - Tests are deterministic and do not depend on wall-clock sleeps.
+- When the approved requirement includes right-to-left support, each
+  direction-dependent unit the change creates or modifies has a rendered assertion
+  under an RTL locale in its own test (M-66). A project-level RTL test, or a test of
+  another unit, does not cover it, and a claim of coverage per unit is verified by
+  listing the units and their test files (M-68). `I18N-003` in
+  `workflows/output-compliance.md` reports a unit without that assertion.
 - Platform-dependent behavior has an assertion on its rendered result for each
   branch: safe-area insets, orientation or viewport-height branches (for example
   a compact layout below a height threshold), and keyboard avoidance. A test
@@ -266,7 +292,9 @@ dimension. A criterion is never presented as a framework standard.
 - A live announcement is implemented for each platform. On React Native,
   `accessibilityLiveRegion` is Android-only; the iOS path is
   `AccessibilityInfo.announceForAccessibility` or an equivalent. A change that
-  sets only the Android property is `NOT VERIFIED` for iOS, never `PASS`.
+  sets only the Android property is `NOT VERIFIED` for iOS, never `PASS`. The
+  detector `A11Y-001` in `workflows/output-compliance.md` reports every such
+  file, so the platform gap is never absent from the verdict.
 
 ### 10. SEO
 
@@ -280,6 +308,21 @@ dimension. A criterion is never presented as a framework standard.
   that reason.
 - When applicable: text is externalized, plurals and formatting are
   locale-aware, and no locale is hardcoded.
+- When the requirement includes RTL: every direction-dependent unit resolves its
+  layout direction from the active direction, not from a literal row, left, or right
+  value. On React Native, where automatic mirroring is disabled, a literal row
+  direction under an RTL locale is a `FAIL` at the file and line of the literal
+  (M-66, `I18N-002`).
+- A formatter takes its locale as a required parameter. A default locale literal in a
+  formatter signature, or a formatting call with no locale argument, is a `FAIL` at
+  the file and line (M-66, `I18N-001`).
+- Copy that reaches a user through a notification, a push payload, an email, or a
+  service message is externalized like component copy. A hardcoded sentence there is
+  a `FAIL` when the change set consumes or modifies that copy (`I18N-004` reports the
+  candidates for review).
+- A pre-existing unit that violates an i18n requirement and is consumed by the change
+  is corrected in the same change set (M-67). The auditor names the consumer and the
+  consumed unit with file and line for each.
 
 ### 12. Frontend/UI
 

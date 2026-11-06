@@ -46,6 +46,10 @@ message format without a justified reason and human approval.
   different meanings.
 - Never build sentences by concatenating translated fragments; word order
   differs across languages. Use a message with placeholders instead.
+- The rule covers every surface that shows text to a user, including the copy of
+  notifications, push payloads rendered on the device, emails, and service
+  messages. A notification service that builds an English sentence is a hardcoded
+  string, even when the screen that displays it is translated.
 - Give translators context: what the text means, where it appears, and any
   length or tone constraints.
 - Do not translate code identifiers, log messages, protocol values, or
@@ -72,11 +76,24 @@ message format without a justified reason and human approval.
 - Parse localized user input (numbers, dates, currency) through the same
   locale-aware layer, not with ad hoc splitting.
 - Display currency with its locale conventions and an explicit currency code.
+- A formatter takes the locale as a required parameter. A default locale literal
+  such as `'en-US'` in a formatter signature hides the locale of the caller and is
+  a defect (M-66): the caller passes the active locale, and the default is never
+  the fallback for a missing one.
 
 ## Direction and Layout
 
 - Write layout with logical properties (start/end) rather than hardcoded
   left/right so RTL mirrors correctly.
+- Every direction-dependent unit resolves its layout direction from the active
+  direction (canonical rule: `AGENTS.md`, M-66). A literal `row`, `left`, or
+  `right` in such a unit relies on automatic mirroring, which may be off.
+- React Native: mirroring follows `I18nManager`. `I18nManager.isRTL` is `false`
+  whenever `allowRTL(false)` is set, so a `flexDirection: 'row'` literal stays
+  left-to-right even under an RTL locale. Read the direction from `isRTL` or the
+  project's direction resolver and pass it to the row. Consulted:
+  `https://reactnative.dev/docs/i18nmanager` (React Native docs, 0.88 release
+  line), 2026-11-06.
 - Mirror directional icons and layout where the meaning is directional;
   never mirror universal symbols.
 - Set the correct `lang` and `dir` attributes on content, especially for
@@ -106,6 +123,11 @@ message format without a justified reason and human approval.
 
 - Test at least one non-default locale, and an RTL locale when RTL is
   supported.
+- Coverage is per unit, not per project. Each direction-dependent unit the change
+  creates or modifies has its own rendered assertion under an RTL locale, in its
+  own test. A project-level RTL test does not cover a unit that never renders in
+  that test. A document that claims "each unit keeps its RTL assertions" is
+  verified by listing the units and their test files (M-68).
 - Use a pseudo-locale to surface hardcoded strings, truncation, and layout
   overflow.
 - Assert that user-facing text comes from catalogs rather than literals.

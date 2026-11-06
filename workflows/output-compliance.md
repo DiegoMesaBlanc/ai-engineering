@@ -1102,6 +1102,8 @@ project_safety_sweep() {
   shells=$(printf '%s\n' "$files" | grep -E '\.(sh|bash|zsh)$')
   manifests=$(printf '%s\n' "$files" | grep -E '(^|/)(AndroidManifest\.xml|app\.json|app\.config\.(js|ts|json))$')
   nonbarrel=$(printf '%s\n' "$src" | grep -vE '(^|/)index\.(ts|tsx|js|jsx|mjs|cjs)$')
+  mds=$(printf '%s\n' "$files" | grep -E '\.md$')
+  decisions=$(printf '%s\n' "$files" | grep -E '(^|/)docs/decisions/.*\.md$')
   echo "SWEEP scanned: $(printf '%s\n' "$src" | sed '/^$/d' | wc -l | tr -d ' ') source files, $(printf '%s\n' "$shells" | sed '/^$/d' | wc -l | tr -d ' ') shell scripts, $(printf '%s\n' "$manifests" | sed '/^$/d' | wc -l | tr -d ' ') build manifests"
   echo "SWEEP excluded: node_modules, dist, build, .next, coverage, .git, and declaration files (*.d.ts)"
   safe_timeout_check . $src
@@ -1117,8 +1119,275 @@ project_safety_sweep() {
   upload_write_check . $src
   backup_check . $manifests
   dead_export_check . $nonbarrel
+  i18n_default_locale_check . $src
+  i18n_direction_check . $src
+  i18n_rtl_test_check . $src
+  i18n_copy_check . $src
+  a11y_live_region_check . $src
+  decision_record_check . $decisions
+  claim_check . $mds
   [ -n "$manifests" ] || echo "NOT VERIFIED M-61: no build manifest or app configuration is tracked, so backup is not verified"
   echo "NOT VERIFIED M-57 (downgrade): needs a base revision; run dependency_downgrade_check on the change set"
+}
+```
+
+### I18N-001 — Formatters take the locale; no default locale literal
+
+**Scope limit (I18N-001 to I18N-004).** These detectors read TypeScript and
+JavaScript, and the React Native layout they name. The native layouts (Android XML,
+iOS storyboards and SwiftUI), Flutter, Angular and CSS direction, and the platform
+catalogs are not read by these detectors: their direction and locale rules are
+reviewed under Dimension 11 of `references/audit-pass-criteria.md`, and the verdict
+for them is `NOT VERIFIED` for the detectors, never clean.
+
+M-66. A formatter whose locale parameter has a default literal hides the
+locale of its caller, and a locale-aware call with no locale argument uses the
+runtime default, which is not the user's locale. A candidate is reported with
+`file:line`; the reviewer confirms it. Test files are excluded.
+
+```sh
+# $1 = repository root; $2... = changed or tracked source files, relative to it.
+i18n_default_locale_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*|*/testing/*) continue ;; esac
+    grep -nE "[(,][[:space:]]*locale[A-Za-z]*[[:space:]]*(:[^=,)]*)?=[[:space:]]*[\"'][a-z]{2}(-[A-Za-z]{2,4})?[\"']" "$root/$f" 2>/dev/null |
+      sed "s#^#FAIL I18N-001: $f:#; s#\$#  (formatter parameter with a default locale literal, M-66)#"
+    grep -nE "toLocale(Date|Time)?String\(\)|Intl\.(NumberFormat|DateTimeFormat|PluralRules|RelativeTimeFormat)\(\)" "$root/$f" 2>/dev/null |
+      sed "s#^#FAIL I18N-001: $f:#; s#\$#  (locale-aware call with no locale argument, M-66)#"
+  done
+}
+```
+
+### I18N-002 — No literal direction in a project that supports RTL
+
+M-66: every direction-dependent unit resolves its layout direction from the active
+direction. The project supports RTL when the layout configuration says so. Under
+that condition a literal `flexDirection` row, a literal `left` or `right`
+offset, or a literal margin or padding side is a candidate: it relies on
+automatic mirroring, which React Native disables with `allowRTL(false)`. The
+reviewer confirms each candidate and reads the resolver the unit uses.
+
+```sh
+# $1 = repository root; $2... = changed or tracked source files, relative to it.
+rtl_project() {
+  (cd "$1" && grep -rlE "allowRTL|forceRTL|I18nManager|supportsRTL|dir=\"rtl\"" \
+    --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' \
+    --include='*.xml' --include='*.html' --include='*.json' \
+    --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build . 2>/dev/null | head -n 1)
+}
+
+i18n_direction_check() {
+  root="$1"; shift
+  [ -n "$(rtl_project "$root")" ] || return 0
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*|*/testing/*) continue ;; esac
+    grep -nE "flexDirection:[[:space:]]*[\"']row(-reverse)?[\"']|(margin|padding)(Left|Right)[[:space:]]*:|[[:space:]](left|right):[[:space:]]*[-0-9\"']" "$root/$f" 2>/dev/null |
+      sed "s#^#FAIL I18N-002: $f:#; s#\$#  (literal direction in a project that supports RTL, M-66)#"
+  done
+}
+```
+
+### I18N-003 — A UI unit has an RTL assertion in its own test
+
+M-66 and the per-unit coverage rule of `skills/internationalization/SKILL.md`.
+In a project that supports RTL, every changed UI unit must have a test next to it
+that names an RTL locale (`'ar'`, `rtl`, or `RTL`). A unit with a literal direction
+is `FAIL`: it is direction-dependent by its own code. Any other changed UI unit is
+`NOT VERIFIED`, because a screen can render a direction-dependent child without a
+literal of its own; the reviewer either adds the assertion or records why the unit
+renders no direction. A unit with no test is reported too, so the gap is never silent.
+The check reads the presence of the locale in the test; the reviewer confirms that
+the assertion renders the unit.
+
+```sh
+# $1 = repository root; $2... = changed or tracked source files, relative to it.
+i18n_rtl_test_check() {
+  root="$1"; shift
+  [ -n "$(rtl_project "$root")" ] || return 0
+  for f in "$@"; do
+    case "$f" in *.tsx|*.jsx) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*|*/testing/*) continue ;; esac
+    if grep -qE "flexDirection:[[:space:]]*[\"']row|(margin|padding)(Left|Right)[[:space:]]*:|[[:space:]](left|right):[[:space:]]*[-0-9\"']" "$root/$f" 2>/dev/null; then
+      verdict="FAIL"
+      reason="a literal direction in this unit, so it is direction-dependent"
+    else
+      verdict="NOT VERIFIED"
+      reason="a changed UI unit that may render a direction-dependent child; the reviewer confirms it renders no direction, or adds the assertion"
+    fi
+    dir="$(dirname "$root/$f")"
+    name="$(basename "${f%.*}")"
+    tests="$(find "$dir" -maxdepth 1 \( -name "$name.test.*" -o -name "$name.spec.*" \) 2>/dev/null)"
+    if [ -z "$tests" ]; then
+      echo "$verdict I18N-003: $f:1: no test, so no RTL assertion exists: $reason (M-66)"
+      continue
+    fi
+    printf '%s\n' "$tests" | while IFS= read -r t; do
+      grep -qE "'ar'|\"ar\"|rtl|RTL" "$t" 2>/dev/null ||
+        echo "$verdict I18N-003: $f:1: its test ${t#"$root"/} names no RTL locale: $reason (M-66)"
+    done
+  done
+}
+```
+
+### I18N-004 — Hardcoded sentences in user-facing copy (candidates)
+
+Notification, push, email, and banner copy reaches the user as text, so an
+English sentence built in a service is a hardcoded string (M-66). The check
+reports candidate sentences in those files for review: two capitalized or
+lowercase words in quotes, not inside a translation call. A reviewer confirms
+each candidate before it is reported as a defect or as a finding.
+
+```sh
+# $1 = repository root; $2... = changed or tracked source files, relative to it.
+i18n_copy_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*|*/testing/*) continue ;; esac
+    case "$f" in *notification*|*push*|*email*|*mail*|*sms*|*banner*) ;; *) continue ;; esac
+    grep -nE "[\"'\`][A-Z][a-z]+ [a-z]+" "$root/$f" 2>/dev/null |
+      grep -vE "t\(|i18n|translate" |
+      sed "s#^#FAIL I18N-004: $f:#; s#\$#  (candidate hardcoded sentence in user-facing copy, reviewer confirms, M-66)#"
+  done
+}
+```
+
+### CONSUME-001 — A changed unit does not consume a pre-existing i18n defect
+
+M-67. The change set is the list of files it creates or modifies. A changed unit
+that imports a relative module outside that list inherits the defect of that
+module: the consumed unit is part of the change set, so the consumer is reported
+with both lines. The check resolves each relative import of a changed source
+file to its target and reports the defects of the target that the detectors
+above define: a default locale literal, a literal row direction in a project that
+supports RTL, and a hardcoded sentence in notification copy. A target that is in
+the change set is not reported here, because its own detector reports it. An aliased
+import (`from "@/..."`) is not resolved by this check: the check reports it as
+`NOT VERIFIED`, never as clean.
+
+```sh
+# $1 = repository root; $2... = changed source files, relative to it. It uses
+# rtl_project from the I18N-002 block.
+consumed_defect_check() {
+  root="$1"; shift
+  rootabs="$(cd "$root" && pwd)"
+  changed="$(printf '%s\n' "$@")"
+  rtl="$(rtl_project "$root")"
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*|*/testing/*) continue ;; esac
+    grep -nE "from [\"']@/" "$rootabs/$f" 2>/dev/null |
+      sed "s#^#NOT VERIFIED CONSUME-001: $f:#; s#\$#  (an aliased import is not resolved by this check: review its target, M-67)#"
+    dir="$(dirname "$rootabs/$f")"
+    grep -nE "from [\"']\.[^\"']*[\"']" "$rootabs/$f" 2>/dev/null |
+      while IFS= read -r line; do
+        lineno="${line%%:*}"
+        spec="$(printf '%s' "$line" | sed -E "s/^[^:]*:.*from [\"']([^\"']*)[\"'].*$/\1/")"
+        d="$(cd "$dir" && cd "$(dirname "$spec")" 2>/dev/null && pwd)" || continue
+        b="$d/$(basename "$spec")"
+        target=""
+        for c in "$b.tsx" "$b.ts" "$b.jsx" "$b.js" "$b/index.tsx" "$b/index.ts"; do
+          [ -f "$c" ] && { target="$c"; break; }
+        done
+        [ -n "$target" ] || continue
+        rel="${target#"$rootabs"/}"
+        printf '%s\n' "$changed" | grep -qxF "$rel" && continue
+        defect=""
+        hit="$(grep -nE "[(,][[:space:]]*locale[A-Za-z]*[[:space:]]*(:[^=,)]*)?=[[:space:]]*[\"'][a-z]{2}" "$target" 2>/dev/null | head -n 1)"
+        [ -n "$hit" ] && defect="a default locale literal at $rel:${hit%%:*}"
+        if [ -z "$defect" ] && [ -n "$rtl" ]; then
+          hit="$(grep -nE "flexDirection:[[:space:]]*[\"']row(-reverse)?[\"']" "$target" 2>/dev/null | head -n 1)"
+          [ -n "$hit" ] && defect="a literal row direction at $rel:${hit%%:*}"
+        fi
+        if [ -z "$defect" ]; then
+          case "$rel" in *notification*|*push*|*banner*)
+            hit="$(grep -nE "[\"'\`][A-Z][a-z]+ [a-z]+" "$target" 2>/dev/null | grep -vE "t\(|i18n|translate" | head -n 1)"
+            [ -n "$hit" ] && defect="a hardcoded sentence in user-facing copy at $rel:${hit%%:*}" ;;
+          esac
+        fi
+        [ -n "$defect" ] && printf 'FAIL CONSUME-001: %s:%s: imports %s, which carries %s (M-67)\n' "$f" "$lineno" "$spec" "$defect"
+      done
+  done
+}
+```
+
+### DEC-001 — A decision record names its patterns and the five SOLID rows
+
+M-50 and M-45: its record is in the change set and names its patterns. A record in
+the project's records convention, or in `docs/decisions/`, that selects design
+patterns must contain the pattern table
+(`| Pattern |`) and exactly one SOLID row per principle, each with a status of
+`APPLIES`, `PRESERVED`, or `NOT APPLICABLE`. A count alone fails. The form is
+the one in `references/design-patterns.md` ("Presentation Record").
+
+```sh
+# $1 = repository root; $2... = decision records (markdown), relative to it.
+decision_record_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.md) ;; *) continue ;; esac
+    grep -qiE "pattern|patr" "$root/$f" 2>/dev/null || continue
+    grep -qE "^\| *Pattern *\|" "$root/$f" 2>/dev/null ||
+      echo "FAIL DEC-001: $f:1: no pattern table names the selected patterns (M-50, M-45)"
+    for p in SRP OCP LSP ISP DIP; do
+      row="$(grep -E "^\| *$p *\|" "$root/$f" 2>/dev/null | head -n 1)"
+      if [ -z "$row" ]; then
+        echo "FAIL DEC-001: $f:1: no SOLID row for $p (M-50, M-45)"
+      elif ! printf '%s\n' "$row" | grep -qE "APPLIES|PRESERVED|NOT APPLICABLE"; then
+        echo "FAIL DEC-001: $f: the SOLID row for $p has no status (M-50, M-45)"
+      fi
+    done
+  done
+}
+```
+
+### CLAIM-001 — Universal, exclusive, and artifact claims are enumerated first
+
+M-68: a claim that is verified before it is kept. A README, document, or comment that says `only`, `every`, `each`, `all`,
+or the equivalent (`solo`, `único`, `cada`, `todos`), or that cites a
+screenshot, capture, log, or image, makes a claim that must be checked against
+the repository before it is kept. The check cannot decide a claim, so every
+match is reported as `NOT VERIFIED` with its line: the verifier enumerates every element of the
+scope with a search, or confirms that the artifact exists, and cites the result.
+
+```sh
+# $1 = repository root; $2... = documents or source files, relative to it.
+claim_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.md|*.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.sh) ;; *) continue ;; esac
+    grep -nEi "(^|[^A-Za-z])(only|every|each|all|solo|todos|todas|cada|único|unico)([^A-Za-z]|$)" "$root/$f" 2>/dev/null |
+      sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (universal or exclusive claim: enumerate its scope before keeping it, M-68)#"
+    grep -nEi "capturas?|screenshots?|\.png|\.jpe?g|\.gif|evidence|evidencia" "$root/$f" 2>/dev/null |
+      sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (claim that cites an artifact: confirm the artifact is in the repository, M-68)#"
+  done
+}
+```
+
+### A11Y-001 — A live region announced on Android only
+
+Audit Dimension 9 and `skills/accessibility/SKILL.md`. On React Native,
+`accessibilityLiveRegion` is Android-only. A file that sets it, in a project that
+never calls `AccessibilityInfo.announceForAccessibility`, has no iOS path, so the
+platform verdict is `NOT VERIFIED`, never `PASS`.
+
+```sh
+# $1 = repository root; $2... = changed or tracked source files, relative to it.
+a11y_live_region_check() {
+  root="$1"; shift
+  ios_path="$(cd "$root" && grep -rl "announceForAccessibility" \
+    --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' \
+    --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build . 2>/dev/null | head -n 1)"
+  [ -n "$ios_path" ] && return 0
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*) continue ;; esac
+    grep -n "accessibilityLiveRegion" "$root/$f" 2>/dev/null |
+      sed "s#^#NOT VERIFIED A11Y-001: $f:#; s#\$#  (live region is Android-only and the project has no iOS announcement: Dimension 9, NOT VERIFIED for iOS)#"
+  done
 }
 ```
 
