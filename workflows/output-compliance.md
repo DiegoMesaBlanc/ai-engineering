@@ -515,54 +515,129 @@ accepts it without a global test declaration (M-47, `AGENTS.md`). Without
 the import the file fails with `Cannot find name 'describe'` (TS2593). A
 test case is declared with `test`, not `it`.
 
-**Scope.** The check reads the test files the change set adds or modifies,
-never the whole repository. A test file that already exists in the base
-revision and is not modified by the task is a finding, never a `FAIL`.
+**Scope.** The check reads every test file the change set **creates** in full,
+and every test file it **modifies** only on the lines the change set adds. A
+violation that already exists in the base revision of a modified file is a
+recorded finding, never a `FAIL` (`AGENTS.md`, pre-existing violations). A test
+file the task does not touch is never read.
 
-**Detection.** The function reads each file and reports the first line where
-each test API is called or read as a member, `(?<![.\w$])NAME(` or
-`NAME.identifier`. The name must appear in an import from `vitest` or
-`@jest/globals`. Prose such as `the test. Next` does not match, because a
-member access has no space after the dot.
+**Detection.** The function reads each file and reports every line where a
+test API is called or read as a member, `(?<![.\w$])NAME(` or `NAME.identifier`,
+and every `it(` case. The name must appear in an import from `vitest` or
+`@jest/globals`. Prose such as `the test. Next` does not match, because a member
+access has no space after the dot. When a second argument names a file of
+added line numbers, only those lines are reported.
 
 ```sh
 test_api_check() {
-  findings=$(for f in "$@"; do
-    perl -e '
-      local $/; my $f = shift @ARGV;
-      open my $h, "<", $f or die "$f: $!"; my $s = <$h>; close $h;
-      my %imp;
-      while ($s =~ /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["\x27](?:vitest|\@jest\/globals)["\x27]/g) {
-        for my $n (split /,/, $1) { $n =~ s/^\s+|\s+$//g; $n =~ s/\s+as\s+\S+$//; $imp{$n} = 1 if length $n; }
-      }
-      for my $n (qw(describe test it expect vi beforeEach afterEach beforeAll afterAll)) {
-        if ($s =~ /(?<![.\w\$])\Q$n\E(?:\s*\(|\.[A-Za-z_])/g) {
-          my $line = 1 + (substr($s, 0, $-[0]) =~ tr/\n//);
-          print "FAIL TEST-001: $f:$line: $n is used without an explicit import\n" unless $imp{$n};
-        }
-      }
-      while ($s =~ /(?<![.\w\$])it\s*\(/g) {
+  if [ "$#" -ge 2 ]; then filter=1; added="$2"; else filter=0; added=/dev/null; fi
+  findings=$(perl -e '
+    local $/;
+    my ($f, $filter, $added) = @ARGV;
+    my %on;
+    if ($filter) { open my $a, "<", $added or die "$added: $!"; my @l = do { local $/ = "\n"; <$a> }; close $a; %on = map { my $x = $_; $x =~ s/\s+$//; ($x => 1) } @l; }
+    open my $h, "<", $f or die "$f: $!"; my $s = <$h>; close $h;
+    my %imp;
+    while ($s =~ /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["\x27](?:vitest|\@jest\/globals)["\x27]/g) {
+      for my $n (split /,/, $1) { $n =~ s/^\s+|\s+$//g; $n =~ s/\s+as\s+\S+$//; $imp{$n} = 1 if length $n; }
+    }
+    for my $n (qw(describe test it expect vi beforeEach afterEach beforeAll afterAll)) {
+      while ($s =~ /(?<![.\w\$])\Q$n\E(?:\s*\(|\.[A-Za-z_])/g) {
         my $line = 1 + (substr($s, 0, $-[0]) =~ tr/\n//);
-        print "FAIL TEST-002: $f:$line: the case is declared with it, not test\n";
+        next if $filter && !$on{$line};
+        print "FAIL TEST-001: $f:$line: $n is used without an explicit import\n" unless $imp{$n};
       }
-    ' "$f"
-  done)
+    }
+    while ($s =~ /(?<![.\w\$])it\s*\(/g) {
+      my $line = 1 + (substr($s, 0, $-[0]) =~ tr/\n//);
+      next if $filter && !$on{$line};
+      print "FAIL TEST-002: $f:$line: the case is declared with it, not test\n";
+    }
+  ' "$1" "$filter" "$added")
   [ -n "$findings" ] && { printf '%s\n' "$findings"; return 1; }
   return 0
 }
 
-changed_tests=$({
-  git diff --name-only --diff-filter=ACM "$BASE"
+# Added line numbers of a modified file, from the change set against the base.
+added_lines() {
+  git diff -U0 "$BASE" -- "$1" | awk '/^@@/ {
+    split($3, r, ","); start = substr(r[1], 2); n = (r[2] == "" ? 1 : r[2]);
+    for (i = 0; i < n; i++) print start + i
+  }'
+}
+
+created_tests=$({
+  git diff --name-only --diff-filter=A "$BASE"
   git ls-files --others --exclude-standard
 } | sort -u | grep -E '\.(test|spec)\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$')
-printf '%s\n' "$changed_tests" | sed '/^$/d' |
+modified_tests=$(git diff --name-only --diff-filter=M "$BASE" |
+  grep -E '\.(test|spec)\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$')
+
+printf '%s\n' "$created_tests" | sed '/^$/d' |
   while IFS= read -r f; do test_api_check "$f"; done
+printf '%s\n' "$modified_tests" | sed '/^$/d' |
+  while IFS= read -r f; do
+    added=$(mktemp); added_lines "$f" > "$added"
+    test_api_check "$f" "$added"; rm -f "$added"
+  done
 ```
 
 The check uses `perl`, present on macOS and Linux. Where `perl` is absent the
 check is `NOT VERIFIED` with that reason, never a pass. The check does not
 detect an aliased import (`import { test as t }`) or a test API hidden behind
 a local wrapper; such a file is reported for review.
+
+### DEAD-EXPORT-001 — Every export the change set adds has a consumer
+
+A TypeScript or JavaScript file the change set creates or modifies declares
+its exports only when another module uses them (M-49, `AGENTS.md`). An export
+that is re-exported by a barrel (`index.*`) but imported by no other module is
+dead: the barrel makes it look public, and the control it names is never
+reached. An export is live only when it is imported by another module. The check reads the declared exports of the changed non-barrel files
+and searches the repository for an import of each name from a module other than
+the file itself and a barrel. Test files count as consumers. A dead export is a
+`FAIL` when the change set introduced it; an export that already existed in the
+base revision is a finding.
+
+**Scope limit.** The check finds exports with no importer. It does not decide
+whether a consumer is a real control on the trust path. That is M-48, verified
+by `skills/security-review/SKILL.md` ("Control wiring").
+
+```sh
+# Prints true when the module $2 imports the identifier $1 from another module.
+imports_name() {
+  perl -0777 -e '
+    my ($n, $c) = @ARGV;
+    open my $h, "<", $c or exit 1; my $s = <$h>; close $h;
+    exit(($s =~ /import\s+(?:type\s+)?(?:\{[^}]*?\b\Q$n\E\b[^}]*\}|\Q$n\E\b)[^;]*?from\s*["\x27]/s) ? 0 : 1);
+  ' "$1" "$2"
+}
+
+# $1 = repository root (run from it with "."); $2... = changed non-barrel files, relative to it.
+dead_export_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    grep -nE '^export (const|let|function|class|type|interface|enum) ' "$f" | while IFS=: read -r line decl; do
+      name=$(printf '%s\n' "$decl" | sed -E 's/^export (const|let|function|class|type|interface|enum) ([A-Za-z_$][A-Za-z0-9_$]*).*/\2/')
+      used=0
+      grep -rlw --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.mjs' --include='*.cjs' \
+        --exclude-dir=node_modules --exclude-dir=dist "$name" "$root" | sed 's#^\./##' |
+        while IFS= read -r c; do
+          case "$c" in
+            "$f"|*/index.ts|*/index.tsx|*/index.js|*/index.jsx|*/index.mjs|*/index.cjs|index.*) continue ;;
+          esac
+          imports_name "$name" "$c" && { echo used; break; }
+        done | grep -q used && used=1
+      [ "$used" = 1 ] || echo "FAIL DEAD-EXPORT-001: $f:$line: $name is exported with no consumer outside a barrel"
+    done
+  done
+}
+```
+
+The check uses `perl` and `grep`, present on macOS and Linux. Where `perl` is
+absent it is `NOT VERIFIED` with that reason. It does not detect a consumer that
+imports the name through a dynamic `import()` or `require()`; such a file is
+reported for review.
 
 ### CHECK-001 — Phase checklist format and derivation
 

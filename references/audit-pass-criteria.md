@@ -65,8 +65,11 @@ dimension. A criterion is never presented as a framework standard.
   `skills/architecture-advisor/SKILL.md` ("Decision Records") is recorded: in
   the project's existing records convention, or, when the project has none, in
   the presentation record shown before implementation. A decision that meets the
-  threshold and has no record is a finding of this dimension, never an implicit
-  approval.
+  threshold and has no record is a `FAIL` of this dimension, never an implicit
+  approval and never `NOT VERIFIED`: the auditor checks the change set for the
+  record, and its absence is the verdict. The same applies to a selected design
+  pattern that has no record of its forces: its record is in the change set
+  (M-50).
 
 ### 3. Code quality & separation (SRP)
 
@@ -86,7 +89,15 @@ dimension. A criterion is never presented as a framework standard.
   the primary operation: a failed read from it is a miss, and a failed write
   to it is skipped and recorded. A write already committed in the primary store
   is never reported as failed because a secondary store failed.
-- No dead code, debug output, or unused exports.
+- No dead code, debug output, or unused exports. An export the change adds is
+  imported by another module; a barrel that re-exports it is not a consumer. An
+  export with no consumer is a `FAIL` with file and line (`DEAD-EXPORT-001` in
+  `workflows/output-compliance.md`, M-49).
+- A unit that the change extends with a responsibility outside its declared one
+  (for example, a root component that also decides routing, session, and banner
+  wrapping) extracts that responsibility into its own unit in the same change
+  set. The auditor names the responsibilities of each unit the change touches; a
+  unit with a second reason to change is a `FAIL` of SOLID SRP, not a `WARN`.
 - Names are clear and the code is typed; no `any` without a documented reason.
 
 ### 4. API & contracts
@@ -110,6 +121,13 @@ dimension. A criterion is never presented as a framework standard.
 - Personal data is retained only as long as needed: any in-memory or
   persistent store that holds it has an explicit bound (size, time, or count).
 - Input from outside the process is validated at the boundary.
+- A validator, parser, sanitizer, or guard the change creates or exports is a
+  control only when every external input it guards reaches it on the path from
+  the trust boundary to the sink (M-48). The auditor follows each exported control to its call sites from the
+  entry point. A control with no reachable call is an unwired control: the
+  boundary is unprotected, the Dimension is `FAIL` at the severity of the
+  boundary, and any document that states the boundary is validated is a false
+  claim to be corrected or removed in the same change set.
 - Authentication and authorization are not weakened.
 - An access gate applies exactly to the paths that the approved requirement
   names. A path the requirement does not gate is not gated by default. When the

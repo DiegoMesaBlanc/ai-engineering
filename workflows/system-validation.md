@@ -994,6 +994,7 @@ Return:
 - V2.63 styling approach by framework and timing checks:
 - V2.64 audit criteria read gate and platform criteria checks:
 - V2.65 test API import and test-case form checks:
+- V2.66 unwired control, dead export, decision record, and modified-test scope checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -3241,6 +3242,97 @@ grep -q "^test_api_check() {" "$fx/check.sh" || { echo "FAIL V2.65: test_api_che
 ) || failures=1
 
 echo "V2.65 probe: fixtures in $fx were checked and are removed"
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.66 Regression — Unwired Controls, Dead Exports, Decision Records, and Modified-Test Scope
+
+Verify that the four rules added after the external audit are canonical in
+`AGENTS.md`, registered (M-48, M-49, M-50 and R-88, R-89, R-90), reflected in
+the criteria and the security procedure, and enforced by checks that run on
+fixtures:
+
+- M-48: a control that is exported or documented but not called on the path
+  from the trust boundary to the sink is detected by the security procedure
+  ("Control wiring" in `skills/security-review/SKILL.md`) and by Dimensions 6
+  and 7 of `references/audit-pass-criteria.md`.
+- M-49: `DEAD-EXPORT-001` in `workflows/output-compliance.md` reports an export
+  that a barrel re-exports and no module imports, with file:line, and accepts the
+  same export once a module imports it.
+- M-50: the absence of a decision record is a Dimension 2 `FAIL`.
+- M-47 scope: `TEST-001` and `TEST-002` on a modified test file report only the
+  lines the change set adds, so a pre-existing violation is a finding.
+
+The behavioral proof needs `perl`; where it is absent the check is
+`NOT VERIFIED`. The check takes the repository root as its argument.
+
+```sh
+root="${1:-.}"
+failures=0
+ag="AGENTS.md"
+ap="references/audit-pass-criteria.md"
+sr="skills/security-review/SKILL.md"
+oc="workflows/output-compliance.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+
+flat_ap=$(tr '\n' ' ' < "$root/$ap" | tr -s ' ')
+
+flat_ag=$(tr '\n' ' ' < "$root/$ag" | tr -s ' ')
+grep -qF "is a control only when every external input" <<< "$flat_ag" || { echo "FAIL V2.66: $ag is missing the M-48 wording"; failures=1; }
+grep -qF "is imported by another module" <<< "$flat_ag" || { echo "FAIL V2.66: $ag is missing the M-49 wording"; failures=1; }
+grep -qF "its record is in the change set" <<< "$flat_ag" || { echo "FAIL V2.66: $ag is missing the M-50 wording"; failures=1; }
+for id in M-48 M-49 M-50; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.66: no $id row"; failures=1; }
+done
+for id in R-88 R-89 R-90; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.66: no $id row"; failures=1; }
+done
+grep -qF "Control wiring" "$root/$sr" || { echo "FAIL V2.66: $sr has no control-wiring step"; failures=1; }
+grep -qF "reaches it on the path from the trust boundary to the sink (M-48)" <<< "$flat_ap" || { echo "FAIL V2.66: $ap Dimension 6 has no wiring criterion"; failures=1; }
+grep -qF "is a \`FAIL\` of SOLID SRP" <<< "$flat_ap" || { echo "FAIL V2.66: $ap Dimension 3 has no SRP extraction criterion"; failures=1; }
+grep -qF "never \`NOT VERIFIED\`" <<< "$flat_ap" || { echo "FAIL V2.66: $ap Dimension 2 does not make a missing record a FAIL"; failures=1; }
+grep -q "DEAD-EXPORT-001" "$root/$oc" || { echo "FAIL V2.66: $oc does not define DEAD-EXPORT-001"; failures=1; }
+grep -qF "on the lines the change set adds" "$root/$oc" || { echo "FAIL V2.66: $oc does not scope modified test files to added lines"; failures=1; }
+
+command -v perl >/dev/null 2>&1 || { echo "NOT VERIFIED V2.66: perl is not available, the behavioral proof was not run"; exit 2; }
+
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v266.XXXXXX")
+awk '/^imports_name\(\) \{/{on=1} on{print} on && /^\}$/{exit}' "$root/$oc" > "$fx/check.sh"
+awk '/^dead_export_check\(\) \{/{on=1} on{print} on && /^\}$/{exit}' "$root/$oc" >> "$fx/check.sh"
+awk '/^test_api_check\(\) \{/{on=1} on{print} on && /^\}$/{exit}' "$root/$oc" >> "$fx/check.sh"
+grep -q "^dead_export_check() {" "$fx/check.sh" || { echo "FAIL V2.66: dead_export_check is not defined in $oc"; failures=1; }
+
+(
+  mkdir -p "$fx/project/src"
+  cd "$fx/project" || exit 1
+  . "$fx/check.sh" || exit 1
+  printf "export const parse = (raw: string) => raw;\n" > src/parser.ts
+  printf "export { parse } from './parser';\n" > src/index.ts
+  printf "const run = () => 1;\nexport default run;\n" > src/app.ts
+  out=$(dead_export_check . src/parser.ts)
+  printf '%s\n' "$out" | grep -q "FAIL DEAD-EXPORT-001: src/parser.ts:1: parse is exported with no consumer outside a barrel" \
+    || { echo "FAIL V2.66: an export reached only through a barrel is not detected with file:line"; exit 1; }
+  printf "import { parse } from './parser';\nexport const run = () => parse('x');\n" > src/app.ts
+  out=$(dead_export_check . src/parser.ts)
+  [ -z "$out" ] || { echo "FAIL V2.66: an export imported by a module is still reported: $out"; exit 1; }
+) || failures=1
+
+(
+  . "$fx/check.sh" || exit 1
+  printf "describe('a', () => {\n  test('b', () => {\n    expect(1).toBe(1);\n  });\n  it('c', () => {});\n});\n" > "$fx/mod.test.ts"
+  printf "5\n" > "$fx/added.txt"
+  out=$(test_api_check "$fx/mod.test.ts" "$fx/added.txt" 2>&1)
+  printf '%s\n' "$out" | grep -q "FAIL TEST-002: $fx/mod.test.ts:5: the case is declared with it" \
+    || { echo "FAIL V2.66: an it case on an added line is not detected"; exit 1; }
+  printf '%s\n' "$out" | grep -q "TEST-001: $fx/mod.test.ts:1:" \
+    && { echo "FAIL V2.66: a pre-existing violation on an unchanged line is reported as a FAIL"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.66 probe: fixtures in $fx were checked and are removed"
 rm -rf "$fx"
 
 exit "$failures"

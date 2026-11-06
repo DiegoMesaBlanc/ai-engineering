@@ -27,7 +27,12 @@ A candidate is a finding only when all of these are named:
 
 1. **Principal.** Who can send the input or trigger the action, and their trust level.
 2. **Input or action.** What they send or do.
-3. **Intended control.** The check that should stop it, and where it lives.
+3. **Intended control.** The check that should stop it, and where it lives. A
+   control is a control only when every external input it guards reaches it: a
+   validator, parser, sanitizer, or guard that exists in the code, or is
+   documented, but is not called on the path from the entry point to the sink is
+   **unwired** (M-48). An unwired control is
+   the vulnerability, not a missing layer: the boundary is unprotected (M-48).
 4. **Boundary.** The trust boundary crossed: a user acting on another user's data,
    an unauthenticated caller reaching a privileged function, untrusted data
    reaching an interpreter, and so on.
@@ -98,6 +103,16 @@ concrete damage, the severity is lower than it feels.
    the changed surface. Do not run every category against every change.
 3. **Build candidates.** For each category, look for the signal and record each
    candidate with the five evidence elements above.
+   - **Control wiring.** For every exported or created validator, parser,
+     sanitizer, or guard, and for every statement in the repository's
+     documentation or README that a boundary is validated, filtered, or
+     protected: search the call sites, follow the path from each entry point
+     (deep link, notification payload, request, message handler) to the sink, and
+     record whether the control is on it. A control with no call on the path is a
+     `confirmed` candidate in the boundary's category, with the documentation
+     line as evidence when a claim exists. A documentation claim the code does
+     not support is reported even when the impact is low, because the claim
+     misleads the next reviewer.
 4. **Verify independently.** Attempt to disprove each candidate by reading the
    code paths that would stop it, including middleware, framework defaults, and
    tests. A candidate that survives becomes `confirmed`, a blocked one becomes

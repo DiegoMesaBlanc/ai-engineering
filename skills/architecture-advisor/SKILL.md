@@ -599,7 +599,10 @@ When a decision is significant, hard to reverse, or selects between
 meaningful alternatives with real trade-offs, record it briefly: context,
 decision, alternatives, and consequences. Reuse the project's existing
 convention for storing such records; do not create a new documentation
-location or a diagram unless it adds value.
+location or a diagram unless it adds value. A selected design pattern follows
+the same rule. Its record is in the change set: in the project's records
+convention, or in `docs/decisions/` when the project has none (M-50). The
+absence of that record is a Dimension 2 `FAIL`, never `NOT VERIFIED`.
 
 Do not record trivial or easily reversible decisions, and never fabricate
 rationale. Progressive over-documentation is a defect, not thoroughness.

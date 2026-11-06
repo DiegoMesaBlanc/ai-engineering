@@ -599,14 +599,32 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
   reads the change set, never the whole file.
 - Report checks that were not run.
 - Never claim a test or build passed without evidence.
-- In a TypeScript or JavaScript test file that a task creates, every test API
-  the file uses — `describe`, `test`, `it`, `expect`, `vi`, and the hooks — is
-  imported explicitly from the module of the framework that declares it (for
-  Vitest, `vitest`; for Jest, `@jest/globals`). Test globals are never relied
-  on, so the type checker needs no global test declaration to accept a test.
-  A test case is declared with `test`, not `it`: in Vitest `it` is an alias of
-  `test`, and one form keeps the suite uniform. Existing test files are not
+- In a TypeScript or JavaScript test file that a task creates or modifies, every
+  test API the file uses — `describe`, `test`, `it`, `expect`, `vi`, and the
+  hooks — is imported explicitly from the module of the framework that declares
+  it (for Vitest, `vitest`; for Jest, `@jest/globals`). Test globals are never
+  relied on, so the type checker needs no global test declaration to accept a
+  test. A test case is declared with `test`, not `it`: in Vitest `it` is an
+  alias of `test`, and one form keeps the suite uniform. A violation on a line
+  the task adds is a defect of the task. A violation that already existed in a
+  modified file is a finding. A test file the task does not touch is never
   converted as a side effect of another task.
+- A validator, parser, sanitizer, or guard that a change creates or exports is
+  a control only when every external input it guards reaches it on the path from
+  the trust boundary to the sink. A control that is exported or documented but
+  not called on that path is an unwired control: the boundary is unprotected,
+  and a document that states the boundary is validated is a false claim (P1),
+  never a hardening note.
+- A change leaves no dead export: every export it adds is imported by another
+  module, and a barrel that re-exports it does not count as a consumer. A unit
+  that a change extends with a responsibility outside its declared one extracts
+  that responsibility into its own unit in the same change set, and the
+  responsibility the change adds is named in the presentation record.
+- When a significant decision meets the recording threshold, or a design
+  pattern is selected, its record is in the change set: in the project's records
+  convention, or in `docs/decisions/` when the project has none. A missing record
+  is a Dimension 2 `FAIL`, never `NOT VERIFIED`, and the record is shown before
+  implementation.
 - Keep unrelated refactoring out of scope.
 - A reinforcement of an engineering discipline adopted from an external
   methodology (test-first discipline, root-cause debugging, verification before

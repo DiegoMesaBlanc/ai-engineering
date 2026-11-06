@@ -233,9 +233,9 @@ support.
 
 ### Test Files (TypeScript and JavaScript)
 
-Every test file a task creates has each test API it uses imported explicitly
-from the framework module that declares it, so the type checker accepts the
-file without a global test declaration (`AGENTS.md`, M-47). Vitest does not expose
+Every test file a task creates or modifies has each test API it uses imported
+explicitly from the framework module that declares it, so the type checker
+accepts the file without a global test declaration (`AGENTS.md`, M-47). Vitest does not expose
 test globals unless the project opts in, and a missing import fails the type
 check with `Cannot find name 'describe'` (TS2593).
 
@@ -244,8 +244,9 @@ check with `Cannot find name 'describe'` (TS2593).
   `@jest/globals`.
 - Declare a test case with `test`, not `it`. In Vitest `it` is an alias of
   `test`; the form is uniform across the suite.
-- Do not convert an existing test file to this form as a side effect of
-  another task; report it as a finding.
+- In an existing test file the task modifies, a global or an `it` case on a
+  line the task adds is fixed in the task; a violation already in the file is
+  reported as a finding. A test file the task does not touch is not converted.
 
 ```typescript
 import { describe, expect, test } from 'vitest';
