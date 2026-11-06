@@ -86,6 +86,25 @@ implementation are:
 - **Errors use the module's error model**: a failure raised from a module uses
   the module's typed error class, never a generic `Error`, unless the module
   has no error model and that is stated.
+- **Identity comes from a verified credential**: in a project with an identity
+  mechanism, an entry point takes the caller's identity only from a credential
+  the client cannot forge (M-52), never from a header, query string, or body
+  the client controls. Every read or write of an object checks ownership
+  against that identity, a missing record fails closed, and the check and the
+  write are one atomic operation. Event streams, sockets, and payment or charge
+  endpoints are entry points too. A project with no identity mechanism is not
+  required to add one.
+- **Sensitive files and uploads**: a file that holds user data is written with
+  owner-only permissions, and image metadata such as location is stripped when
+  an upload is stored.
+- **Cross-origin and development tooling**: no `Access-Control-Allow-Origin: *`
+  combined with credentials, and a development tool (GraphiQL, a playground, a
+  debug route) is enabled only by a production-only check that fails closed.
+- **Limits on costly endpoints**: authentication, payment, and charge endpoints
+  have a rate limit per principal.
+- **Amounts reconciled with the server order**: an amount or order reference
+  received from the client is reconciled with the server-side order before a
+  payment or charge is accepted.
 
 ## General Procedure
 

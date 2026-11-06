@@ -98,7 +98,9 @@ lint blocks commits. A missing linter for a software project is
 ## Phase 6 — Type Check
 
 Run the type check of `workflows/project-validation.md` (Phase 7). A failure
-blocks commits.
+blocks commits. A typecheck whose errors are all under `node_modules` is a
+configuration failure under `workflows/project-validation.md` (Phase 8), and it
+blocks commits in the same way.
 
 ## Phase 7 — Tests
 
@@ -121,8 +123,10 @@ If security audit commands are configured:
 - SAST tools if installed (`semgrep`, `sonarqube`, `codeql`, etc.) — only
   if already present in the project; never install.
 
-If a configured audit fails with actionable findings: report, **block**
-commits.
+If a configured audit reports critical or high findings: report each one with
+its fixed version when one exists. A finding does not block the commit; it is a
+finding of the health probe (`workflows/project-validation.md`, Phase 8a) and is
+listed in the commit proposal.
 
 If no security tooling is configured: report `NOT_CONFIGURED` and continue.
 

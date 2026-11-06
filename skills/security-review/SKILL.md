@@ -99,6 +99,14 @@ concrete damage, the severity is lower than it feels.
 1. **Map the boundaries.** Identify entry points, authentication and authorization
    checks, data stores, interpreters, outbound calls, and third-party inputs. Use
    the project's architecture notes when they exist.
+   - **Entry-point sweep.** When the project has an identity mechanism (a login,
+     a session, a token, or a credential), enumerate every entry point of the
+     project, not only those in the change, and record for each the identity it
+     accepts and the check that verifies it. The identity must come from a
+     credential the client cannot forge; one read from a header, query string,
+     or body the client controls is not authentication (M-52). A public endpoint
+     is recorded as public with its reason. A project with no identity mechanism
+     has no sweep requirement; the review states that the mechanism is absent.
 2. **Select categories.** Use the catalog to choose the categories that apply to
    the changed surface. Do not run every category against every change.
 3. **Build candidates.** For each category, look for the signal and record each
@@ -126,6 +134,14 @@ concrete damage, the severity is lower than it feels.
    that enforces it at the last trusted decision point. Add a regression test that
    fails before the fix and passes after it. The review describes the fix; it does
    not apply it unless the task asks for it.
+
+## Open threat-model items
+
+When the repository has a threat model, list its open High or P1 items whose
+surface the change or the review touches, with their location and status, in
+the report as known open items. Report them as they are; do not re-score them,
+and do not treat them as new findings. They are reported, not blocked by this
+review.
 
 ## Finding format
 

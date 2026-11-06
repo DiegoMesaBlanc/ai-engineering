@@ -314,6 +314,55 @@ Classify failures as:
 
 Do not edit unrelated code to make unrelated checks pass.
 
+A typecheck whose every error is located under `node_modules` is a
+configuration failure, not a dependency defect. The project's TypeScript
+configuration resolves dependency source files, and `skipLibCheck` does not
+cover `.ts` sources. The fix belongs in the project's configuration; a
+dependency is never edited. The failure stays a failing gate with that
+classification.
+
+## Phase 8a — Project Health Probe
+
+This is a read-only health probe. It runs when the system enters a software
+project for the first time in a session, and when `/validate` covers a whole
+project. It reports every pre-existing failure with its evidence, and it never
+blocks a task unrelated to the finding (M-53).
+
+Run each check, and record its command, status, and evidence:
+
+1. **Gate scripts.** Read the project's manifest for formatter, linter,
+   typecheck, and test scripts. A missing formatter or linter is a finding with
+   status `SETUP_REQUIRED` (Phase 5), never `NOT_APPLICABLE`.
+2. **Tracked generated artifacts.** A file that a build, typecheck, or cache
+   regenerates must not be versioned:
+
+   ```sh
+   git ls-files | grep -E '(\.tsbuildinfo$|(^|/)(dist|build|\.next|coverage|node_modules)/)'
+   ```
+
+   Each match is a finding with its path. Removing it from the index is a write;
+   propose it, do not perform it.
+3. **Dependency audit.** When a lockfile exists, run the configured audit when
+   the network is authorized and available (for example
+   `npm audit --audit-level=high`). Report every critical and high finding with
+   its fixed version when one exists. A lockfile project with no configured
+   audit is a finding. When the vulnerability database is unavailable, the check
+   is `NOT_RUN`, never clean.
+4. **Gates.** Run the formatter's non-mutating check, the linter, the typecheck,
+   and the tests. A pre-existing failure is `BASELINE_FAILURE` with its count and
+   first location. A typecheck with errors only under `node_modules` is a
+   configuration failure (Phase 8). A test that needs an environment variable or
+   database the environment lacks is `NOT_RUN`, and the missing name is recorded.
+   A typecheck or build that writes a cache is recorded as a side effect of the
+   probe, and the cache is disabled when the tool allows it.
+5. **Duplicated source trees.** When sibling projects contain source trees with
+   the same name and different content, run `diff -rq` on them and record each
+   as a `DUPLICATE-TREE` finding, following `skills/repository-strategy/SKILL.md`.
+
+The report lists every check with its status and evidence. A failing check is
+never reported as passing, and a finding in unrelated code is reported with its
+file and line without blocking the task.
+
 ## Phase 9 — Report
 
 Produce:

@@ -141,6 +141,13 @@ dimension. A criterion is never presented as a framework standard.
   boundary, and any document that states the boundary is validated is a false
   claim to be corrected or removed in the same change set.
 - Authentication and authorization are not weakened.
+- In a project with an identity mechanism, every entry point the change creates
+  or touches identifies its caller only from a credential the client cannot
+  forge (M-52). An identity read from a header, query string, or body the client
+  controls is a `FAIL` of this Dimension at the severity of the boundary. Each
+  object the entry point reads or writes is checked for ownership, a check that
+  finds no record fails closed, and the check and the write are atomic. A
+  project with no identity mechanism is `N/A` for this bullet, with that reason.
 - An access gate applies exactly to the paths that the approved requirement
   names. A path the requirement does not gate is not gated by default. When the
   requirement does not settle which paths are gated, the scope is `AMBIGUOUS`

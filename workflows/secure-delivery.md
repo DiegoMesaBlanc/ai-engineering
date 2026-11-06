@@ -139,6 +139,15 @@ vulnerability scan. Report a clean dependency audit only when the audit
 command executed successfully and its vulnerability database was
 available.
 
+Report every critical and high finding of an executed audit with the fixed
+version when one exists, and report a lockfile project with no configured
+audit as a finding of the health probe (`workflows/project-validation.md`,
+Phase 8a). This workflow adds no block: a configured audit's critical and high
+findings are reported and never block a commit (`workflows/commit.md`, Phase 9).
+
+Open threat-model items whose surface the change touches are reported with
+their status and are not re-scored (`skills/security-review/SKILL.md`).
+
 ### Static and Infrastructure Analysis
 
 - existing SAST or language-specific security analyzers

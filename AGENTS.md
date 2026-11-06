@@ -629,6 +629,8 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
   reports every input it did not read as `NOT VERIFIED`, never as clean. An
   excluded input that could hold a secret blocks the delivery gate until it is
   scanned, and a scanner never prints the secret value it finds.
+- An entry point of a project that has an identity mechanism (a login, a session, a token, or a credential) identifies its caller only from a credential the client cannot forge. An identity read from a header, query string, or body that the client controls is not authentication. Every object an entry point reads or writes is checked for ownership against that verified identity; a check that finds no record fails closed, the check and the write are atomic, and an event stream, a socket, and a payment or charge endpoint are entry points too. A project with no identity mechanism is not required to add one.
+- When the system enters a software project, it runs a read-only health probe of the project's gates, configuration, tracked generated artifacts, dependency audit, and duplicated source trees, and reports every pre-existing failure as a finding with its evidence. Such a finding never blocks a task unrelated to it, and a pre-existing failure is never reported as passing.
 - Keep unrelated refactoring out of scope.
 - A reinforcement of an engineering discipline adopted from an external
   methodology (test-first discipline, root-cause debugging, verification before

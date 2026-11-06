@@ -996,6 +996,7 @@ Return:
 - V2.65 test API import and test-case form checks:
 - V2.66 unwired control, dead export, decision record, and modified-test scope checks:
 - V2.67 contract duplication, scan coverage, probe isolation, and comment accuracy checks:
+- V2.68 identity, health probe, and audit signal checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -3436,6 +3437,113 @@ grep -q "^duplicate_contract_check() {" "$fx/check.sh" || { echo "FAIL V2.67: du
 ) || failures=1
 
 echo "V2.67 probe: fixtures in $fx were checked and are removed"
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.68 Regression — Identity, Health Probe, and Audit Signals
+
+Verify that the rules and checks added after the third external audit are
+canonical, reachable, and effective:
+
+- M-52: an identity read from a client-controlled value is not authentication.
+  The wording is in `AGENTS.md`, registered, and present in the catalog, the
+  security procedure, and Dimension 6. The entry-point sweep applies only when
+  the project has an identity mechanism.
+- The catalog names the concrete signals of the audit: identity from a
+  client-controlled header or query, an ownership check that passes on a missing
+  owner, a non-atomic check and write, a CORS wildcard with credentials, a
+  non-production debug tool, owner-only file modes and stripped upload metadata,
+  unreconciled payment amounts, and unlimited costly endpoints.
+- M-53: a project entered by the system gets a read-only health probe. Its
+  tracked-artifact command is run on a temporary git repository: a `.tsbuildinfo`
+  and a `dist/` file are detected, and a source file is not.
+- A typecheck whose errors are all under `node_modules` is a configuration
+  failure in both the validation and the commit workflows.
+- Open threat-model items and duplicated source trees are reported without
+  blocking, and the duplicate-tree section exists.
+
+The check takes the repository root as its argument. It needs `git` for the
+fixture; without it the fixture is `NOT VERIFIED`, and the text checks still run.
+
+```sh
+root="${1:-.}"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+vc="skills/vulnerability-catalog/SKILL.md"
+sr="skills/security-review/SKILL.md"
+sd="workflows/secure-delivery.md"
+pv="workflows/project-validation.md"
+rs="skills/repository-strategy/SKILL.md"
+ap="references/audit-pass-criteria.md"
+co="workflows/code-audit.md"
+cm="workflows/commit.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' '; }
+
+need() {
+  grep -qF -- "$2" <<< "$(flat "$1")" || { echo "FAIL V2.68: $1 is missing $3"; failures=1; }
+}
+
+need "$ag" "identifies its caller only from a credential the client cannot forge" "the M-52 wording"
+need "$ag" "read-only health probe of the project" "the M-53 wording"
+need "$ag" "never reported as passing" "the M-53 never-passing wording"
+for id in M-52 M-53; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.68: no $id row"; failures=1; }
+done
+need "$vc" "x-user-id" "the identity-from-header signal"
+need "$vc" "CWE-290" "the CWE-290 source of the identity signal"
+need "$vc" "CWE-367" "the CWE-367 source of the check-and-write signal"
+need "$vc" "CWE-942" "the CWE-942 source of the CORS signal"
+need "$vc" "CWE-732" "the CWE-732 source of the file-mode signal"
+need "$vc" "stripped on upload" "the metadata minimal fix"
+need "$vc" "order reference is accepted without reconciling" "the payment reconciliation signal"
+need "$vc" "no rate limit on authentication, payment, charge" "the rate-limit signal"
+need "$vc" "**Identity source:**" "the identity-source cross-cutting check"
+need "$sr" "**Entry-point sweep.**" "the entry-point sweep step"
+need "$sr" "## Open threat-model items" "the open threat-model section"
+need "$sd" "Report every critical and high finding of an executed audit" "the severity reporting bullet"
+need "$sd" "Open threat-model items whose surface the change touches" "the threat-model reporting bullet"
+need "$pv" "## Phase 8a — Project Health Probe" "the Phase 8a health probe"
+need "$pv" "configuration failure, not a dependency defect" "the node_modules typecheck classification"
+need "$pv" "DUPLICATE-TREE" "the duplicate-tree finding"
+need "$pv" "A failing check is never reported as passing" "the probe never-passing rule"
+need "$rs" "## Duplicated Source Across Repositories" "the duplicate-source section"
+need "$ap" "identifies its caller only from a credential the client cannot forge (M-52)" "the Dimension 6 identity criterion"
+need "$co" "identity comes from a credential the client cannot forge (M-52)" "the code-audit security row"
+need "$cm" "configuration failure under \`workflows/project-validation.md\` (Phase 8)" "the commit typecheck classification"
+for id in R-95 R-96 R-97 R-98 R-99; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.68: no $id row"; failures=1; }
+done
+
+command -v git >/dev/null 2>&1 || { echo "NOT VERIFIED V2.68: git is not available, the artifact fixture was not run"; exit 2; }
+
+cmd="$(grep -m1 'git ls-files | grep -E' "$root/$pv" | sed 's/^[[:space:]]*//')"
+[ -n "$cmd" ] || { echo "FAIL V2.68: $pv has no tracked-artifact command"; exit 1; }
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v268.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  git init -q . || exit 1
+  mkdir -p src dist
+  printf 'x\n' > tsconfig.tsbuildinfo
+  printf 'x\n' > dist/a.js
+  printf 'export const a = 1;\n' > src/a.ts
+  git add . || exit 1
+  out="$(sh -c "$cmd")"
+  printf '%s\n' "$out" | grep -qx 'tsconfig.tsbuildinfo' \
+    || { echo "FAIL V2.68: the documented command does not detect a tracked .tsbuildinfo: $out"; exit 1; }
+  printf '%s\n' "$out" | grep -qx 'dist/a.js' \
+    || { echo "FAIL V2.68: the documented command does not detect a tracked dist file: $out"; exit 1; }
+  printf '%s\n' "$out" | grep -q 'src/a.ts' \
+    && { echo "FAIL V2.68: the documented command reports a source file: $out"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.68 probe: fixture in $fx was checked and is removed"
 rm -rf "$fx"
 
 exit "$failures"

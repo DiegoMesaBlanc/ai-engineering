@@ -117,6 +117,20 @@ a justified change.
 Do not migrate to a monorepo or split repositories as incidental
 refactoring.
 
+## Duplicated Source Across Repositories
+
+When sibling projects in the workspace contain a source tree with the same
+name and different content, the duplication is a `DUPLICATE-TREE` finding. The
+read-only health probe in `workflows/project-validation.md` (Phase 8a) runs
+this check with `diff -rq`, and the finding records the number of differing
+entries and the paths.
+
+The finding does not block a task. Its record states which copy is canonical,
+whether the duplication is accepted or to be consolidated, and that a change to
+one copy names whether the other copy must follow. The choice between a shared
+package and separate copies is a topology decision under M-25, and it is asked
+of the user rather than made silently.
+
 ## Output
 
 Return:
