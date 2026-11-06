@@ -997,6 +997,7 @@ Return:
 - V2.66 unwired control, dead export, decision record, and modified-test scope checks:
 - V2.67 contract duplication, scan coverage, probe isolation, and comment accuracy checks:
 - V2.68 identity, health probe, and audit signal checks:
+- V2.69 delivery safety checks: timeouts, cleartext, client cache, downgrade, hardcoded endpoints, temporary paths, and probe dead exports:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -3544,6 +3545,166 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v268.XXXXXX")"
 ) || failures=1
 
 echo "V2.68 probe: fixture in $fx was checked and is removed"
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.69 Regression — Delivery Safety: Timeouts, Cleartext, Client Cache, Downgrade, Hardcoded Endpoints
+
+Verify that the rules added after the external audit of the mobile and the
+counter-case projects (M-54 to M-58) are canonical, reachable, and effective:
+
+- M-54: every external call has an explicit timeout, for every project type.
+- M-55: `http://` is rejected for every non-local build of a credential endpoint.
+- M-56: client-side cached data is partitioned by the identity that owns it and
+  cleared on sign-out.
+- M-57: a dependency remediation never downgrades.
+- M-58: no hardcoded environment endpoint and no fixed shared temporary path.
+- The health probe enumerates every lockfile root and reports dead exports
+  without blocking an unrelated task (Phase 8a, items 3, 6, and 7).
+
+The text checks run on the repository. The behavioral part extracts the
+`SAFE-001` to `SAFE-003` and `DEAD-EXPORT-001` functions from
+`workflows/output-compliance.md`, runs them on a temporary fixture outside the
+repository, verifies each violation is detected with `file:line`, repairs the
+fixture, and verifies it passes. The fixture needs `awk`, `grep`, `sed`, and
+`perl`; without them the behavioral part is `NOT VERIFIED`, and the text checks
+still run.
+
+```sh
+root="${1:-.}"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+pv="workflows/project-validation.md"
+dp="workflows/dependency-assessment.md"
+ap="references/audit-pass-criteria.md"
+ir="skills/implementation-recipes/SKILL.md"
+sr="skills/security-review/SKILL.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.69: $1 is missing $3"; failures=1; }
+}
+
+need "$ag" "every external call has an explicit timeout" "the M-54 wording"
+need "$ag" "is rejected for every non-local build" "the M-55 wording"
+need "$ag" "partitioned by the identity that owns it" "the M-56 wording"
+need "$ag" "a dependency remediation never downgrades" "the M-57 wording"
+need "$ag" "no hardcoded environment endpoint" "the M-58 wording"
+need "$ir" "every external call has an explicit timeout" "the M-54 recipe"
+need "$ir" "AbortSignal.timeout" "the timeout mechanism in the recipe"
+need "$ap" "This bullet is never \`N/A\`" "the M-54 applicability in Dimension 8"
+need "$ap" "the waits and growth bullets apply to hot paths" "the narrowed hot-path scope"
+need "$sr" "partitioned by the identity that owns it (M-56)" "the M-56 review step"
+need "$dp" "## Remediation of Audit Findings" "the remediation section"
+need "$dp" "a dependency remediation never downgrades" "the M-57 workflow rule"
+need "$pv" "Enumerate every lockfile and every workspace root" "the per-root audit enumeration"
+need "$pv" "findings from one root are never attributed to another" "the per-root attribution rule"
+need "$pv" "DEAD-EXPORT-001" "the probe dead-export item"
+need "$oc" "### SAFE-001, SAFE-002, SAFE-003" "the SAFE section"
+for id in M-54 M-55 M-56 M-57 M-58; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.69: no $id row"; failures=1; }
+done
+for id in R-100 R-101 R-102 R-103 R-104; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.69: no $id row"; failures=1; }
+done
+
+command -v awk >/dev/null 2>&1 && command -v perl >/dev/null 2>&1 || {
+  echo "NOT VERIFIED V2.69: awk or perl is not available, the behavioral fixture was not run"; exit 2; }
+
+# Extracts the first sh block of a section of workflows/output-compliance.md.
+extract() {
+  awk -v start="$1" '
+    $0 ~ "^### " start { on = 1; next }
+    on && /^### / { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; exit }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v269.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  mkdir -p src scripts
+  extract "SAFE-001, SAFE-002, SAFE-003" > safe.sh
+  extract "DEAD-EXPORT-001" > dead.sh
+  [ -s safe.sh ] && [ -s dead.sh ] || { echo "FAIL V2.69: the SAFE or DEAD-EXPORT block was not extracted"; exit 1; }
+  . ./safe.sh
+  . ./dead.sh
+
+  cat > src/ok.ts <<'TS'
+export const load = async (url: string) => {
+  const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+  return response.json();
+};
+export const base = process.env.EXPO_PUBLIC_API_BASE_URL ?? "https://api.example.com";
+const emulator = "http://10.0.2.2:8080";
+TS
+  cat > src/bad.ts <<'TS'
+export const load = async (url: string) => {
+  const response = await fetch(url);
+  return response.json();
+};
+export const base = "http://shop.example.net";
+export const dev = "http://localhost:8080";
+TS
+  cat > scripts/run.sh <<'SH'
+#!/bin/sh
+LOG=/tmp/shoplite-run.log
+OK="${TMPDIR:-/tmp}/run.$$"
+SH
+  printf 'export const clearCache = () => undefined;\n' > src/cache.ts
+  printf "export * from './cache';\n" > src/index.ts
+  printf 'import { load } from "./ok";\nconsole.log(load);\n' > src/consumer.ts
+
+  # 1. The compliant artifacts pass.
+  out="$(safe_timeout_check . src/ok.ts)$(safe_cleartext_check . src/ok.ts)$(safe_endpoint_check . src/ok.ts)"
+  [ -z "$out" ] || { echo "FAIL V2.69: the compliant file is reported: $out"; exit 1; }
+
+  # 2. The violations are detected with file:line.
+  t="$(safe_timeout_check . src/bad.ts)"
+  printf '%s\n' "$t" | grep -qx 'FAIL SAFE-001: src/bad.ts:2: external call with no timeout' \
+    || { echo "FAIL V2.69: SAFE-001 did not detect src/bad.ts:2: $t"; exit 1; }
+  c="$(safe_cleartext_check . src/bad.ts src/ok.ts)"
+  printf '%s\n' "$c" | grep -q '^FAIL SAFE-002: src/bad.ts:5:' \
+    || { echo "FAIL V2.69: SAFE-002 did not detect src/bad.ts:5: $c"; exit 1; }
+  printf '%s\n' "$c" | grep -q '10.0.2.2' \
+    && { echo "FAIL V2.69: SAFE-002 reports the emulator loopback: $c"; exit 1; }
+  e="$(safe_endpoint_check . src/bad.ts scripts/run.sh)"
+  printf '%s\n' "$e" | grep -q '^FAIL SAFE-003: src/bad.ts:6:' \
+    || { echo "FAIL V2.69: SAFE-003 did not detect src/bad.ts:6: $e"; exit 1; }
+  printf '%s\n' "$e" | grep -q '^FAIL SAFE-003: scripts/run.sh:2:' \
+    || { echo "FAIL V2.69: SAFE-003 did not detect the fixed /tmp path: $e"; exit 1; }
+  printf '%s\n' "$e" | grep -q 'run.sh:3:' \
+    && { echo "FAIL V2.69: SAFE-003 reports the TMPDIR fallback: $e"; exit 1; }
+  d="$(dead_export_check . src/cache.ts)"
+  printf '%s\n' "$d" | grep -q 'FAIL DEAD-EXPORT-001: src/cache.ts:1: clearCache' \
+    || { echo "FAIL V2.69: DEAD-EXPORT-001 did not detect clearCache: $d"; exit 1; }
+  d="$(dead_export_check . src/ok.ts)"
+  printf '%s\n' "$d" | grep -q 'load is exported' \
+    && { echo "FAIL V2.69: DEAD-EXPORT-001 reports load, which consumer.ts imports"; exit 1; }
+  printf '%s\n' "$d" | grep -q 'FAIL DEAD-EXPORT-001: src/ok.ts:5: base' \
+    || { echo "FAIL V2.69: DEAD-EXPORT-001 did not detect the unused base export: $d"; exit 1; }
+
+  # 3. The repaired artifact passes.
+  printf '%s\n' \
+    'export const load = async (url: string) => {' \
+    '  const response = await fetch(url, { signal: AbortSignal.timeout(5000) });' \
+    '  return response.json();' \
+    '};' \
+    'export const base = process.env.EXPO_PUBLIC_API_BASE_URL ?? "https://api.example.com";' > src/bad.ts
+  out="$(safe_timeout_check . src/bad.ts)$(safe_cleartext_check . src/bad.ts)$(safe_endpoint_check . src/bad.ts)"
+  [ -z "$out" ] || { echo "FAIL V2.69: the repaired file is still reported: $out"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.69 probe: fixture in $fx was checked and is removed"
 rm -rf "$fx"
 
 exit "$failures"

@@ -121,6 +121,16 @@ concrete damage, the severity is lower than it feels.
      line as evidence when a claim exists. A documentation claim the code does
      not support is reported even when the impact is low, because the claim
      misleads the next reviewer.
+   - **Transport and client data (M-55, M-56).** For every base URL that carries a
+      credential, token, or personal data, trace the configuration that supplies it
+      and confirm that `http://` is rejected for every non-local build; a build that
+      accepts it is a `confirmed` candidate with the configuration line as evidence.
+      For every client-side cache, confirm that it is partitioned by the identity that
+      owns it (M-56), and that the sign-out path clears that identity's partitions:
+      trace from the sign-out action to the storage calls. A cache keyed without the
+      identity on a device that can hold more than one identity is a `confirmed`
+      candidate, and personal or payment data in plain storage is a `confirmed`
+      candidate in the data-storage category.
    - **Scan coverage.** A secret or content scan that excludes inputs by extension,
      path, or size reports every input it did not read as `NOT VERIFIED`, never as
      clean. List those inputs. An excluded input that could hold a secret blocks

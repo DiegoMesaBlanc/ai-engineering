@@ -47,9 +47,11 @@ implementation are:
 - **Bounded growth**: every in-memory queue, buffer, cache, or retained
   personal data has an explicit cap (size, count, or time) and a defined
   behavior at the cap (reject, drop with record, or dead-letter).
-- **Explicit timeouts**: every external call or attempt has its own timeout;
-  a retry loop never waits on a shared worker in a way that stalls independent
-  work.
+- **Explicit timeouts**: every external call has an explicit timeout (M-54),
+  for every project type, mobile and frontend included. Each attempt has its own
+  timeout, and a retry loop never waits on a shared worker in a way that stalls
+  independent work. In `fetch`, use `AbortSignal.timeout` or an `AbortController`;
+  in other clients, the client's own timeout option.
 - **Error paths tested**: each thrown error, failed dependency, rejected
   input, failed transaction, and rollback the change introduces has a test
   through its real entry point. A rollback path without a test is not done.
@@ -105,6 +107,19 @@ implementation are:
 - **Amounts reconciled with the server order**: an amount or order reference
   received from the client is reconciled with the server-side order before a
   payment or charge is accepted.
+- **Transport and configuration** (M-55): a base URL that carries a credential
+  is validated by its scheme when the configuration loads, and cleartext
+  `http://` is rejected for every non-local build. A local development address
+  is named in the configuration, never assumed.
+- **Client cache partitioned by identity** (M-56): client-side cached data is
+  partitioned by the identity that owns it, so every cache key includes the
+  user, tenant, or account, and sign-out clears that identity's partitions. Personal and payment data is never kept in plain
+  storage; only credentials belong in the secure store, and the rest is cache.
+- **No hardcoded environment endpoint and no fixed temporary path** (M-58): a
+  base URL is read from the environment configuration of the build or the
+  runtime, and a script or test writes its temporary files to a unique per-run
+  path (for example `mktemp -d`), never to a fixed name such as
+  `/tmp/<name>.log`, so parallel runs never collide.
 
 ## General Procedure
 

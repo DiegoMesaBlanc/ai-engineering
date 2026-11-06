@@ -194,6 +194,27 @@ If the user declines a proposed dependency:
 - if the acceptance criteria cannot reasonably be met without the dependency,
   describe the remaining decision instead of silently changing the scope
 
+## Remediation of Audit Findings
+
+A vulnerability finding from an audit tool is a dependency change and goes
+through this workflow like any other. A dependency remediation never downgrades
+(M-57): a suggested fix that installs an older major version of a package is
+rejected, even when the tool presents it as the automatic fix. The options, in
+order:
+
+1. Update the package to its fixed version, when the finding names one.
+2. Update the direct dependency that brings the vulnerable package in, when the
+   vulnerable package is transitive.
+3. Apply a documented override for that one package, in the package manager's
+   own mechanism, with the reason recorded next to it.
+4. Record the blocker with the fixed version and the owner, and leave the
+   dependency unchanged.
+
+Each option is a change to a manifest and a lockfile, so it is assembled as an
+installation package and evaluated under Phase 4. A downgrade needs an explicit
+reason in the approved requirement, and without it the change is a `FAIL` of the
+security dimension in `references/audit-pass-criteria.md`.
+
 ## Reporting
 
 Record in the task plan:

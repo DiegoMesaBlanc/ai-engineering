@@ -705,6 +705,86 @@ absent it is `NOT VERIFIED` with that reason. It does not detect a consumer that
 imports the name through a dynamic `import()` or `require()`; such a file is
 reported for review.
 
+### SAFE-001, SAFE-002, SAFE-003 — Timeouts, cleartext endpoints, hardcoded endpoints and temporary paths
+
+These detections enforce the delivery-safety rules of `AGENTS.md`:
+
+- **SAFE-001 (M-54).** Every external call has an explicit timeout. A call to
+  `fetch`, an HTTP client (`axios`, `got`, `http.request`), or an equivalent in a
+  TypeScript or JavaScript file the change set creates or modifies is a `FAIL`
+  when neither the call line nor the four lines after it carry a `signal` or a
+  `timeout` option. The retry loop is judged by the same test on each attempt.
+- **SAFE-002 (M-55).** `http://` is rejected for every non-local build. A string
+  literal that starts with `http://` in a changed source file is a `FAIL`, unless
+  its host is `localhost`, `127.0.0.1`, `10.0.2.2` (the Android emulator loopback),
+  or a documentation domain (`example.com`, `example.org`), and the literal is
+  named as a local development address.
+- **SAFE-003 (M-58).** No hardcoded environment endpoint and no fixed shared
+  temporary path. A `localhost` or `127.0.0.1` URL in non-test TypeScript or
+  JavaScript source is a `FAIL`, and a `/tmp/` path literal in a changed script is
+  a `FAIL` unless the line also reads `TMPDIR` (the `${TMPDIR:-/tmp}` fallback of
+  a `mktemp` call is not a fixed path).
+
+**Scope limit.** The detectors read TypeScript and JavaScript and POSIX shell.
+Other ecosystems are `NOT VERIFIED` for SAFE-001 and SAFE-002 by these detectors
+and are reviewed under `references/audit-pass-criteria.md` Dimension 6 and
+Dimension 8 instead. A detection is a candidate: the reviewer confirms each match
+before reporting it, and a call wrapped by a helper that sets the timeout is
+accepted after the reviewer reads the helper.
+
+```sh
+# $1 = repository root; $2... = changed TypeScript or JavaScript files, relative to it.
+safe_timeout_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    awk -v file="$f" '
+      /(^|[^A-Za-z0-9_.])(fetch|axios|axios\.(get|post|put|patch|delete|request)|got|https?\.request)[[:space:]]*\(/ {
+        call[NR] = 1; text[NR] = $0
+      }
+      { lines[NR] = $0 }
+      END {
+        for (n in call) {
+          ok = 0
+          for (k = n; k <= n + 4 && k <= NR; k++) if (lines[k] ~ /signal|timeout|Timeout/) ok = 1
+          if (!ok) printf "FAIL SAFE-001: %s:%d: external call with no timeout\n", file, n
+        }
+      }' "$root/$f"
+  done
+}
+
+# $1 = repository root; $2... = changed TypeScript, JavaScript, or shell files.
+safe_cleartext_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.md) continue ;; esac
+    grep -nE "[\"'\`]http://" "$root/$f" 2>/dev/null |
+      grep -vE 'localhost|127\.0\.0\.1|10\.0\.2\.2|example\.(com|org)' |
+      sed "s#^#FAIL SAFE-002: $f:#"
+  done
+}
+
+# $1 = repository root; $2... = changed files, relative to it.
+safe_endpoint_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in
+      *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs)
+        case "$f" in *test*|*spec*|*__tests__*|*.d.ts) continue ;; esac
+        grep -nE 'https?://(localhost|127\.0\.0\.1)' "$root/$f" 2>/dev/null |
+          sed "s#^#FAIL SAFE-003: $f:#" ;;
+      *.sh|*.bash|*.zsh)
+        grep -nE '/tmp/' "$root/$f" 2>/dev/null | grep -v 'TMPDIR' |
+          sed "s#^#FAIL SAFE-003: $f:#" ;;
+    esac
+  done
+}
+```
+
+The detections use `awk`, `grep`, and `sed`, present on macOS and Linux. Where a
+changed file is missing they report nothing for it, so the caller lists the
+changed files from `git`, never by hand.
+
 ### CHECK-001 — Phase checklist format and derivation
 
 A phase checklist is valid when every line uses the state format and every
@@ -952,8 +1032,10 @@ evidence.
 9. Run `STRUCT-007` over every contract file in a feature folder.
 10. Run `STRUCT-002` and `STRUCT-003` when the project is feature-driven.
 11. Run `LAYER-001` over the source tree when the architecture declares layers.
-12. Review each match against the allowed reasons before reporting it.
-13. Report every finding with `file:line`, the rule id, the severity, and the
+12. Run `SAFE-001`, `SAFE-002`, and `SAFE-003` over the changed files, listed
+    from `git` (M-54, M-55, M-58).
+13. Review each match against the allowed reasons before reporting it.
+14. Report every finding with `file:line`, the rule id, the severity, and the
     concrete fix.
 
 ## Reporting
@@ -962,7 +1044,7 @@ evidence.
 ### OUTPUT COMPLIANCE
 
 - Scope: <paths, branch, commit>
-- Checks executed: FUNC-001, TYPE-001, TYPE-002, TYPE-003, TYPE-004, FILE-001, STRUCT-001, STRUCT-006, STRUCT-007, LAYER-001
+- Checks executed: FUNC-001, TYPE-001, TYPE-002, TYPE-003, TYPE-004, FILE-001, STRUCT-001, STRUCT-006, STRUCT-007, LAYER-001, SAFE-001, SAFE-002, SAFE-003
 - Result: PASS | FAIL
 - Findings:
   - <file>:<line> — <RULE> — <severity> — <reason> — <fix>

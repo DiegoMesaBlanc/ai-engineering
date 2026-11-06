@@ -157,6 +157,24 @@ dimension. A criterion is never presented as a framework standard.
   build or environment configuration, and are never reachable in production
   builds. A broader acceptance rule than the production surface needs is a
   finding.
+- Production configuration never sends a credential or session data over
+  cleartext (M-55). A base URL of an endpoint that receives a credential is
+  validated by its scheme, and `http://` is rejected for every non-local build;
+  a build that accepts it is a `FAIL` of this Dimension at the severity of the
+  credential exposure.
+- Client-side cached data is partitioned by the identity that owns it and
+  cleared when that identity signs out (M-56). A cache key without the user,
+  tenant, or account is a `FAIL` of this Dimension when the device can hold data
+  of more than one identity. Personal and payment data kept in plain storage is a
+  `FAIL` of this Dimension; the auditor verifies the sign-out path that clears
+  the partitions by tracing it from the sign-out action to the storage calls.
+- A dependency remediation never downgrades (M-57). A change that moves a
+  dependency to an older major version to clear an audit finding is a `FAIL` of
+  this Dimension unless the approved requirement names the downgrade and its
+  reason.
+- Project code and scripts carry no hardcoded environment endpoint and no fixed
+  shared temporary path (M-58). A `FAIL` of this Dimension names the file and line
+  of the literal.
 
 ### 7. Testing & validation
 
@@ -186,11 +204,16 @@ dimension. A criterion is never presented as a framework standard.
 
 ### 8. Performance
 
-- Each external call or attempt has an explicit timeout.
-- No blocking wait (for example `sleep`) on a shared worker stalls independent
-  work; waits are scheduled per item or are non-blocking.
-- Unbounded growth is not introduced in memory, queues, or caches.
-- Applicable to hot paths and web delivery. Otherwise `N/A` with that reason.
+- Every external call has an explicit timeout (M-54) for every project type,
+  mobile and frontend included, and each attempt of a retry loop has its own
+  timeout. This bullet is never `N/A` for a project that makes an external call.
+  A call with no timeout is a `FAIL` of this Dimension at the file and line of
+  the call.
+- The waits and growth bullets apply to hot paths and web delivery; elsewhere
+  they are `N/A` with that reason.
+  - No blocking wait (for example `sleep`) on a shared worker stalls independent
+    work; waits are scheduled per item or are non-blocking.
+  - Unbounded growth is not introduced in memory, queues, or caches.
 
 ### 9. Accessibility
 

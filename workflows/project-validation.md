@@ -342,12 +342,21 @@ Run each check, and record its command, status, and evidence:
 
    Each match is a finding with its path. Removing it from the index is a write;
    propose it, do not perform it.
-3. **Dependency audit.** When a lockfile exists, run the configured audit when
-   the network is authorized and available (for example
-   `npm audit --audit-level=high`). Report every critical and high finding with
-   its fixed version when one exists. A lockfile project with no configured
-   audit is a finding. When the vulnerability database is unavailable, the check
-   is `NOT_RUN`, never clean.
+3. **Dependency audit.** Enumerate every lockfile and every workspace root of
+   the project (`find . \( -name package-lock.json -o -name pnpm-lock.yaml -o
+   -name yarn.lock \) -not -path '*/node_modules/*'`, or the ecosystem equivalent),
+   and run the audit in each root separately. Report each root with its path;
+   findings from one root are never attributed to another, and a total is the
+   sum of the reported roots, never a re-attribution. When the network is
+   authorized and available, run the configured audit (for example
+   `npm audit --audit-level=high`) in each root. Report every critical and high
+   finding with its fixed version when one exists. A lockfile project with no
+   configured audit is a finding. When the vulnerability database is unavailable,
+   the check is `NOT_RUN`, never clean. A suggested fix that moves a package to an
+   older major version is not a remediation: a dependency remediation never
+   downgrades (M-57). The fix is the fixed version of the package, the direct
+   dependency that brings it in, or a documented override of that one package, and
+   a blocker without a fixed version is reported as such.
 4. **Gates.** Run the formatter's non-mutating check, the linter, the typecheck,
    and the tests. A pre-existing failure is `BASELINE_FAILURE` with its count and
    first location. A typecheck with errors only under `node_modules` is a
@@ -358,6 +367,21 @@ Run each check, and record its command, status, and evidence:
 5. **Duplicated source trees.** When sibling projects contain source trees with
    the same name and different content, run `diff -rq` on them and record each
    as a `DUPLICATE-TREE` finding, following `skills/repository-strategy/SKILL.md`.
+6. **Dead exports and hardcoded configuration (M-49, M-58).** Run
+   `DEAD-EXPORT-001` from `workflows/output-compliance.md` over every non-barrel
+   source file of the project, not only the change set: an export with no
+   importer outside a barrel is a `DEAD-EXPORT-001` finding with `file:line`, and
+   it never blocks an unrelated task. No hardcoded environment endpoint and no
+   fixed shared temporary path (M-58) is a finding in the same way: each literal
+   `localhost` or `127.0.0.1` URL in non-test source and each fixed `/tmp/` path
+   in a project script is reported with its `file:line`, as `SAFE-003`.
+7. **Outbound timeouts and cleartext endpoints (M-54, M-55).** Run `SAFE-001` and
+   `SAFE-002` from `workflows/output-compliance.md` over the project source.
+   Every external call has an explicit timeout (M-54), so an outbound call with
+   no timeout is a `SAFE-001` finding, and `http://` is rejected for every
+   non-local build (M-55), so a cleartext endpoint outside a local address is a
+   `SAFE-002` finding. Each is reported with its `file:line`. Both are reported without blocking
+   an unrelated task, and the probe never reports them as passing.
 
 The report lists every check with its status and evidence. A failing check is
 never reported as passing, and a finding in unrelated code is reported with its
