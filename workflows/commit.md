@@ -180,6 +180,13 @@ Do not create any commit in this phase.
 Present the complete proposal, including the change set the user has to
 review:
 
+Every factual statement in the proposal — a file count, a removed or added
+dependency, an advisory identifier, a version number, or a claim that an
+artifact was deleted — is derived from the evidence it cites: the diff or the
+tool output that produced it, and is re-derived from that evidence before it is shown. A
+statement copied from memory, from an earlier draft, or from a previous report
+is not evidence (M-65).
+
 - Scope Manifest: files, line ranges, exclusions.
 - The diff of each proposed group, so the actual adjustments can be reviewed.
 - Tooling lifecycle states and gate results.

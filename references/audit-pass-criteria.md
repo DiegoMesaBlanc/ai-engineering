@@ -38,6 +38,12 @@ dimension. A criterion is never presented as a framework standard.
   current audit. A dimension judged without that read is `NOT VERIFIED` with
   the reason, never `PASS` or `FAIL`.
 
+- A generated proposal, pull request, or report is judged on its statements of
+  fact: every count, name, removed or added artifact, advisory identifier, and
+  version is derived from the evidence it cites and re-derived before it is
+  reported. A statement copied from memory or from an earlier draft is a finding
+  of the report, `FAIL` for the dimension that owns the claim (M-65).
+
 ## Criteria
 
 ### 1. Architecture & folder structure
@@ -51,6 +57,10 @@ dimension. A criterion is never presented as a framework standard.
 - A type is in a dedicated contracts file when another file imports it; it is
   not re-exported by the module that consumes it.
 - No hardcoded lists that a configuration or registry should own.
+
+- A concrete adapter is constructed only in the composition root (AGENTS.md,
+  the dependency rule). A hook, component, or service that calls a `create*`
+  factory or `new`s an infrastructure class is a DIP `FAIL` with file and line.
 
 ### 2. Patterns & complexity
 
@@ -107,6 +117,17 @@ dimension. A criterion is never presented as a framework standard.
 - A contract name declared in more than one file of the change set is a `FAIL` of
   the Type/contract ownership check (`TYPE-004` in `workflows/output-compliance.md`)
   unless the declarations have different consumers and the reason is recorded.
+
+- A failure handled by failing closed reaches the user as a visible state that
+  is named and recoverable (M-64). A `failed` result mapped to `idle` or `retrying` is a
+  `FAIL`. A terminal result of a queued operation releases what it blocked.
+- A promise or a result of a failed load is not memoized: the next request
+  retries it, and a permanent failure is reported as permanent.
+- A documented timing, size, or limit has a test, and its unit matches the unit
+  the code measures. A comment that claims a unit the code does not measure is
+  a `FAIL` of the documentation (M-65 and the comment-accuracy rule).
+- A listener, subscription, or controller created for an identity is released
+  when the identity changes or signs out.
 
 ### 4. API & contracts
 
@@ -183,6 +204,12 @@ dimension. A criterion is never presented as a framework standard.
 - A file that holds personal or sensitive data is written with an owner-only file mode, and an uploaded image is stored with its metadata stripped (M-63). A write with the default file mode is a `FAIL` of this Dimension at the file and line; an upload path with no metadata handling is `NOT VERIFIED`, never passed.
 - Absence claims are verified on the complete path (the whole call, middleware chain, or handler) before a finding is `confirmed`; an absence that cannot be verified this way is `needs_validation` with no severity.
 
+- An entry point that reads or writes an object by identifier, in a project with
+  an identity mechanism, and receives no verified identity at all, is a `FAIL`
+  of M-52, the same as a forged identity.
+- A project that caches identity-owned data has a sign-out path that clears
+  every partition of that identity (M-56). The absence of that path is a `FAIL`.
+
 ### 7. Testing & validation
 
 - Every behavior the change adds or modifies has a test that exercises it
@@ -222,6 +249,9 @@ dimension. A criterion is never presented as a framework standard.
     work; waits are scheduled per item or are non-blocking.
   - Unbounded growth is not introduced in memory, queues, or caches.
 
+- A cache keyed by entity identifier has an explicit entry bound or an expiry
+  that is checked on read. Without it the dimension is `FAIL`.
+
 ### 9. Accessibility
 
 - Applicable only to UI, web, or mobile surfaces that the change creates or
@@ -232,6 +262,11 @@ dimension. A criterion is never presented as a framework standard.
   error role, a label, or the platform's equivalent. An accessibility hint or
   description is never used to carry error text, because it describes an
   action, not a state.
+
+- A live announcement is implemented for each platform. On React Native,
+  `accessibilityLiveRegion` is Android-only; the iOS path is
+  `AccessibilityInfo.announceForAccessibility` or an equivalent. A change that
+  sets only the Android property is `NOT VERIFIED` for iOS, never `PASS`.
 
 ### 10. SEO
 

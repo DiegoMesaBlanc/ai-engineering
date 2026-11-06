@@ -660,10 +660,17 @@ its exports only when another module uses them (M-49, `AGENTS.md`). An export
 that is re-exported by a barrel (`index.*`) but imported by no other module is
 dead: the barrel makes it look public, and the control it names is never
 reached. An export is live only when it is imported by another module. The check reads the declared exports of the changed non-barrel files
-and searches the repository for an import of each name from a module other than
-the file itself and a barrel. Test files count as consumers. A dead export is a
-`FAIL` when the change set introduced it; an export that already existed in the
-base revision is a finding.
+and searches the repository for an import of each name from a production module
+other than the file itself and a barrel. **Test files do not count as
+consumers**: a test, a test-support helper, or a file under a test or support
+folder that imports the export is not a production use. An export whose only
+importer is a test is dead for production code, and its fix is to move the
+helper into the explicit support location (`testing/`, `test/support/`,
+`spec/support/`, `src/testFixtures`) and import it from there. The exports of a
+file in a support location are exempt: they exist for tests by design, and the
+check does not read them. A dead export is
+a `FAIL` when the change set introduced it; an export that already existed in
+the base revision is a finding.
 
 **Scope limit.** The check finds exports with no importer. It does not decide
 whether a consumer is a real control on the trust path. That is M-48, verified
@@ -683,6 +690,9 @@ imports_name() {
 dead_export_check() {
   root="$1"; shift
   for f in "$@"; do
+    case "$f" in
+      testing/*|*/testing/*|test/support/*|*/test/support/*|spec/support/*|*/spec/support/*|*/testFixtures/*|testFixtures/*) continue ;;
+    esac
     grep -nE '^export (const|let|function|class|type|interface|enum) ' "$f" | while IFS=: read -r line decl; do
       name=$(printf '%s\n' "$decl" | sed -E 's/^export (const|let|function|class|type|interface|enum) ([A-Za-z_$][A-Za-z0-9_$]*).*/\2/')
       used=0
@@ -691,6 +701,7 @@ dead_export_check() {
         while IFS= read -r c; do
           case "$c" in
             "$f"|*/index.ts|*/index.tsx|*/index.js|*/index.jsx|*/index.mjs|*/index.cjs|index.*) continue ;;
+            *.test.*|*.spec.*|__tests__/*|*/__tests__/*|__mocks__/*|*/__mocks__/*|test/*|*/test/*|tests/*|*/tests/*|testing/*|*/testing/*|spec/*|*/spec/*|*/testFixtures/*|testFixtures/*) continue ;;
           esac
           imports_name "$name" "$c" && { echo used; break; }
         done | grep -q used && used=1

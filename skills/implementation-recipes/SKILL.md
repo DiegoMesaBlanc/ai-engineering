@@ -313,6 +313,29 @@ Apply these consistently regardless of stack:
 - **Security**: apply least privilege, input handling, and auth through the
   existing mechanisms.
 - **Testing**: test changed behavior at the level that protects it.
+- **Failure states are visible and recoverable** (M-64): a failure handled by
+  failing closed reaches the user as a visible state, named, with a recovery
+  action. A terminal result releases what it blocked. Map every error to a state
+  explicitly; a `failed` result mapped to `idle` or `retrying` is a defect.
+- **Do not memoize a rejected promise**: a cached load that rejects is cleared
+  so the next request retries it. A permanent failure (for example a corrupt or
+  future-version document) is reported as such, not retried forever.
+- **Recovery paths are tested**: each error branch has a test that exercises
+  the recovery itself, not only that the error is thrown.
+- **A documented guarantee has a test and the same unit**: a documented timing
+  (backoff schedule, retry ceiling), size, or limit is covered by a test, and
+  its unit matches the unit the code measures (bytes versus UTF-16 characters
+  is a defect, not a rounding detail).
+- **Lifecycle release on identity change**: a listener, subscription, or
+  controller created for an identity is released when that identity changes or
+  signs out; a new controller never runs beside an old one still subscribed to
+  shared state.
+- **Composition stays in the composition root** (AGENTS.md, dependency rule):
+  construction of a concrete adapter (`create*`, `new` on an infrastructure
+  class) happens only there. A hook, a component, or a service that constructs
+  one is a DIP `FAIL` with file and line.
+- **Caches are bounded**: a cache keyed by entity identifier has an explicit
+  maximum entry count or an expiry that is checked on read.
 
 ## Internal Module Layout (File-Level)
 

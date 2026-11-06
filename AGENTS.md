@@ -76,6 +76,12 @@ Do not duplicate Skills, workflows, or architecture definitions.
   forces. A design that violates a principle is a finding even when it works,
   and the finding names the principle. Pattern selection follows
   `references/design-patterns.md` and is recorded even when it is empty.
+- **The composition root is the only exception to the dependency rule.** It is
+  the single entry module whose responsibility is constructing and wiring
+  concrete implementations to the abstractions they satisfy, and only it may
+  import a concrete adapter. Every other module receives its dependency through
+  a port, a contract, or a factory it is given. The composition root is named in
+  the presentation record; a concrete import anywhere else is a DIP `FAIL`.
 - The **presentation record** of a design names every selected design pattern by
   name, the force it resolves, and its stack
   translation, and names the SOLID principles the change implements (SRP,
@@ -616,7 +622,10 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
   and a document that states the boundary is validated is a false claim (P1),
   never a hardening note.
 - A change leaves no dead export: every export it adds is imported by another
-  module, and a barrel that re-exports it does not count as a consumer. A unit
+  module, and a barrel that re-exports it does not count as a consumer. A test,
+  a test-support helper, or a file under a test or support folder that imports
+  the export is not a production consumer: an export whose only importer is a
+  test moves to the explicit support location. A unit
   that a change extends with a responsibility outside its declared one extracts
   that responsibility into its own unit in the same change set, and the
   responsibility the change adds is named in the presentation record.
@@ -629,11 +638,11 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
   reports every input it did not read as `NOT VERIFIED`, never as clean. An
   excluded input that could hold a secret blocks the delivery gate until it is
   scanned, and a scanner never prints the secret value it finds.
-- An entry point of a project that has an identity mechanism (a login, a session, a token, or a credential) identifies its caller only from a credential the client cannot forge. An identity read from a header, query string, or body that the client controls is not authentication. Every object an entry point reads or writes is checked for ownership against that verified identity; a check that finds no record fails closed, the check and the write are atomic, and an event stream, a socket, and a payment or charge endpoint are entry points too. A project with no identity mechanism is not required to add one.
+- An entry point of a project that has an identity mechanism (a login, a session, a token, or a credential) identifies its caller only from a credential the client cannot forge. An identity read from a header, query string, or body that the client controls is not authentication. Every object an entry point reads or writes is checked for ownership against that verified identity; a check that finds no record fails closed, the check and the write are atomic, and an event stream, a socket, and a payment or charge endpoint are entry points too. An entry point that reads or writes an object by identifier, in a project with an identity mechanism, and receives no verified identity at all is a finding, not a pass: the absence of an identity check is the same defect as a forged one. A project with no identity mechanism is not required to add one.
 - When the system enters a software project, it runs a read-only health probe of the project's gates, configuration, tracked generated artifacts, dependency audit, and duplicated source trees, and reports every pre-existing failure as a finding with its evidence. Such a finding never blocks a task unrelated to it, and a pre-existing failure is never reported as passing.
 - Every external call has an explicit timeout. A call to a network service, an HTTP API, a database, a message broker, or another process with no timeout is a defect of the change that introduces or keeps it; a retry loop bounds each attempt on its own. The rule applies to every project type, mobile and frontend included, and not only to hot paths or web delivery.
 - Production configuration never sends a credential or session data over cleartext. A configuration that accepts the base URL of an endpoint receiving a credential, token, or personal data validates the scheme, and cleartext `http://` is rejected for every non-local build, so a build cannot ship a bearer token over HTTP. A local development address is the only exception, and it is named in the configuration.
-- Client-side cached data is partitioned by the identity that owns it and cleared when that identity signs out. A cache key without the user, tenant, or account is shared by every user of the device, so a second sign-in can read the previous user's data. Sign-out clears every cache partition of the signed-out identity; personal and payment data is never kept in plain storage, and only credentials belong in the secure store.
+- Client-side cached data is partitioned by the identity that owns it and cleared when that identity signs out. A cache key without the user, tenant, or account is shared by every user of the device, so a second sign-in can read the previous user's data. Sign-out clears every cache partition of the signed-out identity; a project that caches identity-owned data and has no sign-out path that clears those partitions is a finding. Personal and payment data is never kept in plain storage, and only credentials belong in the secure store.
 - A dependency remediation never downgrades. An audit suggestion to install an older major version of a package is rejected. A vulnerable transitive package is fixed by updating the direct dependency that brings it, by a documented override of that one package, or by recording the blocker with the fixed version. Every remediation is a dependency change under the Dependency Policy and is evaluated as an installation package.
 - Project code and scripts carry no hardcoded environment endpoint and no fixed shared temporary path. A base URL comes from the environment configuration of the build or the runtime, and a temporary file is created with a unique name in a per-run location (for example `mktemp`), so parallel runs and other users of the machine never collide.
 - A value that a client interpolates into the path or query of a URL, such as the identifier of a product, an order, or a payment method, is encoded with the encoder of its context (for example `encodeURIComponent`) or validated against its format before the request is built. Raw template interpolation of such a value into a path is a defect of the change that introduces it, and every API client routes its path parameters through one encoding point.
@@ -641,6 +650,8 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
 - An application that holds personal or payment data does not allow backup of personal data to device-level or cloud backup. The Android manifest sets `allowBackup="false"` or declares data-extraction rules that exclude the storage, and the iOS equivalent excludes the storage from backup. The setting is verified in the build configuration or the built manifest; when no build exists the check is `NOT VERIFIED`, never passed.
 - Cross-origin access and development tools are never exposed. A wildcard origin is never combined with credentials: `Access-Control-Allow-Origin: *` or `origin: "*"` never travels with `credentials: true`, and the allowed origins are an explicit list. A development tool (GraphiQL, a playground, a debug route, an introspection endpoint) is enabled only in a development build, by an environment check that is false in production; a tool enabled unconditionally is a defect of the change that introduces or keeps it.
 - A file that holds personal or sensitive data is written with an owner-only file mode, and an uploaded image is stored with its metadata stripped. A receipt, document, or image written with the default file mode, or an upload that keeps its location or device metadata, is a defect of the change that introduces it.
+- A failure that the system handles by failing closed reaches the user as a visible state that names the failure and offers a recovery action. A status that maps a terminal failure to idle or retrying is a defect. A terminal result of a queued or pending operation releases every action it blocked, so the user can act again; a status that stays blocked after its operation has ended is a defect.
+- Every factual statement in a generated proposal, pull request, or report — names, counts, added or removed artifacts, advisory identifiers, and version numbers — is derived from the evidence it cites, read from the run or diff that produced it, and re-derived before it is reported. A statement copied from memory, from an earlier draft, or from a previous report is not evidence.
 - Keep unrelated refactoring out of scope.
 - A reinforcement of an engineering discipline adopted from an external
   methodology (test-first discipline, root-cause debugging, verification before

@@ -230,6 +230,10 @@ Record in the task plan:
 
 Reuse the existing reporting statuses. Do not claim a dependency decision
 was validated without evidence, and do not report an install as successful
+without evidence. Advisory identifiers, package names, and counts in the report
+are copied from the audit output of the run cited, and are re-derived from that
+run before they are reported: a statement that is derived from the evidence it
+cites is the rule (M-65), and one copied from memory is not.
 without an observed result.
 
 ## Safety

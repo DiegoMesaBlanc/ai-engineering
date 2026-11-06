@@ -50,6 +50,17 @@ Review the actual changes, not the entire repository unless required.
   unit against the ecosystem convention, or a support location that contains
   test cases. Do not apply the folder convention to ecosystems that organize
   tests differently.
+- **Failure states**: a failure handled by failing closed reaches the user as a
+  visible state that is named and recoverable (M-64). Trace each error to the
+  state the user sees; a terminal failure mapped to `idle` or `retrying`, or a
+  blocked action that stays blocked after its operation ended, is a finding. A
+  rejected load promise that stays cached is a finding.
+- **Claims in comments and documents**: every absolute word (`never`, `always`,
+  `guaranteed`, `collision-free`) and every stated unit or limit is checked
+  against the code it describes. Cite both lines when they disagree, for example
+  a comment that says 2048 bytes above a check that counts UTF-16 characters.
+  "Practically collision-free" is exact for a 32-bit hash; "never collides" is
+  not.
 - **Barrel check**: a barrel (`index.ts`) is optional. Flag a barrel that
   only re-exports one file or has no real public-API role as a P3
   observation; do not require barrels by default.

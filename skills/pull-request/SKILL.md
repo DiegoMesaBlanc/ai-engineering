@@ -104,6 +104,11 @@ Distinguish among:
 
 Never infer successful execution from the existence of a test file.
 
+Every count, name, and claim about the change set in the description (files
+changed, a removed dependency, an advisory, a version) is derived from the
+evidence it cites: the diff or the tool output, and re-derived before it is reported. A statement
+copied from memory or from an earlier draft is not evidence (M-65).
+
 ## Responding to Review Feedback
 
 When the user receives review comments on their own change, prepare copy-ready

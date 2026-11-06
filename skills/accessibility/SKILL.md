@@ -400,6 +400,17 @@ Login flows must not rely on cognitive function tests (e.g., remembering a passw
 
 Use `aria-live` regions to announce dynamic content changes without moving focus. See the [live regions pattern](references/A11Y-PATTERNS.md#live-regions-and-notifications) for markup and a `showNotification()` helper.
 
+**Mobile (React Native) is platform-specific, not cross-platform.** The
+React Native documentation lists `accessibilityLiveRegion` (with the
+`aria-live` alias) under Android only: on iOS it has no effect. A live
+announcement in a React Native screen is therefore implemented per platform:
+`accessibilityLiveRegion` for Android, and `AccessibilityInfo.announceForAccessibility`
+for iOS (see the React Native Accessibility and AccessibilityInfo pages). A
+change that sets only `accessibilityLiveRegion` and claims the banner is
+announced on both platforms is `NOT VERIFIED` for iOS, never `PASS`. Consult the
+current React Native documentation for the target version before relying on
+either property.
+
 ---
 
 ## Testing checklist

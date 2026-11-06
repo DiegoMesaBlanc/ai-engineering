@@ -1000,6 +1000,7 @@ Return:
 - V2.69 delivery safety checks: timeouts, cleartext, client cache, downgrade, hardcoded endpoints, temporary paths, and probe dead exports:
 - V2.70 path encoding, rejected credentials, backup, and whole-project sweep checks:
 - V2.71 cross-origin, development tools, owner-only writes, and absence claim checks:
+- V2.72 visible failures, verified claims, test-only consumers, entry identity, and composition checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -4081,6 +4082,137 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v271.XXXXXX")"
 ) || failures=1
 
 echo "V2.71 probe: fixture in $fx was checked and is removed"
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.72 Regression — Visible Failures, Verified Claims, Test Consumers, and Entry Identity
+
+Verify that the rules added after the second external audit are canonical,
+reachable, and effective, and that the detector and the review steps close the
+gaps that let the findings through:
+
+- M-64: a failure handled by failing closed reaches the user as a visible state,
+  and a terminal result releases what it blocked. Its wording is checked on
+  every required surface; the mapping of states is a review step (R-111).
+- M-65: every factual statement in a generated proposal, pull request, or report
+  is derived from the evidence it cites and re-derived before it is reported.
+  Its wording is checked on every required surface (R-112).
+- M-49, amended: a test, a test-support helper, or a file under a test or support
+  folder is not a production consumer. The DEAD-EXPORT-001 block is extracted
+  from `workflows/output-compliance.md` and run on a fixture (R-113).
+- M-52 and M-56, amended: an entry point with no verified identity is a finding,
+  and a project that caches identity-owned data needs a sign-out path (R-114).
+- The composition root exception, the unit of a documented limit, bounded
+  caches, and listener release on identity change (R-115).
+- The React Native live-region rule: `accessibilityLiveRegion` is Android-only.
+
+The text checks run on the repository. The behavioral part extracts the
+DEAD-EXPORT-001 block, builds a fixture outside the repository with a constant
+exported through a barrel and imported only by a test, verifies it is reported
+with `file:line`, verifies a production consumer is not, and removes the
+fixture. It needs `awk`, `perl`, `grep`, and `sed`; without them the behavioral
+part is `NOT VERIFIED`, and the text checks still run.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+ir="skills/implementation-recipes/SKILL.md"
+er="skills/engineering-review/SKILL.md"
+ap="references/audit-pass-criteria.md"
+cm="workflows/commit.md"
+dep="workflows/dependency-assessment.md"
+pr="skills/pull-request/SKILL.md"
+sr="skills/security-review/SKILL.md"
+ax="skills/accessibility/SKILL.md"
+vs="workflows/system-validation.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.72: $1 is missing $3"; failures=1; }
+}
+
+# M-64 and M-65 canonical wording and reachability on every required surface.
+for surface in "$ag" "$ir" "$er" "$ap" "$rmx" "$mr" "$vs"; do
+  need "$surface" "reaches the user as a visible state" "the M-64 anchor"
+done
+for surface in "$ag" "$cm" "$dep" "$pr" "$ap" "$rmx" "$mr" "$vs"; do
+  need "$surface" "is derived from the evidence it cites" "the M-65 anchor"
+done
+for id in M-64 M-65; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.72: no $id row"; failures=1; }
+done
+for id in R-111 R-112 R-113 R-114 R-115; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.72: no $id row"; failures=1; }
+done
+
+# Amended canonical wording of M-49, M-52, M-56 and the composition root.
+need "$ag" "a test, a test-support helper, or a file under a test or support folder" "the M-49 test-consumer wording"
+need "$ag" "receives no verified identity at all" "the M-52 absent-identity wording"
+need "$ag" "has no sign-out path that clears those partitions" "the M-56 sign-out wording"
+need "$ag" "only exception to the dependency rule" "the composition root exception"
+need "$oc" "test files do not count as" "the DEAD-EXPORT-001 consumer rule"
+need "$oc" "*.test.*|*.spec.*" "the test-path exclusion in the DEAD-EXPORT-001 block"
+need "$ir" "do not memoize a rejected promise" "the rejected-promise recipe"
+need "$ir" "bytes versus utf-16" "the documented-unit recipe"
+need "$ir" "composition stays in the composition root" "the composition recipe"
+need "$er" "claims in comments and documents" "the comment-accuracy review step"
+need "$ax" "accessibilityLiveRegion" "the React Native live-region note"
+need "$ax" "android only" "the Android-only statement of the live region"
+need "$ap" "a concrete adapter is constructed only in the composition root" "the composition criterion"
+need "$cm" "from the evidence it cites" "the commit proposal claim rule"
+
+command -v awk >/dev/null 2>&1 && command -v perl >/dev/null 2>&1 || {
+  echo "NOT VERIFIED V2.72: awk or perl is not available, the behavioral fixture was not run"; exit 2; }
+
+# Extracts the first sh block of a section of workflows/output-compliance.md.
+extract() {
+  awk -v start="$1" '
+    $0 ~ "^### " start { on = 1; next }
+    on && /^### / { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; exit }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v272.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  mkdir -p src/features/checkout
+  extract "DEAD-EXPORT-001" > dead.sh
+  [ -s dead.sh ] || { echo "FAIL V2.72: the DEAD-EXPORT-001 block was not extracted"; exit 1; }
+  . ./dead.sh
+
+  printf '%s\n' 'export { createInMemory } from "./storage";' > src/features/checkout/index.ts
+  printf '%s\n' 'export const createInMemory = () => ({});' 'export const usedInProd = 1;' > src/features/checkout/storage.ts
+  printf '%s\n' 'import { createInMemory } from "./index";' 'import { it } from "vitest";' > src/features/checkout/storage.test.ts
+  printf '%s\n' 'import { usedInProd } from "./features/checkout/storage";' 'export const app = usedInProd;' > src/app.ts
+
+  out="$(dead_export_check . src/features/checkout/storage.ts)"
+  printf '%s\n' "$out" | grep -q '^FAIL DEAD-EXPORT-001: src/features/checkout/storage.ts:1: createInMemory' \
+    || { echo "FAIL V2.72: a test-only export is not reported with file:line: $out"; exit 1; }
+  printf '%s\n' "$out" | grep -q 'usedInProd' \
+    && { echo "FAIL V2.72: a production consumer is reported as dead: $out"; exit 1; }
+
+  # The repaired fixture: the test-only helper moves to the support location.
+  mkdir -p src/testing
+  printf '%s\n' 'export const createInMemory = () => ({});' > src/testing/in-memory.ts
+  printf '%s\n' 'import { createInMemory } from "../testing/in-memory";' 'import { it } from "vitest";' > src/features/checkout/storage.test.ts
+  printf '%s\n' 'export const usedInProd = 1;' > src/features/checkout/storage.ts
+  printf '%s\n' 'export { createInMemory } from "./storage";' > src/features/checkout/index.ts
+  out="$(dead_export_check . src/testing/in-memory.ts src/features/checkout/storage.ts)"
+  [ -z "$out" ] || { echo "FAIL V2.72: the repaired fixture is still reported: $out"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.72 probe: fixture in $fx was checked and is removed"
 rm -rf "$fx"
 
 exit "$failures"
