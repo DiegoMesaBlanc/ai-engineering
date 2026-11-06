@@ -369,7 +369,7 @@ Run each check, and record its command, status, and evidence:
 5. **Duplicated source trees.** When sibling projects contain source trees with
    the same name and different content, run `diff -rq` on them and record each
    as a `DUPLICATE-TREE` finding, following `skills/repository-strategy/SKILL.md`.
-6. **Whole-project safety sweep (M-49, M-52, M-54 to M-61).** Run
+6. **Whole-project safety sweep (M-49, M-52, M-54 to M-63).** Run
    `project_safety_sweep` from `workflows/output-compliance.md` from the project
    root. It scans every tracked and untracked file, not only the change set, and
    prints what it scanned and what it excluded, so the probe never skips a file
@@ -383,7 +383,12 @@ Run each check, and record its command, status, and evidence:
    payment data in plain storage (`SAFE-005`), a `401` that does not end the session
    (`SAFE-006`), a build manifest that enables backup (`SAFE-007`; an app that holds
    personal or payment data does not allow backup of personal data), and an identity
-   read from a client-controlled header or query (`AUTH-001`). Each is a finding
+   read from a client-controlled header, query, or connection parameter (`AUTH-001`),
+   a wildcard origin combined with credentials and a development tool enabled by a
+   literal `true` (`SAFE-008`, M-62: a wildcard origin is never combined with
+   credentials), and an upload written with the default file mode (`SAFE-009`, M-63:
+   a file that holds personal or sensitive data is written with an owner-only file
+   mode). Each is a finding
    that never blocks an unrelated task, and the probe never reports one as passing.
    A missing manifest is `NOT VERIFIED` for M-61, never clean.
 7. **Outbound timeouts and cleartext endpoints (M-54, M-55).** The sweep of item 6

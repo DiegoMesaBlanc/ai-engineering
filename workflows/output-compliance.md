@@ -712,8 +712,12 @@ These detections enforce the delivery-safety rules of `AGENTS.md`:
 - **SAFE-001 (M-54).** Every external call has an explicit timeout. A call to
   `fetch`, an HTTP client (`axios`, `got`, `http.request`), or an equivalent in a
   TypeScript or JavaScript file the change set creates or modifies is a `FAIL`
-  when neither the call line nor the four lines after it carry a `signal` or a
-  `timeout` option. The retry loop is judged by the same test on each attempt.
+  when no `signal` or `timeout` option appears inside the call. The call is read
+  to its closing parenthesis, up to 40 lines, so an options object of any length
+  is inspected: a fixed window of a few lines misses an option that follows a long
+  header block and passes an unrelated `timeout` that belongs to another statement.
+  A call that is not closed within 40 lines is `NOT VERIFIED`, never clean. The
+  retry loop is judged by the same test on each attempt.
 - **SAFE-002 (M-55).** `http://` is rejected for every non-local build. A string
   literal that starts with `http://` in a changed source file is a `FAIL`, unless
   its host is `localhost`, `127.0.0.1`, `10.0.2.2` (the Android emulator loopback),
@@ -739,15 +743,26 @@ safe_timeout_check() {
   for f in "$@"; do
     case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
     awk -v file="$f" '
-      /(^|[^A-Za-z0-9_.])(fetch|axios|axios\.(get|post|put|patch|delete|request)|got|https?\.request)[[:space:]]*\(/ {
-        call[NR] = 1; text[NR] = $0
-      }
       { lines[NR] = $0 }
+      /(^|[^A-Za-z0-9_.])(fetch|axios|axios\.(get|post|put|patch|delete|request)|got|https?\.request)[[:space:]]*\(/ {
+        call[++n] = NR
+      }
       END {
-        for (n in call) {
-          ok = 0
-          for (k = n; k <= n + 4 && k <= NR; k++) if (lines[k] ~ /signal|timeout|Timeout/) ok = 1
-          if (!ok) printf "FAIL SAFE-001: %s:%d: external call with no timeout\n", file, n
+        for (i = 1; i <= n; i++) {
+          s = call[i]; depth = 0; ok = 0; closed = 0
+          for (k = s; k <= NR && k <= s + 40 && !closed; k++) {
+            text = lines[k]
+            if (k == s) text = substr(text, index(text, "("))
+            if (text ~ /signal|timeout|Timeout/) ok = 1
+            for (c = 1; c <= length(text) && !closed; c++) {
+              ch = substr(text, c, 1)
+              if (ch == "(") depth++
+              else if (ch == ")" && --depth == 0) closed = 1
+            }
+          }
+          if (ok) continue
+          if (closed) printf "FAIL SAFE-001: %s:%d: external call with no timeout\n", file, s
+          else printf "NOT VERIFIED SAFE-001: %s:%d: the call is not closed within 40 lines, so its options are not read\n", file, s
         }
       }' "$root/$f"
   done
@@ -916,8 +931,8 @@ identity_source_check() {
     case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
     case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*) continue ;; esac
     (cd "$root" && perl -ne '
-      print "FAIL AUTH-001: $ARGV:$.: identity read from a client-controlled header or query, not from a verified credential (M-52)\n"
-        if /headers(?:\.get\(|\[)\s*["\x27](?:x-user-id|x-user|x-account-id|x-tenant-id)|searchParams\.get\(\s*["\x27](?:userId|user_id|uid|accountId)|(?:query|params)\.(?:userId|user_id)\b/i;
+      print "FAIL AUTH-001: $ARGV:$.: identity read from or sent in a client-controlled header, query, or connection parameter, not from a verified credential (M-52)\n"
+        if /headers(?:\.get\(|\[)\s*["\x27](?:x-user-id|x-user|x-account-id|x-tenant-id)|searchParams\.get\(\s*["\x27](?:userId|user_id|uid|accountId)|(?:query|params)\.(?:userId|user_id)\b|["\x27](?:x-user-id|x-user|x-account-id|x-tenant-id)["\x27]\s*[:,\]}]/i;
     ' "$f")
   done
 }
@@ -969,6 +984,93 @@ dependency_downgrade_check() {
 }
 ```
 
+### SAFE-008, SAFE-009 — Permissive CORS, Development Tools, and Owner-Only Writes
+
+These detections enforce the rules of M-62 and M-63, which the third external
+audit found and which the catalog named only as signals:
+
+- **SAFE-008 (M-62), wildcard with credentials.** A wildcard origin
+  (`origin: "*"`, `Access-Control-Allow-Origin: *`) within 15 lines of a
+  credentials enabling (`credentials: true`, `Allow-Credentials: true`) is a
+  `FAIL`: a wildcard origin is never combined with credentials, and the allowed
+  origins are an explicit list (M-62). A wildcard with no credentials is not
+  reported here.
+- **SAFE-008 (M-62), development tool.** A development tool (GraphiQL, a
+  playground, an introspection or debug switch) enabled by a literal `true` is a
+  `FAIL`. A tool enabled by an expression, such as an environment check, is not
+  reported here: the reviewer reads the check and confirms that it is false in
+  production.
+- **SAFE-009 (M-63), owner-only mode.** A write (`writeFile`, `writeFileSync`,
+  `createWriteStream`, `copyFile`) in a file whose path names an upload, receipt,
+  attachment, avatar, document, image, or photo is a `FAIL` when no `mode` of
+  `0600` or `0400` appears within the call's six lines. A file that holds personal
+  or sensitive data is written with an owner-only file mode (M-63), and the default
+  file mode is not owner-only.
+- **SAFE-009 (M-63), metadata.** Such an upload file that is written with no
+  metadata handling in the same file (`exif`, `metadata`, or `sharp`) is
+  `NOT VERIFIED` for metadata stripping, never clean.
+
+**Scope limit.** These detectors read TypeScript and JavaScript only. A CORS or
+development-tool setting in JSON, YAML, or an environment file is reviewed under
+Dimension 6, and an owner-only mode in another language is reviewed the same way.
+
+```sh
+# $1 = repository root; $2... = changed or tracked TypeScript or JavaScript files.
+# SAFE-008 (M-62): a wildcard origin combined with credentials, and a development
+# tool enabled by a literal true. The pattern avoids quote characters so that the
+# awk program stays inside its single-quoted block.
+cors_debug_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*) continue ;; esac
+    awk -v file="$f" '
+      { lines[NR] = $0; low = tolower($0) }
+      low ~ /origin[^a-z0-9]+\*/ { wild[++w] = NR }
+      low ~ /credentials[^a-z0-9]+true/ { cred[++c] = NR }
+      low ~ /(graphiql|playground|introspection)[a-z]*[^a-z0-9]+true([^a-z0-9_]|$)/ {
+        printf "FAIL SAFE-008: %s:%d: development tool enabled by a literal true, not by a production-off check (M-62)\n", file, NR
+      }
+      END {
+        for (i = 1; i <= w; i++) {
+          hit = 0
+          for (j = 1; j <= c && !hit; j++) {
+            d = wild[i] - cred[j]; if (d < 0) d = -d
+            if (d <= 15) hit = 1
+          }
+          if (hit) printf "FAIL SAFE-008: %s:%d: a wildcard origin is combined with credentials (M-62)\n", file, wild[i]
+        }
+      }' "$root/$f"
+  done
+}
+
+# SAFE-009 (M-63): an upload, receipt, or document written with no owner-only
+# mode in its call, and an upload path that handles no metadata.
+upload_write_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*) continue ;; esac
+    case "$f" in *upload*|*receipt*|*attachment*|*avatar*|*document*|*image*|*photo*) ;; *) continue ;; esac
+    awk -v file="$f" '
+      { lines[NR] = $0 }
+      /(writeFile|writeFileSync|createWriteStream|copyFile)[[:space:]]*\(/ { w[++n] = NR }
+      END {
+        for (i = 1; i <= n; i++) {
+          s = w[i]; ok = 0
+          for (k = s; k <= NR && k <= s + 6; k++) if (lines[k] ~ /mode[[:space:]]*:|0o?[46]00/) ok = 1
+          if (!ok) printf "FAIL SAFE-009: %s:%d: upload written with the default file mode, not owner-only (M-63)\n", file, s
+        }
+        if (n > 0) {
+          meta = 0
+          for (k = 1; k <= NR; k++) if (tolower(lines[k]) ~ /exif|metadata|sharp/) meta = 1
+          if (!meta) printf "NOT VERIFIED SAFE-009: %s: no metadata stripping found for an upload, so it is not verified (M-63)\n", file
+        }
+      }' "$root/$f"
+  done
+}
+```
+
 ### Whole-project sweep (health probe)
 
 The health probe (`workflows/project-validation.md`, Phase 8a items 6 and 7)
@@ -1000,6 +1102,8 @@ project_safety_sweep() {
   signout_clear_check . $src
   rejected_credential_check . $src
   identity_source_check . $src
+  cors_debug_check . $src
+  upload_write_check . $src
   backup_check . $manifests
   dead_export_check . $nonbarrel
   [ -n "$manifests" ] || echo "NOT VERIFIED M-61: no build manifest or app configuration is tracked, so backup is not verified"

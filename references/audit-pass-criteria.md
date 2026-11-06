@@ -179,6 +179,9 @@ dimension. A criterion is never presented as a framework standard.
 - A request path built from a value the client supplies is encoded with the encoder of its context (M-59). A raw interpolation of an identifier into a path is a `FAIL` of this Dimension at the file and line of the template literal.
 - A `401` answer ends the session: a rejected credential ends the session, the client clears that identity's cache partitions and returns to sign-in, and cached personal or payment data is never served to it (M-60). A `401` that leaves the session active is a `FAIL` of this Dimension at the severity of the data exposure.
 - An application that holds personal or payment data does not allow backup of personal data (M-61): the build manifest or configuration sets the backup off. A build that enables backup is a `FAIL` of this Dimension; when no build exists the bullet is `NOT VERIFIED`, never passed.
+- Cross-origin access and development tools (M-62): a wildcard origin is never combined with credentials, and the allowed origins are an explicit list. A wildcard origin with credentials, or a development tool enabled unconditionally, is a `FAIL` of this Dimension at the file and line of the setting. A conditional tool is read to its production-off check.
+- A file that holds personal or sensitive data is written with an owner-only file mode, and an uploaded image is stored with its metadata stripped (M-63). A write with the default file mode is a `FAIL` of this Dimension at the file and line; an upload path with no metadata handling is `NOT VERIFIED`, never passed.
+- Absence claims are verified on the complete path (the whole call, middleware chain, or handler) before a finding is `confirmed`; an absence that cannot be verified this way is `needs_validation` with no severity.
 
 ### 7. Testing & validation
 

@@ -96,12 +96,15 @@ implementation are:
   write are one atomic operation. Event streams, sockets, and payment or charge
   endpoints are entry points too. A project with no identity mechanism is not
   required to add one.
-- **Sensitive files and uploads**: a file that holds user data is written with
-  owner-only permissions, and image metadata such as location is stripped when
-  an upload is stored.
-- **Cross-origin and development tooling**: no `Access-Control-Allow-Origin: *`
-  combined with credentials, and a development tool (GraphiQL, a playground, a
-  debug route) is enabled only by a production-only check that fails closed.
+- **Sensitive files and uploads** (M-63): a file that holds user data is written
+  with an owner-only file mode, and image metadata such as location is stripped
+  when an upload is stored. Rule: a file that holds personal or sensitive data is
+  written with an owner-only file mode, and never with the default mode.
+- **Cross-origin and development tooling** (M-62): no `Access-Control-Allow-Origin: *`
+  combined with credentials; a wildcard origin is never combined with credentials,
+  and the allowed origins are an explicit list. A development tool (GraphiQL, a
+  playground, a debug route) is enabled only by a production-only check that fails
+  closed.
 - **Limits on costly endpoints**: authentication, payment, and charge endpoints
   have a rate limit per principal.
 - **Amounts reconciled with the server order**: an amount or order reference

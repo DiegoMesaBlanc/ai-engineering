@@ -999,6 +999,7 @@ Return:
 - V2.68 identity, health probe, and audit signal checks:
 - V2.69 delivery safety checks: timeouts, cleartext, client cache, downgrade, hardcoded endpoints, temporary paths, and probe dead exports:
 - V2.70 path encoding, rejected credentials, backup, and whole-project sweep checks:
+- V2.71 cross-origin, development tools, owner-only writes, and absence claim checks:
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -3803,7 +3804,7 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v270.XXXXXX")"
   mkdir -p src android/app/src/main
   extract "SAFE-001, SAFE-002, SAFE-003" > safe.sh
   extract "DEAD-EXPORT-001" > dead.sh
-  extract "SAFE-004 to SAFE-007" > new.sh
+  { extract "SAFE-004 to SAFE-007"; extract "SAFE-008, SAFE-009"; } > new.sh
   extract "Whole-project sweep" > sweep.sh
   [ -s safe.sh ] && [ -s dead.sh ] && [ -s new.sh ] && [ -s sweep.sh ] || {
     echo "FAIL V2.70: a detector or sweep block was not extracted"; exit 1; }
@@ -3913,6 +3914,173 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v270.XXXXXX")"
 ) || failures=1
 
 echo "V2.70 probe: fixture in $fx was checked and is removed"
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.71 Regression — Cross-Origin, Development Tools, Owner-Only Writes, and Absence Claims
+
+Verify that the rules added after the fourth external audit are canonical,
+reachable, and effective, and that the detectors and the review procedure
+close the gaps that let the audit's findings through:
+
+- M-62: a wildcard origin is never combined with credentials, the allowed
+  origins are an explicit list, and a development tool is enabled only in a
+  development build. Its signals are checked by `SAFE-008`.
+- M-63: a file that holds personal or sensitive data is written with an
+  owner-only file mode, and an uploaded image is stored with its metadata
+  stripped. Its signals are checked by `SAFE-009`.
+- `SAFE-001` reads each external call to its closing parenthesis, so an options
+  object of any length is inspected, and a call that is not closed is
+  `NOT VERIFIED`, never clean.
+- `AUTH-001` reports a client-controlled identity sent in a quoted header name or
+  a connection parameter, such as a WebSocket `connectionParams` entry.
+- The security review verifies an absence claim on the complete path and marks an
+  unverified absence `needs_validation` with no severity.
+
+The text checks run on the repository. The behavioral part extracts the detector
+blocks from `workflows/output-compliance.md`, builds a fixture git repository
+outside the repository, verifies each violation is detected with `file:line` and
+each compliant twin is not, and removes the fixture. It needs `awk`, `perl`, `git`,
+`grep`, and `sed`; without them the behavioral part is `NOT VERIFIED`, and the text
+checks still run.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+pv="workflows/project-validation.md"
+ir="skills/implementation-recipes/SKILL.md"
+sr="skills/security-review/SKILL.md"
+ap="references/audit-pass-criteria.md"
+sa="workflows/system-audit.md"
+vs="workflows/system-validation.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.71: $1 is missing $3"; failures=1; }
+}
+
+# M-62 and M-63 canonical wording and reachability on every required surface.
+for surface in "$ag" "$ir" "$sr" "$oc" "$pv" "$ap" "$rmx" "$vs"; do
+  need "$surface" "a wildcard origin is never combined with credentials" "the M-62 anchor"
+  need "$surface" "written with an owner-only file mode" "the M-63 anchor"
+done
+for id in M-62 M-63; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.71: no $id row"; failures=1; }
+done
+for id in R-108 R-109 R-110; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.71: no $id row"; failures=1; }
+done
+need "$oc" "### SAFE-008, SAFE-009" "the SAFE-008 and SAFE-009 section"
+need "$oc" "cors_debug_check()" "the SAFE-008 detector"
+need "$oc" "upload_write_check()" "the SAFE-009 detector"
+need "$oc" 'cors_debug_check . $src' "the SAFE-008 call in the whole-project sweep"
+need "$oc" 'upload_write_check . $src' "the SAFE-009 call in the whole-project sweep"
+need "$oc" "up to 40 lines" "the call-extent timeout rule"
+need "$sr" "absence claims" "the absence-claim step of the review"
+need "$sr" "complete path" "the complete-path verification of an absence"
+need "$pv" "SAFE-008" "the probe reporting the CORS detector"
+need "$pv" "SAFE-009" "the probe reporting the upload detector"
+need "$vs" "M-62: a wildcard origin" "the V2.71 scope statement"
+
+command -v awk >/dev/null 2>&1 && command -v perl >/dev/null 2>&1 && command -v git >/dev/null 2>&1 || {
+  echo "NOT VERIFIED V2.71: awk, perl, or git is not available, the behavioral fixture was not run"; exit 2; }
+
+# Extracts the first sh block of a section of workflows/output-compliance.md.
+extract() {
+  awk -v start="$1" '
+    $0 ~ "^### " start { on = 1; next }
+    on && /^### / { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; exit }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v271.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  git init -q .
+  git config user.email "fixture@example.invalid"
+  git config user.name "fixture"
+  mkdir -p src
+  extract "SAFE-001, SAFE-002, SAFE-003" > safe.sh
+  extract "SAFE-008, SAFE-009" > new.sh
+  extract "SAFE-004 to SAFE-007" > sec.sh
+  [ -s safe.sh ] && [ -s new.sh ] && [ -s sec.sh ] || {
+    echo "FAIL V2.71: a detector block was not extracted"; exit 1; }
+  . ./safe.sh
+  . ./new.sh
+  . ./sec.sh
+
+  # Violations, each with its compliant twin where one exists.
+  printf '%s\n' 'export const load = async (url: string) => {' '  const r = await fetch(url);' '  return r;' '};' > src/timeout-bad.ts
+  printf '%s\n' 'export const load = async (url: string) => {' '  const r = await fetch(url, {' '    method: "GET",' '    headers: { accept: "application/json" },' '    body: undefined,' '    cache: "no-store",' '    redirect: "manual",' '    credentials: "omit",' '    signal: AbortSignal.timeout(5000),' '  });' '  return r;' '};' > src/timeout-long-ok.ts
+  {
+    printf '%s\n' 'export const load = async (url: string) => {' '  const r = await fetch(url, {'
+    i=0; while [ "$i" -lt 45 ]; do printf '    a%s: %s,\n' "$i" "$i"; i=$((i + 1)); done
+    printf '%s\n' '  });' '  return r;' '};'
+  } > src/timeout-unclosed.ts
+  printf '%s\n' 'export const cors = { origin: "*", credentials: true };' > src/cors-bad.ts
+  printf '%s\n' 'export const cors = { origin: ["https://app.example.com"], credentials: true };' > src/cors-ok.ts
+  printf '%s\n' 'export const gql = { graphiql: true };' > src/gql-bad.ts
+  printf '%s\n' 'export const gql = { graphiql: process.env.NODE_ENV !== "production" };' > src/gql-ok.ts
+  printf '%s\n' 'export const save = async (p: string, buf: Buffer) => {' '  await fs.writeFile(p, buf);' '};' > src/upload-bad.ts
+  printf '%s\n' 'import sharp from "sharp";' 'export const save = async (p: string, buf: Buffer) => {' '  const out = await sharp(buf).rotate().toBuffer();' '  await fs.writeFile(p, out, {' '    mode: 0o600,' '  });' '};' > src/upload-ok.ts
+  printf '%s\n' 'export const save = async (p: string, buf: Buffer) => {' '  await fs.writeFile(p, buf, { mode: 0o600 });' '};' > src/upload-nometa.ts
+  printf '%s\n' 'const conn = { connectionParams: { "x-user-id": userId } };' > src/ws-bad.ts
+  printf '%s\n' 'export const load = (session: { userId: string }) => session.userId;' > src/auth-ok.ts
+
+  t="$(safe_timeout_check . src/timeout-bad.ts src/timeout-long-ok.ts src/timeout-unclosed.ts)"
+  printf '%s\n' "$t" | grep -qx 'FAIL SAFE-001: src/timeout-bad.ts:2: external call with no timeout' \
+    || { echo "FAIL V2.71: SAFE-001 did not detect src/timeout-bad.ts:2: $t"; exit 1; }
+  printf '%s\n' "$t" | grep 'timeout-long-ok' > /dev/null \
+    && { echo "FAIL V2.71: SAFE-001 reports the compliant long call: $(printf '%s\n' "$t" | grep 'timeout-long-ok')"; exit 1; }
+  printf '%s\n' "$t" | grep -qx 'NOT VERIFIED SAFE-001: src/timeout-unclosed.ts:2: the call is not closed within 40 lines, so its options are not read' \
+    || { echo "FAIL V2.71: SAFE-001 did not mark the unclosed call NOT VERIFIED: $t"; exit 1; }
+
+  c="$(cors_debug_check . src/cors-bad.ts src/cors-ok.ts src/gql-bad.ts src/gql-ok.ts)"
+  printf '%s\n' "$c" | grep -q '^FAIL SAFE-008: src/cors-bad.ts:1:' \
+    || { echo "FAIL V2.71: SAFE-008 did not detect the wildcard with credentials: $c"; exit 1; }
+  printf '%s\n' "$c" | grep -q '^FAIL SAFE-008: src/gql-bad.ts:1:' \
+    || { echo "FAIL V2.71: SAFE-008 did not detect a development tool enabled by true: $c"; exit 1; }
+  printf '%s\n' "$c" | grep -qE 'src/(cors-ok|gql-ok)\.ts' \
+    && { echo "FAIL V2.71: SAFE-008 reports a compliant twin: $c"; exit 1; }
+
+  u="$(upload_write_check . src/upload-bad.ts src/upload-ok.ts src/upload-nometa.ts)"
+  printf '%s\n' "$u" | grep -q '^FAIL SAFE-009: src/upload-bad.ts:2:' \
+    || { echo "FAIL V2.71: SAFE-009 did not detect the default file mode: $u"; exit 1; }
+  printf '%s\n' "$u" | grep -q '^NOT VERIFIED SAFE-009: src/upload-nometa.ts:' \
+    || { echo "FAIL V2.71: SAFE-009 did not mark the missing metadata handling NOT VERIFIED: $u"; exit 1; }
+  printf '%s\n' "$u" | grep -q 'upload-ok.ts' \
+    && { echo "FAIL V2.71: SAFE-009 reports the compliant upload: $u"; exit 1; }
+  printf '%s\n' "$u" | grep -q '^FAIL SAFE-009: src/upload-nometa.ts' \
+    && { echo "FAIL V2.71: SAFE-009 reports the owner-only twin: $u"; exit 1; }
+
+  a="$(identity_source_check . src/ws-bad.ts src/auth-ok.ts)"
+  printf '%s\n' "$a" | grep -q '^FAIL AUTH-001: src/ws-bad.ts:1:' \
+    || { echo "FAIL V2.71: AUTH-001 did not detect the connection parameter: $a"; exit 1; }
+  printf '%s\n' "$a" | grep -q 'auth-ok' \
+    && { echo "FAIL V2.71: AUTH-001 reports the compliant session: $a"; exit 1; }
+
+  # The repaired fixture passes.
+  printf '%s\n' 'export const load = async (url: string) => {' '  const r = await fetch(url, { signal: AbortSignal.timeout(5000) });' '  return r;' '};' > src/timeout-bad.ts
+  printf '%s\n' 'export const cors = { origin: ["https://app.example.com"], credentials: true };' > src/cors-bad.ts
+  printf '%s\n' 'export const gql = { graphiql: process.env.NODE_ENV !== "production" };' > src/gql-bad.ts
+  printf '%s\n' 'import sharp from "sharp";' 'export const save = async (p: string, buf: Buffer) => {' '  const out = await sharp(buf).rotate().toBuffer();' '  await fs.writeFile(p, out, { mode: 0o600 });' '};' > src/upload-bad.ts
+  printf '%s\n' 'export const load = (session: { userId: string }) => session.userId;' > src/ws-bad.ts
+  r="$(safe_timeout_check . src/timeout-bad.ts)$(cors_debug_check . src/cors-bad.ts src/gql-bad.ts)$(upload_write_check . src/upload-bad.ts)$(identity_source_check . src/ws-bad.ts)"
+  [ -z "$r" ] || { echo "FAIL V2.71: the repaired fixture is still reported: $r"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.71 probe: fixture in $fx was checked and is removed"
 rm -rf "$fx"
 
 exit "$failures"

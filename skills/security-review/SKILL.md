@@ -139,7 +139,26 @@ concrete damage, the severity is lower than it feels.
        from the response handler to the sign-out path. For every application that holds
        personal or payment data, confirm that the build does not allow backup of
        personal data (M-61) and report `NOT VERIFIED` when no build exists.
-   - **Scan coverage.** A secret or content scan that excludes inputs by extension,
+   - **Cross-origin and development tools (M-62).** For every server response
+      that sets an origin, confirm that a wildcard origin is never combined with
+      credentials, and that the allowed origins are an explicit list; a wildcard
+      with credentials is a `confirmed` candidate in the misconfiguration category.
+      For every development tool (GraphiQL, a playground, a debug route, an
+      introspection endpoint), confirm that it is enabled only in a development build
+      by a check that is false in production. A tool enabled unconditionally is a
+      `confirmed` candidate; a conditional tool is read to its environment check.
+    - **Sensitive writes and uploads (M-63).** For every write of a file that holds
+      personal or sensitive data, confirm that the file is written with an owner-only
+      file mode, and that an uploaded image is stored with its metadata stripped. A
+      write with the default file mode is a `confirmed` candidate in the data-storage
+      category when the path is reachable by another principal.
+    - **Absence claims.** A claim that a control is absent (no timeout, no rate limit,
+      no ownership check, no reconciliation) is verified on the complete path: the
+      whole call expression including its options on the following lines, the whole
+      middleware chain, or the whole handler. A search that reads only the line of a
+      match is not evidence of absence. An absence that cannot be verified this way is
+      `needs_validation` with the missing fact named, and it carries no severity.
+    - **Scan coverage.** A secret or content scan that excludes inputs by extension,
      path, or size reports every input it did not read as `NOT VERIFIED`, never as
      clean. List those inputs. An excluded input that could hold a secret blocks
      the delivery gate until it is scanned (M-51). Report the scan's exclusion
