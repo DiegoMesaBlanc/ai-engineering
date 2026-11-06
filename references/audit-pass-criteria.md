@@ -70,6 +70,14 @@ dimension. A criterion is never presented as a framework standard.
 - A concrete adapter is constructed only in the composition root (AGENTS.md,
   the dependency rule). A hook, component, or service that calls a `create*`
   factory or `new`s an infrastructure class is a DIP `FAIL` with file and line.
+- A platform capability with a side effect (system settings, a permission request,
+  a system alert, an accessibility or device state) is reached through a port. A
+  hook, service, or feature-logic module that imports it from the platform module
+  (for example `Linking` or `PermissionsAndroid` from `react-native`) is a DIP
+  `FAIL` at the file and line of the import (`DIP-002` in
+  `workflows/output-compliance.md`). A component that renders only platform
+  primitives is exempt. A pre-existing violation is a finding, not a blocker, for
+  a task that does not touch it.
 
 ### 2. Patterns & complexity
 
@@ -94,6 +102,12 @@ dimension. A criterion is never presented as a framework standard.
   DIP) with their status. A record that states a count alone, or lacks a SOLID row,
   is a `FAIL` of this dimension at the file and line of the record (`DEC-001` in
   `workflows/output-compliance.md`, M-50 and M-45).
+- Every `APPLIES` or `PRESERVED` row of the record, and every claim in it that a
+  bound is applied, a port is received, or a dependency is kept out of a unit, is
+  checked against the cited unit's imports and calls (M-65). A claim the code
+  contradicts is a `FAIL` of this dimension at the line of the record; a note that
+  is written from the design intent instead of the code is never accepted as
+  evidence.
 
 ### 3. Code quality & separation (SRP)
 
@@ -250,6 +264,11 @@ dimension. A criterion is never presented as a framework standard.
   (bounds, consistency, timeouts, external-system behavior) is backed by a test
   or an executed check. An external-system claim without evidence is
   `NOT VERIFIED` and must be stated as an assumption.
+- A guarantee that an external call is bounded by a timeout has a test in which the
+  dependency never resolves, under controlled time, and the terminal state the user
+  sees is asserted (M-54). A test that makes the dependency return a timeout result
+  does not cover the guarantee: it proves the dependency, not the bound. A
+  missing one is a `FAIL` of this Dimension at the test file that claims the bound.
 - Tests are deterministic and do not depend on wall-clock sleeps.
 - When the approved requirement includes right-to-left support, each
   direction-dependent unit the change creates or modifies has a rendered assertion
@@ -269,6 +288,12 @@ dimension. A criterion is never presented as a framework standard.
   timeout. This bullet is never `N/A` for a project that makes an external call.
   A call with no timeout is a `FAIL` of this Dimension at the file and line of
   the call.
+- A timeout declared as a value (a `timeoutMs`, `timeout`, or `deadline` option,
+  field, or constant) is applied: the auditor traces the value from its
+  declaration to the timer or abort that enforces it. A declared value that no
+  code applies, or that a helper receives and ignores, is a `FAIL` of this
+  Dimension at the file and line of the declaration, whatever the call's result
+  type says.
 - The waits and growth bullets apply to hot paths and web delivery; elsewhere
   they are `N/A` with that reason.
   - No blocking wait (for example `sleep`) on a shared worker stalls independent
@@ -295,6 +320,13 @@ dimension. A criterion is never presented as a framework standard.
   sets only the Android property is `NOT VERIFIED` for iOS, never `PASS`. The
   detector `A11Y-001` in `workflows/output-compliance.md` reports every such
   file, so the platform gap is never absent from the verdict.
+- Every state branch of a runtime status surface (error, denied, blocked,
+  unavailable, or any state the change renders as text) is enumerated, and each
+  one that changes at runtime carries the live region of its platform:
+  `accessibilityLiveRegion` on Android, and the announcement on iOS. A state
+  branch that renders without its platform live region is a `FAIL` of this
+  Dimension at the file and line of the branch, and an announcement with no
+  Android path in the change set is `A11Y-002` (`NOT VERIFIED` for Android).
 
 ### 10. SEO
 

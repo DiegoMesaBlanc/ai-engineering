@@ -1124,6 +1124,8 @@ project_safety_sweep() {
   i18n_rtl_test_check . $src
   i18n_copy_check . $src
   a11y_live_region_check . $src
+  a11y_android_path_check . $src
+  platform_side_effect_check . $src
   decision_record_check . $decisions
   claim_check . $mds
   [ -n "$manifests" ] || echo "NOT VERIFIED M-61: no build manifest or app configuration is tracked, so backup is not verified"
@@ -1387,6 +1389,64 @@ a11y_live_region_check() {
     case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*) continue ;; esac
     grep -n "accessibilityLiveRegion" "$root/$f" 2>/dev/null |
       sed "s#^#NOT VERIFIED A11Y-001: $f:#; s#\$#  (live region is Android-only and the project has no iOS announcement: Dimension 9, NOT VERIFIED for iOS)#"
+  done
+}
+```
+
+### DIP-002 — A platform side effect imported by a logic module
+
+Audit Dimension 1 and AGENTS.md (the composition root). A hook, a service, a
+use case, or a domain module that imports a platform capability with a side
+effect from the platform module — `Linking`, `PermissionsAndroid`, `Alert`,
+`AccessibilityInfo`, `Vibration`, `Share`, or `NativeModules` from `react-native`,
+or the equivalent of an `expo-*` module — depends on the platform directly and
+bypasses its port. The composition root (`app`, `main`, `index`) and component
+files that only render primitives are exempt. A multi-line import cannot be read
+on one line and is reported as `NOT VERIFIED`, never passed.
+
+```sh
+# $1 = repository root; $2... = changed or tracked source files, relative to it.
+platform_side_effect_check() {
+  root="$1"; shift
+  side='Linking|PermissionsAndroid|Alert|AccessibilityInfo|Vibration|Share|NativeModules'
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*) continue ;; esac
+    case "$f" in */components/*|*/screens/*|*/app/*|*/app.tsx|*/App.tsx|*/main.*|*/index.*) continue ;; esac
+    case "$f" in */hooks/*|*/use-*|*/services/*|*/application/*|*/domain/*|*/usecases/*|*.service.*) ;; *) continue ;; esac
+    grep -nE "^import .*\b($side)\b.*from ['\"](react-native|expo-[a-z-]+)['\"]" "$root/$f" 2>/dev/null |
+      sed "s#^#FAIL DIP-002: $f:#; s#\$#  (platform side effect imported by a logic module; reach it through a port, Dimension 1)#"
+    grep -nE "^import \{[^}]*$" "$root/$f" 2>/dev/null |
+      sed "s#^#NOT VERIFIED DIP-002: $f:#; s#\$#  (multi-line import: the names cannot be read on one line)#"
+  done
+}
+```
+
+### A11Y-002 — A live announcement with no Android path
+
+Audit Dimension 9 and `skills/accessibility/SKILL.md`. An announcement made
+through `AccessibilityInfo.announceForAccessibility` reaches iOS only. A change
+that announces a state change and sets no `accessibilityLiveRegion` anywhere in
+the change set has no Android path for it, so the platform verdict is
+`NOT VERIFIED` for Android, never `PASS`. This detector reads the change set as a
+whole: a live region on another changed file is an Android path.
+
+```sh
+# $1 = repository root; $2... = changed or tracked source files, relative to it.
+a11y_android_path_check() {
+  root="$1"; shift
+  live=""
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*) continue ;; esac
+    grep -q "accessibilityLiveRegion" "$root/$f" 2>/dev/null && live=1
+  done
+  [ -n "$live" ] && return 0
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*) continue ;; esac
+    n="$(grep -n "announceForAccessibility" "$root/$f" 2>/dev/null | head -n 1 | cut -d: -f1)"
+    [ -n "$n" ] && echo "NOT VERIFIED A11Y-002: $f:$n:  (announced on iOS only: no accessibilityLiveRegion in the change set; enumerate each status branch and set the live region on Android, Dimension 9)"
   done
 }
 ```

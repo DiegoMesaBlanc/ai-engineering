@@ -3809,7 +3809,7 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v270.XXXXXX")"
   { extract "SAFE-004 to SAFE-007"; extract "SAFE-008, SAFE-009"; } > new.sh
   # The sweep calls the V2.73 detectors too, so they are loaded with it.
   { extract "Whole-project sweep"
-    awk '/^### (I18N-00[1-4]|DEC-001|CLAIM-001|A11Y-001) / { on = 1; next }
+    awk '/^### (I18N-00[1-4]|DEC-001|CLAIM-001|A11Y-001|A11Y-002|DIP-002) / { on = 1; next }
       /^### / { on = 0 }
       on && /^```sh$/ { inb = 1; next }
       inb && /^```$/ { inb = 0; next }
@@ -4245,7 +4245,7 @@ detectors close the gaps that let its findings through:
   rows, and a `NOT VERIFIED` on an applicable dimension blocks delivery (R-119,
   `DEC-001`). The live-region platform gap is reported as `A11Y-001` (R-119).
 
-The text checks run on the repository. The behavioral part extracts the seven
+The text checks run on the repository. The behavioral part extracts the detector
 detector blocks from `workflows/output-compliance.md`, builds a fixture outside the
 repository that reproduces each finding of the external audit, verifies each
 defect is reported with `file:line`, rebuilds the fixture in its repaired form, and
@@ -4299,26 +4299,26 @@ for id in R-116 R-117 R-118 R-119; do
 done
 
 # Every detector is defined, and the health probe sweep runs each one.
-for det in I18N-001 I18N-002 I18N-003 I18N-004 CONSUME-001 DEC-001 CLAIM-001 A11Y-001; do
+for det in I18N-001 I18N-002 I18N-003 I18N-004 CONSUME-001 DEC-001 CLAIM-001 A11Y-001 A11Y-002 DIP-002; do
   grep -q "^### $det " "$root/$oc" || { echo "FAIL V2.73: $oc has no $det section"; failures=1; }
 done
 for call in i18n_default_locale_check i18n_direction_check i18n_rtl_test_check i18n_copy_check \
-  a11y_live_region_check decision_record_check claim_check; do
+  a11y_live_region_check a11y_android_path_check platform_side_effect_check decision_record_check claim_check; do
   grep -q "^  $call \. " "$root/$oc" || { echo "FAIL V2.73: the sweep does not run $call"; failures=1; }
 done
 
 # The criteria name the detectors, so an auditor finds them from the matrix.
-for det in I18N-001 I18N-003 DEC-001 CLAIM-001 A11Y-001; do
+for det in I18N-001 I18N-003 DEC-001 CLAIM-001 A11Y-001 A11Y-002 DIP-002; do
   grep -q "$det" "$root/$ap" || { echo "FAIL V2.73: the criteria do not name $det"; failures=1; }
 done
 
 command -v awk >/dev/null 2>&1 && command -v grep >/dev/null 2>&1 && command -v find >/dev/null 2>&1 || {
   echo "NOT VERIFIED V2.73: awk, grep, or find is not available, the behavioral fixture was not run"; exit 2; }
 
-# Extracts the sh blocks of the seven detector sections of workflows/output-compliance.md.
+# Extracts the sh blocks of the detector sections of workflows/output-compliance.md.
 extract() {
   awk '
-    /^### (I18N-00[1-4]|CONSUME-001|DEC-001|CLAIM-001|A11Y-001) / { on = 1; next }
+    /^### (I18N-00[1-4]|CONSUME-001|DEC-001|CLAIM-001|A11Y-001|A11Y-002|DIP-002) / { on = 1; next }
     /^### / { on = 0 }
     on && /^```sh$/ { inb = 1; next }
     inb && /^```$/ { inb = 0; next }
@@ -4328,7 +4328,8 @@ extract() {
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v273.XXXXXX")"
 (
   cd "$fx" || exit 1
-  mkdir -p src/app src/shared/utils/format-currency src/features/payment/components/checkbox-row \
+  mkdir -p src/features/payment/hooks/use-open-settings \
+    src/app src/shared/utils/format-currency src/features/payment/components/checkbox-row \
     src/features/payment/components/payment-screen src/features/notifications/services/demo-push docs/decisions
   extract > detectors.sh
   [ -s detectors.sh ] || { echo "FAIL V2.73: the detector blocks were not extracted"; exit 1; }
@@ -4345,6 +4346,7 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v273.XXXXXX")"
   printf '%s\n' "# MB-09" "Forces and decisions only. Five patterns were considered." > docs/decisions/mb-09.md
   printf '%s\n' "# App" "Cada unidad conserva sus aserciones RTL. Capturas en simulador iOS 16.2." > README.md
   printf '%s\n' "export const Live = () => <View accessibilityLiveRegion=\"polite\" />;" > src/features/notifications/services/live.tsx
+  printf '%s\n' "import { Linking } from 'react-native';" "export const useOpenSettings = () => () => Linking.openSettings();" > src/features/payment/hooks/use-open-settings/use-open-settings.ts
 
   defects="$( {
     i18n_default_locale_check . src/shared/utils/format-currency/format-currency.ts
@@ -4355,6 +4357,7 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v273.XXXXXX")"
     decision_record_check . docs/decisions/mb-09.md
     claim_check . README.md
     a11y_live_region_check . src/features/notifications/services/live.tsx
+    platform_side_effect_check . src/features/payment/hooks/use-open-settings/use-open-settings.ts
   } )"
   for want in \
     'FAIL I18N-001: src/shared/utils/format-currency/format-currency.ts:1:' \
@@ -4366,10 +4369,18 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v273.XXXXXX")"
     'FAIL CONSUME-001: src/features/payment/components/payment-screen/payment-screen.tsx:1: imports ../checkbox-row/checkbox-row' \
     'FAIL DEC-001: docs/decisions/mb-09.md:1: no SOLID row for SRP' \
     'NOT VERIFIED CLAIM-001: README.md:2:' \
-    'NOT VERIFIED A11Y-001: src/features/notifications/services/live.tsx:1:'; do
+    'NOT VERIFIED A11Y-001: src/features/notifications/services/live.tsx:1:' \
+    'FAIL DIP-002: src/features/payment/hooks/use-open-settings/use-open-settings.ts:1:'; do
     printf '%s\n' "$defects" | grep -qF -- "$want" \
       || { echo "FAIL V2.73: the defect was not reported with file:line: $want"; exit 1; }
   done
+
+  # The A11Y-002 defect: an announcement with no Android path. It is checked alone, because
+  # a live region elsewhere in the fixture would be an Android path.
+  printf '%s\n' "export const announce = (m: string) => AccessibilityInfo.announceForAccessibility(m);" > src/features/notifications/services/announce.tsx
+  a11y_defect="$(a11y_android_path_check . src/features/notifications/services/announce.tsx)"
+  printf '%s\n' "$a11y_defect" | grep -qF 'NOT VERIFIED A11Y-002: src/features/notifications/services/announce.tsx:1:' \
+    || { echo "FAIL V2.73: A11Y-002 did not report the iOS-only announcement with file:line"; exit 1; }
 
   # The repaired twin: the same files in their compliant form.
   printf '%s\n' "export const formatCurrency = (value: number, currency: string, locale: string) =>" "  new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value);" "export const shortDate = (d: Date, locale: string) => d.toLocaleDateString(locale);" > src/shared/utils/format-currency/format-currency.ts
@@ -4379,9 +4390,12 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v273.XXXXXX")"
   printf '%s\n' "export const message = (t: (key: string) => string, amount: string) => t('notifications.received').replace('{amount}', amount);" > src/features/notifications/services/demo-push/demo-push.ts
   printf '%s\n' "# MB-09" "| Pattern | Force | Signal | Stack translation |" "|---|---|---|---|" "| Adapter | Locale source | BE1 | expo-localization adapter |" "Count: 1 selected" "| Principle | Status | Unit | Evidence |" "|---|---|---|---|" "| SRP | APPLIES | locale adapter | one reason to change |" "| OCP | PRESERVED | locale adapter | no edit |" "| LSP | NOT APPLICABLE | no substitution | none |" "| ISP | PRESERVED | locale port | small |" "| DIP | APPLIES | composition root | adapter behind port |" > docs/decisions/mb-09.md
   printf '%s\n' "# App" "Las pruebas RTL de checkbox-row y payment-screen usan el locale ar." > README.md
-  printf '%s\n' "export const announce = (m: string) => AccessibilityInfo.announceForAccessibility(m);" > src/features/notifications/services/announce.ts
+  printf '%s\n' "export const announce = (m: string) => AccessibilityInfo.announceForAccessibility(m);" "export const Status = () => <Text accessibilityLiveRegion=\"polite\" />;" > src/features/notifications/services/announce.tsx
+
+  printf '%s\n' "import type { SettingsOpener } from '../../types/settings-opener';" "export const useOpenSettings = (opener: SettingsOpener) => () => opener.open();" > src/features/payment/hooks/use-open-settings/use-open-settings.ts
 
   repaired="$( {
+    a11y_android_path_check . src/features/notifications/services/announce.tsx
     i18n_default_locale_check . src/shared/utils/format-currency/format-currency.ts
     i18n_direction_check . src/features/payment/components/checkbox-row/checkbox-row.tsx
     i18n_rtl_test_check . src/features/payment/components/checkbox-row/checkbox-row.tsx src/features/payment/components/payment-screen/payment-screen.tsx
@@ -4390,6 +4404,7 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v273.XXXXXX")"
     decision_record_check . docs/decisions/mb-09.md
     claim_check . README.md
     a11y_live_region_check . src/features/notifications/services/live.tsx
+    platform_side_effect_check . src/features/payment/hooks/use-open-settings/use-open-settings.ts
   } )"
   [ -z "$repaired" ] || { echo "FAIL V2.73: the repaired fixture is still reported: $repaired"; exit 1; }
   exit 0

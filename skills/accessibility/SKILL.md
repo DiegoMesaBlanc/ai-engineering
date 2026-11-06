@@ -412,6 +412,16 @@ current React Native documentation for the target version before relying on
 either property. The detector `A11Y-001` in `workflows/output-compliance.md` reports
 each such file with its line.
 
+The same platform rule runs the other way. Every status surface that changes at
+runtime — an error, a denied permission, a blocked or unavailable state — sets
+`accessibilityLiveRegion` on Android, and every announcement made through
+`AccessibilityInfo.announceForAccessibility` has an Android path in the same
+change set. Enumerate each state branch of the rendered status text and check
+its live region one by one; a state branch without the property is an Android
+gap even when the announcement helper is correct. `A11Y-002` in
+`workflows/output-compliance.md` reports an announcement that has no Android
+path in the change set.
+
 ---
 
 ## Testing checklist

@@ -802,6 +802,12 @@ changes.
    A principle is never claimed by renaming a file. An `APPLIES` row without a
    unit is a finding of the engineering review (`SOLID_*`).
 
+    Every `APPLIES` and `PRESERVED` row is checked against the cited unit before
+    the record is shown (M-65): the imports and calls of that unit are read, and
+    a row, or a note in the record, that claims a port is received, a bound is
+    applied, or a dependency is kept out of the unit is confirmed or corrected.
+    A record that the code contradicts is not presented as approved.
+
 4. **Empty selection.** A task that selects 0 patterns writes
    `Design patterns: 0 selected` with the forces it inspected and the reason
    each candidate family was rejected. The SOLID coverage is still required.
