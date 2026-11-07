@@ -653,6 +653,34 @@ check is `NOT VERIFIED` with that reason, never a pass. The check does not
 detect an aliased import (`import { test as t }`) or a test API hidden behind
 a local wrapper; such a file is reported for review.
 
+### TEST-003 — A test reaches its state by a controlled clock or an event
+
+M-76: a test reaches its state through a controlled clock or an event, never through a real timer hold. A test or a test-support helper that holds a resource with a real timer, or waits
+on a real delay, depends on wall-clock time. Such a test passes or fails with the load
+of the machine, and it cannot prove a bound because the bound is the timer itself. The
+detector reads every test file and every test-support file of the change set, and of the
+sweep: a file that calls `setTimeout`, `setInterval`, or `sleep` and never uses fake
+timers is a `FAIL` at each such line. A file that controls time with fake timers, or
+that releases the resource on an event, passes. There is no exception marker: a real
+timer in a test is replaced by a controlled clock or an event, and the guarantee that a
+bounded operation stops is asserted under that control.
+
+```sh
+# $1 = repository root; $2... = test and test-support files, relative to it.
+timer_hold_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    grep -qE 'useFakeTimers|advanceTimersByTime|fakeTimers|FakeTimers|sinon\.useFakeTimers' "$root/$f" && continue
+    grep -nE '(^|[^A-Za-z0-9_.])(setTimeout|setInterval|sleep)\(' "$root/$f" 2>/dev/null |
+    while IFS= read -r hit; do
+      echo "FAIL TEST-003: $f:${hit%%:*}: a real timer or delay in a test with no controlled clock (M-76)"
+    done
+  done
+}
+```
+
 ### DEAD-EXPORT-001 — Every export the change set adds has a consumer
 
 A TypeScript or JavaScript file the change set creates or modifies declares
@@ -1132,6 +1160,7 @@ project_safety_sweep() {
   claim_check . $mds $src
   db_runtime_ddl_check . $src
   db_deploy_order_check . $migrations -- $tests
+  timer_hold_check . $tests
   [ -n "$manifests" ] || echo "NOT VERIFIED M-61: no build manifest or app configuration is tracked, so backup is not verified"
   echo "NOT VERIFIED M-57 (downgrade): needs a base revision; run dependency_downgrade_check on the change set"
 }
@@ -1322,7 +1351,7 @@ consumed_defect_check() {
 
 ### DEC-001 — A decision record names its patterns and the five SOLID rows
 
-M-50 and M-45: its record is in the change set and names its patterns. A record in
+M-50 and M-45: its record is in the change set and names its patterns. M-78: an SRP row names the unit and each responsibility it keeps with `file:line`, and a selected pattern names at least two consumers with `file:line`. A record in
 the project's records convention, or in `docs/decisions/`, that selects design
 patterns must contain the pattern table
 (`| Pattern |`) and exactly one SOLID row per principle, each with a status of
@@ -1346,9 +1375,23 @@ decision_record_check() {
         echo "FAIL DEC-001: $f: the SOLID row for $p has no status (M-50, M-45)"
       fi
     done
+    # M-78: the SRP row cites the unit and its responsibilities with file:line.
+    srp="$(grep -E "^\| *SRP *\|" "$root/$f" 2>/dev/null | head -n 1)"
+    if [ -n "$srp" ] && ! printf '%s\n' "$srp" | grep -qE '[A-Za-z0-9_./-]+\.[A-Za-z0-9]+:[0-9]+'; then
+      echo "FAIL DEC-001: $f: the SRP row cites no file:line for its unit (M-78)"
+    fi
+    # M-78: every pattern row names at least two consumers with file:line.
+    awk '/^\| *Pattern *\|/{on=1; next} on && /^\|[-| :]*\|$/{next} on && /^\|/{print NR": "$0; next} {on=0}' "$root/$f" 2>/dev/null |
+    while IFS= read -r prow; do
+      refs="$(printf '%s\n' "$prow" | grep -oE '[A-Za-z0-9_./-]+\.[A-Za-z0-9]+:[0-9]+' | wc -l | tr -d ' ')"
+      [ "$refs" -ge 2 ] ||
+        echo "FAIL DEC-001: $f: a pattern row names $refs consumer(s) with file:line, two are required (M-78): ${prow%%:*}"
+    done
   done
 }
 ```
+
+M-78 is checked on the record as written. A pattern row that names a single consumer is a `FAIL`, and the reviewer also confirms that the second consumer exists in the change set or the sweep, not only in the text.
 
 ### CLAIM-001 — Universal, exclusive, and artifact claims are enumerated first
 
@@ -1465,6 +1508,47 @@ scope_file_check() {
   root="$1"; manifest="$2"
   git -C "$root" diff --name-only HEAD 2>/dev/null | sed '/^$/d' | while read -r f; do
     grep -qxF -- "$f" "$manifest" || echo "FAIL SCOPE-001: $f:1: changed but not named in the approved scope manifest (M-71)"
+  done
+}
+```
+
+### SCOPE-002 — A changed value of existing behavior is named in the scope manifest
+
+M-79: a changed value of existing behavior (a timeout, a limit, a retry budget, a default,
+a pool size, or a threshold) is outside the approved scope unless
+the approved requirement names it. `SCOPE-001` checks files; it does not see a changed
+number inside an approved file, so a timeout that moves from 5000 to 500 passes it. This
+detector reads the diff of the change set: a removed line whose numbers do not all
+reappear in the added lines of the same file is a **candidate** changed value, reported
+with its file and base-revision line. A candidate is a `FAIL` unless the manifest names
+the file and the old value on one line (`<path> <old value> => <new value>`). It is a
+candidate, not a verdict: a renamed identifier or a reformatted number also surfaces, and
+the reviewer confirms each one. The reviewer never clears a candidate by reading the
+diff alone; the manifest line is the evidence.
+
+```sh
+# $1 = repository root; $2 = scope manifest file; $3 = base revision (default HEAD).
+changed_value_check() {
+  root="$1"; manifest="$2"; base="${3:-HEAD}"
+  git -C "$root" diff -U0 "$base" -- . 2>/dev/null | awk '
+    /^\+\+\+ /{ f = substr($0, 7); sub(/^b\//, "", f); next }
+    /^--- /{ next }
+    /^@@/{ split($2, a, ","); oldln = substr(a[1], 2) + 0; next }
+    /^\+/{ n = split(substr($0, 2), p, /[^0-9]+/); for (i = 1; i <= n; i++) if (p[i] != "") added[f SUBSEP p[i]] = 1; next }
+    /^-/{
+      n = split(substr($0, 2), p, /[^0-9]+/)
+      for (i = 1; i <= n; i++) if (p[i] != "" && !((f SUBSEP p[i]) in added)) {
+        print f ":" oldln ": " p[i]
+        break
+      }
+      oldln++; next
+    }' |
+  while IFS= read -r cand; do
+    file="${cand%%:*}"; rest="${cand#*:}"; line="${rest%%:*}"; num="${rest##*: }"
+    if grep -qE "^$file .*(^|[^0-9])$num([^0-9]|$)" "$manifest" 2>/dev/null; then
+      continue
+    fi
+    echo "FAIL SCOPE-002: $file:$line: candidate changed value $num is not named in the scope manifest (M-79)"
   done
 }
 ```
@@ -1889,6 +1973,7 @@ evidence.
 | `CONFIG-001` | added configuration and lint files | the change adds lint or configuration files |
 | `LAYER-001` | source tree | the architecture declares layers |
 | `TEST-001`, `TEST-002` | created and modified test files | a test file is created or modified |
+| `TEST-003` | test and test-support files, change set and sweep | a test or test-support file is created or modified |
 | `DEAD-EXPORT-001` | modules that add an export | an export is added |
 | `SAFE-001`, `SAFE-002`, `SAFE-003` | changed files | outbound calls, endpoints, or temporary paths change |
 | `SAFE-004`, `SAFE-005`, `SAFE-006`, `SAFE-007`, `AUTH-001` | changed files | URLs, cache, credentials, backup, or identity change |
@@ -1901,6 +1986,7 @@ evidence.
 | `DB-001` | source files in the change set | any source file is created or modified |
 | `DB-002` | migrations and tests in the change set | a migration is created or modified |
 | `SCOPE-001` | change set against the approved manifest | an approved scope manifest exists |
+| `SCOPE-002` | change set diff against the approved manifest | a source, configuration, or test file is modified |
 | `INV-001` | reports or analyses that list an inventory | the change set contains such a report |
 | `STATE-001` | read-only gates | a read-only gate runs |
 | `A11Y-001`, `A11Y-002` | changed UI and platform files | accessibility applies |

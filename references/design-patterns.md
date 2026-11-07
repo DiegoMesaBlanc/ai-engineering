@@ -771,14 +771,23 @@ changes.
 
 1. **Selected patterns by name.** One row per selected pattern, in this form:
 
-   | Pattern | Force | Signal | Stack translation |
-   |---|---|---|---|
-   | Strategy | Several payment providers are interchangeable | BE1 | Interface `PaymentProvider` and a map of provider functions in `services/payment/` |
+   | Pattern | Force | Signal | Consumers (`file:line`) | Stack translation |
+   |---|---|---|---|---|
+   | Strategy | Several payment providers are interchangeable | BE1 | `checkout.service.ts:42`, `refund.service.ts:18` | Interface `PaymentProvider` and a map of provider functions in `services/payment/` |
 
    The pattern is named by its name only; its catalog identifier is internal
    to the catalog and is not part of the presentation. The count is the number
    of rows, stated after the table as `Count: N selected`. A name that does not
    match a catalog pattern is a defect.
+
+   An SRP row names the unit and each responsibility it keeps, with `file:line` (M-78).
+
+   Every row names **at least two consumers, each with `file:line`** (M-78). A
+   single-consumer pattern is rejected: a stated reason such as testability or
+   size is not a design force and does not keep it. When the signal is present at
+   several sites, each site is listed in the row as converted, or as not converted
+   with its reason. `DEC-001` in `workflows/output-compliance.md` fails a row with
+   fewer than two `file:line` references.
 
 2. **Rejected candidates.** Every rejected candidate by name with its reason:
    `no signal`, `existing mechanism`, `force already covered`,
@@ -790,7 +799,7 @@ changes.
 
    | Principle | Status | Unit or mechanism | Evidence or reason |
    |---|---|---|---|
-   | SRP | APPLIES | `checkout.service.ts` orchestrates only; the provider call sits in the adapter | Cites the file and the responsibility it keeps |
+   | SRP | APPLIES | `checkout.service.ts` orchestrates only; the provider call sits in the adapter | `checkout.service.ts:12` keeps the order flow; `provider.adapter.ts:30` keeps the provider call; each responsibility is listed with its `file:line` (M-78) |
 
    - `APPLIES`: the change introduces or relies on the principle, and the unit
      that carries it is named.
@@ -816,18 +825,18 @@ changes.
 
 A TypeScript checkout flow with a payment provider behind a vendor SDK:
 
-| Pattern | Force | Signal | Stack translation |
-|---|---|---|---|
-| Strategy | Several providers are interchangeable | BE1 | Interface plus a map of provider functions |
-| Factory Method | Provider selected from a runtime key | CR2 | `createPaymentProvider(key)` in `services/payment/` |
-| Adapter | The vendor SDK does not match the domain port | ST1 | `stripe.adapter.ts` implements the domain port |
+| Pattern | Force | Signal | Consumers (`file:line`) | Stack translation |
+|---|---|---|---|---|
+| Strategy | Several providers are interchangeable | BE1 | `checkout.service.ts:42`, `refund.service.ts:18` | Interface plus a map of provider functions |
+| Factory Method | Provider selected from a runtime key | CR2 | `checkout.service.ts:40`, `refund.service.ts:16` | `createPaymentProvider(key)` in `services/payment/` |
+| Adapter | The vendor SDK does not match the domain port | ST1 | `provider.adapter.ts:30`, `webhook.handler.ts:22` | `stripe.adapter.ts` implements the domain port |
 
 Count: 3 selected. Rejected: Chain of Responsibility, `no signal`
 (there is no ordered handler chain).
 
 | Principle | Status | Unit or mechanism | Evidence or reason |
 |---|---|---|---|
-| SRP | APPLIES | `checkout.service.ts` only orchestrates | Provider calls live in the adapter |
+| SRP | APPLIES | `checkout.service.ts` only orchestrates | `checkout.service.ts:12` keeps the order flow; `provider.adapter.ts:30` keeps the provider call |
 | OCP | APPLIES | A new provider is a new map entry | No `if` chain added to the caller |
 | LSP | PRESERVED | Every provider honors `PaymentProvider` | No provider throws "not supported" |
 | ISP | APPLIES | `PaymentCharger` is the only interface the checkout consumes | Refunds are not in its surface |

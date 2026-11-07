@@ -1006,6 +1006,7 @@ Return:
 - V2.75 inventory enumeration, repository state, and unexecuted-step checks:
 - V2.76 performance claims, technical-property claims, and sweep coverage checks:
 - V2.77 detector coverage in the change-set procedure, and the AMBIGUOUS and evidence rules of the code audit:
+- V2.78 controlled clocks, edge and error coverage, design-record claims, and scope values (M-76 to M-79):
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -4392,7 +4393,7 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v273.XXXXXX")"
   printf '%s\n' "import { test } from 'vitest';" "test('renders under ar', () => { expect('ar').toBeDefined(); });" > src/features/payment/components/checkbox-row/checkbox-row.test.tsx
   printf '%s\n' "import { test } from 'vitest';" "test('renders under ar', () => { expect('ar').toBeDefined(); });" > src/features/payment/components/payment-screen/payment-screen.test.tsx
   printf '%s\n' "export const message = (t: (key: string) => string, amount: string) => t('notifications.received').replace('{amount}', amount);" > src/features/notifications/services/demo-push/demo-push.ts
-  printf '%s\n' "# MB-09" "| Pattern | Force | Signal | Stack translation |" "|---|---|---|---|" "| Adapter | Locale source | BE1 | expo-localization adapter |" "Count: 1 selected" "| Principle | Status | Unit | Evidence |" "|---|---|---|---|" "| SRP | APPLIES | locale adapter | one reason to change |" "| OCP | PRESERVED | locale adapter | no edit |" "| LSP | NOT APPLICABLE | no substitution | none |" "| ISP | PRESERVED | locale port | small |" "| DIP | APPLIES | composition root | adapter behind port |" > docs/decisions/mb-09.md
+  printf '%s\n' "# MB-09" "| Pattern | Force | Signal | Consumers (\`file:line\`) | Stack translation |" "|---|---|---|---|---|" "| Adapter | Locale source | BE1 | \`locale.adapter.ts:8\`, \`format.ts:3\` | expo-localization adapter |" "Count: 1 selected" "| Principle | Status | Unit | Evidence |" "|---|---|---|---|" "| SRP | APPLIES | locale adapter | \`locale.adapter.ts:8\` reads the locale only |" "| OCP | PRESERVED | locale adapter | no edit |" "| LSP | NOT APPLICABLE | no substitution | none |" "| ISP | PRESERVED | locale port | small |" "| DIP | APPLIES | composition root | adapter behind port |" > docs/decisions/mb-09.md
   printf '%s\n' "# App" "Las pruebas RTL de checkbox-row y payment-screen usan el locale ar." > README.md
   printf '%s\n' "export const announce = (m: string) => AccessibilityInfo.announceForAccessibility(m);" "export const Status = () => <Text accessibilityLiveRegion=\"polite\" />;" > src/features/notifications/services/announce.tsx
 
@@ -4951,6 +4952,161 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v277.XXXXXX")"
 ) || failures=1
 
 echo "V2.77 probe: fixture in $fx was checked and is removed"
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.78 Regression — Controlled Clocks, Edge and Error Coverage, Design Claims, and Scope Values
+
+Verify that the four rules added after the external audit that found a null-returning
+work callback without a test, an SRP row contradicted by its unit, a documented error
+path with no test, a timer hold that made a test depend on the clock, and an unrequested
+change of a timeout value are each stated on every surface, and that each detector
+reports the violation with `file:line` and passes its compliant twin:
+
+- M-76: a test reaches its state through a controlled clock or an event, never through a
+  real timer hold (R-129). `TEST-003` reports a real timer in a test with no fake timers.
+- M-77: a test covers each admitted value and each documented error outcome (R-130). This
+  is an auditor enumeration, reported in Dimension 7, and the check verifies its wording.
+- M-78: an SRP row names the unit and its responsibilities, and a pattern names two
+  consumers (R-131). `DEC-001` reports an SRP row with no `file:line` and a single-consumer
+  pattern.
+- M-79: a changed value of existing behavior is named in the scope manifest (R-132).
+  `SCOPE-002` reports a changed timeout with `file:line` unless the manifest names it.
+
+The static part reads the repository. The behavioral part extracts the `sh` blocks of the
+three sections from `workflows/output-compliance.md` and runs them on fixtures in a
+temporary directory outside the repository, which is removed. It needs `awk`, `grep`,
+`sed`, `git`, and `mktemp`; without them the behavioral part is `NOT VERIFIED`.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+ap="references/audit-pass-criteria.md"
+dp="references/design-patterns.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.78: $1 is missing $3"; failures=1; }
+}
+
+# Canonical wording of each new rule on every surface that must carry it.
+need "$ag" "never through a real timer hold" "the M-76 anchor"
+for s in "$mr" "$ap" "$oc" "$rmx"; do need "$s" "never through a real timer hold" "the M-76 anchor"; done
+need "$ag" "every error outcome that a contract or decision record names" "the M-77 anchor"
+for s in "$mr" "$ap" "$rmx"; do need "$s" "every error outcome that a contract or decision record names" "the M-77 anchor"; done
+need "$ag" "an SRP row names the unit" "the M-78 anchor"
+for s in "$mr" "$ap" "$oc" "$dp" "$rmx"; do need "$s" "an SRP row names the unit" "the M-78 anchor"; done
+need "$ag" "a changed value of existing behavior" "the M-79 anchor"
+for s in "$mr" "$ap" "$oc" "$rmx"; do need "$s" "a changed value of existing behavior" "the M-79 anchor"; done
+
+for id in M-76 M-77 M-78 M-79; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.78: no $id row in the registry"; failures=1; }
+done
+for id in R-129 R-130 R-131 R-132; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.78: no $id row in the regression matrix"; failures=1; }
+done
+
+# The detectors exist, are named in the coverage table, and the sweep runs TEST-003.
+for id in TEST-003 SCOPE-002; do
+  grep -q "^### $id " "$root/$oc" || { echo "FAIL V2.78: $oc has no $id section"; failures=1; }
+  grep -qF "| \`$id\` |" "$root/$oc" || { echo "FAIL V2.78: the coverage table has no $id row"; failures=1; }
+done
+grep -qF 'timer_hold_check . $tests' "$root/$oc" || { echo "FAIL V2.78: the sweep does not run TEST-003"; failures=1; }
+grep -q 'the SRP row cites no file:line' "$root/$oc" \
+  || { echo "FAIL V2.78: DEC-001 does not check the SRP reference"; failures=1; }
+grep -q 'consumer(s) with file:line' "$root/$oc" || { echo "FAIL V2.78: DEC-001 does not count the consumers"; failures=1; }
+grep -q 'Consumers (`file:line`)' "$root/$dp" || { echo "FAIL V2.78: the Presentation Record has no Consumers column"; failures=1; }
+
+command -v awk >/dev/null 2>&1 && command -v grep >/dev/null 2>&1 && command -v sed >/dev/null 2>&1 \
+  && command -v git >/dev/null 2>&1 && command -v mktemp >/dev/null 2>&1 || {
+  echo "NOT VERIFIED V2.78: awk, grep, sed, git, or mktemp is not available, the behavioral fixtures were not run"; exit 2; }
+
+# Extracts the sh block of one section of workflows/output-compliance.md. $1 = the rule identifier.
+extract_sec() {
+  awk -v h="$1" '
+    $0 ~ ("^### " h " ") { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v278.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  extract_sec TEST-003 > timer.sh
+  extract_sec DEC-001 > dec.sh
+  extract_sec SCOPE-002 > scope.sh
+  . ./timer.sh && . ./dec.sh && . ./scope.sh || { echo "FAIL V2.78: the detector blocks do not load"; exit 1; }
+
+  # M-76: a real timer hold is reported with file:line; the controlled-clock twin is not.
+  mkdir -p tests/support
+  printf '%s\n' "export const holdWriteLock = async () => {" \
+    "  await new Promise((resolve) => setTimeout(resolve, 6000));" "};" > tests/support/hold-write-lock.ts
+  printf '%s\n' "import { vi } from 'vitest';" "vi.useFakeTimers();" \
+    "export const holdControlled = () => setTimeout(() => {}, 6000);" > tests/support/hold-controlled.ts
+  timers="$(timer_hold_check . tests/support/hold-write-lock.ts tests/support/hold-controlled.ts)"
+  printf '%s\n' "$timers" | grep -q 'FAIL TEST-003: tests/support/hold-write-lock.ts:2:' \
+    || { echo "FAIL V2.78: TEST-003 did not report the real timer hold with file:line: $timers"; exit 1; }
+  printf '%s\n' "$timers" | grep -q 'hold-controlled' \
+    && { echo "FAIL V2.78: TEST-003 reports the controlled-clock twin"; exit 1; }
+
+  # M-78: an SRP row without file:line and a single-consumer pattern are reported; the twin passes.
+  mkdir -p docs/decisions
+  {
+    echo "# Decision"; echo
+    echo "| Pattern | Force | Signal | Consumers (\`file:line\`) | Stack translation |"
+    echo "|---|---|---|---|---|"
+    echo "| Template Method | The skeleton is shared | BE10 | \`a.ts:1\` | Abstract class |"; echo
+    echo "Count: 1 selected."; echo
+    echo "| Principle | Status | Unit or mechanism | Evidence or reason |"
+    echo "|---|---|---|---|"
+    echo "| SRP | APPLIES | runner | keeps the transaction and the retry |"
+    for p in OCP LSP ISP DIP; do echo "| $p | NOT APPLICABLE | none | no unit in scope |"; done
+  } > docs/decisions/defective.md
+  {
+    echo "# Decision"; echo
+    echo "| Pattern | Force | Signal | Consumers (\`file:line\`) | Stack translation |"
+    echo "|---|---|---|---|---|"
+    echo "| Template Method | The skeleton is shared | BE10 | \`a.ts:1\`, \`b.ts:4\` | Abstract class |"; echo
+    echo "Count: 1 selected."; echo
+    echo "| Principle | Status | Unit or mechanism | Evidence or reason |"
+    echo "|---|---|---|---|"
+    echo "| SRP | APPLIES | runner | \`runner.ts:12\` keeps the transaction, \`retry.ts:8\` keeps the retry |"
+    for p in OCP LSP ISP DIP; do echo "| $p | NOT APPLICABLE | none | no unit in scope |"; done
+  } > docs/decisions/compliant.md
+  bad="$(decision_record_check . docs/decisions/defective.md)"
+  printf '%s\n' "$bad" | grep -q 'FAIL DEC-001: docs/decisions/defective.md: the SRP row cites no file:line' \
+    || { echo "FAIL V2.78: DEC-001 did not report the SRP row without file:line: $bad"; exit 1; }
+  printf '%s\n' "$bad" | grep -q 'names 1 consumer(s)' \
+    || { echo "FAIL V2.78: DEC-001 did not report the single-consumer pattern: $bad"; exit 1; }
+  good="$(decision_record_check . docs/decisions/compliant.md)"
+  [ -z "$good" ] || { echo "FAIL V2.78: DEC-001 reports the compliant twin: $good"; exit 1; }
+
+  # M-79: a timeout moved from 5000 to 500 with no manifest line is reported with file:line; a named one passes.
+  git init -q repo && cd repo || exit 1
+  printf '%s\n' "export const config = {" "  busy_timeout: 5000," "};" > store.ts
+  git add -A && git -c user.name=v278 -c user.email=v278@example.invalid commit -qm base
+  sed 's/5000/500/' store.ts > store.tmp && mv store.tmp store.ts
+  : > "$fx/empty.txt"
+  unnamed="$(changed_value_check . "$fx/empty.txt" HEAD)"
+  printf '%s\n' "$unnamed" | grep -q 'FAIL SCOPE-002: store.ts:2: candidate changed value 5000' \
+    || { echo "FAIL V2.78: SCOPE-002 did not report the unnamed timeout with file:line: $unnamed"; exit 1; }
+  printf 'store.ts busy_timeout 5000 => 500\n' > "$fx/named.txt"
+  named="$(changed_value_check . "$fx/named.txt" HEAD)"
+  [ -z "$named" ] || { echo "FAIL V2.78: SCOPE-002 reports the manifest-named timeout: $named"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.78 probe: fixtures in $fx were checked and are removed"
 rm -rf "$fx"
 
 exit "$failures"

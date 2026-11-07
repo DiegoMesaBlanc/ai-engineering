@@ -194,6 +194,13 @@ statement copied from memory, from an earlier draft, or from a previous report
 is not evidence (M-65).
 
 - Scope Manifest: files, line ranges, exclusions.
+- The code-audit dimension table, when the change set has one: every applicable
+  dimension with its verdict and evidence. A dimension that is `NOT VERIFIED`, a
+  dimension that was not run, or a verdict `BLOCKED` is shown as blocking, and the
+  proposal does not ask for commit approval until each of them is resolved (M-39, M-74).
+  The proposal never reports a dimension as passed that the table leaves open.
+- The changed values of existing behavior from `SCOPE-002` (M-79): each candidate is
+  named in the manifest, or it is a blocking item for the approval question.
 - The diff of each proposed group, so the actual adjustments can be reviewed.
 - Tooling lifecycle states and gate results.
 - Each proposed commit group: files/hunks, message, and rationale.

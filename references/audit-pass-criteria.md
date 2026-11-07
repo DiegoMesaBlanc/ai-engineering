@@ -99,6 +99,15 @@ dimension. A criterion is never presented as a framework standard.
   mechanism.
 - No pattern is present without a signal, and no abstraction exists without
   a second consumer or a stated reason.
+- An SRP row names the unit and each responsibility it keeps, and every consumer
+  claim of a design record is traced to the code (M-78). An SRP row with no `file:line` is a `FAIL` of this dimension (`DEC-001`).
+  The auditor then reads the cited unit and lists the responsibilities it keeps: a
+  unit that renders, queues, retries, classifies errors, and logs, or that owns a
+  transaction and its retry policy together, is an SRP violation even when its row
+  says `APPLIES`. A selected pattern with a single consumer is rejected, not kept as
+  an observation; a stated reason such as testability or size is not a design force,
+  so it does not keep a single-consumer pattern. A signal present at several sites is
+  applied to each of them, or every site not converted is listed with its reason.
 - Each mechanism that the design needs (retry, queue, dead letter, routing) is
   either explicit and named, or absent with a stated reason.
 - A significant, hard-to-reverse decision that meets the recording threshold of
@@ -183,6 +192,13 @@ dimension. A criterion is never presented as a framework standard.
   `NOT VERIFIED` until that evidence is cited (`CLAIM-001`).
 - A listener, subscription, or controller created for an identity is released
   when the identity changes or signs out.
+
+- A changed value of existing behavior (a timeout, a limit, a retry budget, a default,
+  a pool size, a threshold) is inside the approved scope only when
+  the scope manifest names it (M-79). `SCOPE-002` reports each candidate changed value
+  with `file:line`; a candidate with no manifest line is a `FAIL` of this dimension,
+  whether or not the file is in scope, and a change to a value the requirement did
+  not name blocks delivery until the user approves it.
 
 ### 4. API & contracts
 
@@ -326,7 +342,23 @@ dimension. A criterion is never presented as a framework standard.
   previous code runs against the migrated database. A declared scenario with no
   executing test is a `FAIL` of this Dimension at the test file that claims it,
   or at the document that declares it when no test exists.
-- Tests are deterministic and do not depend on wall-clock sleeps.
+- Tests are deterministic (M-76). A test or test-support helper reaches its state
+  through a controlled clock or an event, never through a real timer hold: a timer that
+  holds a lock, a connection, or a resource while a retry budget expires is a `FAIL`
+  of this dimension at each `file:line` (`TEST-003`), even when the test passes on the
+  reviewer's machine, because it depends on load and cannot prove the bound it claims.
+- Every value that a public input's type admits and that the implementation branches
+  on or dereferences (`null`, `undefined`, an empty result, a generic callback whose
+  return type admits them) has a test that passes that value through the real entry
+  point and asserts the defined behavior (M-77). The auditor enumerates the parameter
+  and return types of the changed public surface to find the admitted values; a value
+  the code dereferences with no test is a `FAIL` at the test file that should cover it.
+  Mechanical detection of this is not available, so the enumeration is the evidence,
+  and the verdict states that it is an auditor judgment.
+- Every error outcome that a contract or decision record names (its error type, an
+  aggregate error, a terminal state) has an executing test that asserts that exact
+  outcome (M-77). A documented error path with no test is a `FAIL` of this dimension at
+  the document that names it and the test file that should cover it.
 - When the approved requirement includes right-to-left support, each
   direction-dependent unit the change creates or modifies has a rendered assertion
   under an RTL locale in its own test (M-66). A project-level RTL test, or a test of
@@ -343,6 +375,10 @@ dimension. A criterion is never presented as a framework standard.
 - Every external call has an explicit timeout (M-54) for every project type,
   mobile and frontend included, and each attempt of a retry loop has its own
   timeout. This bullet is never `N/A` for a project that makes an external call.
+  Its `PASS` requires the controlled-time test of Dimension 7 (M-54, M-76): a test that
+  holds the dependency with a real timer, or that is only a timeout result returned by
+  the dependency, does not establish the bound, and the bullet is then `FAIL` of
+  Dimension 7 and `NOT VERIFIED` here, never `PASS`.
   A call with no timeout is a `FAIL` of this Dimension at the file and line of
   the call.
 - A timeout declared as a value (a `timeoutMs`, `timeout`, or `deadline` option,
