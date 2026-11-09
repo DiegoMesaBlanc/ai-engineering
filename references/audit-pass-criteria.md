@@ -157,12 +157,20 @@ dimension. A criterion is never presented as a framework standard.
   behavior is correct. Sibling units of the same kind use the same logging
   convention, and a deviation from it is a violation.
 - A failure raised from a module uses the module's typed error class, never a
-  generic `Error`, unless the module has no error model and that is stated (M-81).
-  The module's error model is that typed class. A module has an error model when a
-  sibling file of its folder declares a class that extends `Error`. A generic error raised there is a `FAIL` of this
-  dimension, and `ERR-001` in `workflows/output-compliance.md` reports it with
-  `file:line`. A reviewer does not accept "the message is correct" as the
-  justification for a bare `Error`.
+  generic `Error`, unless the project has no error model and that is stated (M-81).
+  A project has an error model when a non-test source file in any folder declares a
+  class that extends `Error`; the error model is a project property, so a module
+  whose folder holds no error file is still bound by it. A generic error raised in
+  any module of such a project is a `FAIL` of this dimension, and `ERR-001` in
+  `workflows/output-compliance.md` reports it with `file:line`. A reviewer does not
+  accept "the message is correct" as the justification for a bare `Error`.
+- A boundary input is validated before any side effect (M-83): an entry point that
+  opens a file, a connection, a database, or a network resource before it validates
+  its arguments leaves an artifact for a rejected invocation, and that is a `FAIL` of
+  this dimension at the line of the first resource opened before the validation. The
+  auditor traces each validator to its call and reports the order. `VAL-001` in
+  `workflows/output-compliance.md` lists the candidates; an opened resource whose
+  validation is in another file is `NOT VERIFIED` until the auditor traces the call.
 - A secondary (optional) dependency that fails does not change the outcome of
   the primary operation: a failed read from it is a miss, and a failed write
   to it is skipped and recorded. A write already committed in the primary store
@@ -226,6 +234,12 @@ dimension. A criterion is never presented as a framework standard.
 - Every boundary has an explicit contract (schema or typed port) documented
   where it is owned.
 - The error model is explicit and stable.
+- The error codes are declared in both directions (M-77): every error code a
+  boundary emits is declared in the contract that names it (`ERR-003` in
+  `workflows/output-compliance.md`), and every declared code has an executing test
+  (`ERR-002`). An emitted code with no declaration, or a declared code no test
+  asserts, is a `FAIL` of this dimension at the file and line of the code and of the
+  declaration.
 - Responses that the change does not intend to alter remain unchanged, and
   the change does not leak internal types across the boundary.
 
@@ -241,6 +255,12 @@ dimension. A criterion is never presented as a framework standard.
   that executes both orders is `NOT VERIFIED`, and a `FAIL` when the change set
   states order-safety with no such test (`DB-002` in
   `workflows/output-compliance.md`).
+- A paginated or cursor-based read that issues several statements runs in one read
+  transaction or snapshot (M-84). A page loop with no read transaction or snapshot
+  is a `FAIL` of this dimension at the line of the loop (`DB-003` in
+  `workflows/output-compliance.md`), because a row changed between pages can be
+  counted twice or skipped. A claim that the result is consistent is `NOT VERIFIED`
+  until a test changes a row between pages and asserts the count.
 - Application code never changes the schema (M-70). A `CREATE`, `ALTER`, or
   `DROP` at startup, boot, or in a request path is a `FAIL` of this Dimension at
   the file and line of the statement (`DB-001` in `workflows/output-compliance.md`).
@@ -346,6 +366,14 @@ dimension. A criterion is never presented as a framework standard.
   through its real entry point.
 - Every error path the change introduces has a test: thrown error, failed
   render or dependency, and rejected input.
+- An entry point of the project (a command-line program, a `bin` script, or a
+  process `main`) is tested through its real invocation (M-82): the arguments, the
+  exit status, and the output are asserted by a test that runs it. A documented exit
+  code, flag, or argument error with no executing test is a `FAIL` of this dimension
+  at the document that names it and the test file that should cover it. `ENTRY-001`
+  in `workflows/output-compliance.md` reports an entry point that no test invokes, or
+  whose exit status no test asserts. A test that imports a helper and never runs the
+  entry point does not cover it.
 - Every access gate the change adds or modifies has a test for each side of its
   scope: a path it gates is blocked without the credential, and a path the
   requirement leaves ungated is asserted to work without the credential. A gate
@@ -366,8 +394,11 @@ dimension. A criterion is never presented as a framework standard.
   does not cover the guarantee: it proves the dependency, not the bound. A
   missing one is a `FAIL` of this Dimension at the test file that claims the bound.
   The bound is any declared wait, not only an HTTP timeout: a database busy or lock
-  wait is covered too. `BOUND-001` in `workflows/output-compliance.md` lists the
-  declared bounds that no test holds, and that finding is `FAIL` of Dimension 7.
+  wait is covered too, and so is a retry budget (a number of attempts or retries,
+  M-54): a test holds the dependency until the budget is spent under controlled time
+  and asserts the number of attempts and the terminal state. `BOUND-001` in
+  `workflows/output-compliance.md` lists the declared bounds that no test holds, and
+  that finding is `FAIL` of Dimension 7.
 - Every compatibility scenario the change declares has a test that executes it,
   for each deployment order (M-69): a schema change has a test in which the new
   code runs against a database without the migration and a test in which the

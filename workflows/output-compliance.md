@@ -1134,6 +1134,7 @@ project_safety_sweep() {
   nonbarrel=$(printf '%s\n' "$src" | grep -vE '(^|/)index\.(ts|tsx|js|jsx|mjs|cjs)$')
   mds=$(printf '%s\n' "$files" | grep -E '\.md$')
   decisions=$(printf '%s\n' "$files" | grep -E '(^|/)docs/decisions/.*\.md$')
+  contracts=$(printf '%s\n' "$files" | grep -E '\.md$' | grep -iE 'contract|contrato|api|error|docs/')
   migrations=$(printf '%s\n' "$files" | grep -E '(^|/)(migrations?|db/migrate)/')
   tests=$(printf '%s\n' "$files" | grep -E '(\.test\.|\.spec\.|(^|/)(tests?|__tests__)/)')
   echo "SWEEP scanned: $(printf '%s\n' "$src" | sed '/^$/d' | wc -l | tr -d ' ') source files, $(printf '%s\n' "$shells" | sed '/^$/d' | wc -l | tr -d ' ') shell scripts, $(printf '%s\n' "$manifests" | sed '/^$/d' | wc -l | tr -d ' ') build manifests"
@@ -1163,6 +1164,10 @@ project_safety_sweep() {
   claim_check . $mds $src
   comment_claim_check . $src
   error_model_check . $src
+  error_outcome_check . $src -- $tests -- $contracts
+  entry_point_check . $src -- $tests
+  validation_order_check . $src
+  read_transaction_check . $src
   db_runtime_ddl_check . $src
   db_deploy_order_check . $migrations -- $tests
   timer_hold_check . $tests
@@ -1422,21 +1427,32 @@ skipped (`project_safety_sweep` passes `$src` to `claim_check`).
 
 ```sh
 # $1 = repository root; $2... = documents or source files, relative to it.
+# Prints "LINE:TEXT" for the prose the claim rule reads: the comments of a source file,
+# and the whole text of a document or script. Code is not prose: a call such as
+# `.all(` is not a universal claim (M-68 scopes CLAIM-001 to documents and comments).
+claim_text() {
+  case "$1" in
+    *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs)
+      awk '{ l = $0; if (match(l, /\/\/.*$/)) print NR ":" substr(l, RSTART); else if (l ~ /^[ \t]*(\/\*|\*)/) print NR ":" l }' "$1" ;;
+    *) awk '{ print NR ":" $0 }' "$1" ;;
+  esac
+}
+
 claim_check() {
   root="$1"; shift
   for f in "$@"; do
     case "$f" in *.md|*.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.sh) ;; *) continue ;; esac
-    grep -nEi "(^|[^A-Za-z])(only|every|each|all|always|never|solo|todos|todas|cada|único|unico|siempre|nunca)([^A-Za-z]|$)" "$root/$f" 2>/dev/null |
+    claim_text "$root/$f" | grep -Ei "(^|[^A-Za-z])(only|every|each|all|always|never|solo|todos|todas|cada|único|unico|siempre|nunca)([^A-Za-z]|$)" |
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (universal or exclusive claim: enumerate its scope before keeping it, M-68)#"
-    grep -nEi "capturas?|screenshots?|\.png|\.jpe?g|\.gif|evidence|evidencia" "$root/$f" 2>/dev/null |
+    claim_text "$root/$f" | grep -Ei "capturas?|screenshots?|\.png|\.jpe?g|\.gif|evidence|evidencia" |
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (claim that cites an artifact: confirm the artifact is in the repository, M-68)#"
-    grep -nEi "order-safe|order safe|either order|any deployment order|both directions|ambas direcciones|cualquier orden|en ambos sentidos" "$root/$f" 2>/dev/null |
+    claim_text "$root/$f" | grep -Ei "order-safe|order safe|either order|any deployment order|both directions|ambas direcciones|cualquier orden|en ambos sentidos" |
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (compatibility claim: keep it only with a test that executes each deployment order, M-69)#"
-    grep -nEi "(^|[^A-Za-z])(faster|más rápid[oa]s?|speed(s|ed)? up|accelerat(es|ed|e))([^A-Za-z]|$)" "$root/$f" 2>/dev/null |
+    claim_text "$root/$f" | grep -Ei "(^|[^A-Za-z])(faster|más rápid[oa]s?|speed(s|ed)? up|accelerat(es|ed|e))([^A-Za-z]|$)" |
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (performance claim: cite the before and after measurement of the named query, M-65)#"
-    grep -nEi "(^|[^A-Za-z])(expensive|costly|cheaper|slower|cheap|lo caro|caro|costos[oa]s?|barat[oa]s?|más lent[oa]s?|lent[oa]s?)([^A-Za-z]|$)" "$root/$f" 2>/dev/null |
+    claim_text "$root/$f" | grep -Ei "(^|[^A-Za-z])(expensive|costly|cheaper|slower|cheap|lo caro|caro|costos[oa]s?|barat[oa]s?|más lent[oa]s?|lent[oa]s?)([^A-Za-z]|$)" |
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (cost or speed claim: cite the measurement of the named operation, M-65)#"
-    grep -nEi "covering index|index[- ]only|índice (cubriente|de cobertura)|constant[- ]time|tiempo constante|O\(1\)|O\(log n\)" "$root/$f" 2>/dev/null |
+    claim_text "$root/$f" | grep -Ei "covering index|index[- ]only|índice (cubriente|de cobertura)|constant[- ]time|tiempo constante|O\(1\)|O\(log n\)" |
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (technical property claim: cite the query plan or the code that decides it, M-65)#"
   done
 }
@@ -1445,30 +1461,205 @@ claim_check() {
 ### ERR-001 — A module raises its failures through its typed error class
 
 M-81: a failure raised from a module uses the module's typed error class, never a
-generic `Error`, unless the module has no error model and that is stated. A module
-has an error model when a sibling file of the same folder whose name contains
-`error` declares a class that extends `Error`. A bare `new Error(` or `throw Error(`
-in a source file of that module is a `FAIL` with its line, because the caller can
-no longer tell the module's failures apart from a programming error.
+generic `Error`, unless the project has no error model and that is stated. A
+project has an error model when a non-test source file in **any folder** declares a
+class that extends `Error`. Once it does, a bare `new Error(` or `throw Error(` in
+any source file of the project is a `FAIL` with its line, because the caller can no
+longer tell the project's failures apart from a programming error.
 
-**Scope limit.** The detector reads the source files of the change set, excludes
-tests, and decides the module from the folder. It does not decide whether the
-generic error crosses the module boundary, and a `new Error(` in a comment is a
-candidate: the reviewer confirms each match before reporting it. A module whose
-error model is declared in another folder is not matched.
+**Scope.** The error model is read from the whole project, not from the folder of the
+file under review. The earlier folder-local reading let a module with no error file
+in its own folder escape the rule even when the project declared a typed error class
+elsewhere; that reading is retired (M-81). The detector reads the whole project for
+the typed class, and reads the source files of the change set and the sweep for the
+generic error. A `new Error(` in a comment is a candidate: the reviewer confirms each
+match before reporting it.
 
 ```sh
 # $1 = repository root; $2... = source files, relative to it.
 error_model_check() {
   root="$1"; shift
+  typed="$(grep -rlE 'class[[:space:]]+[A-Za-z0-9_]+[[:space:]]+extends[[:space:]]+Error' "$root" \
+    --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.mjs' --include='*.cjs' \
+    --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build --exclude-dir=.git --exclude-dir=coverage 2>/dev/null |
+    grep -vE '\.(test|spec)\.|/(tests?|__tests__|testing)/' | head -n 1)"
+  [ -n "$typed" ] || return 0
   for f in "$@"; do
     case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
     case "$f" in *.test.*|*.spec.*|*/test/*|*/tests/*|*__tests__*|*/testing/*) continue ;; esac
-    dir="$(dirname "$f")"
-    typed="$(grep -l 'extends Error' "$root/$dir"/*rror*.ts "$root/$dir"/*rror*.js 2>/dev/null | head -n 1)"
-    [ -n "$typed" ] || continue
     grep -nE '(new|throw)[[:space:]]+Error[[:space:]]*\(' "$root/$f" 2>/dev/null |
-      sed "s#^#FAIL ERR-001: $f:#; s#\$#  (generic Error in a module with a typed error class: raise the module's typed error, M-81)#"
+      sed "s#^#FAIL ERR-001: $f:#; s#\$#  (generic Error in a project with a typed error class: raise the typed error, M-81)#"
+  done
+}
+```
+
+### ERR-002 and ERR-003 — Error codes are declared and tested in both directions
+
+M-77: every error code a boundary emits is declared in the contract that names it
+(`ERR-003`), and every error code a contract declares has an executing test that
+asserts it (`ERR-002`). The codes are the upper-snake identifiers that a source file
+quotes as a literal, and the identifiers a contract document states on a line that
+names an error, a failure, or an exit. `ERR-002` is the documented-but-untested
+case: an implemented and documented code that no test names. `ERR-003` is the
+emitted-but-undeclared case, where a literal in the source is absent from every
+contract. Both are candidates: the reviewer confirms that a literal is an error code
+and not a configuration key before reporting it.
+
+```sh
+# $1 = repository root; $2... = source files; then `--`; then test files; then `--`; then contract documents. All relative to root.
+error_outcome_check() {
+  root="$1"; shift
+  srcs=""; tests=""; docs=""; mode=src
+  for a in "$@"; do
+    if [ "$a" = "--" ]; then
+      if [ "$mode" = src ]; then mode=tests; else mode=docs; fi
+      continue
+    fi
+    case "$mode" in
+      src) srcs="$srcs$a
+" ;;
+      tests) tests="$tests$a
+" ;;
+      docs) docs="$docs$a
+" ;;
+    esac
+  done
+  code_re='[A-Z][A-Z0-9]*(_[A-Z0-9]+)+'
+  # Codes named by any test file.
+  tested="$(printf '%s' "$tests" | while IFS= read -r t; do
+    [ -n "$t" ] && [ -f "$root/$t" ] && grep -ohE "$code_re" "$root/$t"
+  done | sort -u)"
+  # Documented codes: file:line:CODE, backticked, on a line that names an error, a failure, or an exit.
+  documented="$(printf '%s' "$docs" | while IFS= read -r d; do
+    [ -n "$d" ] && [ -f "$root/$d" ] || continue
+    awk -v f="$d" '{ line = $0; if (tolower(line) ~ /error|fail|exit/) {
+      while (match(line, /`[A-Z][A-Z0-9]*(_[A-Z0-9]+)+`/)) {
+        print f ":" NR ":" substr(line, RSTART + 1, RLENGTH - 2); line = substr(line, RSTART + RLENGTH) } } }' "$root/$d"
+  done)"
+  # Emitted codes: file:line:CODE, quoted as a literal in a source file.
+  emitted="$(printf '%s' "$srcs" | while IFS= read -r s; do
+    [ -n "$s" ] && [ -f "$root/$s" ] || continue
+    grep -noE "[\"'\`][A-Z][A-Z0-9]*(_[A-Z0-9]+)+[\"'\`]" "$root/$s" | tr -d "\"'\`" | sed "s#^#$s:#"
+  done)"
+  dcodes="$(printf '%s\n' "$documented" | awk -F: 'NF { print $3 }' | sort -u)"
+  printf '%s\n' "$emitted" | while IFS= read -r e; do
+    [ -n "$e" ] || continue
+    c="${e##*:}"
+    printf '%s\n' "$dcodes" | grep -qx "$c" ||
+      echo "FAIL ERR-003: ${e%:*}: error code $c is emitted and no contract declares it (candidate: confirm it is an error code, M-77)"
+  done
+  printf '%s\n' "$documented" | while IFS= read -r d; do
+    [ -n "$d" ] || continue
+    c="${d##*:}"
+    printf '%s\n' "$tested" | grep -qx "$c" ||
+      echo "FAIL ERR-002: ${d%:*}: documented error code $c has no executing test (M-77)"
+  done
+}
+```
+
+### ENTRY-001 — A project entry point is tested through its real invocation
+
+M-82: a project's entry point (a command-line program, a `bin` script, or a process
+`main`) is tested through its real invocation, by a test that runs it, and the exit
+status of each documented code is asserted. The detector
+identifies an entry point by a `process.argv` read. When the entry point also sets
+an exit status (`process.exit` or `process.exitCode`), a test that names it must
+assert that status. A test that imports a helper from the entry point's folder does
+not name the entry point, so it does not satisfy the rule.
+
+**Scope limit.** The detector proves that a test names the entry point in a quoted
+path or module specifier and that the test asserts a status. It does not prove that
+each documented flag or argument error has its own case; the reviewer maps the
+documented exit codes to the test cases.
+
+```sh
+# $1 = repository root; $2... = source files; then `--`; then test files. Relative to root.
+entry_point_check() {
+  root="$1"; shift
+  srcs=""; tests=""; mode=src
+  for a in "$@"; do
+    if [ "$a" = "--" ]; then mode=tests; continue; fi
+    if [ "$mode" = src ]; then srcs="$srcs$a
+"; else tests="$tests$a
+"; fi
+  done
+  printf '%s' "$srcs" | while IFS= read -r f; do
+    [ -n "$f" ] && [ -f "$root/$f" ] || continue
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/test/*|*/tests/*|*__tests__*|*/testing/*) continue ;; esac
+    grep -qE 'process\.argv' "$root/$f" || continue
+    base="$(basename "$f")"; base="${base%.*}"
+    invokers="$(printf '%s' "$tests" | while IFS= read -r t; do
+      [ -n "$t" ] && [ -f "$root/$t" ] || continue
+      grep -qE "['\"/]$base(\.[a-z]+)?['\"]" "$root/$t" && printf '%s\n' "$t"
+    done)"
+    if [ -z "$invokers" ]; then
+      echo "FAIL ENTRY-001: $f:1: an entry point that no test invokes through its real invocation (M-82)"
+      continue
+    fi
+    grep -qE 'process\.exit' "$root/$f" || continue
+    asserted="$(printf '%s\n' "$invokers" | while IFS= read -r t; do
+      grep -lE 'exitCode|\.status|[Ee]xit' "$root/$t" 2>/dev/null
+    done)"
+    [ -n "$asserted" ] || echo "FAIL ENTRY-001: $f:1: the entry point sets an exit status and no test that invokes it asserts one (M-82)"
+  done
+}
+```
+
+### VAL-001 — An input is validated before a resource is opened
+
+M-83: input is validated before any side effect. An entry point validates its
+arguments before it opens a file, a connection, a database, or a network resource, so
+a rejected invocation leaves no artifact. Within
+an entry point file, the detector reads the first resource-opening call and the first
+validator call. An opening that comes before the first validator is a `FAIL` at the
+opening line. An entry point whose validator is not in the same file cannot be
+ordered by this detector, so every opening in it is a `NOT VERIFIED` candidate until
+the reviewer traces the validator's call.
+
+```sh
+# $1 = repository root; $2... = source files, relative to it.
+validation_order_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/test/*|*/tests/*|*__tests__*|*/testing/*) continue ;; esac
+    grep -qE 'process\.argv' "$root/$f" || continue
+    open="$(grep -nE 'new (Sqlite|Database|Pool|Client)|createConnection\(|openDatabase\(|createWriteStream\(|open(Sync)?\(|mkdirSync\(|writeFileSync\(|create[A-Za-z]*Adapter\(' "$root/$f" | head -n 1)"
+    [ -n "$open" ] || continue
+    val="$(grep -nE '(parse|validate|assert|isValid)[A-Za-z]*\(' "$root/$f" | head -n 1)"
+    openline="${open%%:*}"
+    if [ -n "$val" ] && [ "$openline" -lt "${val%%:*}" ]; then
+      echo "FAIL VAL-001: $f:$openline: a resource is opened before the input is validated at line ${val%%:*} (M-83)"
+    else
+      [ -n "$val" ] || echo "NOT VERIFIED VAL-001: $f:$openline: a resource is opened and no validator is in this file; the reviewer traces the validator's call (M-83)"
+    fi
+  done
+}
+```
+
+### DB-003 — A paginated read in a loop runs in one read transaction
+
+M-84: a paginated or cursor-based read that issues several statements, which is a page
+loop, runs in one read transaction or snapshot. Without one, a row that changes between
+pages is counted twice or skipped. The detector identifies a file that holds a page
+query (`LIMIT`, `OFFSET`, a cursor, or a keyset) inside a loop and holds no transaction
+or snapshot marker. It reports the page query's line. It is a candidate: a single
+statement that is not a loop is not a multi-statement read, and the reviewer confirms
+the loop before reporting it.
+
+```sh
+# $1 = repository root; $2... = source files, relative to it.
+read_transaction_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.py|*.java|*.kt|*.go|*.rb|*.cs|*.php) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/test/*|*/tests/*|*__tests__*|*/testing/*) continue ;; esac
+    grep -qiE 'limit|offset|cursor|keyset|after_?id' "$root/$f" || continue
+    grep -qE 'while[[:space:]]*\(|for[[:space:]]*\(|\bloop\b' "$root/$f" || continue
+    grep -qiE 'BEGIN( DEFERRED| IMMEDIATE| EXCLUSIVE)?|transaction|snapshot|REPEATABLE READ|START TRANSACTION' "$root/$f" && continue
+    line="$(grep -niE 'limit|offset|cursor|keyset' "$root/$f" | head -n 1)"
+    echo "FAIL DB-003: $f:${line%%:*}: a paginated read in a loop with no read transaction or snapshot; a row changed between pages can be counted twice or skipped (M-84)"
   done
 }
 ```
@@ -2052,7 +2243,7 @@ bound_test_check() {
     [ -n "$f" ] && [ -f "$root/$f" ] || continue
     case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
     case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*|*/testing/*) continue ;; esac
-    grep -qE '(busy_timeout|timeoutMs|timeout[[:space:]]*[:=]|lock_timeout|statement_timeout|deadline[[:space:]]*[:=]|BEGIN IMMEDIATE)' "$root/$f" || continue
+    grep -qE '(busy_timeout|timeoutMs|timeout[[:space:]]*[:=]|lock_timeout|statement_timeout|deadline[[:space:]]*[:=]|BEGIN IMMEDIATE|maxAttempts|max_attempts|retries[[:space:]]*[:=]|attempts[[:space:]]*[:=]|retryBudget|max_retries)' "$root/$f" || continue
     mod="$(basename "$f")"; mod="${mod%.*}"
     importers="$(printf '%s' "$tests" | while IFS= read -r t; do
       [ -n "$t" ] && [ -f "$root/$t" ] || continue
@@ -2063,7 +2254,7 @@ bound_test_check() {
       continue
     fi
     held="$(printf '%s\n' "$importers" | while IFS= read -r t; do
-      grep -lE 'new Promise\(\( *\) *=>|never (resolves|settles)|BEGIN IMMEDIATE|holds? the (lock|connection)' "$root/$t" 2>/dev/null
+      grep -lE 'new Promise(<[^>]*>)?\(\( *\) *=>|never (resolves|settles)|BEGIN IMMEDIATE|holds? the (lock|connection)' "$root/$t" 2>/dev/null
     done)"
     [ -n "$held" ] || echo "FAIL BOUND-001: $f:1: no test that imports $mod holds the dependency so that it never resolves; the bound is not proven (M-54, M-76)"
   done
@@ -2208,7 +2399,7 @@ report_matrix_check() {
           print "NOT VERIFIED REPORT-001: " f ":" NR ": a runtime or version equivalence is claimed; keep it only with its execution on that version (M-80)"
       }
       END {
-        if (dimhdr && dimrows != 14) print "FAIL REPORT-001: " f ": the dimension matrix has " dimrows " rows; the audit has 14 dimensions (M-72, M-80)"
+        if (numbered && dimrows != 14) print "FAIL REPORT-001: " f ": the numbered dimension matrix has " dimrows " rows; the code audit has 14 dimensions (M-72, M-80)"
         if (open_rows > 0 && closure != "")
           print "FAIL REPORT-001: " f ": lines " closure "claim a closure or a PASS verdict while " open_rows " row(s) stay open (M-80)"
         if (numbered) for (i = 1; i <= 14; i++) if (!(i in seen)) print "FAIL REPORT-001: " f ": dimension " i " has no row (M-72, M-80)"
@@ -2266,7 +2457,12 @@ report_matrix_check() {
 | `CONSUME-001` | changed units | a changed unit consumes another unit |
 | `DEC-001` | decision records in the change set | a record or pattern table is in the change set |
 | `CLAIM-001` | documents and source comments in the change set | a changed file contains text |
-| `ERR-001` | source files in the change set and the sweep | a source file is created or modified in a module that declares a typed error class |
+| `ERR-001` | source files in the change set and the sweep; the typed-class search reads the whole project | a source file is created or modified in a project that declares a typed error class |
+| `ERR-002` | contract documents, source and test files in the sweep | a project declares error codes in a contract document |
+| `ERR-003` | source files in the sweep, contract documents | a source file quotes an upper-snake error code |
+| `ENTRY-001` | source files and test files in the change set and the sweep | a source file reads `process.argv` |
+| `VAL-001` | source files in the change set and the sweep | a source file reads `process.argv` |
+| `DB-003` | source files in the change set and the sweep | a source file holds a page query inside a loop |
 | `DB-001` | source files in the change set | any source file is created or modified |
 | `DB-002` | migrations and tests in the change set | a migration is created or modified |
 | `SCOPE-001` | change set against the approved manifest | an approved scope manifest exists |
@@ -2276,7 +2472,7 @@ report_matrix_check() {
 | `A11Y-001`, `A11Y-002` | changed UI and platform files | accessibility applies |
 | `DIP-002` | changed logic modules | a logic module imports platform code |
 | `COMMIT-001` | each proposed commit group, from `workflows/commit.md` Phase 11 | a commit group is proposed |
-| `BOUND-001` | changed source files that declare a bound, and the test files | a changed source declares a timeout, a busy or lock wait, or a deadline |
+| `BOUND-001` | changed source files that declare a bound, and the test files | a changed source declares a timeout, a busy or lock wait, a deadline, or a retry budget |
 | `COMMENT-001` | changed TypeScript or JavaScript files | a changed file contains a comment |
 | `DEC-002` | decision records | a record is in the change set |
 | `REPORT-001` | every delivered audit, review, or gate report that carries a verdict matrix | a report with a dimension matrix is delivered (M-80: a verdict matrix is consistent with its own rules) |

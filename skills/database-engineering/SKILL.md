@@ -121,6 +121,12 @@ tool, or schema style without a justified reason and human approval.
 - Design operations to be idempotent where retries are possible.
 - Handle deadlocks, lock contention, and serialization failures with bounded
   retries, not silent failures.
+- A paginated or cursor-based read that issues several statements runs in one
+  read transaction or snapshot, so a row changed between pages is not counted
+  twice or skipped (M-84; `DB-003` in `workflows/output-compliance.md` reports
+  the page loops with no such transaction). A claim that the result is
+  consistent is kept only with a test that changes a row between pages and
+  asserts the count.
 
 ## Security and Privacy
 

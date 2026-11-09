@@ -86,9 +86,27 @@ implementation are:
   write through the real entry point, asserting the defined behavior at the
   cap.
 - **Errors use the module's error model**: a failure raised from a module uses
-  the module's typed error class, never a generic `Error`, unless the module
-  has no error model and that is stated (M-81; `ERR-001` in
-  `workflows/output-compliance.md` reports a bare `Error`).
+  the module's typed error class, never a generic `Error`, unless the project
+  has no error model and that is stated. The error model is a project property:
+  when any non-test source file in the project declares a class that extends
+  `Error`, every module raises through a typed class, whatever folder it lives
+  in (M-81; `ERR-001` in `workflows/output-compliance.md` reports a bare `Error`).
+- **Error codes agree with the contract in both directions**: every error code a
+  boundary emits is declared in its contract, and every declared code has a test
+  that asserts it (M-77; `ERR-002` and `ERR-003` in
+  `workflows/output-compliance.md`).
+- **Entry points are tested through their real invocation**: a command-line
+  program, a `bin` script, or a process `main` is run by a test that asserts its
+  arguments, exit status, and output. A documented exit code or argument error
+  has its own case (M-82; `ENTRY-001`). Tested through its real invocation means
+  a spawned process or the entry point's run function called with real argv.
+- **Input is validated before any side effect**: an entry point validates
+  every argument and option before it opens a file, a connection, a database, or
+  a network resource, so an invalid value leaves no artifact (M-83; `VAL-001`).
+- **Retry budgets are bounds**: a retry loop declares its attempts and its
+  backoff ceiling, and a test under controlled time holds the dependency until
+  the budget is spent and asserts the attempt count and the terminal state
+  (M-54; `BOUND-001`).
 - **Identity comes from a verified credential**: in a project with an identity
   mechanism, an entry point takes the caller's identity only from a credential
   the client cannot forge (M-52), never from a header, query string, or body
@@ -553,6 +571,9 @@ src/server/<domain>/        # or src/features/<feature>/server/
 
 - Use the existing ORM/ODM or driver and its conventions.
 - Keep queries parameterized; never build queries by string concatenation.
+- A paginated or cursor-based read that issues several statements runs in one
+  read transaction or snapshot, so a row changed between pages is not counted
+  twice or skipped (M-84; `DB-003` in `workflows/output-compliance.md`).
 - Keep persistence concerns out of presentation and domain logic.
 - Coordinate schema changes through the project's migration tooling; when a
   change touches the schema, migrations, queries, indexes, or transactions,

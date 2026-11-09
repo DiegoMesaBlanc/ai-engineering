@@ -1007,6 +1007,10 @@ Return:
 - V2.76 performance claims, technical-property claims, and sweep coverage checks:
 - V2.77 detector coverage in the change-set procedure, and the AMBIGUOUS and evidence rules of the code audit:
 - V2.78 controlled clocks, edge and error coverage, design-record claims, and scope values (M-76 to M-79):
+- V2.79 commit-group closure, bound tests, comment claims, and citation resolution:
+- V2.80 verdict matrix consistency, legacy records, and runtime equivalence (M-80):
+- V2.81 typed errors, universal and cost claims, and the detectors' coverage (M-81):
+- V2.82 project-wide error model, error codes in both directions, entry-point tests, validation order, read transactions, and retry budgets (M-54, M-77, M-81 to M-84):
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -5409,7 +5413,8 @@ detector that reports the defect with `file:line`, and passes its compliant twin
 - M-81: a failure raised from a module uses the module's typed error class, never a
   generic `Error` (R-138). The rule was held only by a Skill and the audit criteria, so it
   did not reach every client; it is now canonical in `AGENTS.md`, and `ERR-001` reports a
-  bare `Error` in a module that declares a typed error class.
+  bare `Error` in a project that declares a typed error class. The error model is read from
+  the whole project (see V2.82): the folder-local reading let a module escape the rule.
 - M-65 and M-68: a universal claim written with `always` or `never`, and a cost or speed
   claim such as `lo caro` in a comment, are listed as `NOT VERIFIED` by `CLAIM-001`. The
   detector vocabulary was narrower than the rule, which says `the equivalent` of `every`.
@@ -5480,14 +5485,22 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v281.XXXXXX")"
   printf '%s\n' 'export class OrderImportError extends Error {}' > src/orders/order-import-error.ts
   printf '%s\n' 'export const parse = (v: string) => { throw new Error("bad " + v); };' > src/orders/order-timestamp.ts
   printf '%s\n' 'export const parseOk = (v: string) => { throw new OrderImportError(v); };' > src/orders/order-timestamp-ok.ts
-  # M-81, scope limit: a module with no error model is not matched.
-  printf '%s\n' 'export const charge = () => { throw new Error("card"); };' > src/billing/charge.ts
+  # M-81, project scope: a module whose folder holds no error file is matched when the project
+  # declares a typed class elsewhere (the folder-local reading let it escape).
+  mkdir -p src/payments
+  printf '%s\n' 'export const pay = () => { throw new Error("declined"); };' > src/payments/pay.ts
 
-  defect="$(error_model_check . src/orders/order-timestamp.ts src/billing/charge.ts)"
+  defect="$(error_model_check . src/orders/order-timestamp.ts src/payments/pay.ts)"
   printf '%s\n' "$defect" | grep -qF 'FAIL ERR-001: src/orders/order-timestamp.ts:1:' \
     || { echo "FAIL V2.81: ERR-001 did not report the bare Error with file:line: $defect"; exit 1; }
-  printf '%s\n' "$defect" | grep -q 'src/billing/charge.ts' \
-    && { echo "FAIL V2.81: ERR-001 reports a module with no error model: $defect"; exit 1; }
+  printf '%s\n' "$defect" | grep -qF 'FAIL ERR-001: src/payments/pay.ts:1:' \
+    || { echo "FAIL V2.81: ERR-001 did not report the module with no error file in its folder: $defect"; exit 1; }
+
+  # M-81, scope limit: a project that declares no typed error class is not matched.
+  mkdir -p nomodel/src/billing
+  printf '%s\n' 'export const charge = () => { throw new Error("card"); };' > nomodel/src/billing/charge.ts
+  nomodel="$(error_model_check nomodel src/billing/charge.ts)"
+  [ -z "$nomodel" ] || { echo "FAIL V2.81: ERR-001 reports a project with no error model: $nomodel"; exit 1; }
   twin="$(error_model_check . src/orders/order-timestamp-ok.ts)"
   [ -z "$twin" ] || { echo "FAIL V2.81: ERR-001 reports the typed twin: $twin"; exit 1; }
 
@@ -5514,6 +5527,231 @@ grep -qF 'error_model_check . $src' "$fx/sweep-removed.md" \
   && { echo "FAIL V2.81: the removal probe did not remove the ERR-001 call"; failures=1; }
 
 echo "V2.81 probe: fixtures in $fx were checked and are removed"
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.82 Regression — Project-Wide Error Model, Error Codes in Both Directions, Entry Points, Validation Order, Read Transactions, and Retry Budgets
+
+Verify that six gaps an external audit exposed are closed on every surface and by a
+detector that reports the defect with `file:line` and passes its compliant twin:
+
+- M-81: the error model is a project property. A module whose folder holds no error file
+  is matched when the project declares a typed class elsewhere (R-138). The folder-local
+  wording is retired and may not return.
+- M-77: error codes are declared in both directions. `ERR-002` reports a documented code
+  that no test names; `ERR-003` reports an emitted code that no contract declares (R-140).
+- M-82: a project's entry point is tested through its real invocation, and its exit status
+  is asserted. `ENTRY-001` reports an entry point no test invokes, or one whose status no
+  test asserts (R-139).
+- M-83: input is validated before any side effect. `VAL-001` reports a resource opened
+  before its validator, and lists an opening whose validator is in another file as
+  `NOT VERIFIED` (R-141).
+- M-84: a paginated read in a loop runs in one read transaction or snapshot. `DB-003`
+  reports a page loop with no transaction marker (R-142).
+- M-54: a retry budget is a declared bound. `BOUND-001` covers `maxAttempts` and
+  `retries` budgets, not only timeouts (R-143).
+
+The static part reads the repository. The behavioral part extracts the `sh` blocks of the
+detectors from `workflows/output-compliance.md`, runs them on fixtures in a temporary
+directory outside the repository, which is removed, and runs a removal probe on a copy of
+the sweep. It needs `awk`, `grep`, `sed`, `tr`, and `mktemp`; without them the behavioral
+part is `NOT VERIFIED`.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+ap="references/audit-pass-criteria.md"
+ir="skills/implementation-recipes/SKILL.md"
+ts="skills/testing-strategy/SKILL.md"
+db="skills/database-engineering/SKILL.md"
+vs="workflows/system-validation.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.82: $1 is missing $3"; failures=1; }
+}
+
+# The canonical wording of the four rules, and of the two expanded rules, is in AGENTS.md.
+need "$ag" "unless the project has no error model and that is stated" "the M-81 project-scope wording"
+need "$ag" "every error code a boundary emits is declared in the contract" "the M-77 two-direction wording"
+need "$ag" "is tested through its real invocation" "the M-82 canonical wording"
+need "$ag" "is validated before any side effect" "the M-83 canonical wording"
+need "$ag" "runs in one read transaction or snapshot" "the M-84 canonical wording"
+need "$ag" "a retry budget (the number of attempts" "the M-54 retry-budget wording"
+
+# Every required surface of M-81 to M-84 carries its anchor.
+need "$ir" "unless the project has no error model and that is stated" "the M-81 recipe"
+need "$ap" "unless the project has no error model and that is stated" "the M-81 criterion of Dimension 3"
+need "$oc" "unless the project has no error model and that is stated" "the M-81 detector statement"
+need "$ts" "tested through its real invocation" "the M-82 testing-strategy instruction"
+need "$ir" "tested through its real invocation" "the M-82 recipe"
+need "$ap" "is tested through its real invocation" "the M-82 criterion of Dimension 7"
+need "$oc" "tested through its real invocation" "the M-82 detector statement"
+need "$mr" "tested through its real invocation" "the M-82 registry anchor"
+need "$ir" "is validated before any side effect" "the M-83 recipe"
+need "$ap" "is validated before any side effect" "the M-83 criterion of Dimension 3"
+need "$oc" "is validated before any side effect" "the M-83 detector statement"
+need "$mr" "is validated before any side effect" "the M-83 registry anchor"
+need "$db" "runs in one read transaction or snapshot" "the M-84 database instruction"
+need "$ir" "runs in one read transaction or snapshot" "the M-84 recipe"
+need "$ap" "runs in one read transaction or snapshot" "the M-84 criterion of Dimension 5"
+need "$oc" "runs in one read transaction or snapshot" "the M-84 detector statement"
+need "$mr" "runs in one read transaction or snapshot" "the M-84 registry anchor"
+need "$ap" "every error code a boundary emits is declared" "the M-77 criterion of Dimension 4"
+need "$vs" "is validated before any side effect" "the M-83 statement of this check"
+need "$vs" "runs in one read transaction or snapshot" "the M-84 statement of this check"
+
+# Registry rows, regression rows, sections, coverage rows, and sweep calls.
+for id in M-82 M-83 M-84; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.82: no $id row in the registry"; failures=1; }
+done
+for id in R-139 R-140 R-141 R-142 R-143; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.82: no $id row in the regression matrix"; failures=1; }
+done
+for id in ERR-002 ERR-003 ENTRY-001 VAL-001 DB-003; do
+  grep -qF "| \`$id\` |" "$root/$oc" || { echo "FAIL V2.82: the coverage table has no $id row"; failures=1; }
+done
+for h in "### ERR-002 " "### ENTRY-001 " "### VAL-001 " "### DB-003 "; do
+  grep -q "^$h" "$root/$oc" || { echo "FAIL V2.82: $oc has no section starting with '$h'"; failures=1; }
+done
+for call in 'error_outcome_check . $src -- $tests -- $contracts' 'entry_point_check . $src -- $tests' 'validation_order_check . $src' 'read_transaction_check . $src' 'error_model_check . $src' 'bound_test_check . $src -- $tests'; do
+  grep -qF -- "  $call" "$root/$oc" || { echo "FAIL V2.82: the sweep does not run: $call"; failures=1; }
+done
+
+# The folder-local wording of the error model is retired. The registry and this check record it on purpose.
+retired="$(grep -rlF 'a module has an error model when a sibling file' "$root" --include='*.md' | grep -vE '/(references/mandatory-rules\.md|workflows/system-validation\.md)$')"
+[ -z "$retired" ] || { echo "FAIL V2.82: the folder-local error model wording is still present in: $retired"; failures=1; }
+
+command -v awk >/dev/null 2>&1 && command -v grep >/dev/null 2>&1 && command -v sed >/dev/null 2>&1 \
+  && command -v tr >/dev/null 2>&1 && command -v mktemp >/dev/null 2>&1 || {
+  echo "NOT VERIFIED V2.82: awk, grep, sed, tr, or mktemp is not available, the behavioral fixtures were not run"; exit 2; }
+
+# Extracts the sh blocks of one section of workflows/output-compliance.md. $1 = the rule identifier.
+extract_sec() {
+  awk -v h="$1" '
+    $0 ~ ("^### " h " ") { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v282.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  extract_sec ERR-001 > err1.sh
+  extract_sec ERR-002 > err2.sh
+  extract_sec ENTRY-001 > entry.sh
+  extract_sec VAL-001 > val.sh
+  extract_sec DB-003 > db3.sh
+  extract_sec BOUND-001 > bound.sh
+  extract_sec REPORT-001 > rep.sh
+  . ./err1.sh && . ./err2.sh && . ./entry.sh && . ./val.sh && . ./db3.sh && . ./bound.sh \
+    || { echo "FAIL V2.82: the detector blocks do not load"; exit 1; }
+
+  # M-81, defect: a module whose folder holds no error file, in a project that declares a typed class elsewhere.
+  mkdir -p src/orders src/payments
+  printf '%s\n' 'export class OrderImportError extends Error {}' > src/orders/order-import-error.ts
+  printf '%s\n' 'export const pay = () => { throw new Error("declined"); };' > src/payments/pay.ts
+  printf '%s\n' 'export const pay = () => { throw new OrderImportError("declined"); };' > src/payments/pay-ok.ts
+  e1="$(error_model_check . src/payments/pay.ts)"
+  printf '%s\n' "$e1" | grep -qF 'FAIL ERR-001: src/payments/pay.ts:1:' \
+    || { echo "FAIL V2.82: ERR-001 did not report the module outside the error folder: $e1"; exit 1; }
+  e2="$(error_model_check . src/payments/pay-ok.ts)"
+  [ -z "$e2" ] || { echo "FAIL V2.82: ERR-001 reports the typed twin: $e2"; exit 1; }
+
+  # M-77, defect: a documented code with no test, and an emitted code no contract declares.
+  mkdir -p tests docs
+  printf '%s\n' '# ETL contract' '' '`ETL_SOURCE_FAILED` is raised when the source fails.' '`ETL_OK_CODE` is an error code for a clean run.' > docs/contract.md
+  printf '%s\n' 'throw new EtlError("ETL_SOURCE_FAILED");' 'const code = "ETL_UNDECLARED";' 'export const ok = "ETL_OK_CODE";' > src/etl.ts
+  printf '%s\n' 'test("ETL_OK_CODE", () => {});' > tests/etl.test.ts
+  e3="$(error_outcome_check . src/etl.ts -- tests/etl.test.ts -- docs/contract.md)"
+  printf '%s\n' "$e3" | grep -qF 'FAIL ERR-002: docs/contract.md:3:' \
+    || { echo "FAIL V2.82: ERR-002 did not report the documented code with no test: $e3"; exit 1; }
+  printf '%s\n' "$e3" | grep -qF 'FAIL ERR-003: src/etl.ts:2:' \
+    || { echo "FAIL V2.82: ERR-003 did not report the emitted code no contract declares: $e3"; exit 1; }
+  printf '%s\n' 'export const ok = "ETL_OK_CODE";' > src/etl-ok.ts
+  printf '%s\n' '# ETL contract' '' '`ETL_OK_CODE` is an error code for a clean run.' > docs/contract-ok.md
+  e4="$(error_outcome_check . src/etl-ok.ts -- tests/etl.test.ts -- docs/contract-ok.md)"
+  [ -z "$e4" ] || { echo "FAIL V2.82: ERR-002 or ERR-003 reports the declared and tested twin: $e4"; exit 1; }
+
+  # M-82, defect: an entry point no test invokes; then one whose exit status no test asserts.
+  mkdir -p src/cli
+  printf '%s\n' 'const args = process.argv.slice(2);' 'process.exit(args.length ? 0 : 2);' > src/cli/run.ts
+  printf '%s\n' 'import { add } from "../src/math";' 'test("adds", () => {});' > tests/math.test.ts
+  e5="$(entry_point_check . src/cli/run.ts -- tests/math.test.ts)"
+  printf '%s\n' "$e5" | grep -qF 'FAIL ENTRY-001: src/cli/run.ts:1: an entry point that no test invokes' \
+    || { echo "FAIL V2.82: ENTRY-001 did not report the entry point no test invokes: $e5"; exit 1; }
+  printf '%s\n' 'import { execFile } from "node:child_process";' 'test("runs", async () => { await execFile("tsx", ["src/cli/run.ts"]); });' > tests/run-noexit.test.ts
+  e6="$(entry_point_check . src/cli/run.ts -- tests/run-noexit.test.ts)"
+  printf '%s\n' "$e6" | grep -qF 'FAIL ENTRY-001: src/cli/run.ts:1: the entry point sets an exit status' \
+    || { echo "FAIL V2.82: ENTRY-001 did not report the status no test asserts: $e6"; exit 1; }
+  printf '%s\n' 'import { execFile } from "node:child_process";' 'test("exits 2 without arguments", async () => { const r = await execFile("tsx", ["src/cli/run.ts"]); expect(r.exitCode).toBe(2); });' > tests/run.test.ts
+  e7="$(entry_point_check . src/cli/run.ts -- tests/run.test.ts)"
+  [ -z "$e7" ] || { echo "FAIL V2.82: ENTRY-001 reports the tested twin: $e7"; exit 1; }
+
+  # M-83, defect: a database opened before the argument is parsed; the twin validates first;
+  # an opening whose validator is in another file is listed as NOT VERIFIED.
+  printf '%s\n' 'const db = new Database(process.argv[3]);' 'const day = parseDay(process.argv[2]);' > src/cli/bad.ts
+  printf '%s\n' 'const day = parseDay(process.argv[2]);' 'const db = new Database(process.argv[3]);' > src/cli/good.ts
+  printf '%s\n' 'const db = new Database(process.argv[3]);' > src/cli/split.ts
+  v1="$(validation_order_check . src/cli/bad.ts)"
+  printf '%s\n' "$v1" | grep -qF 'FAIL VAL-001: src/cli/bad.ts:1:' \
+    || { echo "FAIL V2.82: VAL-001 did not report the database opened before its validator: $v1"; exit 1; }
+  v2="$(validation_order_check . src/cli/good.ts)"
+  [ -z "$v2" ] || { echo "FAIL V2.82: VAL-001 reports the validate-first twin: $v2"; exit 1; }
+  v3="$(validation_order_check . src/cli/split.ts)"
+  printf '%s\n' "$v3" | grep -qF 'NOT VERIFIED VAL-001: src/cli/split.ts:1:' \
+    || { echo "FAIL V2.82: VAL-001 did not list the opening with no validator in its file: $v3"; exit 1; }
+
+  # M-84, defect: a page loop with no read transaction; the twin wraps it in one.
+  mkdir -p src/repo
+  printf '%s\n' 'export const readAll = (db) => {' '  let page = 0; const out = [];' '  while (true) {' '    const rows = db.prepare("SELECT id FROM charges LIMIT ? OFFSET ?").all(50, page * 50);' '    if (rows.length === 0) break; out.push(...rows); page++;' '  }' '  return out;' '};' > src/repo/page.ts
+  printf '%s\n' 'export const readAll = (db) => db.transaction(() => {' '  let page = 0; const out = [];' '  while (true) {' '    const rows = db.prepare("SELECT id FROM charges LIMIT ? OFFSET ?").all(50, page * 50);' '    if (rows.length === 0) break; out.push(...rows); page++;' '  }' '  return out;' '})();' > src/repo/page-tx.ts
+  d1="$(read_transaction_check . src/repo/page.ts)"
+  printf '%s\n' "$d1" | grep -qF 'FAIL DB-003: src/repo/page.ts:4:' \
+    || { echo "FAIL V2.82: DB-003 did not report the page loop with no transaction: $d1"; exit 1; }
+  d2="$(read_transaction_check . src/repo/page-tx.ts)"
+  [ -z "$d2" ] || { echo "FAIL V2.82: DB-003 reports the transactional twin: $d2"; exit 1; }
+
+  # M-54, defect: a retry budget no test holds; then a test that holds the dependency.
+  mkdir -p src/net
+  printf '%s\n' 'export const MAX = { maxAttempts: 3 };' 'export const run = () => MAX.maxAttempts;' > src/net/retry.ts
+  printf '%s\n' 'import { run } from "../src/other";' 'test("other", () => {});' > tests/other.test.ts
+  b1="$(bound_test_check . src/net/retry.ts -- tests/other.test.ts)"
+  printf '%s\n' "$b1" | grep -qF 'FAIL BOUND-001: src/net/retry.ts:1: a bound is declared, and no test imports retry' \
+    || { echo "FAIL V2.82: BOUND-001 did not report the retry budget with no holding test: $b1"; exit 1; }
+  printf '%s\n' 'import { run } from "../src/net/retry";' 'test("retries until the budget is spent", () => { new Promise(() => {}); });' > tests/retry.test.ts
+  b2="$(bound_test_check . src/net/retry.ts -- tests/retry.test.ts)"
+  [ -z "$b2" ] || { echo "FAIL V2.82: BOUND-001 reports the holding twin: $b2"; exit 1; }
+
+  # M-80, the verdict matrix: an unnumbered matrix is not held to 14 rows (its own rule
+  # says only a numbered matrix must number every dimension); a numbered matrix of 3 rows is.
+  . ./rep.sh || { echo "FAIL V2.82: the REPORT-001 block does not load"; exit 1; }
+  printf '%s\n' '| Dimension | Status | Reason |' '|---|---|---|' '| Structure | PASS | the checks ran with exit 0 |' '| Behavior | PASS | the fixtures ran |' > unnumbered.md
+  r1="$(report_matrix_check . unnumbered.md)"
+  [ -z "$r1" ] || { echo "FAIL V2.82: REPORT-001 holds an unnumbered matrix to 14 rows: $r1"; exit 1; }
+  printf '%s\n' '| Dimension | Status | Reason |' '|---|---|---|' '| 1 | PASS | ok |' '| 2 | PASS | ok |' '| 3 | PASS | ok |' > numbered.md
+  r2="$(report_matrix_check . numbered.md)"
+  printf '%s\n' "$r2" | grep -qF 'the numbered dimension matrix has 3 rows' \
+    || { echo "FAIL V2.82: REPORT-001 did not hold a numbered 3-row matrix to 14: $r2"; exit 1; }
+  exit 0
+) || failures=1
+
+# Removal probe: a copy of the sweep with the ERR-002 call taken out must no longer run it.
+sed '/^  error_outcome_check \. \$src -- \$tests -- \$contracts$/d' "$root/$oc" > "$fx/sweep-removed.md"
+grep -qF 'error_outcome_check . $src -- $tests -- $contracts' "$fx/sweep-removed.md" \
+  && { echo "FAIL V2.82: the removal probe did not remove the ERR-002 call"; failures=1; }
+
+echo "V2.82 probe: fixtures in $fx were checked and are removed"
 rm -rf "$fx"
 
 exit "$failures"

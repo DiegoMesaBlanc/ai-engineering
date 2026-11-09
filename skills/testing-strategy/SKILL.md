@@ -133,6 +133,20 @@ Prefer:
 Do not run every test in a large repository by default if narrower,
 reliable validation is sufficient.
 
+Entry points and contracts are validated through their real invocation, not
+only through the helpers they call:
+
+- A command-line program, `bin` script, or process `main` is tested through its
+  real invocation, with its arguments, exit status, and output asserted (M-82;
+  `ENTRY-001` in `workflows/output-compliance.md`). A documented exit code or
+  argument error has its own case.
+- Every error code a contract declares has an executing test that asserts it,
+  and every code a boundary emits is declared in the contract (M-77; `ERR-002`
+  and `ERR-003` in `workflows/output-compliance.md`).
+- A declared bound, including a retry budget, is proven by a test under
+  controlled time that holds the dependency until the bound is spent (M-54,
+  M-76; `BOUND-001`).
+
 Expand validation when:
 
 - targeted tests fail
