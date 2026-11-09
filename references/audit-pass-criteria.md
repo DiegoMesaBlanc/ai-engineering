@@ -156,9 +156,13 @@ dimension. A criterion is never presented as a framework standard.
   cause while keeping the fallback is a violation, even when the user-facing
   behavior is correct. Sibling units of the same kind use the same logging
   convention, and a deviation from it is a violation.
-- A failure raised by a module uses the module's error model (its typed error
-  class). A generic error crossing a module boundary is a violation unless the
-  module has no error model and that is stated.
+- A failure raised from a module uses the module's typed error class, never a
+  generic `Error`, unless the module has no error model and that is stated (M-81).
+  The module's error model is that typed class. A module has an error model when a
+  sibling file of its folder declares a class that extends `Error`. A generic error raised there is a `FAIL` of this
+  dimension, and `ERR-001` in `workflows/output-compliance.md` reports it with
+  `file:line`. A reviewer does not accept "the message is correct" as the
+  justification for a bare `Error`.
 - A secondary (optional) dependency that fails does not change the outcome of
   the primary operation: a failed read from it is a miss, and a failed write
   to it is skipped and recorded. A write already committed in the primary store

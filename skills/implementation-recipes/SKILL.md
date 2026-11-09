@@ -87,7 +87,8 @@ implementation are:
   cap.
 - **Errors use the module's error model**: a failure raised from a module uses
   the module's typed error class, never a generic `Error`, unless the module
-  has no error model and that is stated.
+  has no error model and that is stated (M-81; `ERR-001` in
+  `workflows/output-compliance.md` reports a bare `Error`).
 - **Identity comes from a verified credential**: in a project with an identity
   mechanism, an entry point takes the caller's identity only from a credential
   the client cannot forge (M-52), never from a header, query string, or body

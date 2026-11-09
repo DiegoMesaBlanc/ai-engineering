@@ -1162,6 +1162,7 @@ project_safety_sweep() {
   decision_citation_check . $decisions
   claim_check . $mds $src
   comment_claim_check . $src
+  error_model_check . $src
   db_runtime_ddl_check . $src
   db_deploy_order_check . $migrations -- $tests
   timer_hold_check . $tests
@@ -1425,7 +1426,7 @@ claim_check() {
   root="$1"; shift
   for f in "$@"; do
     case "$f" in *.md|*.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.sh) ;; *) continue ;; esac
-    grep -nEi "(^|[^A-Za-z])(only|every|each|all|solo|todos|todas|cada|único|unico)([^A-Za-z]|$)" "$root/$f" 2>/dev/null |
+    grep -nEi "(^|[^A-Za-z])(only|every|each|all|always|never|solo|todos|todas|cada|único|unico|siempre|nunca)([^A-Za-z]|$)" "$root/$f" 2>/dev/null |
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (universal or exclusive claim: enumerate its scope before keeping it, M-68)#"
     grep -nEi "capturas?|screenshots?|\.png|\.jpe?g|\.gif|evidence|evidencia" "$root/$f" 2>/dev/null |
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (claim that cites an artifact: confirm the artifact is in the repository, M-68)#"
@@ -1433,8 +1434,41 @@ claim_check() {
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (compatibility claim: keep it only with a test that executes each deployment order, M-69)#"
     grep -nEi "(^|[^A-Za-z])(faster|más rápid[oa]s?|speed(s|ed)? up|accelerat(es|ed|e))([^A-Za-z]|$)" "$root/$f" 2>/dev/null |
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (performance claim: cite the before and after measurement of the named query, M-65)#"
+    grep -nEi "(^|[^A-Za-z])(expensive|costly|cheaper|slower|cheap|lo caro|caro|costos[oa]s?|barat[oa]s?|más lent[oa]s?|lent[oa]s?)([^A-Za-z]|$)" "$root/$f" 2>/dev/null |
+      sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (cost or speed claim: cite the measurement of the named operation, M-65)#"
     grep -nEi "covering index|index[- ]only|índice (cubriente|de cobertura)|constant[- ]time|tiempo constante|O\(1\)|O\(log n\)" "$root/$f" 2>/dev/null |
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (technical property claim: cite the query plan or the code that decides it, M-65)#"
+  done
+}
+```
+
+### ERR-001 — A module raises its failures through its typed error class
+
+M-81: a failure raised from a module uses the module's typed error class, never a
+generic `Error`, unless the module has no error model and that is stated. A module
+has an error model when a sibling file of the same folder whose name contains
+`error` declares a class that extends `Error`. A bare `new Error(` or `throw Error(`
+in a source file of that module is a `FAIL` with its line, because the caller can
+no longer tell the module's failures apart from a programming error.
+
+**Scope limit.** The detector reads the source files of the change set, excludes
+tests, and decides the module from the folder. It does not decide whether the
+generic error crosses the module boundary, and a `new Error(` in a comment is a
+candidate: the reviewer confirms each match before reporting it. A module whose
+error model is declared in another folder is not matched.
+
+```sh
+# $1 = repository root; $2... = source files, relative to it.
+error_model_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/test/*|*/tests/*|*__tests__*|*/testing/*) continue ;; esac
+    dir="$(dirname "$f")"
+    typed="$(grep -l 'extends Error' "$root/$dir"/*rror*.ts "$root/$dir"/*rror*.js 2>/dev/null | head -n 1)"
+    [ -n "$typed" ] || continue
+    grep -nE '(new|throw)[[:space:]]+Error[[:space:]]*\(' "$root/$f" 2>/dev/null |
+      sed "s#^#FAIL ERR-001: $f:#; s#\$#  (generic Error in a module with a typed error class: raise the module's typed error, M-81)#"
   done
 }
 ```
@@ -2232,6 +2266,7 @@ report_matrix_check() {
 | `CONSUME-001` | changed units | a changed unit consumes another unit |
 | `DEC-001` | decision records in the change set | a record or pattern table is in the change set |
 | `CLAIM-001` | documents and source comments in the change set | a changed file contains text |
+| `ERR-001` | source files in the change set and the sweep | a source file is created or modified in a module that declares a typed error class |
 | `DB-001` | source files in the change set | any source file is created or modified |
 | `DB-002` | migrations and tests in the change set | a migration is created or modified |
 | `SCOPE-001` | change set against the approved manifest | an approved scope manifest exists |

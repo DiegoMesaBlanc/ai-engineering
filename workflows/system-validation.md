@@ -5400,3 +5400,121 @@ rm -rf "$fx"
 
 exit "$failures"
 ```
+
+## V2.81 Regression — Typed Errors, Universal and Cost Claims, and the Detectors' Coverage
+
+Verify that three gaps an external audit exposed are closed on every surface and by a
+detector that reports the defect with `file:line`, and passes its compliant twin:
+
+- M-81: a failure raised from a module uses the module's typed error class, never a
+  generic `Error` (R-138). The rule was held only by a Skill and the audit criteria, so it
+  did not reach every client; it is now canonical in `AGENTS.md`, and `ERR-001` reports a
+  bare `Error` in a module that declares a typed error class.
+- M-65 and M-68: a universal claim written with `always` or `never`, and a cost or speed
+  claim such as `lo caro` in a comment, are listed as `NOT VERIFIED` by `CLAIM-001`. The
+  detector vocabulary was narrower than the rule, which says `the equivalent` of `every`.
+- Coverage: every detector of `workflows/output-compliance.md` that the sweep runs has its
+  coverage row and its sweep call, so a removed call is reported (R-138, the V2.77 rule).
+
+The static part reads the repository. The behavioral part extracts the `sh` blocks of
+`ERR-001` and `CLAIM-001` from `workflows/output-compliance.md`, runs them on fixtures in a
+temporary directory outside the repository, which is removed, and runs a removal probe on
+a copy of the sweep. It needs `awk`, `grep`, `sed`, and `mktemp`; without them the
+behavioral part is `NOT VERIFIED`.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+ap="references/audit-pass-criteria.md"
+ir="skills/implementation-recipes/SKILL.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.81: $1 is missing $3"; failures=1; }
+}
+
+# The rule, its registry row, its regression row, and its detector are on every surface.
+grep -q '^| M-81 |' "$root/$mr" || { echo "FAIL V2.81: no M-81 row in the registry"; failures=1; }
+grep -q '^| R-138 |' "$root/$rmx" || { echo "FAIL V2.81: no R-138 row in the regression matrix"; failures=1; }
+grep -q '^### ERR-001 ' "$root/$oc" || { echo "FAIL V2.81: $oc has no ERR-001 section"; failures=1; }
+grep -qF '| `ERR-001` |' "$root/$oc" || { echo "FAIL V2.81: the coverage table has no ERR-001 row"; failures=1; }
+grep -qF 'error_model_check . $src' "$root/$oc" || { echo "FAIL V2.81: the sweep does not run ERR-001"; failures=1; }
+need "$ag" "a failure raised from a module uses the module's typed error class" "the M-81 canonical wording"
+need "$mr" "a failure raised from a module uses the module" "the M-81 registry anchor"
+need "$ap" "a failure raised from a module uses the module's typed error class" "the M-81 criterion of Dimension 3"
+need "$ir" "a failure raised from a module uses" "the M-81 recipe"
+need "$oc" "a failure raised from a module uses the module's typed error class" "the M-81 detector statement"
+need "$rmx" "R-138" "the R-138 row"
+grep -qF 'all|always|never|' "$root/$oc" || { echo "FAIL V2.81: CLAIM-001 has no always and never vocabulary"; failures=1; }
+grep -qF 'lo caro' "$root/$oc" || { echo "FAIL V2.81: CLAIM-001 has no cost vocabulary"; failures=1; }
+
+command -v awk >/dev/null 2>&1 && command -v grep >/dev/null 2>&1 && command -v sed >/dev/null 2>&1 \
+  && command -v mktemp >/dev/null 2>&1 || {
+  echo "NOT VERIFIED V2.81: awk, grep, sed, or mktemp is not available, the behavioral fixtures were not run"; exit 2; }
+
+# Extracts the sh block of one section of workflows/output-compliance.md. $1 = the rule identifier.
+extract_sec() {
+  awk -v h="$1" '
+    $0 ~ ("^### " h " ") { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v281.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  extract_sec ERR-001 > err.sh
+  extract_sec CLAIM-001 > claim.sh
+  . ./err.sh && . ./claim.sh || { echo "FAIL V2.81: the detector blocks do not load"; exit 1; }
+  mkdir -p src/orders src/billing docs
+
+  # M-81, defect: a bare Error in a module whose sibling error file extends Error.
+  printf '%s\n' 'export class OrderImportError extends Error {}' > src/orders/order-import-error.ts
+  printf '%s\n' 'export const parse = (v: string) => { throw new Error("bad " + v); };' > src/orders/order-timestamp.ts
+  printf '%s\n' 'export const parseOk = (v: string) => { throw new OrderImportError(v); };' > src/orders/order-timestamp-ok.ts
+  # M-81, scope limit: a module with no error model is not matched.
+  printf '%s\n' 'export const charge = () => { throw new Error("card"); };' > src/billing/charge.ts
+
+  defect="$(error_model_check . src/orders/order-timestamp.ts src/billing/charge.ts)"
+  printf '%s\n' "$defect" | grep -qF 'FAIL ERR-001: src/orders/order-timestamp.ts:1:' \
+    || { echo "FAIL V2.81: ERR-001 did not report the bare Error with file:line: $defect"; exit 1; }
+  printf '%s\n' "$defect" | grep -q 'src/billing/charge.ts' \
+    && { echo "FAIL V2.81: ERR-001 reports a module with no error model: $defect"; exit 1; }
+  twin="$(error_model_check . src/orders/order-timestamp-ok.ts)"
+  [ -z "$twin" ] || { echo "FAIL V2.81: ERR-001 reports the typed twin: $twin"; exit 1; }
+
+  # CLAIM-001: an always-claim in a document and a cost claim in a comment are listed with file:line.
+  printf '%s\n' '# Contract' '' 'The offset is always UTC.' > docs/contract.md
+  printf '%s\n' '// Building the formatter is lo caro.' 'export const f = () => 1;' > src/format.ts
+  printf '%s\n' '// plain comment' 'export const g = () => 1;' > src/format-plain.ts
+  printf '%s\n' '# Contract' '' 'The offset is preserved as stored.' > docs/contract-ok.md
+  claims="$(claim_check . docs/contract.md src/format.ts src/format-plain.ts)"
+  printf '%s\n' "$claims" | grep -qF 'NOT VERIFIED CLAIM-001: docs/contract.md:3:' \
+    || { echo "FAIL V2.81: CLAIM-001 did not list the always-claim with file:line: $claims"; exit 1; }
+  printf '%s\n' "$claims" | grep -qF 'NOT VERIFIED CLAIM-001: src/format.ts:1:' \
+    || { echo "FAIL V2.81: CLAIM-001 did not list the cost claim with file:line: $claims"; exit 1; }
+  printf '%s\n' "$claims" | grep -q 'format-plain' \
+    && { echo "FAIL V2.81: CLAIM-001 lists the plain comment: $claims"; exit 1; }
+  quiet="$(claim_check . docs/contract-ok.md src/format-plain.ts)"
+  [ -z "$quiet" ] || { echo "FAIL V2.81: CLAIM-001 reports the compliant twin: $quiet"; exit 1; }
+  exit 0
+) || failures=1
+
+# Removal probe: a copy of the sweep with the ERR-001 call taken out must no longer run it.
+sed '/^  error_model_check \. \$src$/d' "$root/$oc" > "$fx/sweep-removed.md"
+grep -qF 'error_model_check . $src' "$fx/sweep-removed.md" \
+  && { echo "FAIL V2.81: the removal probe did not remove the ERR-001 call"; failures=1; }
+
+echo "V2.81 probe: fixtures in $fx were checked and are removed"
+rm -rf "$fx"
+
+exit "$failures"
+```
