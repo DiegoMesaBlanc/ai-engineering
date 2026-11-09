@@ -232,7 +232,11 @@ solely to satisfy this policy.
 8. Run the formatter's non-mutating check and the linter, capturing exit
    codes and output. A violation that pre-existed the change set is a
    finding, not a gate failure; only the violations the change set introduces
-   block the task.
+   block the task. When a whole-project script is the only formatter or linter
+   entry point, intersect its failing files with the change set: a failing file
+   inside the change set fails the gate; failing files outside it are
+   `BASELINE_FAILURE` with their count and first location, and the gate on the
+   change set is reported on its own result.
 9. Disclose every configuration, script, and dependency change, together
    with the resulting tool lifecycle states.
 

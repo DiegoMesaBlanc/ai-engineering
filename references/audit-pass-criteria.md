@@ -119,6 +119,11 @@ dimension. A criterion is never presented as a framework standard.
   record, and its absence is the verdict. The same applies to a selected design
   pattern that has no record of its forces: its record is in the change set
   (M-50).
+- A `file:line` that a design record cites resolves to the code it describes: the
+  file exists, the line is inside it, and the identifier the row names appears
+  within five lines of it (`DEC-002` in `workflows/output-compliance.md`). A citation
+  that points to another line of the same file is a `FAIL` of this dimension with
+  the cited line and the line where the identifier is found.
 - The record in the change set names every selected pattern by name with its
   force and stack translation, and it has the five SOLID rows (SRP, OCP, LSP, ISP,
   DIP) with their status. A record that states a count alone, or lacks a SOLID row,
@@ -174,7 +179,10 @@ dimension. A criterion is never presented as a framework standard.
   or a pipeline is checked against the code it describes. A statement the code
   contradicts is a finding: `P3` when it has no runtime effect, `P2` when it
   misleads a gate, a security boundary, or a pipeline decision. The auditor cites
-  the comment line and the line that contradicts it.
+  the comment line and the line that contradicts it. An ordering or traversal claim
+  in a changed comment is listed by `COMMENT-001` in `workflows/output-compliance.md`
+  and stays `NOT VERIFIED` until the reviewer cites the code and the return type that
+  decide it.
 - A contract name declared in more than one file of the change set is a `FAIL` of
   the Type/contract ownership check (`TYPE-004` in `workflows/output-compliance.md`)
   unless the declarations have different consumers and the reason is recorded.
@@ -336,6 +344,9 @@ dimension. A criterion is never presented as a framework standard.
   sees is asserted (M-54). A test that makes the dependency return a timeout result
   does not cover the guarantee: it proves the dependency, not the bound. A
   missing one is a `FAIL` of this Dimension at the test file that claims the bound.
+  The bound is any declared wait, not only an HTTP timeout: a database busy or lock
+  wait is covered too. `BOUND-001` in `workflows/output-compliance.md` lists the
+  declared bounds that no test holds, and that finding is `FAIL` of Dimension 7.
 - Every compatibility scenario the change declares has a test that executes it,
   for each deployment order (M-69): a schema change has a test in which the new
   code runs against a database without the migration and a test in which the
@@ -471,6 +482,10 @@ dimension. A criterion is never presented as a framework standard.
 - Applicable only to multi-package or multi-project changes. Otherwise `N/A`.
 - Changes stay inside the target project; package boundaries and dependency
   direction are respected.
+- A proposed commit group is self-contained: its relative imports and its decision-record citations
+  resolve inside the group or at HEAD, so the group does not depend on an uncommitted file of another group (`COMMIT-001` in
+  `workflows/output-compliance.md`, `workflows/commit.md` Phase 11). A dependency that
+  is not in the group is a `FAIL` of this dimension.
 - Every file in the change set is named in its approved scope manifest (M-71).
   A file the manifest does not name is a `FAIL` of this Dimension, and so is a
   formatter or linter rewrite that the approved scope does not own and that was

@@ -5111,3 +5111,152 @@ rm -rf "$fx"
 
 exit "$failures"
 ```
+
+## V2.79 Regression — Commit Group Closure, Bound Tests, Comment Claims, and Citation Resolution
+
+Verify that four gaps the external audit exposed are closed on every surface and by a
+detector that reports the defect with `file:line`, and passes its compliant twin:
+
+- M-05 and M-71: a commit group is self-contained, so no group depends on an uncommitted
+  file of another group (R-133). `COMMIT-001` reports the dependency, and
+  `workflows/commit.md` runs it on the proposed groups.
+- M-54 and M-76: a declared bound is proven by a test that holds its dependency, for
+  declared bounds, not only HTTP calls (R-134). `BOUND-001` reports a declared bound that
+  no test holds.
+- M-65: an ordering or traversal claim in a comment is checked against the code (R-135).
+  `COMMENT-001` lists it as `NOT VERIFIED` until the reviewer cites the code.
+- M-78: a citation in a design record resolves to the code it describes (R-136).
+  `DEC-002` reports a citation that points to another line, a line past the end of the
+  file, or a missing file.
+- A whole-project gate that is red on files outside the change set is attributed as
+  `BASELINE_FAILURE` in the commit proposal and never as the change set failing.
+
+The static part reads the repository. The behavioral part extracts the `sh` blocks of the
+four sections from `workflows/output-compliance.md` and runs them on fixtures in a
+temporary directory outside the repository, which is removed. It needs `awk`, `grep`,
+`sed`, `git`, `wc`, and `mktemp`; without them the behavioral part is `NOT VERIFIED`.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+cm="workflows/commit.md"
+pv="workflows/project-validation.md"
+ap="references/audit-pass-criteria.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.79: $1 is missing $3"; failures=1; }
+}
+
+# The four identifiers exist as sections, in the coverage table, and in the regression matrix.
+for id in COMMIT-001 BOUND-001 COMMENT-001 DEC-002; do
+  grep -q "^### $id " "$root/$oc" || { echo "FAIL V2.79: $oc has no $id section"; failures=1; }
+  grep -qF "| \`$id\` |" "$root/$oc" || { echo "FAIL V2.79: the coverage table has no $id row"; failures=1; }
+done
+for id in R-133 R-134 R-135 R-136; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.79: no $id row in the regression matrix"; failures=1; }
+done
+
+# The sweep runs the project-wide detectors, and the commit workflow runs the group closure.
+grep -qF 'bound_test_check . $src -- $tests' "$root/$oc" || { echo "FAIL V2.79: the sweep does not run BOUND-001"; failures=1; }
+grep -qF 'comment_claim_check . $src' "$root/$oc" || { echo "FAIL V2.79: the sweep does not run COMMENT-001"; failures=1; }
+grep -qF 'decision_citation_check . $decisions' "$root/$oc" || { echo "FAIL V2.79: the sweep does not run DEC-002"; failures=1; }
+grep -qF 'commit_group_closure_check' "$root/$cm" || { echo "FAIL V2.79: the commit workflow does not run COMMIT-001 on each group"; failures=1; }
+grep -qF 'BASELINE_FAILURE' "$root/$cm" || { echo "FAIL V2.79: the commit gate has no BASELINE_FAILURE attribution"; failures=1; }
+grep -qF 'intersect its failing files with the change set' "$root/$pv" \
+  || { echo "FAIL V2.79: the project gate does not attribute failing files to the change set"; failures=1; }
+
+# The audit criteria name the new detectors on the dimensions they serve.
+for id in COMMENT-001 BOUND-001 DEC-002 COMMIT-001; do
+  grep -qF "\`$id\`" "$root/$ap" || { echo "FAIL V2.79: $ap does not name $id"; failures=1; }
+done
+
+# Canonical wording of the rules these detectors enforce is still on the surfaces that carry it.
+need "$ag" "never through a real timer hold" "the M-76 anchor"
+need "$ag" "bounds the call only when the value reaches the timer" "the M-54 anchor"
+need "$ag" "A timeout declared as a value" "the M-54 declared-value rule"
+
+command -v awk >/dev/null 2>&1 && command -v grep >/dev/null 2>&1 && command -v sed >/dev/null 2>&1 \
+  && command -v git >/dev/null 2>&1 && command -v wc >/dev/null 2>&1 && command -v mktemp >/dev/null 2>&1 || {
+  echo "NOT VERIFIED V2.79: awk, grep, sed, git, wc, or mktemp is not available, the behavioral fixtures were not run"; exit 2; }
+
+# Extracts the sh block of one section of workflows/output-compliance.md. $1 = the rule identifier.
+extract_sec() {
+  awk -v h="$1" '
+    $0 ~ ("^### " h " ") { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v279.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  extract_sec COMMIT-001 > commit.sh
+  extract_sec BOUND-001 > bound.sh
+  extract_sec COMMENT-001 > comment.sh
+  extract_sec DEC-002 > citation.sh
+  . ./commit.sh && . ./bound.sh && . ./comment.sh && . ./citation.sh \
+    || { echo "FAIL V2.79: the detector blocks do not load"; exit 1; }
+
+  # R-133: a group that imports an uncommitted file is reported; the twin that includes it passes.
+  git init -q repo && cd repo || exit 1
+  mkdir -p src/db docs/decisions
+  printf '%s\n' "# repo" > README.md
+  git add -A && git -c user.name=v279 -c user.email=v279@example.invalid commit -qm base
+  printf '%s\n' 'import { store } from "./store";' 'export const a = store;' > src/db/a.ts
+  printf '%s\n' 'export const store = 1;' > src/db/store.ts
+  open="$(commit_group_closure_check . HEAD src/db/a.ts)"
+  printf '%s\n' "$open" | grep -q 'FAIL COMMIT-001: src/db/a.ts:1: import ./store resolves neither' \
+    || { echo "FAIL V2.79: COMMIT-001 did not report the uncommitted import with file:line: $open"; exit 1; }
+  closed="$(commit_group_closure_check . HEAD src/db/a.ts src/db/store.ts)"
+  [ -z "$closed" ] || { echo "FAIL V2.79: COMMIT-001 reports the closed twin: $closed"; exit 1; }
+
+  # R-134: a declared busy timeout with no holding test is reported; the twin with a never-resolving test passes.
+  printf '%s\n' 'export const cfg = { busy_timeout: 5000 };' > src/db/timed.ts
+  printf '%s\n' 'import { cfg } from "../src/db/timed";' 'test("x", () => cfg);' > src/db/timed.plain.test.ts
+  nohold="$(bound_test_check . src/db/timed.ts -- src/db/timed.plain.test.ts)"
+  printf '%s\n' "$nohold" | grep -q 'FAIL BOUND-001: src/db/timed.ts:1: no test that imports timed holds the dependency' \
+    || { echo "FAIL V2.79: BOUND-001 did not report the bound with no holding test: $nohold"; exit 1; }
+  printf '%s\n' 'import { cfg } from "../src/db/timed";' 'test("hold", () => { new Promise(() => {}); cfg; });' > src/db/timed.hold.test.ts
+  held="$(bound_test_check . src/db/timed.ts -- src/db/timed.hold.test.ts)"
+  [ -z "$held" ] || { echo "FAIL V2.79: BOUND-001 reports the held twin: $held"; exit 1; }
+
+  # R-135: an ordering claim in a comment is listed with file:line; a plain comment is not.
+  printf '%s\n' '/**' ' * Counts the rows in the order the cursor walks them.' ' */' 'export const f = () => 1;' > src/db/claim.ts
+  printf '%s\n' '// plain comment' 'export const g = () => 1;' > src/db/plain.ts
+  claims="$(comment_claim_check . src/db/claim.ts src/db/plain.ts)"
+  printf '%s\n' "$claims" | grep -q 'NOT VERIFIED COMMENT-001: src/db/claim.ts:2:' \
+    || { echo "FAIL V2.79: COMMENT-001 did not list the ordering claim with file:line: $claims"; exit 1; }
+  printf '%s\n' "$claims" | grep -q 'plain.ts' \
+    && { echo "FAIL V2.79: COMMENT-001 lists the plain comment: $claims"; exit 1; }
+
+  # R-136: a citation to the wrong line and one past the end are reported; the citation to the identifier's line passes.
+  awk 'BEGIN { for (i = 1; i <= 200; i++) { if (i == 59) print "export const parse = () => 1;"; else if (i == 150) print "const other = 1;"; else print "// line " i } }' > src/cli.ts
+  printf '%s\n' '| Principle | Status | Unit | Evidence |' '|---|---|---|---|' \
+    '| SRP | APPLIES | runner | `parse` at `src/cli.ts:150` |' \
+    '| SRP | APPLIES | runner | `parse` at `src/cli.ts:999` |' > docs/decisions/defective.md
+  printf '%s\n' '| Principle | Status | Unit | Evidence |' '|---|---|---|---|' \
+    '| SRP | APPLIES | runner | `parse` at `src/cli.ts:59` |' > docs/decisions/compliant.md
+  bad="$(decision_citation_check . docs/decisions/defective.md)"
+  printf '%s\n' "$bad" | grep -q 'FAIL DEC-002: docs/decisions/defective.md:3: src/cli.ts:150 does not show parse' \
+    || { echo "FAIL V2.79: DEC-002 did not report the wrong-line citation with file:line: $bad"; exit 1; }
+  printf '%s\n' "$bad" | grep -q 'src/cli.ts:999 is beyond the end of the file' \
+    || { echo "FAIL V2.79: DEC-002 did not report the citation past the end: $bad"; exit 1; }
+  good="$(decision_citation_check . docs/decisions/compliant.md)"
+  [ -z "$good" ] || { echo "FAIL V2.79: DEC-002 reports the compliant twin: $good"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.79 probe: fixtures in $fx were checked and are removed"
+rm -rf "$fx"
+
+exit "$failures"
+```

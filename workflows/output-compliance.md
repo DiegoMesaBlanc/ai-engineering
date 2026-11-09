@@ -771,7 +771,9 @@ These detections enforce the delivery-safety rules of `AGENTS.md`:
 **Scope limit.** The detectors read TypeScript and JavaScript and POSIX shell.
 Other ecosystems are `NOT VERIFIED` for SAFE-001 and SAFE-002 by these detectors
 and are reviewed under `references/audit-pass-criteria.md` Dimension 6 and
-Dimension 8 instead. A detection is a candidate: the reviewer confirms each match
+Dimension 8 instead. SAFE-001 reads HTTP clients only: a database busy or lock wait,
+a broker, or a child process is a bound that `BOUND-001` requires a test to hold,
+and Dimension 8 reviews its declared value. A detection is a candidate: the reviewer confirms each match
 before reporting it, and a call wrapped by a helper that sets the timeout is
 accepted after the reviewer reads the helper.
 
@@ -1157,12 +1159,16 @@ project_safety_sweep() {
   a11y_android_path_check . $src
   platform_side_effect_check . $src
   decision_record_check . $decisions
+  decision_citation_check . $decisions
   claim_check . $mds $src
+  comment_claim_check . $src
   db_runtime_ddl_check . $src
   db_deploy_order_check . $migrations -- $tests
   timer_hold_check . $tests
+  bound_test_check . $src -- $tests
   [ -n "$manifests" ] || echo "NOT VERIFIED M-61: no build manifest or app configuration is tracked, so backup is not verified"
   echo "NOT VERIFIED M-57 (downgrade): needs a base revision; run dependency_downgrade_check on the change set"
+  echo "NOT VERIFIED COMMIT-001: needs a proposed commit group; run commit_group_closure_check on each group (workflows/commit.md Phase 11)"
 }
 ```
 
@@ -1935,6 +1941,164 @@ tree, give the integration test its explicit name or tree, or rename the
 support location. The check never reorganizes code; it reports `file:line`
 evidence.
 
+### COMMIT-001 — Every proposed commit group is self-contained
+
+M-05 and M-71: a commit group is proposed only when its files are reviewable and
+buildable without the uncommitted files of another group. Each relative import of
+a changed source file must resolve to a file in the same group or to a file tracked
+at the base revision. Each file that a changed decision record cites by name must be
+in the same group or at the base. A reference that resolves only to an uncommitted
+file of another group is a `FAIL`: that group cannot be committed or reviewed alone.
+The check runs once per proposed group from `workflows/commit.md` (Phase 11). It reads
+the working tree and the base revision and never stages anything.
+
+```sh
+# $1 = repository root; $2 = base revision (HEAD); $3... = the files of ONE proposed commit group, relative to root.
+commit_group_closure_check() {
+  root="$1"; base="$2"; shift 2
+  git -C "$root" rev-parse --verify -q "$base^{commit}" >/dev/null 2>&1 ||
+    { echo "NOT VERIFIED COMMIT-001: base revision $base does not resolve, so the group closure is not checked"; return 0; }
+  group="$(printf '%s\n' "$@")"
+  basefiles="$(git -C "$root" ls-tree -r --name-only "$base")"
+  for f in "$@"; do
+    [ -f "$root/$f" ] || continue
+    case "$f" in
+      *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs)
+        dir="$(dirname "$f")"
+        grep -nE "(from|import)[[:space:]]*\(?[[:space:]]*['\"]\.\.?/" "$root/$f" 2>/dev/null |
+        while IFS= read -r hit; do
+          ln="${hit%%:*}"
+          spec="$(printf '%s\n' "$hit" | sed -E "s/.*[\"'](\.[^\"']*)[\"'].*/\1/")"
+          target="$(printf '%s/%s\n' "$dir" "$spec" | awk -F/ '{ n = 0; for (i = 1; i <= NF; i++) { if ($i == "" || $i == ".") continue; if ($i == "..") { if (n > 0) n--; continue } p[++n] = $i } s = ""; for (i = 1; i <= n; i++) s = s (i > 1 ? "/" : "") p[i]; print s }')"
+          resolved=0
+          for cand in "$target" "$target.ts" "$target.tsx" "$target.js" "$target.jsx" "$target/index.ts" "$target/index.tsx" "$target/index.js"; do
+            if printf '%s\n' "$group" | grep -qxF -- "$cand" || printf '%s\n' "$basefiles" | grep -qxF -- "$cand"; then resolved=1; break; fi
+          done
+          [ "$resolved" = 1 ] || echo "FAIL COMMIT-001: $f:$ln: import $spec resolves neither in this commit group nor at $base (M-05, M-71)"
+        done ;;
+      *.md)
+        grep -oE '[A-Za-z0-9_./-]+\.(ts|tsx|js|jsx|mjs|cjs|sql)' "$root/$f" 2>/dev/null | sort -u |
+        while IFS= read -r tok; do
+          name="$(basename "$tok")"
+          printf '%s\n%s\n' "$group" "$basefiles" |
+            awk -v b="$name" 'BEGIN { ok = 0 } { n = split($0, a, "/"); if (a[n] == b) ok = 1 } END { exit ok ? 0 : 1 }' ||
+            echo "FAIL COMMIT-001: $f: cites $tok, which is neither in this commit group nor at $base (M-65)"
+        done ;;
+    esac
+  done
+}
+```
+
+### BOUND-001 — A declared timeout is proven by a test that holds the dependency
+
+M-54 and M-76: a declared bound (a timeout option, a busy or lock wait, a deadline)
+is proven only by a test in which the dependency never resolves, under controlled
+time, and whose terminal state is asserted. A test that makes the dependency return
+a timeout result proves the dependency, not the bound. The detector covers declared
+bounds, not only HTTP calls: a SQLite `busy_timeout`, a `BEGIN IMMEDIATE` wait, a
+lock or statement timeout, and a broker or process deadline are declared bounds too.
+For each changed source file that declares a bound, a test that imports
+the module must hold the dependency so that it never settles, by a never-resolving
+promise, a second connection that holds the lock, or an equivalent construct. The
+detector identifies candidates; the reviewer confirms that the test asserts the
+terminal state the user sees.
+
+```sh
+# $1 = repository root; $2... = changed or tracked source files; then `--`; then the test files, relative to root.
+bound_test_check() {
+  root="$1"; shift
+  srcs=""; tests=""; mode=src
+  for a in "$@"; do
+    if [ "$a" = "--" ]; then mode=tests; continue; fi
+    if [ "$mode" = src ]; then srcs="$srcs$a
+"; else tests="$tests$a
+"; fi
+  done
+  printf '%s' "$srcs" | while IFS= read -r f; do
+    [ -n "$f" ] && [ -f "$root/$f" ] || continue
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*|*/testing/*) continue ;; esac
+    grep -qE '(busy_timeout|timeoutMs|timeout[[:space:]]*[:=]|lock_timeout|statement_timeout|deadline[[:space:]]*[:=]|BEGIN IMMEDIATE)' "$root/$f" || continue
+    mod="$(basename "$f")"; mod="${mod%.*}"
+    importers="$(printf '%s' "$tests" | while IFS= read -r t; do
+      [ -n "$t" ] && [ -f "$root/$t" ] || continue
+      grep -qE "^import .*from ['\"][^'\"]*$mod(\.[a-z]+)?['\"]" "$root/$t" && printf '%s\n' "$t"
+    done)"
+    if [ -z "$importers" ]; then
+      echo "FAIL BOUND-001: $f:1: a bound is declared, and no test imports $mod to hold its dependency (M-54, M-76)"
+      continue
+    fi
+    held="$(printf '%s\n' "$importers" | while IFS= read -r t; do
+      grep -lE 'new Promise\(\( *\) *=>|never (resolves|settles)|BEGIN IMMEDIATE|holds? the (lock|connection)' "$root/$t" 2>/dev/null
+    done)"
+    [ -n "$held" ] || echo "FAIL BOUND-001: $f:1: no test that imports $mod holds the dependency so that it never resolves; the bound is not proven (M-54, M-76)"
+  done
+}
+```
+
+### COMMENT-001 — An ordering or return claim in a comment is checked against the code
+
+M-65 and the comment-accuracy rule of Dimension 3: a comment that states the order
+in which data is produced, the cursor or traversal that produces it, or the most or
+least recent item is a claim about the code. The claim is checked against the
+function it documents and against its return type. The detector lists the changed comments that carry an ordering or traversal claim, so that none is missed. Each
+listed comment is `NOT VERIFIED` until the reviewer cites the code that decides it,
+and a comment the code contradicts is a finding of the change, with both lines.
+
+```sh
+# $1 = repository root; $2... = changed or tracked TypeScript or JavaScript files, relative to root.
+comment_claim_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    grep -nE '^[[:space:]]*(\*|//|/\*\*)' "$root/$f" 2>/dev/null |
+    grep -iE 'order|ordered|sorted|sort|recent|newest|oldest|cursor|recorr|traverse|iterat|ascending|descending|orden|más reciente|mas reciente' |
+    while IFS= read -r hit; do
+      echo "NOT VERIFIED COMMENT-001: $f:${hit%%:*}: a comment states an ordering or traversal claim; the reviewer checks it against the code and the return type (M-65)"
+    done
+  done
+}
+```
+
+### DEC-002 — A `file:line` in a decision record names the code it describes
+
+M-78: a `file:line` that a record cites for a unit, a responsibility, or a consumer
+must point to the code it describes. `DEC-001` checks that the citation exists in the
+record; this check checks that it resolves in the repository. The cited file must
+exist, the line must be inside it, and the identifier that the row names first in
+backticks must appear within five lines of the cited line. A citation that points to
+a different line of the same file is a `FAIL` with both the cited line and the line
+where the identifier is found. A row that names no identifier is `NOT VERIFIED`,
+because its citation cannot be checked.
+
+```sh
+# $1 = repository root; $2... = decision records, relative to root.
+decision_citation_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.md) ;; *) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    grep -n '^|' "$root/$f" 2>/dev/null | while IFS= read -r hit; do
+      rowno="${hit%%:*}"; row="${hit#*:}"
+      sym="$(printf '%s\n' "$row" | grep -oE '`[A-Za-z_][A-Za-z0-9_]*`' | head -n 1 | tr -d '`')"
+      printf '%s\n' "$row" | grep -oE '[A-Za-z0-9_./-]+\.[A-Za-z0-9]+:[0-9]+' | while IFS= read -r cite; do
+        path="${cite%:*}"; line="${cite##*:}"
+        [ -f "$root/$path" ] || { echo "FAIL DEC-002: $f:$rowno: cited file $path does not exist (M-78)"; continue; }
+        total="$(wc -l < "$root/$path" | tr -d ' ')"
+        if [ "$line" -lt 1 ] || [ "$line" -gt "$total" ]; then
+          echo "FAIL DEC-002: $f:$rowno: $cite is beyond the end of the file ($total lines) (M-78)"; continue
+        fi
+        [ -n "$sym" ] || { echo "NOT VERIFIED DEC-002: $f:$rowno: $cite is in a row that names no identifier in backticks, so the line cannot be checked (M-78)"; continue; }
+        start=$(( line > 5 ? line - 5 : 1 )); end=$(( line + 5 ))
+        sed -n "${start},${end}p" "$root/$path" | grep -qwF -- "$sym" ||
+          echo "FAIL DEC-002: $f:$rowno: $cite does not show $sym within 5 lines of the cited line (M-78)"
+      done
+    done
+  done
+}
+```
+
 ## Procedure
 
 1. Resolve the target project root, the base revision, and the change set
@@ -1991,6 +2155,10 @@ evidence.
 | `STATE-001` | read-only gates | a read-only gate runs |
 | `A11Y-001`, `A11Y-002` | changed UI and platform files | accessibility applies |
 | `DIP-002` | changed logic modules | a logic module imports platform code |
+| `COMMIT-001` | each proposed commit group, from `workflows/commit.md` Phase 11 | a commit group is proposed |
+| `BOUND-001` | changed source files that declare a bound, and the test files | a changed source declares a timeout, a busy or lock wait, or a deadline |
+| `COMMENT-001` | changed TypeScript or JavaScript files | a changed file contains a comment |
+| `DEC-002` | decision records | a record is in the change set |
 | `CHECK-001`, `CHECK-002` | phase reports | the work reports phases or checklists |
 | `GATE-001` | installation proposals | a dependency or tooling installation is proposed |
 | Whole-project sweep | project, health probe | the health probe runs; the sweep is not a change-set check |

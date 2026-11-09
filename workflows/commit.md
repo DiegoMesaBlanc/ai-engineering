@@ -89,6 +89,14 @@ Run the formatter check of `workflows/project-validation.md` (Phase 7) over
 the scoped files. A failing check blocks commits. Do not auto-format; the user
 must run the formatter separately.
 
+When the project also has a whole-project script (for example
+`npm run format:check`), run it too and attribute every failing file: a file in
+the change set blocks the commit; a file outside it is a `BASELINE_FAILURE` of the
+health probe (`workflows/project-validation.md`, Phase 8a), reported with its count
+and first location, and does not block. A red whole-project run with no failing
+file in the change set is never reported as the commit's gate failing, and never as
+passing.
+
 ## Phase 5 — Lint
 
 Run the linter of `workflows/project-validation.md` (Phases 5 and 7). A failing
@@ -161,6 +169,13 @@ Group the scoped changes into atomic commits:
 - Do not create commits merely because a file changed.
 - Prefer small, atomic commits.
 - Stage only the intended files/hunks for each commit.
+- Check the closure of every group with `commit_group_closure_check` (COMMIT-001 in
+  `workflows/output-compliance.md`), passing the files of that group. Every relative
+  import and every decision-record citation of a group must resolve inside the group
+  or at HEAD. A group whose file depends on an uncommitted file of another group is
+  not proposed as it stands: either the dependency moves into the group that needs
+  it, or the dependency is committed first as its own group. Each group's closure
+  result is shown in the Phase 13 proposal.
 
 ## Phase 12 — Commit Message Generation
 
@@ -203,7 +218,9 @@ is not evidence (M-65).
   named in the manifest, or it is a blocking item for the approval question.
 - The diff of each proposed group, so the actual adjustments can be reviewed.
 - Tooling lifecycle states and gate results.
-- Each proposed commit group: files/hunks, message, and rationale.
+- Each proposed commit group: files/hunks, message, rationale, and its closure
+  result (COMMIT-001: every import and citation resolves inside the group or at HEAD).
+- The attribution of every failing gate file: in the change set, or `BASELINE_FAILURE`.
 - Warnings, skipped checks, and anything that could not be verified.
 
 Then ask explicitly:
