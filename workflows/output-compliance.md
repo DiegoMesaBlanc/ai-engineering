@@ -128,19 +128,44 @@ them are consumed by the same component, service, or logical unit. Types
 with different consumers are separated by ownership, following the layer or
 module that owns each contract.
 
-**Detection:**
+**Detection.** The function reads one contract file and lists, for each type it
+declares, the production files that import it. The consumer of a type is a source
+file under `src/` that imports the name, excluding the contract file itself, the
+barrels (`index.*`), and the test and specification files (a test consumes its
+unit, it is not a second consumer of the contract). Types with identical consumer
+sets may share the file. A type whose consumer set differs from the first type's
+set is a `FAIL` at the line of its declaration. A type with no consumer is not
+compared; it is covered by `TYPE-001` when it lives with runtime behavior.
 
-1. For each type declared in a contract file, list the files that import it:
+```sh
+# $1 = project root; $2 = contract file, relative to the root.
+consumer_group_check() {
+  root="$1"; f="$2"
+  [ -d "$root/src" ] || { echo "NOT VERIFIED TYPE-002: $f: there is no src/ folder, so the consumers were not searched"; return 0; }
+  work="$(mktemp -d)" || return 1
+  awk '/^export (declare )?(interface|type|enum) [A-Za-z_$]/ {
+    n = $0; sub(/^export (declare )?(interface|type|enum) /, "", n); sub(/[^A-Za-z0-9_$].*$/, "", n)
+    print NR "\t" n }' "$root/$f" |
+  while IFS="$(printf '\t')" read -r line name; do
+    consumers="$(grep -rlE "import[^;]*[^A-Za-z0-9_\$]${name}[^A-Za-z0-9_\$]" "$root/src" \
+      --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' 2>/dev/null |
+      grep -vE "/index\.|\.(test|spec)\.|/$(basename "$f")\$" | sort | tr '\n' ' ')"
+    [ -n "$consumers" ] || continue
+    printf '%s\t%s\t%s\n' "$line" "$name" "$consumers"
+  done > "$work/types.tsv"
+  awk -F '\t' -v file="$f" '
+    NR == 1 { first = $3 }
+    $3 != first { print "FAIL TYPE-002: " file ":" $1 ": " $2 " is consumed by a different set of files than the first type of this file (TYPE-002)" }
+  ' "$work/types.tsv"
+  rm -rf "$work"
+}
+```
 
-   ```sh
-   grep -rn "import[[:space:]].*\b<TypeName>\b" <project-root>/src \
-     --include='*.ts' --include='*.tsx'
-   ```
-
-2. Compare the consumer sets. Types with identical consumer sets may share a
-   file. Types with different consumer sets must be separated.
-3. A type with no external consumer that lives in a file with runtime
-   behavior is already covered by `TYPE-001`.
+The `FAIL` line names each type whose consumer set differs from the first type of the
+file. A file whose types share one consumer set passes, and a file with no consumed
+type prints nothing. The check runs over the contract files named by `TYPE-001`; its
+consumer list is taken from the source tree of the project, so a project without a
+`src/` folder is `NOT VERIFIED` for this rule, not a pass.
 
 ### TYPE-003 — No pass-through re-export of a consumed contract
 
@@ -583,9 +608,11 @@ test case is declared with `test`, not `it`.
 
 **Scope.** The check reads every test file the change set **creates** in full,
 and every test file it **modifies** only on the lines the change set adds. A
-violation that already exists in the base revision of a modified file is a
-recorded finding, never a `FAIL` (`AGENTS.md`, pre-existing violations). A test
-file the task does not touch is never read.
+violation that already exists in the base revision of a modified file is printed
+as `FINDING`, with its `file:line`, and is never a `FAIL` (`AGENTS.md`,
+pre-existing violations). A `FINDING` is recorded in the report and does not block
+the task; it is not dropped silently (M-47, R-145). A test file the task does not
+touch is never read.
 
 **Detection.** The function reads each file and reports every line where a
 test API is called or read as a member, `(?<![.\w$])NAME(` or `NAME.identifier`,
@@ -610,17 +637,22 @@ test_api_check() {
     for my $n (qw(describe test it expect vi beforeEach afterEach beforeAll afterAll)) {
       while ($s =~ /(?<![.\w\$])\Q$n\E(?:\s*\(|\.[A-Za-z_])/g) {
         my $line = 1 + (substr($s, 0, $-[0]) =~ tr/\n//);
-        next if $filter && !$on{$line};
-        print "FAIL TEST-001: $f:$line: $n is used without an explicit import\n" unless $imp{$n};
+        my $pre = $filter && !$on{$line};
+        my $kind = $pre ? "FINDING" : "FAIL";
+        my $note = $pre ? " (pre-existing in the base revision: a recorded finding, not a FAIL)" : "";
+        print "$kind TEST-001: $f:$line: $n is used without an explicit import$note\n" unless $imp{$n};
       }
     }
     while ($s =~ /(?<![.\w\$])it\s*\(/g) {
       my $line = 1 + (substr($s, 0, $-[0]) =~ tr/\n//);
-      next if $filter && !$on{$line};
-      print "FAIL TEST-002: $f:$line: the case is declared with it, not test\n";
+      my $pre = $filter && !$on{$line};
+      my $kind = $pre ? "FINDING" : "FAIL";
+      my $note = $pre ? " (pre-existing in the base revision: a recorded finding, not a FAIL)" : "";
+      print "$kind TEST-002: $f:$line: the case is declared with it, not test$note\n";
     }
   ' "$1" "$filter" "$added")
-  [ -n "$findings" ] && { printf '%s\n' "$findings"; return 1; }
+  [ -n "$findings" ] && printf '%s\n' "$findings"
+  printf '%s\n' "$findings" | grep -q '^FAIL' && return 1
   return 0
 }
 
@@ -1170,6 +1202,7 @@ project_safety_sweep() {
   read_transaction_check . $src
   db_runtime_ddl_check . $src
   db_deploy_order_check . $migrations -- $tests
+  index_coverage_check . $src $migrations
   timer_hold_check . $tests
   bound_test_check . $src -- $tests
   [ -n "$manifests" ] || echo "NOT VERIFIED M-61: no build manifest or app configuration is tracked, so backup is not verified"
@@ -1724,6 +1757,114 @@ db_deploy_order_check() {
 }
 ```
 
+### DB-004 — A query predicate is served by an index on its column
+
+M-85: a query predicate on an application table is served by an index whose leading
+column is the predicate's column. A `WHERE col = ?` (or `$1`, `:name`, `@name`) on a
+table that holds no index with `col` as its leading column is a full scan on every
+miss, and the external audit found exactly that on a list query that filtered by the
+owner's identifier. The detector reads the SQL statements of the source files and the
+index definitions of every file it is given (migrations and the store files that
+create an index at open, which also appear in `DB-001`).
+
+**Scope limit.** The detector reads a `SELECT` with one `FROM` table and a `WHERE` or
+`AND` equality on a column. A column covered by a `PRIMARY KEY` or `UNIQUE` constraint
+in its `CREATE TABLE` is covered. A statement with a `JOIN` or a comma-separated `FROM`
+cannot be resolved to one table, so its predicates are `NOT VERIFIED`, never passed.
+The detector is a candidate generator for the Dimension 5 review, which confirms the
+statement and the access pattern; it does not replace `EXPLAIN` for a performance
+claim (M-65, `CLAIM-001`).
+
+```sh
+# $1 = repository root; $2... = source and migration files, relative to it.
+index_coverage_check() {
+  root="$1"; shift
+  (cd "$root" && perl -e '
+    my (%lead, %src);
+    my @files = grep { !m{(^|/)(test|tests|spec|__tests__)/|\.(test|spec)\.} } @ARGV;
+    for my $f (@files) {
+      open my $h, "<", $f or next;
+      local $/; my $s = <$h>; close $h;
+      $src{$f} = $s;
+      while ($s =~ /CREATE\s+(?:UNIQUE\s+)?INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?\S+\s+ON\s+[`"]?(\w+)[`"]?\s*\(\s*[`"]?(\w+)/gi) {
+        $lead{lc $1}{lc $2} = 1;
+      }
+      while ($s =~ /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"]?(\w+)[`"]?\s*\((.*?)\)\s*;/gis) {
+        my ($t, $body) = (lc $1, $2);
+        while ($body =~ /(?:^|[,\n(])\s*[`"]?(\w+)[`"]?[^,]*?\b(?:PRIMARY\s+KEY|UNIQUE)\b/gi) { $lead{$t}{lc $1} = 1 }
+        while ($body =~ /PRIMARY\s+KEY\s*\(\s*[`"]?(\w+)/gi) { $lead{$t}{lc $1} = 1 }
+      }
+    }
+    for my $f (@files) {
+      my $s = $src{$f};
+      next unless defined $s && $s =~ /\bSELECT\b/i;
+      while ($s =~ /\bSELECT\b(.*?)(?=[`";]|\z)/gis) {
+        my ($body, $base) = ($1, $-[1]);
+        next unless $body =~ /\bFROM\s+[`"]?(\w+)[`"]?/i;
+        my $t = lc $1;
+        next unless $body =~ /\b(?:WHERE|AND)\b/i;
+        my $ambiguous = ($body =~ /\bJOIN\b/i || $body =~ /\bFROM\s+[`"]?\w+[`"]?\s*,/i);
+        while ($body =~ /\b(?:WHERE|AND)\s+(?:[`"]?\w+[`"]?\.)?[`"]?(\w+)[`"]?\s*=\s*(?:\?|\$\d+|:\w+|\@\w+)/gi) {
+          my $col = lc $1;
+          my $line = 1 + (substr($s, 0, $base + $-[0]) =~ tr/\n//);
+          if ($ambiguous) {
+            print "NOT VERIFIED DB-004: $f:$line: $col = ? is in a statement with a JOIN or several tables, so its table cannot be resolved (M-85)\n";
+            next;
+          }
+          next if $lead{$t}{$col};
+          print "FAIL DB-004: $f:$line: $col = ? on table $t has no index whose leading column is $col (M-85)\n";
+        }
+      }
+    }
+  ' "$@")
+}
+```
+
+A `FAIL` names the predicate, its table, and its line. The compliant twin adds an index
+whose first column is the predicate's column, through a migration; the same statement
+then passes. Verified by `V2.83` on a fixture with the external audit's violation.
+
+### AUTH-002 — A permission grant the approved requirement does not name is a human gate
+
+M-86: a change that grants, widens, or adds a permission, role, scope, or access rule
+that the approved requirement does not name is a human decision gate. The external
+audit found a `viewer` role granted read access to payment methods, which exposed brand,
+last four digits, and expiry to a role that had no payment access, and the requirement
+did not ask for it. The detector lists each permission the change set adds in an
+authorization file. The reviewer decides whether the requirement names it; an unnamed
+grant is not merged until the user approves it explicitly (AGENTS.md, Human Decision
+Gates).
+
+**Scope.** Files whose path names an authorization concept (`auth`, `permission`,
+`polic`, `role`, `scope`, `acl`, `rbac`) and the lines the change set adds. The detector
+matches a permission verb inside a list or an object literal, such as `["read"]`. It
+does not decide whether the grant is needed: that is the human gate.
+
+```sh
+# $1 = base revision; $2... = changed files, relative to the repository root.
+authorization_grant_check() {
+  base="$1"; shift
+  for f in "$@"; do
+    case "$f" in *auth*|*permission*|*polic*|*role*|*scope*|*acl*|*rbac*) ;; *) continue ;; esac
+    git diff -U0 "$base" -- "$f" | awk -v file="$f" '
+      /^@@/ { split($3, r, ","); n = substr(r[1], 2) + 0; next }
+      /^\+\+\+/ { next }
+      /^-/ { next }
+      /^\+/ {
+        if (substr($0, 2) ~ /\[[^]]*(read|write|create|update|delete|manage|admin|view|\*)/)
+          print "FAIL AUTH-002: " file ":" n ": an added permission grant; the approved requirement must name it, or the user approves it (M-86)"
+        n++; next
+      }
+      { n++ }'
+  done
+}
+```
+
+The compliant twin keeps the grant set of the base revision and adds no permission; the
+check then prints nothing. The `FAIL` is the human gate: the report shows the grant, the
+exposed data, and the requirement that does or does not name it, and the change waits for
+the user's decision.
+
 ### SCOPE-001 — Every changed file is in the approved scope manifest
 
 M-71: the change set is compared with the scope manifest the user approved. This
@@ -2214,6 +2355,35 @@ commit_group_closure_check() {
 }
 ```
 
+### COMMIT-002 — Every commit a proposal carries is in the approved scope
+
+M-87: a proposed commit or pull request carries only the commits of the approved scope.
+A branch stacked on another task's commits carries them into `base..HEAD`; the external
+audit found nine commits of other tasks in a branch that was meant to ship one change. A
+commit in `base..HEAD` that touches a file the approved scope manifest does not name is a
+`FAIL` that blocks the proposal until the user either rebases the branch onto the base or
+accepts the commit in writing (`workflows/commit.md`, Phase 1).
+
+```sh
+# $1 = base revision; $2 = approved scope manifest (one approved path per line).
+out_of_scope_commit_check() {
+  base="$1"; manifest="$2"
+  [ -f "$manifest" ] || { echo "NOT VERIFIED COMMIT-002: no approved scope manifest, so the commits of $base..HEAD were not attributed"; return 0; }
+  git rev-list --reverse "$base"..HEAD | while IFS= read -r c; do
+    git show --name-only --format= "$c" | sed '/^$/d' | while IFS= read -r p; do
+      grep -qxF -- "$p" "$manifest" || {
+        echo "FAIL COMMIT-002: $c $(git log -1 --format=%s "$c"): touches $p, which the approved manifest does not name (M-87)"
+        break
+      }
+    done
+  done
+}
+```
+
+A branch whose commits touch only manifest paths prints nothing. A stacked branch prints
+one `FAIL` per foreign commit, with the commit, its subject, and the first path outside the
+manifest. The check runs in the commit proposal before Phase 13.
+
 ### BOUND-001 — A declared timeout is proven by a test that holds the dependency
 
 M-54 and M-76: a declared bound (a timeout option, a busy or lock wait, a deadline)
@@ -2291,32 +2461,37 @@ comment_claim_check() {
 M-78: a `file:line` that a record cites for a unit, a responsibility, or a consumer
 must point to the code it describes. `DEC-001` checks that the citation exists in the
 record; this check checks that it resolves in the repository. The cited file must
-exist, the line must be inside it, and the identifier that the row names first in
+exist, the line must be inside it, and the identifier that the line names first in
 backticks must appear within five lines of the cited line. A citation that points to
 a different line of the same file is a `FAIL` with both the cited line and the line
-where the identifier is found. A row that names no identifier is `NOT VERIFIED`,
+where the identifier is found. A line that names no identifier is `NOT VERIFIED`,
 because its citation cannot be checked.
 
+**Scope.** Every line of a decision record or a contract document that carries a
+`file:line` citation is checked, in a table row, a list item, or prose. A citation
+outside a table, such as the one in the body of a decision note, is not exempt; the
+external audit found a stale citation in exactly that place (R-136, R-145).
+
 ```sh
-# $1 = repository root; $2... = decision records, relative to root.
+# $1 = repository root; $2... = decision records and contract documents, relative to root.
 decision_citation_check() {
   root="$1"; shift
   for f in "$@"; do
     case "$f" in *.md) ;; *) continue ;; esac
     [ -f "$root/$f" ] || continue
-    grep -n '^|' "$root/$f" 2>/dev/null | while IFS= read -r hit; do
+    grep -nE '[A-Za-z0-9_./-]+\.[A-Za-z0-9]+:[0-9]+' "$root/$f" 2>/dev/null | while IFS= read -r hit; do
       rowno="${hit%%:*}"; row="${hit#*:}"
       sym="$(printf '%s\n' "$row" | grep -oE '`[A-Za-z_][A-Za-z0-9_]*`' | head -n 1 | tr -d '`')"
       printf '%s\n' "$row" | grep -oE '[A-Za-z0-9_./-]+\.[A-Za-z0-9]+:[0-9]+' | while IFS= read -r cite; do
-        path="${cite%:*}"; line="${cite##*:}"
-        [ -f "$root/$path" ] || { echo "FAIL DEC-002: $f:$rowno: cited file $path does not exist (M-78)"; continue; }
-        total="$(wc -l < "$root/$path" | tr -d ' ')"
+        cited_file="${cite%:*}"; line="${cite##*:}"
+        [ -f "$root/$cited_file" ] || { echo "FAIL DEC-002: $f:$rowno: cited file $cited_file does not exist (M-78)"; continue; }
+        total="$(wc -l < "$root/$cited_file" | tr -d ' ')"
         if [ "$line" -lt 1 ] || [ "$line" -gt "$total" ]; then
           echo "FAIL DEC-002: $f:$rowno: $cite is beyond the end of the file ($total lines) (M-78)"; continue
         fi
         [ -n "$sym" ] || { echo "NOT VERIFIED DEC-002: $f:$rowno: $cite is in a row that names no identifier in backticks, so the line cannot be checked (M-78)"; continue; }
         start=$(( line > 5 ? line - 5 : 1 )); end=$(( line + 5 ))
-        sed -n "${start},${end}p" "$root/$path" | grep -qwF -- "$sym" ||
+        sed -n "${start},${end}p" "$root/$cited_file" | grep -qwF -- "$sym" ||
           echo "FAIL DEC-002: $f:$rowno: $cite does not show $sym within 5 lines of the cited line (M-78)"
       done
     done
@@ -2364,7 +2539,11 @@ report_matrix_check() {
       function trim(s) { gsub(/^[ \t`*]+|[ \t`*]+$/, "", s); return s }
       {
         line = low($0)
-        if (line ~ /baseline_failure/) baseline = 1
+        if (line ~ /baseline_failure/) {
+          baseline = 1
+          if (line ~ /(npm run|format|lint|typecheck|test|build)/ && $0 !~ /[0-9]/)
+            print "FAIL REPORT-001: " f ":" NR ": a gate attributed BASELINE_FAILURE states no count of the failing files; state the count and the first location (M-80, project-validation)"
+        }
         if ($0 ~ /^\|/) {
           n = split($0, c, "|")
           dim = trim(c[2]); st = toupper(trim(c[3])); mot = low(trim(c[4]))
@@ -2435,7 +2614,7 @@ report_matrix_check() {
 |---|---|---|
 | `FUNC-001` | change set | TypeScript or JavaScript source is created or modified |
 | `TYPE-001` | change set | TypeScript or JavaScript source is created or modified |
-| `TYPE-002` | contract files named by `TYPE-001` | a contract file is in the change set |
+| `TYPE-002` | contract files named by `TYPE-001`; `consumer_group_check` | a contract file is in the change set |
 | `TYPE-003` | change set | a contract is forwarded by a re-export or alias |
 | `TYPE-004` | source tree | any contract is declared in the change set |
 | `FILE-001` | change set and source tree | source is created or modified |
@@ -2465,6 +2644,9 @@ report_matrix_check() {
 | `DB-003` | source files in the change set and the sweep | a source file holds a page query inside a loop |
 | `DB-001` | source files in the change set | any source file is created or modified |
 | `DB-002` | migrations and tests in the change set | a migration is created or modified |
+| `DB-004` | source files and migrations in the change set and the sweep | a source file issues a `SELECT` with a `WHERE` or `AND` equality, or a migration creates an index (M-85) |
+| `AUTH-002` | changed authorization, permission, role, or scope files | such a file is created or modified (M-86) |
+| `COMMIT-002` | commits in `base..HEAD` against the approved scope manifest | a commit proposal is prepared (M-87) |
 | `SCOPE-001` | change set against the approved manifest | an approved scope manifest exists |
 | `SCOPE-002` | change set diff against the approved manifest | a source, configuration, or test file is modified |
 | `INV-001` | reports or analyses that list an inventory | the change set contains such a report |
@@ -2474,7 +2656,7 @@ report_matrix_check() {
 | `COMMIT-001` | each proposed commit group, from `workflows/commit.md` Phase 11 | a commit group is proposed |
 | `BOUND-001` | changed source files that declare a bound, and the test files | a changed source declares a timeout, a busy or lock wait, a deadline, or a retry budget |
 | `COMMENT-001` | changed TypeScript or JavaScript files | a changed file contains a comment |
-| `DEC-002` | decision records | a record is in the change set |
+| `DEC-002` | decision records and contract documents, every line with a citation | a record or contract document is in the change set (R-136, R-145) |
 | `REPORT-001` | every delivered audit, review, or gate report that carries a verdict matrix | a report with a dimension matrix is delivered (M-80: a verdict matrix is consistent with its own rules) |
 | `CHECK-001`, `CHECK-002` | phase reports | the work reports phases or checklists |
 | `GATE-001` | installation proposals | a dependency or tooling installation is proposed |

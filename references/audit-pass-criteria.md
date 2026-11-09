@@ -261,6 +261,12 @@ dimension. A criterion is never presented as a framework standard.
   `workflows/output-compliance.md`), because a row changed between pages can be
   counted twice or skipped. A claim that the result is consistent is `NOT VERIFIED`
   until a test changes a row between pages and asserts the count.
+- A query predicate on an application table is served by an index whose leading
+  column is the predicate's column (M-85). A predicate with no such index is a `FAIL`
+  of this dimension at the line of the statement (`DB-004` in
+  `workflows/output-compliance.md`). A statement with a JOIN, whose table the detector
+  cannot resolve, is `NOT VERIFIED` until a reviewer confirms its table, and an index
+  claim stays `NOT VERIFIED` until the plan confirms it.
 - Application code never changes the schema (M-70). A `CREATE`, `ALTER`, or
   `DROP` at startup, boot, or in a request path is a `FAIL` of this Dimension at
   the file and line of the statement (`DB-001` in `workflows/output-compliance.md`).
@@ -360,6 +366,14 @@ dimension. A criterion is never presented as a framework standard.
 - A project that caches identity-owned data has a sign-out path that clears
   every partition of that identity (M-56). The absence of that path is a `FAIL`.
 
+- A change that grants, widens, or adds a permission, role, scope, or access rule
+  that the approved requirement does not name is a human decision gate (M-86). It is
+  a `FAIL` of this dimension at the line of the grant (`AUTH-002` in
+  `workflows/output-compliance.md`) until the user approves it in the current
+  conversation. A grant the requirement names is `PASS` with the requirement cited,
+  and a grant that exposes personal or payment data to a role that had no access to
+  it is a finding that names the data it exposes.
+
 ### 7. Testing & validation
 
 - Every behavior the change adds or modifies has a test that exercises it
@@ -458,6 +472,13 @@ dimension. A criterion is never presented as a framework standard.
 
 - A cache keyed by entity identifier has an explicit entry bound or an expiry
   that is checked on read. Without it the dimension is `FAIL`.
+
+- A performance criterion is `PASS` only against a measurable metric and a threshold
+  in the approved requirement (M-88). When the requirement names performance without
+  either, the criterion is `AMBIGUOUS` and stays open until the user supplies them; the
+  auditor does not pick a metric. A benchmark of a different path, such as a currency
+  formatting benchmark offered for a payment-listing requirement, is not evidence for
+  this criterion.
 
 ### 9. Accessibility
 

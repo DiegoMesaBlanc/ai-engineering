@@ -183,6 +183,13 @@ If software implementation:
 5. Present concise summary of agreed behavior and proposed approach.
 6. Confirm alignment before implementation.
 
+A requirement that names performance is aligned only with a measurable metric and a
+threshold (M-88). Ask for both, one question at a time, before implementation; a
+performance criterion left without them stays `AMBIGUOUS` in Phase 12. A change that
+grants, widens, or adds a permission, role, scope, or access rule that the approved
+requirement does not name is a human gate (M-86): raise it in alignment, never
+implement it silently.
+
 For projects or features with user-facing text, decide localization early:
 whether more than one language is required, which locales, whether RTL is
 needed, and whether locale-aware date, number, or currency formatting applies.
@@ -385,6 +392,13 @@ Each phase boundary is an approval gate: report, ask, and start the next phase
 only after an affirmative answer. The format, the boundary report, and the
 phase gate are defined in `workflows/session-resilience.md` ("Phase Plan" and
 "Phase boundary report and phase gate").
+
+**List the teardown in the plan.** A teardown, reset, or cleanup step that the
+requirement asks for is listed in the phase plan with its target path and its
+authorization status before the work starts (M-89). A target outside the target
+project is a human gate: the plan shows the step as blocked until the user
+authorizes that path in the current conversation. A step the agent does not
+execute is reported `NOT DONE` with its reason, as `AGENTS.md` requires.
 
 **Slice the implementation into stages and increments.** Before Phase 10
 starts, divide the implementation phase into **stages** (subfases), each named

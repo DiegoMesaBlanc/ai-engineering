@@ -101,6 +101,11 @@ tool, or schema style without a justified reason and human approval.
 
 - Keep queries parameterized; never build queries by string concatenation.
 - Index for the actual access patterns; avoid redundant or unused indexes.
+- A query predicate on an application table is served by an index whose leading
+  column is the predicate's column. A `WHERE col = ?` on a table with no index led
+  by `col` is a full scan on each miss (M-85; `DB-004` in
+  `workflows/output-compliance.md` reports the candidates). The index is created by
+  a migration, never at startup.
 - Watch for N+1 access introduced through ORM lazy loading; load in batches.
 - Avoid `SELECT *` and fetching more than is needed.
 - Paginate large result sets; never load unbounded collections.

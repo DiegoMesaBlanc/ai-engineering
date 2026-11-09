@@ -1011,6 +1011,7 @@ Return:
 - V2.80 verdict matrix consistency, legacy records, and runtime equivalence (M-80):
 - V2.81 typed errors, universal and cost claims, and the detectors' coverage (M-81):
 - V2.82 project-wide error model, error codes in both directions, entry-point tests, validation order, read transactions, and retry budgets (M-54, M-77, M-81 to M-84):
+- V2.83 structural gate in the commit workflow, pre-existing test findings, consumer groups, citations outside tables, index coverage, permission grants, scope of commits, performance metrics, and the teardown in the plan (M-08, M-47, M-78, M-85 to M-89):
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -2865,7 +2866,7 @@ ca="workflows/code-audit.md"
 tc="workflows/task-to-code.md"
 ea="agents/external-auditor.md"
 grep -q "secondary (optional) dependency that fails" "$root/$ap" || { echo "FAIL V2.60: $ap is missing the secondary-dependency rule"; failures=1; }
-grep -q "module's error model" "$root/$ap" || { echo "FAIL V2.60: $ap is missing the module error model rule"; failures=1; }
+grep -q "unless the project has no error model" "$root/$ap" || { echo "FAIL V2.60: $ap is missing the project error model rule (M-81)"; failures=1; }
 grep -q "Every guarantee stated in the documentation" "$root/$ap" || { echo "FAIL V2.60: $ap is missing the documentation-claim rule"; failures=1; }
 grep -q "Secondary dependencies degrade" "$root/$ir" || { echo "FAIL V2.60: $ir is missing the secondary-dependency recipe"; failures=1; }
 grep -q "Bounds tested at the limit" "$root/$ir" || { echo "FAIL V2.60: $ir is missing the bound-at-cap recipe"; failures=1; }
@@ -3343,8 +3344,10 @@ grep -q "^dead_export_check() {" "$fx/check.sh" || { echo "FAIL V2.66: dead_expo
   out=$(test_api_check "$fx/mod.test.ts" "$fx/added.txt" 2>&1)
   printf '%s\n' "$out" | grep -q "FAIL TEST-002: $fx/mod.test.ts:5: the case is declared with it" \
     || { echo "FAIL V2.66: an it case on an added line is not detected"; exit 1; }
-  printf '%s\n' "$out" | grep -q "TEST-001: $fx/mod.test.ts:1:" \
+  printf '%s\n' "$out" | grep -q "^FAIL TEST-001: $fx/mod.test.ts:1:" \
     && { echo "FAIL V2.66: a pre-existing violation on an unchanged line is reported as a FAIL"; exit 1; }
+  printf '%s\n' "$out" | grep -q "^FINDING TEST-001: $fx/mod.test.ts:1:" \
+    || { echo "FAIL V2.66: a pre-existing violation on an unchanged line is not recorded as a FINDING (M-47, R-145)"; exit 1; }
   exit 0
 ) || failures=1
 
@@ -5752,6 +5755,257 @@ grep -qF 'error_outcome_check . $src -- $tests -- $contracts' "$fx/sweep-removed
   && { echo "FAIL V2.82: the removal probe did not remove the ERR-002 call"; failures=1; }
 
 echo "V2.82 probe: fixtures in $fx were checked and are removed"
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.83 Regression — Commit Gate, Pre-existing Findings, Consumer Groups, Citations, Index Coverage, Permission Grants, Commit Scope, Performance Metrics, and Teardown
+
+Verify that the holes an external audit exposed are closed on every surface, and that
+each detector reports its defect with `file:line` and passes its compliant twin:
+
+- M-08: the structural compliance check is a blocking gate of the commit workflow. The
+  commit proposal runs it in Phase 2 and blocks in Phase 13 on its `FAIL`, and
+  project validation states that a `FAIL` blocks the gate that runs it (R-144). The
+  TYPE-001 detection is run on a mixed fixture by the behavioral audit of
+  `workflows/system-audit.md`, not by this script.
+- M-47 and M-78: a pre-existing violation in a modified test file is printed as a
+  `FINDING` and is not dropped; `TYPE-002` is an executable comparison of consumer
+  sets; a citation in a decision note or contract document, in or out of a table, is
+  checked (R-145).
+- M-85: a query predicate is served by an index led by its column. `DB-004` reports a
+  `WHERE` equality with no such index, and a `JOIN` statement is `NOT VERIFIED` (R-146).
+- M-86: a permission grant the approved requirement does not name is a human gate.
+  `AUTH-002` reports each grant added to an authorization file (R-147).
+- M-87: a proposed commit carries only the commits of the approved scope. `COMMIT-002`
+  reports each foreign commit with its path (R-148).
+- M-88: a performance criterion is `PASS` only against a metric and a threshold, and
+  alignment asks for both before implementation (R-149). The alignment gate is a
+  conversational procedure; this check verifies its wording, not its execution.
+- M-89: a teardown the requirement asks for is listed in the phase plan with its target
+  path and authorization status (R-150).
+- M-80: a red gate attributed `BASELINE_FAILURE` states the count of its failing files, so
+  the attribution is not a bare word (R-137). The plan is a conversational artifact; this
+  check verifies its wording.
+
+The static part reads the repository. The behavioral part extracts the `sh` blocks of the
+detectors from `workflows/output-compliance.md`, runs them on fixtures in a temporary
+directory outside the repository, which is removed, and uses a git fixture for `AUTH-002`
+and `COMMIT-002`. It needs `awk`, `grep`, `sed`, `tr`, `perl`, `git`, and `mktemp`; without
+them the behavioral part is `NOT VERIFIED`, never passed.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+ap="references/audit-pass-criteria.md"
+db="skills/database-engineering/SKILL.md"
+cm="workflows/commit.md"
+pv="workflows/project-validation.md"
+tc="workflows/task-to-code.md"
+vs="workflows/system-validation.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.83: $1 is missing $3"; failures=1; }
+}
+
+# The canonical wording of M-85 to M-89 is in AGENTS.md, and every required surface carries its anchor.
+need "$ag" "is served by an index whose leading column is the predicate's column" "the M-85 canonical wording"
+need "$ag" "a permission, role, scope, or access rule that the approved requirement does not name" "the M-86 canonical wording"
+need "$ag" "carries only the commits of the approved scope" "the M-87 canonical wording"
+need "$ag" "a measurable metric and a threshold" "the M-88 canonical wording"
+need "$ag" "is listed in the phase plan with its target path" "the M-89 canonical wording"
+need "$db" "is served by an index whose leading column is the predicate's column" "the M-85 database instruction"
+need "$ap" "is served by an index whose leading column is the predicate's column" "the M-85 criterion of Dimension 5"
+need "$ap" "a permission, role, scope, or access rule that the approved requirement does not name" "the M-86 criterion of Dimension 6"
+need "$ap" "a measurable metric and a threshold" "the M-88 criterion of Dimension 8"
+need "$oc" "is served by an index whose leading column is the predicate's column" "the M-85 detector statement"
+need "$oc" "a permission, role, scope, or access rule that the approved requirement does not name" "the M-86 detector statement"
+need "$oc" "carries only the commits of the approved scope" "the M-87 detector statement"
+need "$oc" "is printed as \`finding\`" "the M-47 FINDING wording of TEST-001 and TEST-002"
+need "$oc" "a citation outside a table" "the M-78 scope wording of DEC-002"
+need "$tc" "a measurable metric and a threshold" "the M-88 alignment step"
+need "$tc" "is listed in the phase plan with its target path" "the M-89 plan step"
+need "$tc" "a permission, role, scope, or access rule that the approved requirement does not name" "the M-86 alignment step"
+need "$cm" "structural compliance is a blocking gate of this workflow" "the M-08 commit gate"
+need "$cm" "carries only the commits of the approved scope" "the M-87 commit instruction"
+need "$pv" "a \`FAIL\` of that check blocks every gate that runs it" "the M-08 blocking wording of project validation"
+
+# Registry rows M-85 to M-89 and the M-08 surface; regression rows R-144 to R-150.
+for id in M-85 M-86 M-87 M-88 M-89; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.83: no $id row in the registry"; failures=1; }
+done
+grep "^| M-08 |" "$root/$mr" | grep -qF 'workflows/commit.md' || { echo "FAIL V2.83: the M-08 row does not list workflows/commit.md as a surface"; failures=1; }
+for id in R-144 R-145 R-146 R-147 R-148 R-149 R-150; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.83: no $id row in the regression matrix"; failures=1; }
+done
+
+# Coverage rows and sections of the new and changed detectors, and the sweep call of DB-004.
+for id in DB-004 AUTH-002 COMMIT-002; do
+  grep -qF "| \`$id\` |" "$root/$oc" || { echo "FAIL V2.83: the coverage table has no $id row"; failures=1; }
+  grep -q "^### $id " "$root/$oc" || { echo "FAIL V2.83: $oc has no section for $id"; failures=1; }
+done
+grep -qF "| \`TYPE-002\` | contract files named by \`TYPE-001\`; \`consumer_group_check\`" "$root/$oc" \
+  || { echo "FAIL V2.83: the coverage table does not name consumer_group_check for TYPE-002"; failures=1; }
+grep -qF -- "  index_coverage_check . \$src \$migrations" "$root/$oc" \
+  || { echo "FAIL V2.83: the whole-project sweep does not run index_coverage_check"; failures=1; }
+
+# Removal probe: a copy of the sweep without the DB-004 call must no longer run it.
+fx0="$(mktemp -d "${TMPDIR:-/tmp}/v283.XXXXXX")"
+sed '/^  index_coverage_check \. \$src \$migrations$/d' "$root/$oc" > "$fx0/sweep-removed.md"
+grep -qF -- "  index_coverage_check . \$src \$migrations" "$fx0/sweep-removed.md" \
+  && { echo "FAIL V2.83: the removal probe did not remove the DB-004 call"; failures=1; }
+rm -rf "$fx0"
+
+command -v awk >/dev/null 2>&1 && command -v grep >/dev/null 2>&1 && command -v sed >/dev/null 2>&1 \
+  && command -v tr >/dev/null 2>&1 && command -v mktemp >/dev/null 2>&1 \
+  && command -v perl >/dev/null 2>&1 && command -v git >/dev/null 2>&1 || {
+  echo "NOT VERIFIED V2.83: awk, grep, sed, tr, mktemp, perl, or git is not available, the behavioral fixtures were not run"; exit 2; }
+
+# Extracts the sh block of one section of workflows/output-compliance.md. $1 = the rule identifier.
+extract_sec() {
+  awk -v h="$1" '
+    $0 ~ ("^### " h " ") { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v283.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  extract_sec DEC-002 > dec2.sh
+  extract_sec TYPE-002 > type2.sh
+  extract_sec DB-004 > db4.sh
+  extract_sec AUTH-002 > auth.sh
+  extract_sec COMMIT-002 > commit2.sh
+  awk '/^test_api_check\(\) \{/{on=1} on{print} on && /^\}$/{exit}' "$root/$oc" > testapi.sh
+  . ./dec2.sh && . ./type2.sh && . ./db4.sh && . ./auth.sh && . ./commit2.sh && . ./testapi.sh \
+    || { echo "FAIL V2.83: the detector blocks do not load"; exit 1; }
+
+  # M-47, defect: a modified test file whose it( case exists in the base revision is a FINDING,
+  # and an it( case added by the change is a FAIL. The clean file, with only test(), prints nothing.
+  mkdir -p tests
+  printf '%s\n' 'import { test } from "vitest";' 'it("old case", () => {});' 'it("new case", () => {});' > tests/mod.test.ts
+  printf '%s\n' 3 > added.txt
+  t1="$(test_api_check tests/mod.test.ts added.txt)"; t1s=$?
+  printf '%s\n' "$t1" | grep -qF 'FINDING TEST-002: tests/mod.test.ts:2:' \
+    || { echo "FAIL V2.83: TEST-002 did not report the pre-existing it( as a FINDING: $t1"; exit 1; }
+  printf '%s\n' "$t1" | grep -qF 'FAIL TEST-002: tests/mod.test.ts:3:' \
+    || { echo "FAIL V2.83: TEST-002 did not report the added it( as a FAIL: $t1"; exit 1; }
+  [ "$t1s" -ne 0 ] || { echo "FAIL V2.83: TEST-002 passed a file with an added it("; exit 1; }
+  printf '%s\n' 'import { test } from "vitest";' 'it("old case", () => {});' > tests/pre.test.ts
+  printf '%s\n' 9 > added2.txt
+  t2="$(test_api_check tests/pre.test.ts added2.txt)"; t2s=$?
+  printf '%s\n' "$t2" | grep -qF 'FINDING TEST-002: tests/pre.test.ts:2:' \
+    || { echo "FAIL V2.83: TEST-002 dropped a pre-existing violation: $t2"; exit 1; }
+  [ "$t2s" -eq 0 ] || { echo "FAIL V2.83: a pre-existing FINDING blocks the task: status $t2s"; exit 1; }
+  printf '%s\n' 'import { test } from "vitest";' 'test("old case", () => {});' 'test("new case", () => {});' > tests/clean.test.ts
+  printf '%s\n' 3 > added3.txt
+  t3="$(test_api_check tests/clean.test.ts added3.txt)"
+  [ -z "$t3" ] || { echo "FAIL V2.83: TEST-002 reports the test() twin: $t3"; exit 1; }
+
+  # TYPE-002, defect: a contract whose types have different consumers; the twin whose types share one consumer set.
+  mkdir -p src/contracts src/a src/b
+  printf '%s\n' 'export interface Alpha { id: string }' 'export interface Beta { id: number }' > src/contracts/mixed.ts
+  printf '%s\n' 'import { Alpha } from "../contracts/mixed";' > src/a/comp.ts
+  printf '%s\n' 'import { Beta } from "../contracts/mixed";' > src/b/svc.ts
+  y1="$(consumer_group_check . src/contracts/mixed.ts)"
+  printf '%s\n' "$y1" | grep -qF 'FAIL TYPE-002: src/contracts/mixed.ts:2: Beta is consumed by a different set of files' \
+    || { echo "FAIL V2.83: TYPE-002 did not report the type with different consumers: $y1"; exit 1; }
+  printf '%s\n' 'import { Alpha, Beta } from "../contracts/mixed";' > src/a/comp.ts
+  rm -f src/b/svc.ts
+  y2="$(consumer_group_check . src/contracts/mixed.ts)"
+  [ -z "$y2" ] || { echo "FAIL V2.83: TYPE-002 reports the shared-consumer twin: $y2"; exit 1; }
+  mkdir -p nosrc
+  printf '%s\n' 'export interface Gamma { id: string }' > nosrc/lib.ts
+  y3="$(consumer_group_check "$fx/nosrc" lib.ts)"
+  printf '%s\n' "$y3" | grep -qF 'NOT VERIFIED TYPE-002: lib.ts: there is no src/ folder' \
+    || { echo "FAIL V2.83: TYPE-002 passes a project with no src/ folder: $y3"; exit 1; }
+
+  # DEC-002, defect: a citation in prose that points 6 lines away from the identifier; the twin cites the line.
+  mkdir -p docs/decisions
+  printf '%s\n' 'export function a() {}' 'const x = 1;' 'export function invalidate() {}' 'const y = 2;' \
+    'const z = 3;' 'const w = 4;' 'const v = 5;' 'const u = 6;' 'const t = 7;' 'const s = 8;' > src/store.ts
+  printf '%s\n' 'The cache is cleared by `invalidate` at src/store.ts:9.' > docs/decisions/d1.md
+  printf '%s\n' 'The cache is cleared by `invalidate` at src/store.ts:3.' > docs/decisions/d2.md
+  c1="$(decision_citation_check . docs/decisions/d1.md)"
+  printf '%s\n' "$c1" | grep -qF 'FAIL DEC-002: docs/decisions/d1.md:1: src/store.ts:9 does not show invalidate within 5 lines' \
+    || { echo "FAIL V2.83: DEC-002 did not report the stale citation in prose: $c1"; exit 1; }
+  c2="$(decision_citation_check . docs/decisions/d2.md)"
+  [ -z "$c2" ] || { echo "FAIL V2.83: DEC-002 reports the twin that cites the line: $c2"; exit 1; }
+
+  # DB-004, defect: a WHERE equality on user_id with no index led by it; the twin adds the index;
+  # a JOIN statement is NOT VERIFIED rather than passed.
+  mkdir -p migrations
+  printf '%s\n' 'CREATE TABLE saved_methods (id INTEGER PRIMARY KEY, user_id TEXT NOT NULL, label TEXT);' \
+    'CREATE INDEX idx_label ON saved_methods (label);' > migrations/001.sql
+  mkdir -p src/db
+  printf '%s\n' 'export const list = (db, u) => db.prepare("SELECT id, label FROM saved_methods WHERE user_id = ? ORDER BY id").all(u);' > src/db/store.ts
+  g1="$(index_coverage_check . src/db/store.ts migrations/001.sql)"
+  printf '%s\n' "$g1" | grep -qF 'FAIL DB-004: src/db/store.ts:1: user_id = ? on table saved_methods has no index' \
+    || { echo "FAIL V2.83: DB-004 did not report the predicate with no index: $g1"; exit 1; }
+  printf '%s\n' 'CREATE INDEX idx_user ON saved_methods (user_id, label);' >> migrations/001.sql
+  g2="$(index_coverage_check . src/db/store.ts migrations/001.sql)"
+  [ -z "$g2" ] || { echo "FAIL V2.83: DB-004 reports the twin with the index: $g2"; exit 1; }
+  printf '%s\n' 'export const join = (db) => db.prepare("SELECT a.id FROM saved_methods a JOIN users b ON b.id = a.user_id WHERE a.label = ?").all();' > src/db/join.ts
+  g3="$(index_coverage_check . src/db/join.ts migrations/001.sql)"
+  printf '%s\n' "$g3" | grep -qF 'NOT VERIFIED DB-004: src/db/join.ts:1: label = ? is in a statement with a JOIN' \
+    || { echo "FAIL V2.83: DB-004 passed or failed a JOIN statement instead of NOT VERIFIED: $g3"; exit 1; }
+
+  # AUTH-002, defect: a permission grant added to an authorization file; the twin adds none.
+  rm -rf repo && mkdir repo && cd repo || exit 1
+  git init -q && mkdir -p src/auth
+  printf '%s\n' 'export const policy = {' '  admin: ["read", "write"],' '};' > src/auth/authorization-policy.ts
+  git add -A && git -c user.email=v@v -c user.name=v commit -qm base
+  printf '%s\n' 'export const policy = {' '  admin: ["read", "write"],' '  viewer: ["read"],' '};' > src/auth/authorization-policy.ts
+  a1="$(authorization_grant_check HEAD src/auth/authorization-policy.ts)"
+  printf '%s\n' "$a1" | grep -qF 'FAIL AUTH-002: src/auth/authorization-policy.ts:3: an added permission grant' \
+    || { echo "FAIL V2.83: AUTH-002 did not report the added grant: $a1"; exit 1; }
+  git checkout -q -- src/auth/authorization-policy.ts
+  a2="$(authorization_grant_check HEAD src/auth/authorization-policy.ts)"
+  [ -z "$a2" ] || { echo "FAIL V2.83: AUTH-002 reports the twin with no grant: $a2"; exit 1; }
+
+  # COMMIT-002, defect: a foreign commit on top of the base; the twin names its path in the approved scope.
+  cd "$fx" && rm -rf repo2 && mkdir repo2 && cd repo2 || exit 1
+  git init -q && mkdir -p src docs
+  commit_as() { git -c user.email=v@v -c user.name=v commit -qm "$1"; }
+  echo base > docs/base.md && git add -A && commit_as base
+  base_rev="$(git rev-parse HEAD)"
+  echo a > src/a.ts && git add -A && commit_as "in scope"
+  echo o > src/other.ts && git add -A && commit_as "foreign task"
+  printf '%s\n' src/a.ts > manifest.txt
+  k1="$(out_of_scope_commit_check "$base_rev" manifest.txt)"
+  printf '%s\n' "$k1" | grep -qF 'FAIL COMMIT-002:' && printf '%s\n' "$k1" | grep -qF 'touches src/other.ts' \
+    || { echo "FAIL V2.83: COMMIT-002 did not report the foreign commit with its path: $k1"; exit 1; }
+  [ "$(printf '%s\n' "$k1" | grep -c 'FAIL COMMIT-002')" = 1 ] \
+    || { echo "FAIL V2.83: COMMIT-002 reported more than the one foreign commit: $k1"; exit 1; }
+  printf '%s\n' src/a.ts src/other.ts > manifest2.txt
+  k2="$(out_of_scope_commit_check "$base_rev" manifest2.txt)"
+  [ -z "$k2" ] || { echo "FAIL V2.83: COMMIT-002 reports the twin whose scope names the path: $k2"; exit 1; }
+  cd "$fx" || exit 1
+
+  # REPORT-001, defect: a red gate attributed BASELINE_FAILURE with no count of the failing files; the twin states the count.
+  extract_sec REPORT-001 > rep.sh && . ./rep.sh || { echo "FAIL V2.83: the REPORT-001 block does not load"; exit 1; }
+  printf '%s\n' '# Gate' 'npm run format:check fails: BASELINE_FAILURE, outside the change set.' > rep1.md
+  p1="$(report_matrix_check . rep1.md)"
+  printf '%s\n' "$p1" | grep -qF 'FAIL REPORT-001: rep1.md:2: a gate attributed BASELINE_FAILURE states no count' \
+    || { echo "FAIL V2.83: REPORT-001 did not report the BASELINE_FAILURE with no count: $p1"; exit 1; }
+  printf '%s\n' '# Gate' 'npm run format:check fails: 17 files, BASELINE_FAILURE, first at src/a.ts:1, outside the change set.' > rep2.md
+  p2="$(report_matrix_check . rep2.md)"
+  printf '%s\n' "$p2" | grep -q 'states no count' && { echo "FAIL V2.83: REPORT-001 reports the counted twin: $p2"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.83 probe: fixtures in $fx were checked and are removed"
 rm -rf "$fx"
 
 exit "$failures"

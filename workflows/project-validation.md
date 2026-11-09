@@ -128,7 +128,10 @@ compliance check in `workflows/output-compliance.md` is also mandatory for
 software projects with source code: it verifies that generated code does not
 declare functions where an arrow function applies, does not mix type
 declarations with runtime behavior in the same file, and keeps contract files
-grouped by consumer. Tests, type checking, and builds remain risk-based.
+grouped by consumer. A `FAIL` of that check blocks every gate that runs it (commit,
+validation, and delivery check) and is not reported as a warning; a violation that
+pre-existed the change set is a `FINDING`. Tests, type checking, and builds remain
+risk-based.
 
 Do not add dependencies, change configuration, or install frameworks
 merely to satisfy a generic checklist. The mandatory formatter and linter

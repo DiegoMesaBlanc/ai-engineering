@@ -45,6 +45,12 @@ patterns, or over-engineering.
   lockfiles, binaries, minified assets. Migrations and config files are
   included.
 - Deleted files: record as context only.
+- When an approved scope manifest exists, run `out_of_scope_commit_check` over
+  `base..HEAD` (`COMMIT-002` in `workflows/output-compliance.md`). A proposed commit
+  or pull request carries only the commits of the approved scope: a commit that
+  touches a path the manifest does not name is a `FAIL` that blocks the proposal
+  (M-87). The base is the revision the approved scope was measured against, not
+  the first commit of the branch.
 
 If `--staged` is passed, limit scope to `git diff --name-only --cached`.
 
@@ -63,6 +69,16 @@ restate them. Run that workflow over the scoped change set:
 A mandatory tool that is missing is `SETUP_REQUIRED` and blocks the commit,
 as `workflows/project-validation.md` defines. Do not install tools or modify
 configuration without explicit user authorization.
+
+**Structural compliance is a blocking gate of this workflow (M-08).** Run the
+structural compliance check of `workflows/output-compliance.md` over the scoped
+change set, as the project's validation requires: every detector whose "Applies
+when" row the change set meets, with its `file:line` output. A `FAIL` in the
+change set blocks the commit exactly as a failing linter does, and it is never
+downgraded to a warning in Phase 10. A `FINDING` (a violation that already existed
+in the base revision) is listed in the proposal and does not block. The check is
+not optional for a software project with source code: a commit gate that skips it
+lets a structural defect reach the branch unseen.
 
 ## Phase 3 — Secrets Scan
 
@@ -209,6 +225,11 @@ statement copied from memory, from an earlier draft, or from a previous report
 is not evidence (M-65).
 
 - Scope Manifest: files, line ranges, exclusions.
+- The commits of `base..HEAD` outside the approved scope (`COMMIT-002`), and the
+  rebase or written acceptance the user chose. An open `COMMIT-002` `FAIL` blocks the
+  proposal (M-87).
+- The structural compliance result of Phase 2: each detector with its `file:line`
+  output, its `FAIL` count, and its `FINDING`s listed as pre-existing (M-08).
 - The code-audit dimension table, when the change set has one: every applicable
   dimension with its verdict and evidence. A dimension that is `NOT VERIFIED`, a
   dimension that was not run, or a verdict `BLOCKED` is shown as blocking, and the
@@ -252,8 +273,9 @@ Rules:
   proposal and ask again.
 - If the approved scope, grouping, or message differs from what was
   presented, re-present the proposal and ask again before creating anything.
-- If any gate failed in Phases 3–10, do not request approval to commit;
-  report the failures and stop.
+- If any gate failed in Phases 2–10, or a structural `FAIL` or an open `COMMIT-002`
+  `FAIL` is in the change set, do not request approval to commit; report the
+  failures and stop.
 
 ## Phase 14 — Create Approved Commits
 
