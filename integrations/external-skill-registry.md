@@ -166,6 +166,45 @@ each external Skill used by the AI Engineering System.
 - Scope: this procedure applies only to ui-ux-design. Other external skills
   keep their current integration mode and are not covered here.
 
+## 9. Web Interface Guidelines (adapted into a reference)
+
+- Name: web-interface-guidelines (rules only)
+- Repository: https://github.com/vercel-labs/web-interface-guidelines
+- Source path: command.md (the rules file of the Vercel Labs skill)
+- Local path: skills/ui-ux-design/references/web-interface-checklist.md
+- License: MIT, Copyright (c) 2025 Vercel Labs (LICENSE at the pinned commit)
+- Integration mode: **adapted**. The rules are rewritten in stack-neutral form
+  and conflicts are resolved in the file. Nothing is fetched at review time.
+- Upstream commit (pin): 434b7f91364665f2f733b310ec54809bf8f37937 (2026-10-05)
+- Revision verification: the pinned `command.md` is byte-identical to `main`
+  (SHA-256 d246b026f4f29b5823a9cc857f9edf3d2507002e055e32040cadeaf3b38e0234),
+  confirmed 2026-11-09.
+- Local modifications: Title Case rejected in favour of sentence case; React
+  examples translated to stack-neutral rules; overlapping accessibility rules
+  left to `skills/accessibility/SKILL.md`.
+- Update procedure: on request only, the same as the `ui-ux-design` pin.
+
+## 10. Concepts Only (no file imported)
+
+These sources were evaluated and only ideas were taken. No file, script, or
+asset from them is in this repository, and nothing was installed.
+
+- **taste-skill** (https://github.com/Leonxlnx/taste-skill, MIT). Adopted ideas:
+  browser-based visual checks at fixed widths (320 px and others), the
+  recorded-variety rule, and the layout checks in `skills/ui-ux-design`
+  pre-delivery checklist. Not adopted: its scripts, hooks, photo downloads, and
+  Chrome dependency. Installing it would be a dependency decision under
+  `workflows/dependency-assessment.md`.
+- **image-to-code** (https://github.com/nexu-io/open-design/tree/main/skills/image-to-code-skill,
+  MIT). Adopted idea: the visual token extraction protocol in
+  `skills/design-analysis/SKILL.md`. Not adopted: the mandatory image
+  generation before implementation, because image generation runs only when
+  the user asks for it and has a cost.
+- **awesome-design-skills** (https://github.com/bergside/awesome-design-skills).
+  Evaluated and discarded. Its catalog of predefined styles is the templated
+  look that `skills/frontend-design` rejects, and its CLI writes into provider
+  folders. Nothing adopted.
+
 ## Not Imported from This Repository
 
 - `web-quality-audit` (Skill and `scripts/analyze.sh`): intentionally not

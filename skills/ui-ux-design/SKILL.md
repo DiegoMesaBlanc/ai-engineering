@@ -28,6 +28,7 @@ Use the external skill for **data and reasoning about product type, style, palet
 | Code structure and stack conventions | `implementation-recipes`, `styling-options` |
 | Turning a Figma, screenshot, or brief into requirements | `design-analysis` |
 | Localization and RTL | `internationalization` |
+| Line-by-line review of web UI code (forms, animation, typography, images, touch) | `references/web-interface-checklist.md` |
 
 Procedure:
 
@@ -60,6 +61,17 @@ Mark each item PASS, FAIL, or NOT APPLICABLE with a reason.
 - [ ] Motion respects the reduced-motion preference.
 - [ ] Text reflows without clipping at narrow widths, browser zoom, and text scaling.
 - [ ] Layout is checked at the project's supported breakpoints or device sizes.
+- [ ] No horizontal scroll or clipped content at 320 CSS px wide (the smallest
+  common phone width), with text at the default size.
+- [ ] Touch-first targets (buttons, links, controls on phones and tablets) are
+  at least 44 × 44 CSS px. Web pages keep the 24 × 24 px minimum of WCAG 2.2
+  AA (see `skills/accessibility/SKILL.md`), and 44 px is the recommended size
+  for touch. Record which of the two a target meets.
+- [ ] Each section fits in one or two screens at the project's desktop
+  reference size. No neighbouring section's heading or image is cut into it.
+  Left and right content edges line up with the page grid.
+- [ ] Web UI code reviewed against `references/web-interface-checklist.md`,
+  with each finding listed as `file:line`.
 - [ ] Status and error states are not conveyed by color alone.
 - [ ] Loading, empty, and error states exist for each asynchronous view.
 

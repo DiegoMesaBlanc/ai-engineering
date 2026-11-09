@@ -511,3 +511,50 @@ only when the missing information materially affects implementation.
 
 Never claim to have inspected a private design when its content could not
 be retrieved.
+
+---
+
+## Visual Token Extraction from a Reference Image
+
+Use this procedure when the design artifact is a raster image or screenshot
+(PNG, JPG, or a cropped capture) and no structured design data is available.
+It turns what is visible into observed values, and it never generates a new
+image. Generating reference images is a separate action that runs only when
+the user asks for it.
+
+Read the image as a specification. Record each item as **Observed**
+(readable and measurable in the image), **Estimated** (approximate, from
+proportions), or **Unclear** (not readable at this size).
+
+1. **Text, verbatim.** Copy every readable heading, subheading, button label,
+   navigation label, and body sentence exactly. Do not paraphrase or correct
+   it.
+2. **Typography.** Relative size steps between display, heading, body, and
+   caption text; weight contrast; approximate line count and wrapping of the
+   main heading; serif or sans character; whether text is set in one family
+   or two.
+3. **Spacing.** Gap between heading and supporting text; gap between text and
+   controls; card padding; gap between cards; top and bottom space of
+   sections; side gutters. Express them as ratios of the body size, not as
+   pixel values to hardcode.
+4. **Controls.** Button shape and corner radius; fill or outline; relative
+   size of primary and secondary actions; icon placement; input styling.
+5. **Color.** Background, surface, accent, text hierarchy, border, and shadow
+   colors. Name each one by role and record the approximate hex value only as
+   an estimate.
+6. **Structure and rhythm.** Section order; grid and column logic; alignment
+   (left, centered, justified); image-to-text ratio; density changes between
+   sections.
+7. **Repeated motifs.** Elements that recur and define the design language
+   (a corner radius, a divider style, an icon treatment).
+
+Rules for this procedure:
+
+- A detail too small to read is **Unclear**. Ask the user for a larger or
+  closer export of that area. Do not crop, zoom, or invent the missing detail.
+- A value is mapped to the project's existing tokens first. Only an
+  unmatched value is reported as a design/code gap (see section 11).
+- The analysis states which items were observed in the image and which were
+  estimated, so the implementation can be checked against the image later.
+- The result feeds the **Design Tokens** and **Components** sections of the
+  output below. It is not a substitute for the project's design system.
