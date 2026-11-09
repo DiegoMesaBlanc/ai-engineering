@@ -559,6 +559,10 @@ ecosystem equivalent) and use that version. A test failure caused by the wrong
 runtime is an environment problem, not a passing or failing result, and it is
 reported as such.
 
+A result claimed for another runtime, version, or environment is not equivalent
+to a result executed there. Name the version that ran, and report every other
+version the claim covers as `NOT VERIFIED` until it is executed (M-80).
+
 ## 16. Completion Rule
 
 A task is not automatically complete because the code compiles.

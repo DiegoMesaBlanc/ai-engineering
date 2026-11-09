@@ -161,6 +161,13 @@ Produce:
   and the evidence.
 - **Behavioral audit**: for each artifact, what was built, what passed, what
   was injected, what was detected with `file:line`, and what was fixed.
+- **Verdict check**: the dimension matrix of this report is written to a file
+  in the temporary directory and `REPORT-001` (`workflows/output-compliance.md`)
+  runs over it before the report is delivered. A verdict matrix is consistent
+  with its own rules (M-80): every dimension has its own row, no `PASS` carries
+  an open item, no closure is claimed over an open row, and a red gate outside
+  the change set is `BASELINE_FAILURE`. A `FAIL` is corrected in the report
+  before it is delivered, and the correction is reported.
 - **Defects found in the system's own artifacts**, if any.
 - **Limits**: what could not be verified and why. Distinguish what the
   mechanism guarantees from what depends on an agent following the flow.

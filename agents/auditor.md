@@ -57,6 +57,10 @@ caller.
 - Report missing or unverified configuration.
 - Recommend minimal corrective changes.
 
+## Verdict Matrix Gate
+
+A verdict matrix is consistent with its own rules (M-80). Before this output is delivered, run `REPORT-001` (`workflows/output-compliance.md`) over every verdict matrix it carries, and correct each `FAIL` first. A `NOT VERIFIED` reason names a tool or environment limit, never an unexecuted review; a `PASS` never carries an open item; and a conclusion never claims a closure or a `PASS` verdict that a row leaves open.
+
 ## Safety
 
 Never:

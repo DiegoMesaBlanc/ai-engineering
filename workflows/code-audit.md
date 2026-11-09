@@ -418,6 +418,10 @@ One of:
 - If the user wants corrections, hand off to a separate authorized Task-to-Code flow (branch policy, alignment, implementation, validation).
 - This workflow only produces the audit report.
 
+## Verdict Matrix Gate
+
+A verdict matrix is consistent with its own rules (M-80). Before this output is delivered, run `REPORT-001` (`workflows/output-compliance.md`) over every verdict matrix it carries, and correct each `FAIL` first. A `NOT VERIFIED` reason names a tool or environment limit, never an unexecuted review; a `PASS` never carries an open item; and a conclusion never claims a closure or a `PASS` verdict that a row leaves open.
+
 ## Evidence Classes
 
 - **REAL** — executed against the local project (tests ran, linter output, browser trace).

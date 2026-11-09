@@ -5260,3 +5260,143 @@ rm -rf "$fx"
 
 exit "$failures"
 ```
+
+## V2.80 Regression — Verdict Matrix Consistency, Legacy Records, and Runtime Equivalence
+
+Verify that four gaps an external audit exposed are closed on every surface and by a
+detector that reports the defect with `file:line`, and passes its compliant twin:
+
+- M-80: a report's verdict matrix is consistent with its own rules (R-137). A
+  `NOT VERIFIED` reason is never an unexecuted review; a `PASS` never carries an open
+  item (`pendiente`, `diff leído`); a grouped or missing dimension is a defect; a
+  conclusion never claims a closure a row leaves open; a red whole-project gate is
+  `BASELINE_FAILURE`; an equivalence claim is `NOT VERIFIED` until executed. `REPORT-001`
+  reports each defect, and `workflows/system-audit.md` Phase 5 runs it before delivery.
+- The legacy-record gap: a change that alters how stored values are read or normalized
+  states the treatment of existing records. Dimension 5 of `references/audit-pass-criteria.md`
+  carries the criterion, and an undecided treatment is `AMBIGUOUS`, never `PASS`.
+- The runtime-equivalence gap: a validation claimed as equivalent on another runtime is
+  `NOT VERIFIED` with the version named (M-80, `REPORT-001`).
+- The baseline gap: a whole-project gate that is red outside the change set is reported as
+  `BASELINE_FAILURE` in the audit and review paths, not only in the commit path.
+
+The static part reads the repository. The behavioral part extracts the `sh` block of
+`REPORT-001` from `workflows/output-compliance.md`, runs it on a defective matrix that
+carries each defect and on its compliant twin, in a temporary directory outside the
+repository, which is removed. It needs `awk`, `grep`, `sed`, and `mktemp`; without them the
+behavioral part is `NOT VERIFIED`.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+ap="references/audit-pass-criteria.md"
+sa="workflows/system-audit.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.80: $1 is missing $3"; failures=1; }
+}
+
+# The rule, its registry row, its regression row, and its detector are on every surface.
+grep -q '^| M-80 |' "$root/$mr" || { echo "FAIL V2.80: no M-80 row in the registry"; failures=1; }
+grep -q '^| R-137 |' "$root/$rmx" || { echo "FAIL V2.80: no R-137 row in the regression matrix"; failures=1; }
+grep -qF '| `REPORT-001` |' "$root/$oc" || { echo "FAIL V2.80: the coverage table has no REPORT-001 row"; failures=1; }
+grep -q '^### REPORT-001 ' "$root/$oc" || { echo "FAIL V2.80: $oc has no REPORT-001 section"; failures=1; }
+grep -qF 'REPORT-001' "$root/$sa" || { echo "FAIL V2.80: the system audit does not run REPORT-001 before delivery"; failures=1; }
+grep -qF 'REPORT-001' "$root/$ap" || { echo "FAIL V2.80: the audit criteria do not name REPORT-001"; failures=1; }
+need "$ag" "verdict matrix is consistent with its own rules" "the M-80 canonical wording"
+need "$ap" "verdict matrix is consistent with its own rules" "the M-80 criterion"
+need "$ap" "legacy" "the legacy-record criterion of Dimension 5"
+need "$oc" "verdict matrix is consistent with its own rules" "the M-80 detector statement"
+need "$sa" "verdict matrix is consistent with its own rules" "the M-80 verdict check of Phase 5"
+need "$rmx" "verdict matrix is consistent with its own rules" "the R-137 statement"
+
+command -v awk >/dev/null 2>&1 && command -v grep >/dev/null 2>&1 && command -v sed >/dev/null 2>&1 \
+  && command -v mktemp >/dev/null 2>&1 || {
+  echo "NOT VERIFIED V2.80: awk, grep, sed, or mktemp is not available, the behavioral fixtures were not run"; exit 2; }
+
+# Extracts the sh block of one section of workflows/output-compliance.md. $1 = the rule identifier.
+extract_sec() {
+  awk -v h="$1" '
+    $0 ~ ("^### " h " ") { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v280.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  extract_sec REPORT-001 > report.sh
+  . ./report.sh || { echo "FAIL V2.80: the REPORT-001 block does not load"; exit 1; }
+  mkdir -p reports
+  cd "$fx" || exit 1
+
+  # The defective matrix: one line per defect of the external audit.
+  printf '%s\n' \
+    '# Audit' \
+    '| Dimensión | Estado | Motivo |' \
+    '|---|---|---|' \
+    '| 1 Arquitectura | NOT VERIFIED | No ejecuté la verificación estructural. |' \
+    '| 2 Patrones | PASS | Sin patrones nuevos en el diff leído. |' \
+    '| 3 Calidad | PASS | Pendiente Node 22. |' \
+    '| 4 API | AMBIGUOUS | Sin contrato definido. |' \
+    '| 9, 10, 12, 13 | N/A | Sin interfaz de usuario. |' \
+    '| 5 Datos | NOT VERIFIED | Revisión de registros legados pendiente. |' \
+    'Cierra ambas brechas del sistema.' \
+    'npm run check falla en format:check por 17 archivos fuera del cambio.' \
+    'La versión Node 22 es equivalente a la probada.' > reports/defect.md
+
+  # The compliant twin: every dimension has a row, no open item, a red gate attributed, and no equivalence claim.
+  {
+    printf '%s\n' '# Audit' '| Dimensión | Estado | Motivo |' '|---|---|---|'
+    printf '%s\n' \
+      '| 1 Arquitectura | PASS | Evidencia: output-compliance sin hallazgos en el cambio. |' \
+      '| 2 Patrones | PASS | Selección vacía justificada. |' \
+      '| 3 Calidad | PASS | Evidencia: npm run lint con código de salida 0. |' \
+      '| 4 API | NOT VERIFIED | Requiere revisión de contrato externo. |' \
+      '| 5 Datos | AMBIGUOUS | El tratamiento de los registros legados lo decide el usuario. |' \
+      '| 6 Seguridad | N/A | El cambio no añade autenticación ni secretos. |' \
+      '| 7 Pruebas | PASS | Evidencia: 515 pruebas con código de salida 0. |' \
+      '| 8 Rendimiento | N/A | Sin superficie web. |' \
+      '| 9 Interfaz | N/A | Sin interfaz de usuario. |' \
+      '| 10 Accesibilidad | N/A | Sin interfaz de usuario. |' \
+      '| 11 Internacionalización | PASS | El formateador exige locale. |' \
+      '| 12 Estados | N/A | Sin interfaz de usuario. |' \
+      '| 13 Responsive | N/A | Sin interfaz de usuario. |' \
+      '| 14 Organización | N/A | Un solo paquete. |' \
+      'npm run check falla en format:check: 17 archivos, BASELINE_FAILURE, fuera del cambio.'
+  } > reports/twin.md
+
+  defect="$(report_matrix_check . reports/defect.md)"
+  for want in \
+    'FAIL REPORT-001: reports/defect.md:4: NOT VERIFIED reason is an unexecuted review' \
+    'FAIL REPORT-001: reports/defect.md:5: PASS carries an open item' \
+    'FAIL REPORT-001: reports/defect.md:6: PASS carries an open item' \
+    'FAIL REPORT-001: reports/defect.md:8: grouped dimension' \
+    'FAIL REPORT-001: reports/defect.md: lines 10 claim a closure' \
+    'FAIL REPORT-001: reports/defect.md:11: a red whole-project gate is not attributed BASELINE_FAILURE' \
+    'NOT VERIFIED REPORT-001: reports/defect.md:12: a runtime or version equivalence is claimed' \
+    'FAIL REPORT-001: reports/defect.md: dimension 6 has no row' \
+    'FAIL REPORT-001: reports/defect.md: dimension 11 has no row'; do
+    printf '%s\n' "$defect" | grep -qF -- "$want" \
+      || { echo "FAIL V2.80: REPORT-001 did not report '$want' with file:line: $defect"; failures=1; }
+  done
+
+  twin="$(report_matrix_check . reports/twin.md)"
+  [ -z "$twin" ] || { echo "FAIL V2.80: REPORT-001 reports the compliant twin: $twin"; failures=1; }
+  exit 0
+) || failures=1
+
+echo "V2.80 probe: fixtures in $fx were checked and are removed"
+rm -rf "$fx"
+
+exit "$failures"
+```

@@ -556,6 +556,8 @@ Load `skills/testing-strategy/SKILL.md`.
 11. Run the project's validation commands with the runtime version the project
     pins (`.nvmrc`, `engines`, or the equivalent). If the active runtime differs,
     switch to the pinned version before running them.
+    A result is reported for the version that ran; a claim that it holds on another
+    runtime or version is `NOT VERIFIED` until that version is executed (M-80).
 
 When the change set touches CI/CD, security, or delivery configuration,
 follow `workflows/secure-delivery.md` for scoped delivery checks and
@@ -661,6 +663,10 @@ modules, imports, configuration, or executed commands), and any property
 that cannot be verified automatically must be reported as such. Report
 deviations and their impact, and do not claim the agent's behavior is proven
 by verifying instructions alone.
+
+## Verdict Matrix Gate
+
+A verdict matrix is consistent with its own rules (M-80). Before this output is delivered, run `REPORT-001` (`workflows/output-compliance.md`) over every verdict matrix it carries, and correct each `FAIL` first. A `NOT VERIFIED` reason names a tool or environment limit, never an unexecuted review; a `PASS` never carries an open item; and a conclusion never claims a closure or a `PASS` verdict that a row leaves open.
 
 ## Phase 13 — Git Delivery
 

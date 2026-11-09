@@ -2099,6 +2099,91 @@ decision_citation_check() {
 }
 ```
 
+### REPORT-001 — A verdict matrix is consistent with its own rules
+
+M-80: a verdict matrix is consistent with its own rules. An audit, review, or gate
+report that carries a matrix of dimensions (`| Dimension | Status | Reason |`) is
+checked against the rules of `references/audit-pass-criteria.md` before it is
+delivered. The check reads the report's own text and reports each defect with its
+`file:line`:
+
+- a `NOT VERIFIED` reason that is an unexecuted review (`no ejecuté`, `not run`,
+  `not audited`) is a `FAIL`: the review is run before its verdict is written;
+- a `PASS` row that names an open item (`pendiente`, `pending`, `not run`,
+  `equivalent`, `diff leído`, `ambiguous`) is a `FAIL`: the dimension is reopened;
+- a grouped dimension cell (`9, 10, 12, 13`) is a `FAIL`: each dimension needs its own
+  row and its own reason; a dimension number that repeats is a `FAIL`;
+- when the matrix numbers its dimensions, every one of the 14 dimensions has a row;
+- a conclusion line that claims a closure (`cierra`, `closes`, `closed`, `resolved`)
+  while a row stays `NOT VERIFIED`, `AMBIGUOUS`, or `FAIL` is a `FAIL` of that line;
+- a red whole-project gate line (`npm run`, `format:check`, `lint`, `typecheck`, `test`
+  with `falla`, `fails`, `failing`) is a `FAIL` unless the report attributes it
+  `BASELINE_FAILURE` (`workflows/commit.md`); a word such as `preexistente` alone is not
+  the attribution;
+- a line that claims a runtime or version is equivalent (`equivalent`, `equivalente`
+  with a runtime, language, or version name) is `NOT VERIFIED` until the claim is
+  executed on that version and the evidence is cited (M-80).
+
+The lexical check finds the phrases above; it does not judge whether a phrase is used
+in its literal sense. A matrix that uses other words for the same defect is `NOT
+VERIFIED` for the reviewer to decide, never `PASS`.
+
+```sh
+# $1 = repository root; $2... = report files, relative to it.
+report_matrix_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    [ -f "$root/$f" ] || { echo "NOT VERIFIED REPORT-001: $f: report file not found"; continue; }
+    awk -v f="$f" '
+      function low(s) { return tolower(s) }
+      function trim(s) { gsub(/^[ \t`*]+|[ \t`*]+$/, "", s); return s }
+      {
+        line = low($0)
+        if (line ~ /baseline_failure/) baseline = 1
+        if ($0 ~ /^\|/) {
+          n = split($0, c, "|")
+          dim = trim(c[2]); st = toupper(trim(c[3])); mot = low(trim(c[4]))
+          if (low(st) ~ /^(status|estado)$/ && low(dim) ~ /^dimensi|^dimension/) {
+            curdim = 1; dimhdr = 1; next
+          }
+          if (st ~ /^(PASS|FAIL|WARN|NOT VERIFIED|NOT_VERIFIED|N\/A|AMBIGUOUS|BLOCKED|BASELINE_FAILURE|NOT_RUN|NOT RUN|SKIPPED|SIMULATED|NOT_CONFIGURED|NOT_APPLICABLE|SETUP_REQUIRED)$/ && dim != "") {
+            rows++
+            if (curdim) dimrows++
+            if (st ~ /^(NOT VERIFIED|NOT_VERIFIED|AMBIGUOUS|FAIL|BLOCKED|BASELINE_FAILURE|NOT_RUN|NOT RUN|SKIPPED|SIMULATED|NOT_CONFIGURED|SETUP_REQUIRED)$/) open_rows++
+            if (dim ~ /^[0-9]+ *(,|y |and )/) {
+              print "FAIL REPORT-001: " f ":" NR ": grouped dimension \"" dim "\" gets one verdict; each dimension needs its own row (M-80)"
+            } else if (dim ~ /^[0-9]+/) {
+              num = dim; sub(/[^0-9].*$/, "", num)
+              if (num in seen) print "FAIL REPORT-001: " f ":" NR ": dimension " num " has a second row (M-80)"
+              seen[num] = 1; numbered = 1
+            }
+            if (st ~ /^NOT[ _]VERIFIED$/ && mot ~ /(no ejecut|no se ejecut|no auditad|sin auditar|not executed|not run|not audited|no review)/)
+              print "FAIL REPORT-001: " f ":" NR ": NOT VERIFIED reason is an unexecuted review; run the review before the verdict (M-80)"
+            if (st == "PASS" && mot ~ /(pendiente|pending|not run|no ejecut|sin ejecutar|equivalen|equivalent|diff le|solo el diff|only the diff|ambig|por confirmar|to be confirmed|simulat)/)
+              print "FAIL REPORT-001: " f ":" NR ": PASS carries an open item; the dimension is reopened (M-80)"
+          }
+          next
+        }
+        curdim = 0
+        if (line ~ /(cierra|cerrad|closes|closed|resolved|resuelto)/) closure = closure NR " "
+        if (line ~ /(verdict|veredicto|conclusi|resumen|summary|recommendation|recomendaci)/ && $0 ~ /(^|[^A-Z_])PASS/) closure = closure NR " "
+        if (line ~ /(npm run|format:check|lint|typecheck|test)/ && line ~ /(falla|fails|failing|rojo)/) {
+          if (!red) red = NR
+        }
+        if (line ~ /(equivalen|equivalent)/ && line ~ /(node|python|java|ruby|php|\.net|version|versi|runtime)/)
+          print "NOT VERIFIED REPORT-001: " f ":" NR ": a runtime or version equivalence is claimed; keep it only with its execution on that version (M-80)"
+      }
+      END {
+        if (dimhdr && dimrows != 14) print "FAIL REPORT-001: " f ": the dimension matrix has " dimrows " rows; the audit has 14 dimensions (M-72, M-80)"
+        if (open_rows > 0 && closure != "")
+          print "FAIL REPORT-001: " f ": lines " closure "claim a closure or a PASS verdict while " open_rows " row(s) stay open (M-80)"
+        if (numbered) for (i = 1; i <= 14; i++) if (!(i in seen)) print "FAIL REPORT-001: " f ": dimension " i " has no row (M-72, M-80)"
+        if (red && !baseline) print "FAIL REPORT-001: " f ":" red ": a red whole-project gate is not attributed BASELINE_FAILURE (M-80)"
+      }' "$root/$f"
+  done
+}
+```
+
 ## Procedure
 
 1. Resolve the target project root, the base revision, and the change set
@@ -2159,6 +2244,7 @@ decision_citation_check() {
 | `BOUND-001` | changed source files that declare a bound, and the test files | a changed source declares a timeout, a busy or lock wait, or a deadline |
 | `COMMENT-001` | changed TypeScript or JavaScript files | a changed file contains a comment |
 | `DEC-002` | decision records | a record is in the change set |
+| `REPORT-001` | every delivered audit, review, or gate report that carries a verdict matrix | a report with a dimension matrix is delivered (M-80: a verdict matrix is consistent with its own rules) |
 | `CHECK-001`, `CHECK-002` | phase reports | the work reports phases or checklists |
 | `GATE-001` | installation proposals | a dependency or tooling installation is proposed |
 | Whole-project sweep | project, health probe | the health probe runs; the sweep is not a change-set check |

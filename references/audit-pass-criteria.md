@@ -54,6 +54,15 @@ dimension. A criterion is never presented as a framework standard.
 - A dimension is judged only after this file has been read in full in the
   current audit. A dimension judged without that read is `NOT VERIFIED` with
   the reason, never `PASS` or `FAIL`.
+- A verdict matrix is consistent with its own rules (M-80). Every dimension has its
+  own row with its own reason, and a grouped row (`9, 10, 12, 13`) is not a verdict
+  for each of them. A `PASS` row that names an open item (pending, not run, an
+  equivalent runtime or environment that was not executed, or a diff-only read) is a
+  defect of the matrix, and the dimension is reopened. A red whole-project gate with
+  no failing file in the change set is `BASELINE_FAILURE` in the report, with its
+  count and first location, and never a `PASS` of that gate. `REPORT-001` in
+  `workflows/output-compliance.md` checks the matrix mechanically and is run before
+  the report is delivered (`workflows/system-audit.md`, Phase 5).
 
 - A generated proposal, pull request, or report is judged on its statements of
   fact: every count, name, removed or added artifact, advisory identifier, and
@@ -252,6 +261,14 @@ dimension. A criterion is never presented as a framework standard.
   checked against the plan or the code that decides it (`CLAIM-001` in
   `workflows/output-compliance.md`). A property the plan contradicts is a `FAIL` of
   this dimension with both lines.
+- A change that alters how values already stored are read, normalized, or ordered
+  states the treatment of the existing records: migrated, backfilled, or accepted as
+  a limit, with the number of records it affects. The treatment is a decision of the
+  user when the requirement does not settle it, so the criterion is `AMBIGUOUS` and
+  the dimension stays open. A change that corrects only the rows written after it,
+  while the legacy rows keep the defect, is never `PASS`, and a conclusion that calls
+  the defect closed is a `FAIL` of this dimension (M-80, `REPORT-001` in
+  `workflows/output-compliance.md`).
 
 ### 6. Security
 
