@@ -45,12 +45,25 @@ patterns, or over-engineering.
   lockfiles, binaries, minified assets. Migrations and config files are
   included.
 - Deleted files: record as context only.
-- When an approved scope manifest exists, run `out_of_scope_commit_check` over
-  `base..HEAD` (`COMMIT-002` in `workflows/output-compliance.md`). A proposed commit
-  or pull request carries only the commits of the approved scope: a commit that
-  touches a path the manifest does not name is a `FAIL` that blocks the proposal
-  (M-87). The base is the revision the approved scope was measured against, not
-  the first commit of the branch.
+- **The approved scope manifest is required (M-90).** It is the list that is recorded at
+  alignment before the first file write, in `workflows/task-to-code.md`, and it is read
+  from the task checkpoint.
+  A task with a change set and no recorded manifest is `BLOCKED`: the proposal stops
+  and the gap is reported, never inferred from the diff. An analysis-only task has an
+  empty manifest, so any changed file is a `SCOPE-001` `FAIL` (M-91).
+- Run `scope_file_check` (`SCOPE-001`, tracked and untracked files) against the
+  manifest, and `out_of_scope_commit_check` over `base..HEAD` (`COMMIT-002` in
+  `workflows/output-compliance.md`). A proposed commit or pull request carries only the
+  commits of the approved scope: a commit that touches a path the manifest does not
+  name is a `FAIL` that blocks the proposal (M-87). The base is the revision the
+  approved scope was measured against, not the first commit of the branch.
+- **Teardown gate (M-93).** Run `teardown_gate_check` (`TEARDOWN-001`) over the task
+  checkpoint. A step recorded `NOT DONE` that the user has neither resolved nor accepted
+  in writing blocks the commit proposal until the user resolves it or accepts it in
+  writing, and it is listed in the proposal with its reason.
+- **Approval citations (M-92).** Run `approval_citation_check` (`APPROVAL-001`) over the
+  proposal, the decision records, and the checkpoint. An approval claim without the
+  quoted user message is `NOT VERIFIED` and blocks the proposal.
 
 If `--staged` is passed, limit scope to `git diff --name-only --cached`.
 
@@ -276,6 +289,9 @@ Rules:
 - If any gate failed in Phases 2–10, or a structural `FAIL` or an open `COMMIT-002`
   `FAIL` is in the change set, do not request approval to commit; report the
   failures and stop.
+- If `SCOPE-001`, `TEARDOWN-001`, or `APPROVAL-001` reports a `FAIL` or `NOT VERIFIED`
+  (M-90 to M-93), or the approved scope manifest is missing, do not request approval to
+  commit either: report the item with its `file:line` and stop.
 
 ## Phase 14 — Create Approved Commits
 

@@ -101,6 +101,13 @@ A checkpoint records at least:
 - Phase plan, with the phases completed and the one in progress.
 - The current checklist, with the state of every step.
 - The pending approval gate, when one is open.
+- The approved scope manifest, which is recorded at alignment before the first file write: every path the approved requirement authorizes, the
+  changed values it names, or an explicit empty list for an analysis-only task (M-90,
+  M-91). A field that was never recorded is written as `NOT RECORDED`, never omitted.
+- Teardown and cleanup steps, each with its target path, its authorization status, and
+  its state: `DONE`, `NOT DONE` with the reason, or `accepted in writing` with the user's
+  quoted message (M-89, M-93).
+- Human approvals, each with the verbatim user message and its turn (M-92).
 - Completed work.
 - Decisions and rationale.
 - Changed files.

@@ -190,6 +190,24 @@ grants, widens, or adds a permission, role, scope, or access rule that the appro
 requirement does not name is a human gate (M-86): raise it in alignment, never
 implement it silently.
 
+**Record the approved scope manifest (M-90).** The approved scope manifest is recorded at alignment before the first file write: the
+alignment records the list of paths the approved requirement authorizes, and any
+changed value of existing behavior it names (`<path> <old value> => <new value>`,
+`SCOPE-002`). The list is written to the task checkpoint (`workflows/session-resilience.md`,
+"Checkpoint Contents"), never to the repository. The commit gate reads it there, and a
+change set with no recorded manifest is `BLOCKED`.
+
+**An analysis or decision request writes no file (M-91).** When the outcome the user
+asked for is an analysis, a decision, or an estimate, the approved manifest is empty
+and the request authorizes no file change in any project, including a scratch, demo, or throwaway project.
+Only an implementation request authorizes writing files; a request to "analyze and
+decide" that then needs code is a new alignment, not a continuation. Any file changed
+by an analysis-only task is a `SCOPE-001` `FAIL`.
+
+**Quote every approval (M-92).** An approval that the task, a decision record, or the
+checkpoint attributes to the user quotes the verbatim user message and its turn. An
+approval the agent cannot quote is not an approval; it is raised again as a question.
+
 For projects or features with user-facing text, decide localization early:
 whether more than one language is required, which locales, whether RTL is
 needed, and whether locale-aware date, number, or currency formatting applies.
@@ -398,7 +416,9 @@ requirement asks for is listed in the phase plan with its target path and its
 authorization status before the work starts (M-89). A target outside the target
 project is a human gate: the plan shows the step as blocked until the user
 authorizes that path in the current conversation. A step the agent does not
-execute is reported `NOT DONE` with its reason, as `AGENTS.md` requires.
+execute is reported `NOT DONE` with its reason, as `AGENTS.md` requires, and it is
+recorded as `NOT DONE` in the checkpoint, where the commit gate reads it and blocks the
+commit proposal until the user resolves it or accepts it in writing (M-93).
 
 **Slice the implementation into stages and increments.** Before Phase 10
 starts, divide the implementation phase into **stages** (subfases), each named

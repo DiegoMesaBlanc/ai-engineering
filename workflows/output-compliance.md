@@ -1749,7 +1749,8 @@ db_deploy_order_check() {
   done
   for m in $migs; do
     if [ -n "$found" ]; then
-      echo "NOT VERIFIED DB-002: $m:1: a deploy-order test is named ($(echo $found | cut -d' ' -f1)); execute it in both orders before claiming order-safety (M-69)"
+      first="$(printf '%s\n' $found | sed -n '1p')"
+      echo "NOT VERIFIED DB-002: $m:1: a deploy-order test is named ($first); execute it in both orders before claiming order-safety (M-69)"
     else
       echo "FAIL DB-002: $m:1: no test executes this migration in either deployment order (M-69)"
     fi
@@ -1874,12 +1875,25 @@ which catches the formatter rewrite of an unrelated file. The check reads file
 names; a hunk that changes an unrelated line of an approved file is judged by
 review under Dimension 14 of `references/audit-pass-criteria.md`.
 
+Two defects of an earlier version are closed here (M-90, M-91). The change set
+includes **untracked** files, so a new migration, script, or source file that the
+manifest does not name is a `FAIL`; `git diff --name-only HEAD` alone misses it. And
+a change set with **no recorded manifest** is a `FAIL`, never a silent pass: the
+manifest is recorded at alignment before the first file write. An analysis-only
+request records an empty manifest, so any changed file is a `FAIL` (M-91).
+
 ```sh
 # $1 = repository root; $2 = scope manifest file, one approved path per line.
 scope_file_check() {
   root="$1"; manifest="$2"
-  git -C "$root" diff --name-only HEAD 2>/dev/null | sed '/^$/d' | while read -r f; do
-    grep -qxF -- "$f" "$manifest" || echo "FAIL SCOPE-001: $f:1: changed but not named in the approved scope manifest (M-71)"
+  changed="$( { git -C "$root" diff --name-only HEAD; git -C "$root" ls-files --others --exclude-standard; } 2>/dev/null | sed '/^$/d' | sort -u)"
+  [ -n "$changed" ] || return 0
+  if [ ! -f "$manifest" ]; then
+    echo "FAIL SCOPE-001: $(printf '%s\n' "$changed" | head -1):1: the change set exists and no approved scope manifest was recorded at alignment (M-90)"
+    return 0
+  fi
+  printf '%s\n' "$changed" | while IFS= read -r f; do
+    grep -qxF -- "$f" "$manifest" || echo "FAIL SCOPE-001: $f:1: changed but not named in the approved scope manifest (M-71, M-90)"
   done
 }
 ```
@@ -1921,6 +1935,60 @@ changed_value_check() {
       continue
     fi
     echo "FAIL SCOPE-002: $file:$line: candidate changed value $num is not named in the scope manifest (M-79)"
+  done
+}
+```
+
+### APPROVAL-001 — A claimed human approval quotes the user's message
+
+M-92: an approval that a report, decision record, checkpoint, or proposal attributes to
+the user is kept only when the verbatim message that gave it is quoted, with its
+conversation turn. The check is lexical: it finds each approval claim and looks for a
+quoted span of at least eight characters and a turn reference within two lines of the
+claim. A claim without both is `NOT VERIFIED`, and the delivery gate that depends on it is
+blocked. The reviewer judges whether the quoted message is the approval; the check only
+requires that it is quoted.
+
+```sh
+# $1 = repository root; $2... = report, decision-record, checkpoint, or proposal files, relative to it.
+approval_citation_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    [ -f "$root/$f" ] || { echo "NOT VERIFIED APPROVAL-001: $f: file not found"; continue; }
+    awk -v f="$f" '
+      { n++; L[n] = $0 }
+      END {
+        for (i = 1; i <= n; i++) {
+          if (tolower(L[i]) !~ /aprob|approv|sign-?off|dueno|dueño/) continue
+          win = ""
+          for (j = i - 2; j <= i + 2; j++) if (j >= 1 && j <= n) win = win " " L[j]
+          q = (win ~ /"[^"]{8,}"/ || win ~ /`[^`]{8,}`/)
+          t = (tolower(win) ~ /turn|turno|mensaje|message|dijo|said/)
+          if (!(q && t))
+            print "NOT VERIFIED APPROVAL-001: " f ":" i ": an approval is claimed with no quoted user message and turn; keep it only with the verbatim quote (M-92)"
+        }
+      }' "$root/$f"
+  done
+}
+```
+
+### TEARDOWN-001 — A required step recorded as NOT DONE blocks the commit proposal
+
+M-93: a teardown, reset, cleanup, or rollback step that the checkpoint records as
+`NOT DONE` is unresolved until the user resolves it or accepts it in writing. An open step
+blocks the commit proposal until the user resolves it or accepts it in writing
+(`workflows/commit.md` Phase 1). The check reads
+the task's checkpoint in the user-level handoff directory, outside the repository, and
+never the repository itself.
+
+```sh
+# $1... = checkpoint files of the task, absolute paths in the handoff directory.
+teardown_gate_check() {
+  for f in "$@"; do
+    [ -f "$f" ] || { echo "NOT VERIFIED TEARDOWN-001: $f: checkpoint not found; the teardown state is unknown"; continue; }
+    grep -nE 'NOT[ _]DONE' "$f" | grep -viE 'accepted in writing|resolved by user' | while IFS=: read -r n rest; do
+      echo "FAIL TEARDOWN-001: $f:$n: a required step is NOT DONE and unresolved; the proposal is blocked until the user resolves it or accepts it in writing (M-93)"
+    done
   done
 }
 ```
@@ -2547,8 +2615,21 @@ report_matrix_check() {
         if ($0 ~ /^\|/) {
           n = split($0, c, "|")
           dim = trim(c[2]); st = toupper(trim(c[3])); mot = low(trim(c[4]))
-          if (low(st) ~ /^(status|estado)$/ && low(dim) ~ /^dimensi|^dimension/) {
+          if (low(st) ~ /^(status|estado)$/ && low(dim) ~ /^dimensi|^dimension|^dim\.?$/) {
             curdim = 1; dimhdr = 1; next
+          }
+          # A numbered dimension row whose status is not exactly one enumerated verdict is a FAIL.
+          # A status with a qualifier ("PASS, con observación", "PASS (parcial)") is never a PASS,
+          # and a free-text status ("No ejecutadas en esta pasada") is never silently skipped (M-80).
+          if (dim ~ /^[0-9]/ && st !~ /^(PASS|FAIL|WARN|NOT VERIFIED|NOT_VERIFIED|N\/A|AMBIGUOUS|BLOCKED|BASELINE_FAILURE|NOT_RUN|NOT RUN|SKIPPED|SIMULATED|NOT_CONFIGURED|NOT_APPLICABLE|SETUP_REQUIRED)$/) {
+            if (st ~ /^PASS[ ,(]/)
+              print "FAIL REPORT-001: " f ":" NR ": PASS carries a qualifier \"" trim(c[3]) "\"; grade it WARN with the observation, or reopen the dimension (M-80)"
+            else
+              print "FAIL REPORT-001: " f ":" NR ": unrecognized status \"" trim(c[3]) "\"; a verdict is one of the enumerated values, and a dimension that was not run is run before its verdict is written (M-80)"
+            rows++; bad_rows++; if (curdim) dimrows++
+            num = dim; sub(/[^0-9].*$/, "", num)
+            if (!(num in seen)) { seen[num] = 1; numbered = 1 }
+            next
           }
           if (st ~ /^(PASS|FAIL|WARN|NOT VERIFIED|NOT_VERIFIED|N\/A|AMBIGUOUS|BLOCKED|BASELINE_FAILURE|NOT_RUN|NOT RUN|SKIPPED|SIMULATED|NOT_CONFIGURED|NOT_APPLICABLE|SETUP_REQUIRED)$/ && dim != "") {
             rows++
@@ -2647,8 +2728,10 @@ report_matrix_check() {
 | `DB-004` | source files and migrations in the change set and the sweep | a source file issues a `SELECT` with a `WHERE` or `AND` equality, or a migration creates an index (M-85) |
 | `AUTH-002` | changed authorization, permission, role, or scope files | such a file is created or modified (M-86) |
 | `COMMIT-002` | commits in `base..HEAD` against the approved scope manifest | a commit proposal is prepared (M-87) |
-| `SCOPE-001` | change set against the approved manifest | an approved scope manifest exists |
+| `SCOPE-001` | change set, tracked and untracked, against the approved manifest | any change set exists; a missing manifest is a `FAIL` (M-90, M-91) |
 | `SCOPE-002` | change set diff against the approved manifest | a source, configuration, or test file is modified |
+| `APPROVAL-001` | reports, decision records, checkpoints, and proposals in the change set | such a file claims a human approval (M-92) |
+| `TEARDOWN-001` | the task checkpoint in the handoff directory | a commit proposal is prepared (M-93) |
 | `INV-001` | reports or analyses that list an inventory | the change set contains such a report |
 | `STATE-001` | read-only gates | a read-only gate runs |
 | `A11Y-001`, `A11Y-002` | changed UI and platform files | accessibility applies |

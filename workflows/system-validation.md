@@ -1012,6 +1012,7 @@ Return:
 - V2.81 typed errors, universal and cost claims, and the detectors' coverage (M-81):
 - V2.82 project-wide error model, error codes in both directions, entry-point tests, validation order, read transactions, and retry budgets (M-54, M-77, M-81 to M-84):
 - V2.83 structural gate in the commit workflow, pre-existing test findings, consumer groups, citations outside tables, index coverage, permission grants, scope of commits, performance metrics, and the teardown in the plan (M-08, M-47, M-78, M-85 to M-89):
+- V2.84 untracked scope and missing manifest, analysis-only writes, approval quotes, teardown gate, and verdict-status enumeration (M-80, M-90 to M-93):
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -4576,27 +4577,27 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v274.XXXXXX")"
   printf '%s\n' "$repaired" | grep -qF 'NOT VERIFIED DB-002: migrations/003-default-method.ts:1:' \
     || { echo "FAIL V2.74: a named deploy-order test is not reported as NOT VERIFIED"; exit 1; }
 
-  # SCOPE-001 on a git fixture: an unrelated reformatted file is reported, the approved file is not.
+  # SCOPE-001 on a git fixture: an unrelated reformatted file is reported, the approved file is not. The manifest lives outside the repository (M-90), so it is never an untracked change.
   git init -q . || { echo "FAIL V2.74: git init failed in the fixture"; exit 1; }
   printf 'a\n' > src/config/job-env.ts
   printf 'b\n' > src/features/payment.ts
   git add -A && git -c user.email=probe@local -c user.name=probe commit -qm base || exit 1
   printf 'a2\n' > src/config/job-env.ts
   printf 'b2\n' > src/features/payment.ts
-  printf '%s\n' src/features/payment.ts > approved.txt
-  scope="$(scope_file_check . approved.txt)"
+  printf '%s\n' src/features/payment.ts > "${fx}.approved"
+  scope="$(scope_file_check . "${fx}.approved")"
   printf '%s\n' "$scope" | grep -qF 'FAIL SCOPE-001: src/config/job-env.ts:1:' \
     || { echo "FAIL V2.74: SCOPE-001 did not report the unnamed file: $scope"; exit 1; }
   printf '%s\n' "$scope" | grep -q 'src/features/payment.ts' \
     && { echo "FAIL V2.74: SCOPE-001 reports the file the manifest names"; exit 1; }
-  printf '%s\n' src/features/payment.ts src/config/job-env.ts > approved.txt
-  [ -z "$(scope_file_check . approved.txt)" ] \
+  printf '%s\n' src/features/payment.ts src/config/job-env.ts > "${fx}.approved"
+  [ -z "$(scope_file_check . "${fx}.approved")" ] \
     || { echo "FAIL V2.74: SCOPE-001 reports a file after the manifest names it"; exit 1; }
   exit 0
 ) || failures=1
 
 echo "V2.74 probe: fixture in $fx was checked and is removed"
-rm -rf "$fx"
+rm -rf "$fx" "${fx}.approved"
 
 exit "$failures"
 ```
@@ -6006,6 +6007,170 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v283.XXXXXX")"
 ) || failures=1
 
 echo "V2.83 probe: fixtures in $fx were checked and are removed"
+rm -rf "$fx"
+
+exit "$failures"
+```
+
+## V2.84 Regression — Scope Manifest, Analysis-Only Requests, Approval Quotes, Teardown Gate, and Verdict Statuses
+
+Verify that the holes the external audit exposed are closed on every surface, and that
+each detector reports its defect with `file:line` and passes its compliant twin:
+
+- M-90: the approved scope manifest is recorded at alignment before the first file write,
+  and `SCOPE-001` reads tracked and untracked files and fails a change set with no
+  recorded manifest (R-151).
+- M-91: an analysis, decision, or estimate request authorizes no file change in any
+  project, including a scratch project; its empty manifest makes any changed file a
+  `FAIL` (R-152).
+- M-92: a claimed human approval quotes the verbatim user message and its turn;
+  `APPROVAL-001` reports an uncited claim as `NOT VERIFIED` (R-153).
+- M-93: a teardown recorded `NOT DONE` in the checkpoint blocks the commit proposal;
+  `TEARDOWN-001` reports the open step (R-154).
+- M-80: a verdict-matrix row with a qualified status or an unenumerated status is a
+  `FAIL` of `REPORT-001`, never skipped (R-155).
+
+The static part reads the repository. The behavioral part extracts the `sh` blocks of
+`SCOPE-001`, `REPORT-001`, `APPROVAL-001`, and `TEARDOWN-001` from
+`workflows/output-compliance.md`, runs them on fixtures in a temporary directory outside
+the repository, which is removed, and uses a git fixture for `SCOPE-001`. It needs `awk`,
+`grep`, `sed`, `tr`, `git`, and `mktemp`; without them the behavioral part is
+`NOT VERIFIED`, never passed.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+tc="workflows/task-to-code.md"
+cm="workflows/commit.md"
+sr="workflows/session-resilience.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.84: $1 is missing $3"; failures=1; }
+}
+
+# The canonical wording of M-90 to M-93 is in AGENTS.md, and each listed surface carries its anchor.
+need "$ag" "is recorded at alignment before the first file write" "the M-90 canonical wording"
+need "$ag" "authorizes no file change in any project" "the M-91 canonical wording"
+need "$ag" "quotes the verbatim user message and its turn" "the M-92 canonical wording"
+need "$ag" "blocks the commit proposal until the user resolves it or accepts it in writing" "the M-93 canonical wording"
+need "$tc" "is recorded at alignment before the first file write" "the M-90 alignment step"
+need "$tc" "authorizes no file change in any project" "the M-91 alignment step"
+need "$tc" "quotes the verbatim user message and its turn" "the M-92 alignment step"
+need "$tc" "blocks the commit proposal until the user resolves it or accepts it in writing" "the M-93 alignment step"
+need "$cm" "is recorded at alignment before the first file write" "the M-90 commit gate"
+need "$cm" "blocks the commit proposal until the user resolves it or accepts it in writing" "the M-93 commit gate"
+need "$oc" "is recorded at alignment before the first file write" "the M-90 detector statement"
+need "$oc" "blocks the commit proposal until the user resolves it or accepts it in writing" "the M-93 detector statement"
+need "$sr" "is recorded at alignment before the first file write" "the M-90 checkpoint field"
+
+# Registry rows M-90 to M-93 and regression rows R-151 to R-155.
+for id in M-90 M-91 M-92 M-93; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.84: no $id row in the registry"; failures=1; }
+done
+for id in R-151 R-152 R-153 R-154 R-155; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.84: no $id row in the regression matrix"; failures=1; }
+done
+
+# Coverage rows of the new detectors, and the changed SCOPE-001 row.
+for rule in APPROVAL-001 TEARDOWN-001; do
+  grep -qF "| \`$rule\` |" "$root/$oc" || { echo "FAIL V2.84: the coverage table has no $rule row"; failures=1; }
+done
+grep -qF 'tracked and untracked' "$root/$oc" || { echo "FAIL V2.84: the SCOPE-001 coverage row does not name untracked files"; failures=1; }
+
+# Behavioral part: the detectors run on fixtures in a temporary directory outside the repository.
+for cmd in git awk grep sed tr mktemp; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V2.84: $cmd is not available, the behavioral fixtures were not run"; exit 2; }
+done
+
+extract_sec() {
+  awk -v h="$1" '
+    $0 ~ ("^### " h " ") { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v284.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  extract_sec SCOPE-001 > scope.sh && . ./scope.sh || { echo "FAIL V2.84: the SCOPE-001 block does not load"; exit 1; }
+  extract_sec REPORT-001 > report.sh && . ./report.sh || { echo "FAIL V2.84: the REPORT-001 block does not load"; exit 1; }
+  extract_sec APPROVAL-001 > approval.sh && . ./approval.sh || { echo "FAIL V2.84: the APPROVAL-001 block does not load"; exit 1; }
+  extract_sec TEARDOWN-001 > teardown.sh && . ./teardown.sh || { echo "FAIL V2.84: the TEARDOWN-001 block does not load"; exit 1; }
+
+  # SCOPE-001, defect: an untracked migration the manifest does not name; the tracked change is named.
+  git init -q repo && cd repo || exit 1
+  git config user.email v@v && git config user.name v
+  mkdir -p src migrations
+  printf '%s\n' 'export const a = 1;' > src/a.ts
+  printf '%s\n' 'export const b = 1;' > src/b.ts
+  git add -A && git commit -qm base
+  printf '%s\n' 'export const a = 2;' > src/a.ts
+  printf '%s\n' 'CREATE TABLE t (id INT);' > migrations/004.sql
+  printf '%s\n' src/a.ts > ../m1.txt
+  printf '%s\n' src/a.ts migrations/004.sql > ../m2.txt
+  : > ../m0.txt
+  s1="$(scope_file_check . ../m1.txt)"
+  printf '%s\n' "$s1" | grep -qF 'FAIL SCOPE-001: migrations/004.sql:1:' \
+    || { echo "FAIL V2.84: SCOPE-001 did not report the untracked unnamed file: $s1"; exit 1; }
+  printf '%s\n' "$s1" | grep -q 'src/a.ts' && { echo "FAIL V2.84: SCOPE-001 reports the file the manifest names: $s1"; exit 1; }
+  s2="$(scope_file_check . ../nomanifest.txt)"
+  printf '%s\n' "$s2" | grep -qF 'no approved scope manifest was recorded at alignment' \
+    || { echo "FAIL V2.84: SCOPE-001 passed a change set with no manifest: $s2"; exit 1; }
+  s3="$(scope_file_check . ../m0.txt)"
+  printf '%s\n' "$s3" | grep -qF 'FAIL SCOPE-001: src/a.ts:1:' && printf '%s\n' "$s3" | grep -qF 'FAIL SCOPE-001: migrations/004.sql:1:' \
+    || { echo "FAIL V2.84: an empty manifest did not fail every changed file (M-91): $s3"; exit 1; }
+  s4="$(scope_file_check . ../m2.txt)"
+  [ -z "$s4" ] || { echo "FAIL V2.84: SCOPE-001 reports the compliant twin: $s4"; exit 1; }
+  cd "$fx" || exit 1
+
+  # REPORT-001, defect: a qualified PASS and a free-text status; the twin has fourteen enumerated verdicts.
+  { echo '# Audit'; echo '| Dim. | Estado | Motivo |'; echo '|---|---|---|'
+    echo '| 2. Patrones | PASS | record con 0 patrones |'
+    echo '| 3. Calidad | PASS, con observación | modificación fuera del alcance |'
+    echo '| 1, 4, 6, 8–14 | No ejecutadas en esta pasada | límite declarado |'; } > rep1.md
+  r1="$(report_matrix_check . rep1.md)"
+  printf '%s\n' "$r1" | grep -qF 'FAIL REPORT-001: rep1.md:5: PASS carries a qualifier' \
+    || { echo "FAIL V2.84: REPORT-001 did not report the qualified PASS: $r1"; exit 1; }
+  printf '%s\n' "$r1" | grep -qF 'FAIL REPORT-001: rep1.md:6: unrecognized status' \
+    || { echo "FAIL V2.84: REPORT-001 skipped the grouped free-text status: $r1"; exit 1; }
+  { echo '# Audit'; echo '| Dim. | Estado | Motivo |'; echo '|---|---|---|'
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do echo "| $i. Dimensión $i | PASS | evidencia del criterio $i |"; done; } > rep2.md
+  r2="$(report_matrix_check . rep2.md)"
+  [ -z "$r2" ] || { echo "FAIL V2.84: REPORT-001 reports the compliant twin: $r2"; exit 1; }
+
+  # APPROVAL-001, defect: an approval with no quoted message; the twin quotes it with its turn.
+  printf '%s\n' '# Decision' 'Aprobado por el dueño del producto para este alcance.' > ap1.md
+  a1="$(approval_citation_check . ap1.md)"
+  printf '%s\n' "$a1" | grep -qF 'NOT VERIFIED APPROVAL-001: ap1.md:2:' \
+    || { echo "FAIL V2.84: APPROVAL-001 did not report the uncited approval: $a1"; exit 1; }
+  printf '%s\n' '# Decision' 'Aprobado por el dueño del producto. Turno 4 del usuario: "sí, adelante con el alcance de la migración".' > ap2.md
+  a2="$(approval_citation_check . ap2.md)"
+  [ -z "$a2" ] || { echo "FAIL V2.84: APPROVAL-001 reports the quoted twin: $a2"; exit 1; }
+
+  # TEARDOWN-001, defect: an open NOT DONE step; the twin records it as accepted in writing.
+  printf '%s\n' '# Checkpoint' '- Teardown scratch changes in demo-backend: NOT DONE, no authorization for that path.' > cp1.md
+  t1="$(teardown_gate_check cp1.md)"
+  printf '%s\n' "$t1" | grep -qF 'FAIL TEARDOWN-001: cp1.md:2:' \
+    || { echo "FAIL V2.84: TEARDOWN-001 did not report the open NOT DONE step: $t1"; exit 1; }
+  printf '%s\n' '# Checkpoint' '- Teardown scratch changes: NOT DONE, accepted in writing: "déjalos sin commit".' > cp2.md
+  t2="$(teardown_gate_check cp2.md)"
+  [ -z "$t2" ] || { echo "FAIL V2.84: TEARDOWN-001 reports the accepted twin: $t2"; exit 1; }
+  t3="$(teardown_gate_check missing.md)"
+  printf '%s\n' "$t3" | grep -qF 'NOT VERIFIED TEARDOWN-001: missing.md' \
+    || { echo "FAIL V2.84: TEARDOWN-001 did not report a missing checkpoint as NOT VERIFIED: $t3"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.84 probe: fixtures in $fx were checked and are removed"
 rm -rf "$fx"
 
 exit "$failures"
