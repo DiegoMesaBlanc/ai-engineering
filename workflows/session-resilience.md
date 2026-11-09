@@ -594,9 +594,9 @@ the client's native task surface, before any other tool call or text answer.
 
 When the client exposes a native task or todo surface — a `todowrite` tool
 that renders a persistent todo panel, or an equivalent — the mirror is
-**mandatory, not optional**. It is populated with the initial checklist and
-updated on the same transitions, before each mutating step, so progress is
-visible without reading every message.
+**mandatory, not optional**. It is written at every checklist re-emission,
+with the whole work, under the cadence of "Cadence of the mirror" below, so
+progress is visible without reading every message.
 
 - The **conversation copy is the authority**. When the mirror is disabled,
   unavailable, or fails, the checklist continues in the conversation and the
@@ -657,10 +657,25 @@ therefore encoded in the text, and it is fixed:
 - a step never uses a phase label such as `F1:` or `Phase 1 check`; the
   number pair `N.M` is what the user reads to follow the work.
 
-**Cadence of the mirror.** The mirror is rewritten before each mutating step
-and after each step completes, blocks, or is added, so the panel never trails
-the conversation by a step. Rewriting it only at the phase boundary is a
-defect.
+**Cadence of the mirror.** The mirror is rewritten at **every checklist
+re-emission** — the same moments as the cadence table in Emission and
+cadence: the phase start, a step about to change the repository, a step
+completed, blocked, or newly discovered, each user turn while the phase is
+open, and the phase end — so the panel never trails the conversation by a
+step. A turn that only re-emits the checklist, with no repository change
+(a plan approved, a commit text presented, a correction), is a mirror
+write. Rewriting it only before mutating steps, only at the phase
+boundary, or only when a file changed is a defect.
+
+**Rewrites never lose the phase list.** Every mirror rewrite is the full
+content defined above — the phases of the plan first, the steps of the
+phase in progress under it — because the surface replaces its whole state
+on each call. Updating the checklist for a new state therefore rewrites
+the steps of the phase in progress and rewrites the phase list with its
+current states; it never deletes the phase items to show only the
+checklist, and it never shows the checklist without its phase. A panel
+that holds only phases, or only the steps of the last re-emission, is the
+defect defined above, from either direction.
 
 The mirror never replaces the cadence above: it makes the same checklist
 persistent, and an out-of-date mirror is corrected on the next transition
