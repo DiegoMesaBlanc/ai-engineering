@@ -423,6 +423,17 @@ Run each check, and record its command, status, and evidence:
    the session (M-60): the sweep's `SAFE-006` finding covers it, and the device
    behavior is `NOT VERIFIED` until it is run.
 
+8. **Baseline conditions and declared scenarios (M-108, M-109, M-110, M-112).** The
+   sweep of item 6 also runs `ci_presence_check` (`CI-001`), `node_drift_check`
+   (`NODE-001`), and `dep_range_check` (`DEP-RANGE-001`), each reported as a finding that
+   never blocks an unrelated task, and `precondition_check` (`PRECOND-001`): a declared
+   initial state that the target does not satisfy is a `FAIL`, so a scenario that starts
+   from a CI file is never reported as run on a target without one. `evidence_claim_check`
+   (`EVIDENCE-001`) marks a time window or a count with no cited evidence `NOT VERIFIED`.
+   A document path that leaves the repository, or a directory that is not in it, is
+   reported by `ARTIFACT-001`, so a README that cites a sibling location is found by the
+   probe that runs on the project, not only by the reader.
+
 The report lists every check with its status and evidence. A failing check is
 never reported as passing, and a finding in unrelated code is reported with its
 file and line without blocking the task.

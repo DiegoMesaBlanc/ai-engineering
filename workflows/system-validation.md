@@ -1019,6 +1019,7 @@ Return:
 - V2.87 pre-code design review gate and its independence contract (M-99, R-164):
 - V2.88 visibility changes, caches that decide actions, and schema state at process start (M-100 to M-102, R-165 to R-167):
 - V2.89 destructive paths, parsed values, duplicated helpers, document-catalog traceability, and units with several responsibilities (M-103 to M-107, R-168 to R-172):
+- V2.90 cited paths and directories, evidence for windows and counts, declared initial states, approval wiring across documents, and baseline health findings (M-108 to M-112, R-173 to R-177):
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -6847,7 +6848,8 @@ the detectors find the defects the audit found and pass their compliant twins:
 The rule `APPROVAL-001` (M-92) was defined and wired only into the commit gate, so
 a decision record checked by a code audit was never run through it (M-75, an
 unwired control). The text checks below require that `code-audit.md` runs it and
-that the sweep runs it on the decision records.
+that the sweep runs it on the decision records. M-111 (V2.90) widens the sweep to every
+Markdown document.
 
 The text checks require the anchors of M-103 to M-107 on every required surface,
 the registry rows, the regression rows, the coverage rows, the sweep calls, and the
@@ -6911,7 +6913,7 @@ grep -qF 'destructive_path_check . $src' "$root/$oc" || { echo "FAIL V2.89: the 
 grep -qF 'parse_dereference_check . $src' "$root/$oc" || { echo "FAIL V2.89: the sweep does not run PARSE-001"; failures=1; }
 grep -qF 'srp_unit_check . $src' "$root/$oc" || { echo "FAIL V2.89: the sweep does not run SRP-001"; failures=1; }
 grep -qF 'dup_helper_check . -- $src' "$root/$oc" || { echo "FAIL V2.89: the sweep does not run DUP-001"; failures=1; }
-grep -qF 'approval_citation_check . $decisions' "$root/$oc" || { echo "FAIL V2.89: the sweep does not run APPROVAL-001 on the decision records"; failures=1; }
+grep -qF 'approval_citation_check . $mds' "$root/$oc" || { echo "FAIL V2.89: the sweep does not run APPROVAL-001 on the Markdown documents (M-111)"; failures=1; }
 grep -qF 'cites no file:line for the composition root (M-107)' "$root/$oc" || { echo "FAIL V2.89: DEC-001 does not require the DIP row to cite the composition root"; failures=1; }
 grep -qF 'approval_citation_check' "$root/$ca" || { echo "FAIL V2.89: the code audit does not run APPROVAL-001 (M-75, unwired control)"; failures=1; }
 grep -qF 'srp_record_check' "$root/$ca" || { echo "FAIL V2.89: the code audit does not run the SRP-001 record check"; failures=1; }
@@ -7065,3 +7067,206 @@ echo "V2.89 behavioral fixtures: $fx (removed on exit)"
 [ "$failures" -eq 0 ] && echo "V2.89 PASS" || echo "V2.89 FAIL"
 [ "$failures" -eq 0 ]
 ```
+
+## V2.90 Regression — Cited Paths, Evidence for Windows and Counts, Declared Initial States, Approval Wiring, and Baseline Findings
+
+Verify that the rules added after the second external audit are canonical, reachable,
+wired into the procedures that run them, and that the detectors find the defects that
+audit found and pass their compliant twins:
+
+- M-108: a declared initial state is verified against the target before the scenario runs
+  (R-175). `PRECOND-001` reports `FAIL` when the declared state names a missing path or
+  claims CI with no tracked CI configuration, and `NOT VERIFIED` when it has no mechanical
+  check. The audit found a guide that declared `CI file present` against a target with no
+  CI, so the scenario tested a weaker case without saying so.
+- M-109: a time window or a count cites its evidence (R-174). `EVIDENCE-001` reports a
+  window with no timestamp or command output, and a count that does not match the
+  non-empty lines of the file it cites, as `NOT VERIFIED`. The audit found a note that
+  claimed a window with no timestamp and a count of 17 over a list of 18 lines.
+- M-110: a cited path stays inside the repository and exists (R-173). `ARTIFACT-001`
+  reports `../` paths, home paths, and absolute paths as `FAIL`, and a cited directory
+  that is not in the repository as `NOT VERIFIED`. The audit found `../demo-backend` and
+  a README that resolved a sibling layout, which the M-97 check did not read, because it
+  matched only artifact extensions.
+- M-111: the sweep runs `APPROVAL-001` on every Markdown document (R-176). The audit found
+  an approval in a note that was never checked, because the sweep ran the check on the
+  decision records only.
+- M-112: the baseline conditions are findings that never block an unrelated task (R-177).
+  `CI-001`, `NODE-001`, and `DEP-RANGE-001` report a missing CI configuration, a Node major
+  that differs across the project, and a caret or tilde runtime range.
+
+The text checks require the anchors of M-108 to M-112 on every required surface, the
+registry rows, the regression rows, the coverage rows, the sweep calls, the Phase 8a item,
+and the index entry. The behavioral part builds a defective fixture and its compliant twin
+for each detector in a temporary directory outside the repository, verifies each defect is
+reported with `file:line`, verifies the twin is clean, and removes the directory.
+
+Limits, stated by the rules themselves: the window and count checks are lexical and read
+two lines of context, so they find a claim without evidence but do not judge whether the
+cited evidence supports it, and `NOT VERIFIED` is the reviewer's cue, not a verdict. A
+directory that is referenced by a name without a slash is not read. `PRECOND-001` decides
+only the preconditions it can map to a path or to CI. The sweep's directory check reads the
+repository only and does not resolve a sibling project; a path that resolves outside the
+repository is `FAIL`, never a pass. The CI and Node checks read the tracked configuration
+only; a Node version set by an external image is `NOT VERIFIED`. The behavior of an external
+guide or of the target project itself is not verified here.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+pv="workflows/project-validation.md"
+vs="workflows/system-validation.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.90: $1 is missing $3"; failures=1; }
+}
+
+# Canonical wording and reachability of M-108 to M-112 on every required surface.
+for surface in "$ag" "$mr" "$rmx" "$oc" "$vs"; do
+  need "$surface" "is verified against the target before the scenario runs" "the M-108 anchor"
+  need "$surface" "cites a timestamp or the command output that shows it" "the M-109 anchor"
+  need "$surface" "stays inside the repository and exists" "the M-110 anchor"
+  need "$surface" "on every Markdown document" "the M-111 anchor"
+  need "$surface" "reports three baseline conditions as findings" "the M-112 anchor"
+done
+
+for id in M-108 M-109 M-110 M-111 M-112; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.90: no $id row in the registry"; failures=1; }
+done
+for id in R-173 R-174 R-175 R-176 R-177; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.90: no $id row in the regression matrix"; failures=1; }
+done
+for rule in PRECOND-001 EVIDENCE-001 ARTIFACT-001 APPROVAL-001; do
+  grep -qF "| \`$rule\` |" "$root/$oc" || { echo "FAIL V2.90: the coverage table has no $rule row"; failures=1; }
+done
+grep -qF '`CI-001`, `NODE-001`, `DEP-RANGE-001` |' "$root/$oc" || { echo "FAIL V2.90: the coverage table has no CI-001, NODE-001, DEP-RANGE-001 row"; failures=1; }
+for rule in PRECOND-001 EVIDENCE-001; do
+  grep -q "^### $rule " "$root/$oc" || { echo "FAIL V2.90: $oc has no $rule section"; failures=1; }
+done
+grep -q '^### CI-001, NODE-001, DEP-RANGE-001 ' "$root/$oc" || { echo "FAIL V2.90: $oc has no baseline section"; failures=1; }
+grep -qF 'approval_citation_check . $mds' "$root/$oc" || { echo "FAIL V2.90: the sweep does not run APPROVAL-001 on every Markdown document (M-111)"; failures=1; }
+grep -qF 'artifact_path_check . $mds' "$root/$oc" || { echo "FAIL V2.90: the sweep does not run ARTIFACT-001 on the Markdown documents"; failures=1; }
+grep -qF 'evidence_claim_check . $mds' "$root/$oc" || { echo "FAIL V2.90: the sweep does not run EVIDENCE-001"; failures=1; }
+grep -qF 'precondition_check . $mds' "$root/$oc" || { echo "FAIL V2.90: the sweep does not run PRECOND-001"; failures=1; }
+grep -qF 'ci_presence_check .' "$root/$oc" || { echo "FAIL V2.90: the sweep does not run CI-001"; failures=1; }
+grep -qF 'node_drift_check .' "$root/$oc" || { echo "FAIL V2.90: the sweep does not run NODE-001"; failures=1; }
+grep -qF 'dep_range_check .' "$root/$oc" || { echo "FAIL V2.90: the sweep does not run DEP-RANGE-001"; failures=1; }
+grep -qF 'M-108, M-109, M-110, M-112' "$root/$pv" || { echo "FAIL V2.90: the health probe does not list the V2.90 items in Phase 8a"; failures=1; }
+grep -q '^- V2.90 ' "$root/$vs" || { echo "FAIL V2.90: V2.90 is not in the validation index"; failures=1; }
+
+# Behavioral part: the detectors run on fixtures in a temporary directory outside the repository.
+for cmd in awk grep sed tr cut sort mktemp; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V2.90: $cmd is not available, the behavioral fixtures were not run"; exit 2; }
+done
+
+extract_sec() {
+  awk -v h="$1" '
+    $0 ~ ("^### " h " ") { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }
+  ' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v290.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+{ extract_sec "ARTIFACT-001"; extract_sec "APPROVAL-001"; extract_sec "PRECOND-001"; extract_sec "EVIDENCE-001"; extract_sec "CI-001, NODE-001, DEP-RANGE-001"; } > "$fx/detectors.sh"
+. "$fx/detectors.sh" || { echo "FAIL V2.90: the detector blocks do not load"; exit 1; }
+
+bad="$fx/bad"; ok="$fx/ok"
+mkdir -p "$bad/docs" "$ok/docs" "$bad/evidence" "$ok/evidence" "$ok/src/backend/app"
+
+# M-110 (ARTIFACT-001): a climbing path, an absolute path, and a missing directory (violation); the twin cites present locations only.
+printf '%s\n' '# Notes' 'Resolved through `../demo-backend` per the convention.' 'Repo at /Users/x/demo-backend/src.' 'Layout `demos-E2E/backend/demo-backend` holds it.' > "$bad/docs/notes.md"
+printf '%s\n' '# Notes' 'Module at `src/backend/app`.' > "$ok/docs/notes.md"
+a1="$(artifact_path_check "$bad" docs/notes.md)"
+printf '%s\n' "$a1" | grep -qF 'FAIL ARTIFACT-001: docs/notes.md:2: ../demo-backend points outside the repository' \
+  || { echo "FAIL V2.90: ARTIFACT-001 did not report the climbing path with file:line: $a1"; failures=1; }
+printf '%s\n' "$a1" | grep -qF 'FAIL ARTIFACT-001: docs/notes.md:3: /Users/x/demo-backend/src. points outside the repository' \
+  || { echo "FAIL V2.90: ARTIFACT-001 did not report the absolute path with file:line: $a1"; failures=1; }
+printf '%s\n' "$a1" | grep -qF 'NOT VERIFIED ARTIFACT-001: docs/notes.md:4: directory demos-E2E/backend/demo-backend is not in the repository' \
+  || { echo "FAIL V2.90: ARTIFACT-001 did not report the missing directory with file:line: $a1"; failures=1; }
+a2="$(artifact_path_check "$ok" docs/notes.md)"
+[ -z "$a2" ] || { echo "FAIL V2.90: ARTIFACT-001 reports the present directory twin: $a2"; failures=1; }
+
+# M-109 (EVIDENCE-001): a window with no timestamp (violation), a count of 17 over an 18-line list (violation), and the evidenced twin.
+{
+  printf '%s\n' '# Report' 'The mtime is inside the run window.' '' 'Other text.' ''
+  printf '%s\n' 'Failing files (17 files), listed in `evidence/list.txt`:'
+  for i in $(seq 1 18); do printf 'file-%s.ts\n' "$i"; done
+} > "$bad/docs/report.md"
+for i in $(seq 1 18); do printf 'file-%s.ts\n' "$i"; done > "$bad/evidence/list.txt"
+{
+  printf '%s\n' '# Report' 'The mtime is inside the run window at 11:51 (stat output: `stat -f %Sm .git/gk/config`).' '' 'Other text.' ''
+  printf '%s\n' 'Failing files (17 files), listed in `evidence/list.txt`:'
+  for i in $(seq 1 17); do printf 'file-%s.ts\n' "$i"; done
+} > "$ok/docs/report.md"
+for i in $(seq 1 17); do printf 'file-%s.ts\n' "$i"; done > "$ok/evidence/list.txt"
+e1="$(evidence_claim_check "$bad" docs/report.md)"
+printf '%s\n' "$e1" | grep -qF 'NOT VERIFIED EVIDENCE-001: docs/report.md:2: a temporal claim' \
+  || { echo "FAIL V2.90: EVIDENCE-001 did not report the window with no timestamp: $e1"; failures=1; }
+printf '%s\n' "$e1" | grep -qF 'NOT VERIFIED EVIDENCE-001: docs/report.md:6: the count 17 does not match the 18 non-empty lines of evidence/list.txt' \
+  || { echo "FAIL V2.90: EVIDENCE-001 did not report the count that does not match its list: $e1"; failures=1; }
+e2="$(evidence_claim_check "$ok" docs/report.md)"
+[ -z "$e2" ] || { echo "FAIL V2.90: EVIDENCE-001 reports the evidenced twin: $e2"; failures=1; }
+
+# M-108 (PRECOND-001): CI declared with no tracked CI, a missing fixture path, and an unmechanized precondition (violation); the twin with a tracked workflow and the fixture.
+printf '%s\n' '# DO-01' 'Initial state:' '- CI file present' '- Fixture `config/seed.json` present' '- Operator is ready' > "$bad/docs/guide.md"
+mkdir -p "$ok/.github/workflows" "$ok/config"
+printf '%s\n' 'name: ci' 'on: push' 'jobs:' '  build:' '    steps:' '      - uses: actions/setup-node@v4' '        with:' '          node-version: 20' > "$ok/.github/workflows/ci.yml"
+printf '%s\n' '{}' > "$ok/config/seed.json"
+printf '%s\n' '# DO-01' 'Initial state:' '- CI file present' '- Fixture `config/seed.json` present' > "$ok/docs/guide.md"
+p1="$(precondition_check "$bad" docs/guide.md)"
+printf '%s\n' "$p1" | grep -qF 'FAIL PRECOND-001: docs/guide.md:3: precondition not met: no CI configuration is tracked' \
+  || { echo "FAIL V2.90: PRECOND-001 did not report the CI precondition with file:line: $p1"; failures=1; }
+printf '%s\n' "$p1" | grep -qF 'FAIL PRECOND-001: docs/guide.md:4: precondition not met: config/seed.json is missing' \
+  || { echo "FAIL V2.90: PRECOND-001 did not report the missing fixture path: $p1"; failures=1; }
+printf '%s\n' "$p1" | grep -qF 'NOT VERIFIED PRECOND-001: docs/guide.md:5:' \
+  || { echo "FAIL V2.90: PRECOND-001 did not mark the unmechanized precondition NOT VERIFIED: $p1"; failures=1; }
+p2="$(precondition_check "$ok" docs/guide.md)"
+[ -z "$p2" ] || { echo "FAIL V2.90: PRECOND-001 reports the satisfied twin: $p2"; failures=1; }
+
+# M-111 (APPROVAL-001 across documents): an uncited approval in a report (violation) and its quoted twin.
+printf '%s\n' '# Report' 'Approval: Approve the demo as-is.' > "$bad/docs/approval.md"
+printf '%s\n' '# Report' 'Approval: "Approve the demo as-is", turn 3 of the conversation.' > "$ok/docs/approval.md"
+q1="$(approval_citation_check "$bad" docs/approval.md)"
+printf '%s\n' "$q1" | grep -qF 'NOT VERIFIED APPROVAL-001: docs/approval.md:2:' \
+  || { echo "FAIL V2.90: APPROVAL-001 did not report the uncited approval in a report: $q1"; failures=1; }
+q2="$(approval_citation_check "$ok" docs/approval.md)"
+[ -z "$q2" ] || { echo "FAIL V2.90: APPROVAL-001 reports the quoted twin: $q2"; failures=1; }
+
+# M-112 (CI-001, NODE-001, DEP-RANGE-001): a missing CI, a Node drift, and a caret range (violation); the compliant twin.
+printf '%s\n' '18' > "$bad/.nvmrc"
+printf '%s\n' '{' '  "engines": {' '    "node": ">=20"' '  },' '  "dependencies": {' '    "left-pad": "^1.3.0"' '  }' '}' > "$bad/package.json"
+printf '%s\n' '20' > "$ok/.nvmrc"
+printf '%s\n' '{' '  "engines": {' '    "node": ">=20"' '  },' '  "dependencies": {' '    "left-pad": "1.3.0"' '  }' '}' > "$ok/package.json"
+c1="$(ci_presence_check "$bad")"
+printf '%s\n' "$c1" | grep -qF 'FINDING CI-001: no CI configuration is tracked' \
+  || { echo "FAIL V2.90: CI-001 did not report the missing CI configuration: $c1"; failures=1; }
+n1="$(node_drift_check "$bad")"
+printf '%s\n' "$n1" | grep -qF 'FINDING NODE-001: .nvmrc declares Node 18' \
+  || { echo "FAIL V2.90: NODE-001 did not report the drift with its source: $n1"; failures=1; }
+d1="$(dep_range_check "$bad")"
+printf '%s\n' "$d1" | grep -qF 'FINDING DEP-RANGE-001: package.json:6: a caret or tilde range' \
+  || { echo "FAIL V2.90: DEP-RANGE-001 did not report the caret range with file:line: $d1"; failures=1; }
+c2="$(ci_presence_check "$ok")"
+printf '%s\n' "$c2" | grep -qF 'PASS CI-001: CI configuration tracked: .github/workflows/ci.yml' \
+  || { echo "FAIL V2.90: CI-001 did not pass the tracked workflow: $c2"; failures=1; }
+n2="$(node_drift_check "$ok")"
+printf '%s\n' "$n2" | grep -qF 'PASS NODE-001: one Node major declared across the project: 20' \
+  || { echo "FAIL V2.90: NODE-001 did not pass the consistent twin: $n2"; failures=1; }
+d2="$(dep_range_check "$ok")"
+printf '%s\n' "$d2" | grep -qF 'PASS DEP-RANGE-001: package.json has no caret or tilde range' \
+  || { echo "FAIL V2.90: DEP-RANGE-001 did not pass the pinned twin: $d2"; failures=1; }
+
+echo "V2.90 behavioral fixtures: $fx (removed on exit)"
+[ "$failures" -eq 0 ] && echo "V2.90 PASS" || echo "V2.90 FAIL"
+[ "$failures" -eq 0 ]

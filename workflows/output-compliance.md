@@ -1194,6 +1194,11 @@ project_safety_sweep() {
   platform_side_effect_check . $src
   for f in $src; do dip_concrete_check . "$f"; done
   artifact_path_check . $mds
+  evidence_claim_check . $mds
+  precondition_check . $mds
+  ci_presence_check .
+  node_drift_check .
+  dep_range_check .
   decision_record_check . $decisions
   decision_citation_check . $decisions
   claim_check . $mds $src
@@ -1215,7 +1220,7 @@ project_safety_sweep() {
   parse_dereference_check . $src
   srp_unit_check . $src
   dup_helper_check . -- $src
-  approval_citation_check . $decisions
+  approval_citation_check . $mds
   [ -n "$catalogs" ] && echo "NOT VERIFIED TRACE-001: a catalog is tracked; run trace_check . <catalog> <prefix> $mds with the catalog's requirement prefix" ||
     echo "NOT VERIFIED TRACE-001: no catalog is tracked, so no document-catalog link was checked"
   [ -n "$manifests" ] || echo "NOT VERIFIED M-61: no build manifest or app configuration is tracked, so backup is not verified"
@@ -2064,7 +2069,9 @@ conversation turn. The check is lexical: it finds each approval claim and looks 
 quoted span of at least eight characters and a turn reference within two lines of the
 claim. A claim without both is `NOT VERIFIED`, and the delivery gate that depends on it is
 blocked. The reviewer judges whether the quoted message is the approval; the check only
-requires that it is quoted.
+requires that it is quoted. M-111: the whole-project sweep runs `APPROVAL-001` on every
+Markdown document, not only on the decision records, so a report, note, or checkpoint that
+claims an approval is checked wherever it is written.
 
 ```sh
 # $1 = repository root; $2... = report, decision-record, checkpoint, or proposal files, relative to it.
@@ -2281,7 +2288,11 @@ dip_concrete_check() {
 ### ARTIFACT-001 — A cited artifact resolves inside the repository
 
 M-97: a document that cites an artifact (a benchmark result, a query plan, a log, a
-screenshot) is kept only when the artifact is in the repository. The check reads each
+screenshot) is kept only when the artifact is in the repository. M-110: a cited path stays
+inside the repository and exists. A path that climbs with `../`, starts at `~/`, or is
+absolute (`/Users/`, `/home/`, `/private/`, `/var/`) is a `FAIL` wherever it appears, and a
+cited directory that is not in the repository is `NOT VERIFIED`, because a sibling layout
+named by a convention is a claim about the layout, not a citation. The check reads each
 Markdown file and finds the paths it cites: a path with a directory and an artifact
 extension, or a file name in backticks with an artifact extension. A cited path that
 points outside the repository (an absolute path, or one that climbs with `..`) is a
@@ -2302,16 +2313,192 @@ artifact_path_check() {
         s = $0
         while (match(s, /`[A-Za-z0-9_.-]+\.(json|txt|csv|png|jpe?g|pdf|log|svg|html|xml|ya?ml)`|[A-Za-z0-9_.\/-]*\/[A-Za-z0-9_.\/-]+\.(json|txt|csv|png|jpe?g|pdf|log|svg|html|xml|ya?ml)/)) {
           tok = substr(s, RSTART, RLENGTH); gsub(/`/, "", tok)
-          print NR "\t" tok
+          print NR "\tART\t" tok
+          s = substr(s, RSTART + RLENGTH)
+        }
+        s = $0
+        while (match(s, /\.\.\/[A-Za-z0-9_.\/@-]*|~\/[A-Za-z0-9_.\/@-]*|\/(Users|home|private|var|opt|etc|tmp|Volumes)\/[A-Za-z0-9_.\/@-]*/)) {
+          tok = substr(s, RSTART, RLENGTH)
+          if (tok !~ /\.(json|txt|csv|png|jpe?g|pdf|log|svg|html|xml|ya?ml)$/) print NR "\tESC\t" tok
+          s = substr(s, RSTART + RLENGTH)
+        }
+        s = $0
+        while (match(s, /`[A-Za-z0-9_.@-]+(\/[A-Za-z0-9_.@-]+)+\/?`/)) {
+          tok = substr(s, RSTART, RLENGTH); gsub(/`/, "", tok)
+          if (tok !~ /\.\./ && (tok ~ /\/$/ || tok !~ /\/[^\/]*\./)) print NR "\tDIR\t" tok
           s = substr(s, RSTART + RLENGTH)
         }
       }' "$root/$f" |
-    while IFS="$(printf '\t')" read -r n p; do
-      case "$p" in
-        /*|*..*) echo "FAIL ARTIFACT-001: $f:$n: $p points outside the repository (M-97)" ;;
-        *) [ -e "$root/$p" ] || echo "NOT VERIFIED ARTIFACT-001: $f:$n: $p is not in the repository, so the claim that cites it is not verified (M-97, M-68)" ;;
+    while IFS="$(printf '\t')" read -r n k p; do
+      case "$k" in
+        ART)
+          case "$p" in
+            /*|*..*) echo "FAIL ARTIFACT-001: $f:$n: $p points outside the repository (M-97)" ;;
+            *) [ -e "$root/$p" ] || echo "NOT VERIFIED ARTIFACT-001: $f:$n: $p is not in the repository, so the claim that cites it is not verified (M-97, M-68)" ;;
+          esac ;;
+        ESC) echo "FAIL ARTIFACT-001: $f:$n: $p points outside the repository: a climbing, home, or absolute path is never a repository citation (M-110)" ;;
+        DIR) [ -e "$root/$p" ] || echo "NOT VERIFIED ARTIFACT-001: $f:$n: directory $p is not in the repository, so the claim that cites its location is not verified (M-110)" ;;
       esac
     done
+  done
+}
+```
+
+### PRECOND-001 — A declared initial state is verified before the scenario runs
+
+M-108: a guide or scenario that declares an initial state (`Initial state:`, `Estado inicial:`,
+`Precondition`) is verified against the target before the scenario runs. A precondition
+that names a path is checked for existence; a precondition about CI is checked against the
+tracked CI configuration. A precondition that the target does not satisfy is a `FAIL`:
+the scenario then exercises a different, weaker case than the guide describes, and its
+result is reported with that gap. A precondition with no mechanical check is `NOT VERIFIED`,
+never assumed. The check reads the documents of the sweep and the target, never the guide's
+own claim that the state holds.
+
+```sh
+# $1 = repository root. Prints the tracked CI configuration files, relative to the root.
+ci_files_check() {
+  root="$1"
+  files=$( (git -C "$root" ls-files 2>/dev/null) || (cd "$root" && find . -type f | sed 's#^\./##') )
+  printf '%s\n' "$files" | grep -E '(^|/)(\.github/workflows/.*\.ya?ml|\.gitlab-ci\.ya?ml|azure-pipelines\.ya?ml|Jenkinsfile|\.circleci/config\.ya?ml|bitbucket-pipelines\.yml|\.drone\.yml|\.travis\.yml|cloudbuild\.ya?ml)$' || true
+}
+
+# $1 = repository root; $2... = documents, relative to it.
+precondition_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.md) ;; *) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    awk '
+      { L[NR] = $0 }
+      END {
+        for (i = 1; i <= NR; i++) {
+          if (tolower(L[i]) !~ /initial state|estado inicial|precondition|precondición|precondiciones/) continue
+          if (L[i] !~ /:[[:space:]]*\**$/) print i "\t" L[i]
+          for (j = i + 1; j <= NR && L[j] ~ /^[[:space:]]*([-*]|[0-9]+\.)[[:space:]]/; j++) print j "\t" L[j]
+        }
+      }' "$root/$f" |
+    while IFS="$(printf '\t')" read -r n text; do
+      low=$(printf '%s' "$text" | tr 'A-Z' 'a-z')
+      paths=$(printf '%s\n' "$text" | grep -oE '`[A-Za-z0-9_./@-]+`' | tr -d '`' | grep -E '[/.]' || true)
+      checked=0
+      if [ -n "$paths" ]; then
+        checked=1
+        printf '%s\n' "$paths" | while read -r p; do
+          [ -e "$root/$p" ] || echo "FAIL PRECOND-001: $f:$n: precondition not met: $p is missing, so the scenario does not run on this target (M-108)"
+        done
+      fi
+      case "$low" in
+        *" ci "*|*" ci."*|*" ci,"*|*"ci file"*|*continuous\ integration*|*pipeline*)
+          checked=1
+          [ -n "$(ci_files_check "$root")" ] || echo "FAIL PRECOND-001: $f:$n: precondition not met: no CI configuration is tracked, so a scenario that starts from a CI file does not run here (M-108)" ;;
+      esac
+      [ "$checked" -eq 1 ] || echo "NOT VERIFIED PRECOND-001: $f:$n: the declared initial state has no mechanical check; verify it against the target before the scenario runs, and report the scenario NOT VERIFIED (M-108)"
+    done
+  done
+}
+```
+
+### EVIDENCE-001 — A temporal or count claim cites its evidence
+
+M-109: a report or note that claims a time window (`run window`, `inside the run`, `mtime`,
+`ventana`) cites a timestamp or the command output that shows it, within two lines. A claim
+of a time window with neither is `NOT VERIFIED`. A
+report that counts a set (`17 files`, `18 lines`, `N tests`) cites the enumerated file or
+the command that produces the count, and the count equals the non-empty lines of that file
+when the count names the file's entries. A mismatch is never decided by the check: it is
+`NOT VERIFIED` until the author states the definition that produces the count, because a
+summary line in the file may account for the difference. Each finding names `file:line`.
+
+```sh
+# $1 = repository root; $2... = documents, relative to it.
+evidence_claim_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.md) ;; *) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    awk '
+      { n++; L[n] = $0 }
+      END {
+        for (i = 1; i <= n; i++) {
+          lo = tolower(L[i]); win = ""
+          for (j = i - 2; j <= i + 2; j++) if (j >= 1 && j <= n) win = win " " L[j]
+          if (lo ~ /run window|inside the run|within the run|time window|ventana|mtime/) {
+            ev = (win ~ /[0-9][0-9]?:[0-9][0-9]/ || win ~ /[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ || win ~ /`[^`]*(stat|ls -|date|git |find )[^`]*`/)
+            if (!ev) print "TEMP\t" i
+          }
+          if (match(lo, /[0-9]+ (files|archivos|rutas|paths|lines|líneas|entries|items|commits|tests|errors|errores)/)) {
+            cnt = substr(lo, RSTART, RLENGTH); sub(/ .*/, "", cnt)
+            p = ""
+            if (match(win, /`[A-Za-z0-9_.\/@-]+`/)) p = substr(win, RSTART + 1, RLENGTH - 2)
+            print "CNT\t" i "\t" cnt "\t" p
+          }
+        }
+      }' "$root/$f" |
+    while IFS="$(printf '\t')" read -r tag n cnt p; do
+      case "$tag" in
+        TEMP) echo "NOT VERIFIED EVIDENCE-001: $f:$n: a temporal claim (run window, mtime) cites no timestamp or command output; cite the stat output and the window bounds (M-109)" ;;
+        CNT)
+          if [ -z "$p" ] || [ ! -f "$root/$p" ]; then
+            echo "NOT VERIFIED EVIDENCE-001: $f:$n: the count $cnt cites no enumerated file in the repository; cite the list or the command that produces it (M-109)"
+          else
+            m=$(grep -c . "$root/$p")
+            [ "$m" -eq "$cnt" ] || echo "NOT VERIFIED EVIDENCE-001: $f:$n: the count $cnt does not match the $m non-empty lines of $p; state the definition that produces the count (M-109)"
+          fi ;;
+      esac
+    done
+  done
+}
+```
+
+### CI-001, NODE-001, DEP-RANGE-001 — Baseline health findings
+
+M-112: the health probe reports three baseline conditions as findings that never block an
+unrelated task, and never as passing. `CI-001`: no CI configuration is tracked, so the
+delivery gates do not run automatically. `NODE-001`: the Node major declared in `.nvmrc`,
+`.node-version`, `package.json` `engines`, and CI `node-version` differs across the project.
+`DEP-RANGE-001`: a runtime dependency declares a caret or tilde range. A missing declaration
+of Node is `NOT VERIFIED`, never clean.
+
+```sh
+# $1 = repository root. CI-001: a tracked CI configuration is required to report the gates as automated.
+ci_presence_check() {
+  root="$1"; list=$(ci_files_check "$root")
+  if [ -n "$list" ]; then echo "PASS CI-001: CI configuration tracked: $(printf '%s' "$list" | tr '\n' ' ')"
+  else echo "FINDING CI-001: no CI configuration is tracked (.github/workflows, .gitlab-ci.yml, azure-pipelines.yml, Jenkinsfile, .circleci, bitbucket-pipelines.yml); the delivery gates are not run automatically (M-112)"; fi
+}
+
+# $1 = repository root. NODE-001: the declared Node major must agree across the project.
+node_drift_check() {
+  root="$1"
+  rows=$( {
+    [ -f "$root/.nvmrc" ] && printf '%s\t%s\n' ".nvmrc" "$(head -1 "$root/.nvmrc")"
+    [ -f "$root/.node-version" ] && printf '%s\t%s\n' ".node-version" "$(head -1 "$root/.node-version")"
+    [ -f "$root/package.json" ] && awk -F'"' '/"node"[[:space:]]*:/ { print "package.json\t" $4 }' "$root/package.json"
+    for c in $(ci_files_check "$root"); do
+      awk -v c="$c" '/node-version/ { v = $0; sub(/.*node-version:[[:space:]]*/, "", v); gsub(/[" ]/, "", v); print c "\t" v }' "$root/$c"
+    done
+  } )
+  [ -n "$rows" ] || { echo "NOT VERIFIED NODE-001: no Node version is declared in .nvmrc, .node-version, package.json engines, or CI, so drift is not verified (M-112)"; return 0; }
+  majors=$(printf '%s\n' "$rows" | awk -F'\t' '{ v = $2; sub(/^[^0-9]*/, "", v); sub(/[^0-9].*/, "", v); if (v != "") print v }' | sort -u)
+  if [ "$(printf '%s\n' "$majors" | grep -c .)" -gt 1 ]; then
+    printf '%s\n' "$rows" | awk -F'\t' '{ print "FINDING NODE-001: " $1 " declares Node " $2 "; the declared majors differ across the project (M-112)" }'
+  else
+    echo "PASS NODE-001: one Node major declared across the project: $(printf '%s' "$majors" | tr '\n' ' ')"
+  fi
+}
+
+# $1 = repository root. DEP-RANGE-001: runtime dependencies pinned to an exact version or a recorded range.
+dep_range_check() {
+  root="$1"
+  files=$( (git -C "$root" ls-files 2>/dev/null) || (cd "$root" && find . -type f | sed 's#^\./##') )
+  printf '%s\n' "$files" | grep -E '(^|/)package\.json$' | grep -v node_modules | while read -r p; do
+    awk -v f="$p" '
+      /"dependencies"[[:space:]]*:[[:space:]]*\{/ { inb = 1; next }
+      inb && /^[[:space:]]*\}/ { inb = 0 }
+      inb && /"[^"]+"[[:space:]]*:[[:space:]]*"[~^]/ { print "FINDING DEP-RANGE-001: " f ":" NR ": a caret or tilde range in runtime dependencies; pin the version or record why the range is accepted (M-112)"; hit++ }
+      END { if (!hit) print "PASS DEP-RANGE-001: " f " has no caret or tilde range in runtime dependencies" }
+    ' "$root/$p"
   done
 }
 ```
@@ -3236,14 +3423,17 @@ report_matrix_check() {
 | `COMMIT-002` | commits in `base..HEAD` against the approved scope manifest | a commit proposal is prepared (M-87) |
 | `SCOPE-001` | change set, tracked and untracked, against the approved manifest | any change set exists; a missing manifest is a `FAIL` (M-90, M-91) |
 | `SCOPE-002` | change set diff against the approved manifest | a source, configuration, or test file is modified |
-| `APPROVAL-001` | reports, decision records, checkpoints, and proposals in the change set | such a file claims a human approval (M-92) |
+| `APPROVAL-001` | reports, decision records, checkpoints, and proposals in the change set, and every Markdown document of the sweep (M-92, M-111) | such a file claims a human approval (M-92) |
+| `EVIDENCE-001` | documents in the change set and the sweep | a document claims a time window or counts a set (M-109) |
+| `PRECOND-001` | documents in the change set and the sweep | a document declares an initial state or a precondition (M-108) |
+| `CI-001`, `NODE-001`, `DEP-RANGE-001` | the whole project, from the health probe | the health probe runs (M-112) |
 | `TEARDOWN-001` | the task checkpoint in the handoff directory | a commit proposal is prepared (M-93) |
 | `INV-001` | reports or analyses that list an inventory | the change set contains such a report |
 | `STATE-001` | read-only gates | a read-only gate runs |
 | `A11Y-001`, `A11Y-002` | changed UI and platform files | accessibility applies |
 | `DIP-002` | changed logic modules | a logic module imports platform code |
 | `DIP-001` | every source file of the change set and the sweep; the `DEC-001` cross-check reads the whole source tree | a source file is created or modified, or a decision record claims APPLIES or PRESERVED for DIP (M-96) |
-| `ARTIFACT-001` | documents in the change set and the sweep | a document cites an artifact path (M-97) |
+| `ARTIFACT-001` | documents in the change set and the sweep | a document cites an artifact path (M-97), a path that climbs out of the repository, a home or absolute path, or a directory (M-110) |
 | `BEHAVIOR-001` | modified test files against the base revision, and the approved manifest | a test file is modified (M-94) |
 | `PREFLIGHT-001` | the target repository, before alignment | a task begins alignment (M-95) |
 | `COMMIT-001` | each proposed commit group, from `workflows/commit.md` Phase 11 | a commit group is proposed |
