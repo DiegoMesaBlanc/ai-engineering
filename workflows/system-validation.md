@@ -1023,6 +1023,7 @@ Return:
 - V2.91 guards in shell and workflow artifacts, URL authority, step bounds, duplicated blocks, responsibility claims, and tool coverage claims (M-54, M-55, M-105, M-107, M-109, M-113, R-178):
 - V2.92 pattern-matched URL guards, guard test cases, job-named responsibility claims, the report gate, and the structural step bound (M-54, M-55, M-107, M-109, M-113, R-179):
 - V2.93 bound approvals, execution claims, gates on the artifact, effects at import, per-site error and exit coverage, and Spanish responsibility and count wording (M-107, M-109, M-114 to M-118, R-180 to R-184):
+- V2.94 prose PASS verdicts, wall-clock and timer-option tests, the active Node runtime against the pin, approval wording, and agent-behavior claims (M-76, M-80, M-92, M-111, M-112, M-115, R-185 to R-190):
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -7902,3 +7903,150 @@ echo "V2.93 behavioral fixtures: $fx (removed on exit)"
 [ "$failures" -eq 0 ] && echo "V2.93 PASS" || echo "V2.93 FAIL"
 [ "$failures" -eq 0 ]
 ```
+
+## V2.94 Regression — Prose Verdicts, Wall-Clock Tests, Runtime Pin, Approval Wording, and Agent Behavior Claims
+
+The second external audit of a delivery project found that the system had the rules and still let five defects
+pass: a PASS stated in a summary line, outside the verdict matrix, while an item stayed open (F-2); a flaky test
+whose timing came from a real timer passed as an option and from a wall-clock assertion, with no literal
+`setTimeout` for `TEST-003` to read (F-1); gates that ran on a Node major other than the pinned one, a difference
+`NODE-001` compared between files but never against the active runtime (F-3); a teardown approval worded without
+a turn and with a verb the detector did not list (F-10); and the behavior of an agent backed by direct commands,
+with a verb `EXEC-001` did not read (F-4). No new rule is added. Each detector now matches the wording of the rule
+it already implements (M-76, M-80, M-92, M-111, M-112, M-115).
+
+- M-80 (REPORT-001): a PASS verdict stated in prose is checked like a matrix row, and no open item may remain while it stands.
+- M-76 (TEST-003): a wall-clock read and a real timer passed as an option are a dependency on time, as a literal timer is.
+- M-112 and task-to-code step 11 (NODE-001): the active runtime is compared with the pinned major; a mismatch is `NOT VERIFIED`.
+- M-92 and M-111 (APPROVAL-001): the approval words include authorization and consent, so a teardown approval worded that way is checked.
+- M-115 (EXEC-001): the claim words include the behavior of an agent, and direct commands used as its evidence are a direct call.
+
+The text checks require the changed wording on the surfaces that carry it, the registry and regression rows, and
+the sweep wiring. The behavioral part builds defective fixtures and their compliant twins in a temporary directory
+outside the repository, verifies each defect is reported with `file:line`, verifies each twin is clean, and removes
+the directory.
+
+Limits, stated by the rules themselves: `REPORT-001` reads lines of prose lexically; a PASS written in a language or
+with a word the detector does not list is `NOT VERIFIED` for the reviewer to decide. `TEST-003` reads the option
+names listed in its pattern; a timer passed under another name is the reviewer's to find. `NODE-001` compares the
+major of the `node` on the path with the pinned one; it cannot tell which runtime produced an earlier run, which the
+report must cite. `EXEC-001` cannot tell whether an agent actually ran, only whether the report proves it.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+oc="workflows/output-compliance.md"
+vs="workflows/system-validation.md"
+rmx="references/system-workflow-regression-matrix.md"
+mr="references/mandatory-rules.md"
+ag="AGENTS.md"
+sa="workflows/system-audit.md"
+
+need() {
+  grep -qF -- "$2" "$root/$1" || { echo "FAIL V2.94: $1 does not carry $3"; failures=1; }
+}
+
+need "$oc" 'a PASS verdict in prose carries an open item' "the M-80 prose PASS check"
+need "$oc" 'a wall-clock read in a test with no controlled clock' "the M-76 wall-clock check"
+need "$oc" 'the gates ran on Node' "the M-112 runtime comparison"
+need "$oc" 'autoriz|authoriz|permis|consent' "the M-92 approval keywords"
+need "$oc" 'the behavior of an agent' "the M-115 behavior wording"
+need "$sa" '**Open decisions**' "the open-decisions reporting rule (a dismissed question stays OPEN)"
+need "$sa" 'never decided by default' "the no-default rule for policy decisions"
+need "$oc" 'elapsed-time assertion built on them' "the TEST-003 limit wording"
+
+for r in R-185 R-186 R-187 R-188 R-189 R-190; do
+  grep -q "^| $r |" "$root/$rmx" || { echo "FAIL V2.94: no $r row in the regression matrix"; failures=1; }
+done
+grep -q '^- V2.94 ' "$root/$vs" || { echo "FAIL V2.94: V2.94 is not in the validation index"; failures=1; }
+grep -q '^## V2.94 ' "$root/$vs" || { echo "FAIL V2.94: V2.94 has no section"; failures=1; }
+# REPORT-001 reads a delivered report, not the project: the system audit runs it in its Phase 5.
+grep -qF 'REPORT-001' "$root/workflows/system-audit.md" || { echo "FAIL V2.94: the system audit does not run REPORT-001 before delivery"; failures=1; }
+grep -qF 'timer_hold_check . $tests' "$root/$oc" || { echo "FAIL V2.94: the sweep does not run TEST-003"; failures=1; }
+grep -qF 'node_drift_check .' "$root/$oc" || { echo "FAIL V2.94: the sweep does not run NODE-001"; failures=1; }
+
+# Behavioral part: the detectors load from their sections and run on fixtures.
+for cmd in awk grep sed tr cut sort mktemp sh; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V2.94: $cmd is not available, the behavioral fixtures were not run"; exit 2; }
+done
+
+extract_sec() {
+  awk -v h="$1" '
+    index($0, "### " h " ") == 1 { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }
+  ' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v294.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+{
+  extract_sec "REPORT-001"
+  extract_sec "TEST-003"
+  extract_sec "PRECOND-001"
+  extract_sec "CI-001, NODE-001, DEP-RANGE-001"
+  extract_sec "APPROVAL-001"
+  extract_sec "EXEC-001"
+} > "$fx/detectors.sh"
+. "$fx/detectors.sh" || { echo "FAIL V2.94: the detector blocks do not load"; exit 1; }
+for fn in report_matrix_check timer_hold_check node_drift_check approval_citation_check exec_claim_check; do
+  grep -q "^$fn() {" "$fx/detectors.sh" || { echo "FAIL V2.94: $fn is not loaded from its section"; failures=1; }
+done
+
+bad="$fx/bad"; ok="$fx/ok"
+mkdir -p "$bad/docs" "$ok/docs" "$bad/tests" "$ok/tests" "$fx/node24" "$fx/node22"
+printf '%s\n' '22' > "$bad/.nvmrc"; printf '%s\n' '22' > "$ok/.nvmrc"
+printf '%s\n' '#!/bin/sh' 'echo 24' > "$fx/node24/node"; printf '%s\n' '#!/bin/sh' 'echo 22' > "$fx/node22/node"
+chmod +x "$fx/node24/node" "$fx/node22/node"
+
+# F-2 (M-80): a PASS stated in a summary line while a matrix row stays NOT VERIFIED (violation); the twin has no open row.
+printf '%s\n' '# Informe' '| Dimension | Status | Reason |' '|---|---|---|' '| Testing | NOT VERIFIED | `npm test` pending on the flake |' '' 'Pipeline green: PASS' > "$bad/docs/rep.md"
+printf '%s\n' '# Informe' '| Dimension | Status | Reason |' '|---|---|---|' '| Testing | PASS | `npm test` exit 0 |' '' 'Pipeline green: PASS, `npm test` exit 0' > "$ok/docs/rep.md"
+r1="$(report_matrix_check "$bad" docs/rep.md)"
+printf '%s\n' "$r1" | grep -qF 'FAIL REPORT-001: docs/rep.md: PASS verdict(s) in prose at lines 6' \
+  || { echo "FAIL V2.94: REPORT-001 did not report the prose PASS with an open row: $r1"; failures=1; }
+r2="$(report_matrix_check "$ok" docs/rep.md)"
+[ -z "$r2" ] || { echo "FAIL V2.94: REPORT-001 reports the prose PASS with no open item: $r2"; failures=1; }
+
+# F-1 (M-76): a wall-clock read and a real timer passed as an option, with no literal setTimeout (violation); the twin uses fake timers.
+printf '%s\n' 'test("bounded", () => { const t0 = Date.now(); run({ timeoutMs: 60 }); expect(Date.now() - t0).toBeLessThan(300); });' > "$bad/tests/a.test.ts"
+printf '%s\n' 'import { vi } from "vitest"; vi.useFakeTimers();' 'test("bounded", () => { const t0 = Date.now(); run({ timeoutMs: 60 }); });' > "$ok/tests/a.test.ts"
+t1="$(timer_hold_check "$bad" tests/a.test.ts)"
+printf '%s\n' "$t1" | grep -qF 'FAIL TEST-003: tests/a.test.ts:1: a wall-clock read in a test' \
+  || { echo "FAIL V2.94: TEST-003 did not report the wall-clock read with file:line: $t1"; failures=1; }
+printf '%s\n' "$t1" | grep -qF 'a real timer passed as an option' \
+  || { echo "FAIL V2.94: TEST-003 did not report the timer passed as an option: $t1"; failures=1; }
+t2="$(timer_hold_check "$ok" tests/a.test.ts)"
+[ -z "$t2" ] || { echo "FAIL V2.94: TEST-003 reports the controlled-clock twin: $t2"; failures=1; }
+
+# F-3 (M-80, task-to-code step 11): the gates ran on Node 24 and the project pins 22 (violation); the twin runs on 22.
+n1="$(PATH="$fx/node24:$PATH" node_drift_check "$bad")"
+printf '%s\n' "$n1" | grep -qF 'NOT VERIFIED NODE-001: the gates ran on Node 24 and the project pins Node 22' \
+  || { echo "FAIL V2.94: NODE-001 did not hold the runtime that differs from the pin: $n1"; failures=1; }
+n2="$(PATH="$fx/node22:$PATH" node_drift_check "$ok")"
+printf '%s\n' "$n2" | grep -q 'NOT VERIFIED NODE-001: the gates ran' && { echo "FAIL V2.94: NODE-001 holds the twin that runs on the pin: $n2"; failures=1; }
+printf '%s\n' "$n2" | grep -qF 'PASS NODE-001: one Node major declared' || { echo "FAIL V2.94: NODE-001 did not pass the twin: $n2"; failures=1; }
+
+# F-10 (M-92): a teardown approval worded as authorized with no turn (violation); the twin cites the turn.
+printf '%s\n' '# Teardown' 'Autorizado por el usuario: "resetea demo-backend".' > "$bad/docs/cp.md"
+printf '%s\n' '# Teardown' 'Autorizado por el usuario en el turno 3: "resetea demo-backend".' > "$ok/docs/cp.md"
+a1="$(approval_citation_check "$bad" docs/cp.md)"
+printf '%s\n' "$a1" | grep -qF 'NOT VERIFIED APPROVAL-001: docs/cp.md:2: an approval is claimed' \
+  || { echo "FAIL V2.94: APPROVAL-001 did not hold the authorization with no turn: $a1"; failures=1; }
+a2="$(approval_citation_check "$ok" docs/cp.md)"
+[ -z "$a2" ] || { echo "FAIL V2.94: APPROVAL-001 holds the authorization that cites its turn: $a2"; failures=1; }
+
+# F-4 (M-115): the behavior of an agent backed by direct commands (violation); the twin cites the session.
+printf '%s\n' '# Informe' 'La conducta del agente (paso 2 de la guía) se respalda con comandos directos: `node dist/cli.js`.' > "$bad/docs/r.md"
+printf '%s\n' '# Informe' 'La conducta del agente se verificó en la sesión ses_9f2 con opencode run.' > "$ok/docs/r.md"
+x1="$(exec_claim_check "$bad" docs/r.md)"
+printf '%s\n' "$x1" | grep -qF 'NOT VERIFIED EXEC-001: docs/r.md:2: an agent or prompt execution is claimed' \
+  || { echo "FAIL V2.94: EXEC-001 did not hold the behavior claim backed by direct commands: $x1"; failures=1; }
+x2="$(exec_claim_check "$ok" docs/r.md)"
+[ -z "$x2" ] || { echo "FAIL V2.94: EXEC-001 reports the behavior claim that cites the session: $x2"; failures=1; }
+
+echo "V2.94 behavioral fixtures: $fx (removed on exit)"
+[ "$failures" -eq 0 ] && echo "V2.94 PASS" || echo "V2.94 FAIL"
+[ "$failures" -eq 0 ]

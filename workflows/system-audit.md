@@ -179,6 +179,13 @@ Produce:
   cites its timestamp. A report that states "the formatter covered the 7 new files"
   without that resolution is `NOT VERIFIED` for that claim until it is cited (M-109,
   M-92).
+- **Open decisions**: every policy question the audit raised and that the user has
+  not answered in the current conversation, listed with its options and its status
+  `OPEN`. A question that was dismissed, skipped, or timed out is `OPEN`, never
+  approved and never decided by default. A dimension or finding that depends on an
+  open decision is `NOT VERIFIED` or `AMBIGUOUS`, never `PASS`, and the report states
+  that the decision is pending. The audit does not apply a default to a policy
+  decision on its own (AGENTS.md, Human Decision Gates).
 - **Defects found in the system's own artifacts**, if any.
 - **Limits**: what could not be verified and why. Distinguish what the
   mechanism guarantees from what depends on an agent following the flow.

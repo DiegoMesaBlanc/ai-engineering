@@ -692,7 +692,10 @@ on a real delay, depends on wall-clock time. Such a test passes or fails with th
 of the machine, and it cannot prove a bound because the bound is the timer itself. The
 detector reads every test file and every test-support file of the change set, and of the
 sweep: a file that calls `setTimeout`, `setInterval`, or `sleep` and never uses fake
-timers is a `FAIL` at each such line. A file that controls time with fake timers, or
+timers is a `FAIL` at each such line. The same holds for a wall-clock read (`Date.now()`,
+`performance.now()`) and for a real timer passed as an option (`timeoutMs: 60`), because an
+elapsed-time assertion built on them depends on the load of the machine (F-1 of the external
+audit, M-76). A file that controls time with fake timers, or
 that releases the resource on an event, passes. There is no exception marker: a real
 timer in a test is replaced by a controlled clock or an event, and the guarantee that a
 bounded operation stops is asserted under that control.
@@ -708,6 +711,16 @@ timer_hold_check() {
     grep -nE '(^|[^A-Za-z0-9_.])(setTimeout|setInterval|sleep)\(' "$root/$f" 2>/dev/null |
     while IFS= read -r hit; do
       echo "FAIL TEST-003: $f:${hit%%:*}: a real timer or delay in a test with no controlled clock (M-76)"
+    done
+    # M-76: a wall-clock read or a real timer passed as an option is the same dependency on time,
+    # and an elapsed-time assertion built on it is a timing race even with no literal setTimeout.
+    grep -nE '(Date\.now\(\)|performance\.now\(\))' "$root/$f" 2>/dev/null |
+    while IFS= read -r hit; do
+      echo "FAIL TEST-003: $f:${hit%%:*}: a wall-clock read in a test with no controlled clock (M-76)"
+    done
+    grep -nE '(timeoutMs|delayMs|sleepMs|waitMs|intervalMs)[[:space:]]*[:=][[:space:]]*[0-9]' "$root/$f" 2>/dev/null |
+    while IFS= read -r hit; do
+      echo "FAIL TEST-003: $f:${hit%%:*}: a real timer passed as an option to a test with no controlled clock (M-76)"
     done
   done
 }
@@ -2189,7 +2202,7 @@ approval_citation_check() {
       { n++; L[n] = $0 }
       END {
         for (i = 1; i <= n; i++) {
-          if (tolower(L[i]) !~ /aprob|approv|sign-?off|dueno|dueño/) continue
+          if (tolower(L[i]) !~ /aprob|approv|sign-?off|dueno|dueño|autoriz|authoriz|permis|consent|conformidad|acept|accept|confirm[oó]|confirmed by/) continue
           win = ""
           for (j = i - 2; j <= i + 2; j++) if (j >= 1 && j <= n) win = win " " L[j]
           q = (win ~ /"[^"]{8,}"/ || win ~ /`[^`]{8,}`/)
@@ -2693,10 +2706,12 @@ exec_claim_check() {
       END {
         for (i = 1; i <= NR; i++) {
           lo = tolower(L[i])
-          if (lo ~ /(prompt|agent|agente)[^.;]{0,40}(ejecut[^ ]*|executed|ran)( |$)|(ejecut[^ ]*|executed|ran)[^.;]{0,20}(prompt|agent|agente)|ran through the agent/) {
+          # M-115: the claim words include the behavior of an agent (conducta, comportamiento, behavior, "se respalda"),
+          # not only "ran"; a report that backs the behavior of an agent with direct commands is the same claim (F-4).
+          if (lo ~ /(prompt|agent|agente)[^.;]{0,40}(ejecut[^ ]*|executed|ran|conducta|comportamiento|behavio[u]?r|respald[^ ]*|backed by|supported by)( |$)|(ejecut[^ ]*|executed|ran)[^.;]{0,20}(prompt|agent|agente)|(conducta|comportamiento|behavio[u]?r)[^.;]{0,40}(prompt|agent|agente)|ran through the agent/) {
             ctx = ""; for (j = i - 2; j <= i + 2; j++) if (j >= 1 && j <= NR) ctx = ctx " " tolower(L[j])
             agent = (ctx ~ /opencode run|ses_|session|sesi.n|transcript|transcripci.n|client session|slash command|\/[a-z][a-z-]+ /)
-            direct = (ctx ~ /directamente|directly|direct cli|invocaci.n directa|direct invocation|`node|`npx|`bun|`tsx/)
+            direct = (ctx ~ /directamente|directly|direct cli|invocaci.n directa|direct invocation|comandos directos|direct commands|`node|`npx|`bun|`tsx/)
             if (!agent || direct)
               printf "NOT VERIFIED EXEC-001: %s:%d: an agent or prompt execution is claimed with no client invocation (a session, a client command, or its transcript); a direct CLI call proves the program, not the agent behavior (M-115)\n", file, i
           }
@@ -2740,6 +2755,17 @@ node_drift_check() {
     printf '%s\n' "$rows" | awk -F'\t' '{ print "FINDING NODE-001: " $1 " declares Node " $2 "; the declared majors differ across the project (M-112)" }'
   else
     echo "PASS NODE-001: one Node major declared across the project: $(printf '%s' "$majors" | tr '\n' ' ')"
+    # M-80 / task-to-code step 11: the gates run on the pinned major. A runtime that differs from the
+    # pin means the result holds only for the active major, so it is NOT VERIFIED for the pinned one.
+    pinned=$(printf '%s\n' "$majors" | head -1)
+    if ! command -v node >/dev/null 2>&1; then
+      echo "NOT VERIFIED NODE-001: no node runtime is available, so the active major is not compared with the pinned Node $pinned (M-80)"
+    else
+      active=$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null)
+      if [ -n "$active" ] && [ "$active" != "$pinned" ]; then
+        echo "NOT VERIFIED NODE-001: the gates ran on Node $active and the project pins Node $pinned; the result holds only for Node $active, so it is NOT VERIFIED for the pinned major (M-80)"
+      fi
+    fi
   fi
 }
 
@@ -3752,6 +3778,17 @@ report_matrix_check() {
           next
         }
         curdim = 0
+        # M-80 (prose): a PASS verdict stated outside the matrix (a summary line, "Pipeline green: PASS")
+        # is checked like a row. It carries no open item in its own line, and no open item may remain
+        # in the report while it stands.
+        if ($0 ~ /(^|[^A-Z_])PASS([^A-Z_]|$)/) {
+          pp++; ppl = ppl NR " "
+          if (line ~ /(pendiente|pending|not run|no ejecut|sin ejecutar|(^|[^a-z])(open|abiert)|equivalen|equivalent|diff le|solo el diff|only the diff|ambig|por confirmar|to be confirmed|simulat)/)
+            print "FAIL REPORT-001: " f ":" NR ": a PASS verdict in prose carries an open item; the dimension is reopened (M-80)"
+        }
+        if (line ~ /(not verified|no verificad|(^|[^a-z])(open|abiert)|still open|sigue abierto|pendiente)/ && $0 !~ /(^|[^A-Z_])PASS([^A-Z_]|$)/) {
+          op++; opl = opl NR " "
+        }
         if (line ~ /(cierra|cerrad|closes|closed|resolved|resuelto)/) closure = closure NR " "
         if (line ~ /(verdict|veredicto|conclusi|resumen|summary|recommendation|recomendaci)/ && $0 ~ /(^|[^A-Z_])PASS/) closure = closure NR " "
         if (line ~ /(npm run|format:check|lint|typecheck|test)/ && line ~ /(falla|fails|failing|rojo)/) {
@@ -3764,6 +3801,8 @@ report_matrix_check() {
         if (numbered && dimrows != 14) print "FAIL REPORT-001: " f ": the numbered dimension matrix has " dimrows " rows; the code audit has 14 dimensions (M-72, M-80)"
         if (open_rows > 0 && closure != "")
           print "FAIL REPORT-001: " f ": lines " closure "claim a closure or a PASS verdict while " open_rows " row(s) stay open (M-80)"
+        if (pp && (open_rows > 0 || op > 0))
+          print "FAIL REPORT-001: " f ": PASS verdict(s) in prose at lines " ppl "stand while open items remain (" open_rows " matrix row(s), open lines " opl ") (M-80)"
         if (numbered) for (i = 1; i <= 14; i++) if (!(i in seen)) print "FAIL REPORT-001: " f ": dimension " i " has no row (M-72, M-80)"
         if (red && !baseline) print "FAIL REPORT-001: " f ":" red ": a red whole-project gate is not attributed BASELINE_FAILURE (M-80)"
       }' "$root/$f"
