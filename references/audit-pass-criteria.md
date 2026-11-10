@@ -26,6 +26,10 @@ dimension. A criterion is never presented as a framework standard.
   output, a command in backticks, or its exit code. A PASS row with no such evidence is a
   `FAIL` of `REPORT-001` (M-98), and a dimension that cites no detector it ran is not
   verified by a detector, whatever its status says.
+- A claim that an agent or a prompt was executed cites the client invocation that ran it
+  (M-115): a session, a client command, or its transcript. A direct call to the program
+  proves the program, not the agent behavior, so `EXEC-001` reports such a claim as
+  `NOT VERIFIED` and a dimension that rests on it is not `PASS`.
 - A dimension with a criterion `AMBIGUOUS` is never `PASS`. It stays open until the user
   resolves the criterion (M-75). A detector or check that a workflow defines is a control only when the procedure that a verdict cites runs it on the scope it covers (M-75).
 - A criterion that is violated by the change set is a defect of the task. It
@@ -161,6 +165,12 @@ dimension. A criterion is never presented as a framework standard.
   evidence.
 
 ### 3. Code quality & separation (SRP)
+
+- A source module performs no effect when it is imported: a module-scope call or
+  `process.` assignment moves into a function that the entry point calls, so a test that
+  imports the module runs no program (M-117). `IMPORT-001` in `workflows/output-compliance.md`
+  reports each such call with `file:line` as a `FAIL` of this dimension; a module with a
+  main guard is `NOT VERIFIED` until the guard is confirmed to cover the call.
 
 - Each unit has one reason to change. A unit that renders, queues, retries,
   records dead letters, and logs is a violation. A unit with more than one reason to
@@ -419,6 +429,13 @@ dimension. A criterion is never presented as a framework standard.
   and a grant that exposes personal or payment data to a role that had no access to
   it is a finding that names the data it exposes.
 
+- A delivery approval is bound to the artifact it authorizes: the approval names the
+  digest, the gate compares it with the promoted artifact, and the approver is not the
+  actor that dispatched the run (M-114). `DELIVERY-001` in `workflows/output-compliance.md`
+  reports an approval with no digest comparison or an approver read from `github.actor`
+  as a `FAIL` of this dimension. The reviewers of the platform environment are not in the
+  repository and are `NOT VERIFIED`, never `PASS`. Gates and the deploy consume the built artifact by its digest, not a re-checkout of a dispatched ref (M-116, `DELIVERY-002`).
+
 ### 7. Testing & validation
 
 - Every behavior the change adds or modifies has a test that exercises it
@@ -504,6 +521,12 @@ dimension. A criterion is never presented as a framework standard.
   A log of one-off runs is not a test and is not evidence. `GUARD-001` in `workflows/output-compliance.md` lists each
   guard that no tracked test names, with its `file:line`; that finding is `FAIL` of this
   dimension, and a `PASS` cites the test file and the command that ran it.
+
+- Each error branch and each exit code is covered on its own (M-118). A code emitted from
+  several sites is `NOT VERIFIED` until its test references reach the sites or the branch
+  coverage of the emitting file is cited (`ERR-002`); each exit code an entry point sets is
+  asserted by a test that invokes it (`ENTRY-001`). A `PASS` cites the test case for each
+  site and each code.
 
 ### 8. Performance
 

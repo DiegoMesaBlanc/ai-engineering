@@ -1291,6 +1291,10 @@ project_safety_sweep() {
   dup_block_check . -- $shells $workflows
   guard_test_check . $shells $workflows -- $tests
   approval_citation_check . $mds
+  approval_binding_check . $workflows
+  artifact_ref_check . $workflows
+  import_effect_check . $src
+  exec_claim_check . $mds
   [ -n "$catalogs" ] && echo "NOT VERIFIED TRACE-001: a catalog is tracked; run trace_check . <catalog> <prefix> $mds with the catalog's requirement prefix" ||
     echo "NOT VERIFIED TRACE-001: no catalog is tracked, so no document-catalog link was checked"
   [ -n "$manifests" ] || echo "NOT VERIFIED M-61: no build manifest or app configuration is tracked, so backup is not verified"
@@ -1634,6 +1638,10 @@ error_model_check() {
 
 ### ERR-002 and ERR-003 — Error codes are declared and tested in both directions
 
+M-118: each error branch and each exit code is covered on its own. A code emitted from several sites is
+checked per site (`NOT VERIFIED` until the test references reach the number of sites), and an exit code the
+entry point sets is asserted by a test that invokes it (`ENTRY-001`).
+
 M-77: every error code a boundary emits is declared in the contract that names it
 (`ERR-003`), and every error code a contract declares has an executing test that
 asserts it (`ERR-002`). The codes are the upper-snake identifiers that a source file
@@ -1678,7 +1686,7 @@ error_outcome_check() {
   # Emitted codes: file:line:CODE, quoted as a literal in a source file.
   emitted="$(printf '%s' "$srcs" | while IFS= read -r s; do
     [ -n "$s" ] && [ -f "$root/$s" ] || continue
-    grep -noE "[\"'\`][A-Z][A-Z0-9]*(_[A-Z0-9]+)+[\"'\`]" "$root/$s" | tr -d "\"'\`" | sed "s#^#$s:#"
+    grep -noE "[\"'\`][A-Z][A-Z0-9]*(_[A-Z0-9]+)+[\"'\`: ]" "$root/$s" | tr -d "\"'\`" | sed -E 's/[: ]$//' | sed "s#^#$s:#"
   done)"
   dcodes="$(printf '%s\n' "$documented" | awk -F: 'NF { print $3 }' | sort -u)"
   printf '%s\n' "$emitted" | while IFS= read -r e; do
@@ -1686,6 +1694,17 @@ error_outcome_check() {
     c="${e##*:}"
     printf '%s\n' "$dcodes" | grep -qx "$c" ||
       echo "FAIL ERR-003: ${e%:*}: error code $c is emitted and no contract declares it (candidate: confirm it is an error code, M-77)"
+  done
+  # M-118: a code emitted from several sites is covered per site. One test line that names the
+  # code does not prove that each condition is tested, so the code stays NOT VERIFIED until the
+  # test references reach the number of sites or the branch coverage of the emitting file is cited.
+  printf '%s\n' "$emitted" | awk -F: 'NF { if (!($3 in first)) first[$3] = $1 ":" $2; sites[$3]++ }
+    END { for (c in sites) if (sites[c] > 1) print c, sites[c], first[c] }' | while read -r c k where; do
+    m="$(printf '%s' "$tests" | while IFS= read -r t; do
+      [ -n "$t" ] && [ -f "$root/$t" ] && grep -c -- "$c" "$root/$t"
+    done | awk '{ s += $1 } END { print s + 0 }')"
+    [ "$m" -ge "$k" ] ||
+      echo "NOT VERIFIED ERR-002: ${where%:*}:${where##*:}: error code $c is emitted from $k sites and named by $m test line(s); each condition needs its own test or the branch coverage of this file (M-118)"
   done
   printf '%s\n' "$documented" | while IFS= read -r d; do
     [ -n "$d" ] || continue
@@ -1736,11 +1755,28 @@ entry_point_check() {
       echo "FAIL ENTRY-001: $f:1: an entry point that no test invokes through its real invocation (M-82)"
       continue
     fi
-    grep -qE 'process\.exit' "$root/$f" || continue
+    grep -qE 'process\.exit|exitCode *=' "$root/$f" || continue
     asserted="$(printf '%s\n' "$invokers" | while IFS= read -r t; do
       grep -lE 'exitCode|\.status|[Ee]xit' "$root/$t" 2>/dev/null
     done)"
     [ -n "$asserted" ] || echo "FAIL ENTRY-001: $f:1: the entry point sets an exit status and no test that invokes it asserts one (M-82)"
+    # M-118: each exit code the entry point can set is asserted by a test that invokes it. The codes
+    # are the literals it passes to process.exit or assigns to exitCode, and every constant the file
+    # declares as EXIT_NAME = N (a returned constant reaches process.exit through a function). A test
+    # asserts a code by its literal or by the constant's name, never by a test title.
+    decl="$(grep -oE 'EXIT_[A-Z_]+ *= *[0-9]+' "$root/$f" | sed -E 's/ *= */=/')"
+    codes="$( { grep -oE '(process\.exit\(|exitCode *= *)[0-9]+' "$root/$f" | grep -oE '[0-9]+$';
+      printf '%s\n' "$decl" | grep -oE '[0-9]+$'; } | sort -u)"
+    for n in $codes; do
+      names="$(printf '%s\n' "$decl" | awk -F= -v n="$n" '$2 == n { print $1 }' | tr '\n' '|' | sed 's/|$//')"
+      tok="(^|[^0-9])$n([^0-9]|\$)"
+      [ -n "$names" ] && tok="$tok|$names"
+      ok="$(printf '%s\n' "$invokers" | while IFS= read -r t; do
+        grep -vE '^[[:space:]]*(test|it|describe)\(' "$root/$t" 2>/dev/null |
+          grep -E "(status|exitCode|[Ee]xit|code)[^;]*($tok)|($tok)[^;]*(status|exitCode|[Ee]xit)"
+      done)"
+      [ -n "$ok" ] || echo "FAIL ENTRY-001: $f:1: exit code $n is set by the entry point and no test that invokes it asserts $n (M-118)"
+    done
   done
 }
 ```
@@ -2497,11 +2533,17 @@ evidence_claim_check() {
             ev = (win ~ /[0-9][0-9]?:[0-9][0-9]/ || win ~ /[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ || win ~ /`[^`]*(stat|ls -|date|git |find )[^`]*`/)
             if (!ev) print "TEMP\t" i
           }
-          if (match(lo, /[0-9]+ (files|archivos|rutas|paths|lines|líneas|entries|items|commits|tests|errors|errores)/)) {
-            cnt = substr(lo, RSTART, RLENGTH); sub(/ .*/, "", cnt)
-            p = ""
-            if (match(win, /`[A-Za-z0-9_.\/@-]+`/)) p = substr(win, RSTART + 1, RLENGTH - 2)
+          rest = lo
+          while (match(rest, /[0-9]+ (files|archivos|ficheros|rutas|paths|lines|líneas|entries|items|commits|tests|errors|errores|módulos|modulos|reglas|rules|casos|cases|hallazgos|findings|dimensiones|filas|funciones|elementos)/)) {
+            cnt = substr(rest, RSTART, RLENGTH); nxt = RSTART + RLENGTH; sub(/ .*/, "", cnt)
+            p = "-"
+            if (match(L[i], /`[^`]+`/)) tok = substr(L[i], RSTART + 1, RLENGTH - 2)
+            else if (match(win, /`[^`]+`/)) tok = substr(win, RSTART + 1, RLENGTH - 2)
+            else tok = ""
+            if (tok ~ / /) p = "CMD"
+            else if (tok ~ /^[A-Za-z0-9_.\/@-]+$/) p = tok
             print "CNT\t" i "\t" cnt "\t" p
+            rest = substr(rest, nxt)
           }
           if (lo ~ /(cubri|cubre|covered|covers|covera|checked by|formatted by|linted by)/ && lo ~ /prettier|eslint|ruff|checkstyle|sqlfluff|formatter|linter|formateador/) {
             ev = (win ~ /`[^`]*(--file-info|--list-different|--show-files|--debug-check|--print-config|--list-files)[^`]*`/)
@@ -2514,7 +2556,9 @@ evidence_claim_check() {
         TEMP) echo "NOT VERIFIED EVIDENCE-001: $f:$n: a temporal claim (run window, mtime) cites no timestamp or command output; cite the stat output and the window bounds (M-109)" ;;
         TOOL) echo "NOT VERIFIED EVIDENCE-001: $f:$n: a tool is said to cover files, but no output of its own file resolution is cited (for example prettier --file-info or ruff check --show-files); a file the tool ignores is not covered, so a count of covered files is not evidence of coverage (M-109)" ;;
         CNT)
-          if [ -z "$p" ] || [ ! -f "$root/$p" ]; then
+          if [ "$p" = "CMD" ]; then
+            :
+          elif [ -z "$p" ] || [ "$p" = "-" ] || [ ! -f "$root/$p" ]; then
             echo "NOT VERIFIED EVIDENCE-001: $f:$n: the count $cnt cites no enumerated file in the repository; cite the list or the command that produces it (M-109)"
           else
             m=$(grep -c . "$root/$p")
@@ -2522,6 +2566,142 @@ evidence_claim_check() {
           fi ;;
       esac
     done
+  done
+}
+```
+
+### DELIVERY-001 — An approval is bound to the artifact digest and to a distinct approver
+
+M-114. An approval that a delivery workflow records is bound to the artifact it authorizes: it names the digest of the artifact, the gate compares that digest with the promoted artifact, and the approver is not the actor that
+dispatched the run. The detector reads the workflow YAML. A workflow with a named approval and no digest
+comparison is a `FAIL`; an approver read from `github.actor` or `github.triggering_actor` is a `FAIL`. The
+reviewers of a platform environment are not in the repository, so their presence is `NOT VERIFIED`, never
+passed. Limit: the detector reads the statement and the comparison, not the platform settings.
+
+```sh
+# M-114: an approval is bound to the artifact digest and to an approver other than the dispatcher.
+# $1 = repository root; $2... = workflow YAML files, relative to it.
+approval_binding_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.yml|*.yaml) ;; *) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    awk -v file="$f" '
+      { L[NR] = $0 }
+      END {
+        for (i = 1; i <= NR; i++) {
+          if (tolower(L[i]) ~ /approved_by|approver|approval_by|aprobad/) {
+            ctx = ""; for (j = i; j <= i + 2 && j <= NR; j++) ctx = ctx " " L[j]
+            if (tolower(ctx) ~ /github\.(actor|triggering_actor)/)
+              printf "FAIL DELIVERY-001: %s:%d: the approver is the actor that dispatched the run (github.actor); the approver must be a different person, not the dispatcher (M-114)\n", file, i
+          }
+        }
+        for (i = 1; i <= NR; i++) {
+          lo = tolower(L[i])
+          if (lo ~ /approv|aprob/) { if (!app) app = i }
+          if (lo ~ /sha256|digest|checksum/) dig = 1
+          if (lo ~ /sha256sum -c|digest.*(==|!=)|\[.*(sha|digest).*(=|!=)|cmp /) cmp = 1
+          if (lo ~ /^[ \t]*environment:/ && !env) env = i
+        }
+        if (app && !(dig && cmp))
+          printf "FAIL DELIVERY-001: %s:%d: an approval is named and the digest of the artifact is not compared with it; the approval is not bound to the artifact it authorizes (M-114)\n", file, app
+        if (app && env)
+          printf "NOT VERIFIED DELIVERY-001: %s:%d: the reviewers of the environment are configured on the platform and are not read from the repository; the separation of the approver is not verified here (M-114)\n", file, env
+      }' "$root/$f"
+  done
+}
+```
+
+### DELIVERY-002 — Gates and deploy consume the built artifact, not a re-checkout of a dispatched ref
+
+M-116. A delivery workflow that checks out a dispatched ref (`ref:` read from `inputs.` or
+`github.event.inputs`) and then deploys or publishes in the same file runs its gates and its deploy on a
+source tree that is not the artifact that was verified. The gates and the deploy consume the built artifact by
+its digest. The detector reports the checkout with `file:line`.
+
+```sh
+# M-116: gates and deploy consume the built artifact by digest, never a re-checkout of a dispatched ref.
+# $1 = repository root; $2... = workflow YAML files, relative to it.
+artifact_ref_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.yml|*.yaml) ;; *) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    awk -v file="$f" '
+      { lo = tolower($0)
+        if (lo ~ /ref:.*(inputs\.|github\.event\.inputs)/ && !rf) rf = NR
+        if (lo ~ /deploy|publish|upload|kubectl|gh release|helm (upgrade|install)/ && !dp) dp = NR
+      }
+      END {
+        if (rf && dp)
+          printf "FAIL DELIVERY-002: %s:%d: a dispatched ref is checked out and a deploy follows in the same file; the gates and the deploy must consume the built artifact by its digest (M-116)\n", file, rf
+      }' "$root/$f"
+  done
+}
+```
+
+### IMPORT-001 — A module that a test can import runs no effect at import
+
+M-117. A source module performs no effect when it is imported: a column-zero call such as `main().catch(...)` or
+a column-zero `process.` assignment runs at import, so a test that imports the module runs the program. The
+effect moves into a function that the entry point calls. A module with a `require.main === module` or
+`import.meta.main` guard is `NOT VERIFIED` until the reviewer confirms the guard covers the call. Limit: a
+module-scope assignment whose right side is a call (`const x = f()`) is not read; the reviewer checks it.
+
+```sh
+# M-117: a module that a test can import runs no effect at import. A column-zero call or a
+# process assignment is an effect; a declaration, an import, or an export is not.
+# $1 = repository root; $2... = source files, relative to it.
+import_effect_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*.d.ts|*/test/*|*/tests/*|*__tests__*|*/testing/*) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    awk -v file="$f" '
+      /^(export|import|const|let|var|function|async|class|type|interface|enum|return|if|for|while|switch|try|describe|it|test|beforeAll|beforeEach|afterAll|afterEach)[ (]/ { next }
+      /^[ \t]*$/ || /^[ \t]*(\/\/|\/\*|\*)/ || /^[})\]]/ { next }
+      /require\.main *=== *module|import\.meta\.main|import\.meta\.url *===/ { guard = NR; next }
+      /^[A-Za-z_$][A-Za-z0-9_$.]*\(/ || /^process\.[A-Za-z.]+ *=[^=]/ { if (!first) first = NR; n++ }
+      END {
+        if (n && guard)
+          printf "NOT VERIFIED IMPORT-001: %s:%d: a module-scope call sits beside a main guard at line %d; the reviewer confirms the guard covers it (M-117)\n", file, first, guard
+        else if (n)
+          printf "FAIL IMPORT-001: %s:%d: a module-scope call runs an effect when the module is imported; move it into a function that the entry point calls (M-117)\n", file, first
+      }' "$root/$f"
+  done
+}
+```
+
+### EXEC-001 — A claim that an agent or a prompt ran cites the client invocation
+
+M-115. A report that says an agent or a prompt was executed cites the client invocation that ran it: a session,
+a client command, or its transcript. A direct call to the program (`node`, `npx`, `bun`) proves the program, not
+the agent behavior, so a claim that cites only a direct call, or names the direct call as the way it ran, is
+`NOT VERIFIED` (M-115). The detector reads the report text within two lines of the claim.
+
+```sh
+# M-115: a claim that an agent or a prompt ran cites the client invocation, not a direct CLI call.
+# $1 = repository root; $2... = report documents, relative to it.
+exec_claim_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.md) ;; *) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    awk -v file="$f" '
+      { L[NR] = $0 }
+      END {
+        for (i = 1; i <= NR; i++) {
+          lo = tolower(L[i])
+          if (lo ~ /(prompt|agent|agente)[^.;]{0,40}(ejecut[^ ]*|executed|ran)( |$)|(ejecut[^ ]*|executed|ran)[^.;]{0,20}(prompt|agent|agente)|ran through the agent/) {
+            ctx = ""; for (j = i - 2; j <= i + 2; j++) if (j >= 1 && j <= NR) ctx = ctx " " tolower(L[j])
+            agent = (ctx ~ /opencode run|ses_|session|sesi.n|transcript|transcripci.n|client session|slash command|\/[a-z][a-z-]+ /)
+            direct = (ctx ~ /directamente|directly|direct cli|invocaci.n directa|direct invocation|`node|`npx|`bun|`tsx/)
+            if (!agent || direct)
+              printf "NOT VERIFIED EXEC-001: %s:%d: an agent or prompt execution is claimed with no client invocation (a session, a client command, or its transcript); a direct CLI call proves the program, not the agent behavior (M-115)\n", file, i
+          }
+        }
+      }' "$root/$f"
   done
 }
 ```
@@ -3266,7 +3446,7 @@ srp_claim_check() {
       j && /^  [A-Za-z0-9_-]+:[ \t]*$/ { sub(/^  /, ""); sub(/:[ \t]*$/, ""); printf "%s ", $0 }' "$root/$f" 2>/dev/null)"
     for nm in $b $stem $jobs; do
       grep -nE "(^|[^A-Za-z0-9_-])$nm([^A-Za-z0-9_-]|\$)" "$root/$record" 2>/dev/null |
-        grep -iE '(^|[^a-z])(only|solo|single)([^a-z]|$)' |
+        grep -iE '(^|[^a-z])(only|solo|single|(u|ú)nica|(u|ú)nico|una sola|un solo|sola responsabilidad|one responsibility)([^a-z]|$)' |
         sed "s#^\([0-9]*\):#FAIL DEC-001: $record:\1: $f is claimed to have one responsibility and SRP-001 lists it with several kinds (M-107): #"
     done
   done | sort -u
@@ -3643,7 +3823,12 @@ report_matrix_check() {
 | `ERR-001` | source files in the change set and the sweep; the typed-class search reads the whole project | a source file is created or modified in a project that declares a typed error class |
 | `ERR-002` | contract documents, source and test files in the sweep | a project declares error codes in a contract document |
 | `ERR-003` | source files in the sweep, contract documents | a source file quotes an upper-snake error code |
-| `ENTRY-001` | source files and test files in the change set and the sweep | a source file reads `process.argv` |
+| `ENTRY-001` | source files and test files in the change set and the sweep | a source file reads `process.argv`; each exit code it sets is asserted (M-118) |
+| `ERR-002` per site | source files and test files in the change set and the sweep | a code is emitted from several sites (M-118) |
+| `DELIVERY-001` | workflow YAML in the change set and the sweep | a workflow names an approval (M-114) |
+| `DELIVERY-002` | workflow YAML in the change set and the sweep | a workflow checks out a dispatched ref and deploys (M-116) |
+| `IMPORT-001` | source files in the change set and the sweep | a source module is changed (M-117) |
+| `EXEC-001` | reports and documents in the change set and the sweep | a document claims that an agent or a prompt ran (M-115) |
 | `VAL-001` | source files in the change set and the sweep | a source file reads `process.argv` |
 | `DB-003` | source files in the change set and the sweep | a source file holds a page query inside a loop |
 | `DB-001` | source files in the change set and the sweep (a pre-existing runtime DDL is a finding, not a blocker) | any source file is created or modified |

@@ -225,6 +225,24 @@ staging, production) and how the project promotes a change across them.
   production deployment always requires an explicit approval gate.
 - Keep environment names, URLs, and credentials out of source.
 
+### Approval Binding and Artifact Consumption (M-114, M-116)
+
+An approval gate authorizes one artifact, not a run:
+
+- the approval names the digest of the promoted artifact, and the gate compares
+  that digest with the artifact it deploys before the deploy step runs;
+- the approver is a person other than the actor that dispatched the run; the
+  dispatching actor (`github.actor`, `github.triggering_actor`) is never recorded
+  as the approver;
+- the reviewers configured on the platform environment are not in the repository;
+  they are reported as `NOT VERIFIED` by the structural checks and verified only
+  on the platform.
+
+Gates and the deploy step consume the built artifact by its digest. A workflow
+that checks out a dispatched ref and then deploys re-derives its source and does
+not verify the artifact that ships. `DELIVERY-001` and `DELIVERY-002` in
+`workflows/output-compliance.md` check the workflow YAML for these conditions.
+
 ### Validation Gates Before Deployment
 
 Every deployment is preceded by the same required gates; gates are not

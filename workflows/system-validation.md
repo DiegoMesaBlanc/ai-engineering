@@ -1022,6 +1022,7 @@ Return:
 - V2.90 cited paths and directories, evidence for windows and counts, declared initial states, approval wiring across documents, and baseline health findings (M-108 to M-112, R-173 to R-177):
 - V2.91 guards in shell and workflow artifacts, URL authority, step bounds, duplicated blocks, responsibility claims, and tool coverage claims (M-54, M-55, M-105, M-107, M-109, M-113, R-178):
 - V2.92 pattern-matched URL guards, guard test cases, job-named responsibility claims, the report gate, and the structural step bound (M-54, M-55, M-107, M-109, M-113, R-179):
+- V2.93 bound approvals, execution claims, gates on the artifact, effects at import, per-site error and exit coverage, and Spanish responsibility and count wording (M-107, M-109, M-114 to M-118, R-180 to R-184):
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -7651,5 +7652,253 @@ e2="$(evidence_claim_check "$ok" report.md)"
 
 echo "V2.92 behavioral fixtures: $fx (removed on exit)"
 [ "$failures" -eq 0 ] && echo "V2.92 PASS" || echo "V2.92 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V2.93 Regression — Bound Approvals, Execution Claims, Gates on the Artifact, Effects at Import, and Per-Site Coverage
+
+The system audit of an external delivery pipeline found six gaps that let a defect pass with a green report:
+an approval recorded as text and attributed to the dispatching actor, a report that presented a direct CLI call
+as an agent run, a gate that checked out the dispatched ref instead of the artifact, a module that ran the program
+on import, an error code and exit code covered by a single test, and a Spanish single-responsibility row and count
+that no detector read. The new rules are M-114 to M-118, with M-107 and M-109 extended to Spanish wording. The
+detectors are `DELIVERY-001`, `DELIVERY-002`, `EXEC-001`, and `IMPORT-001`, and `ERR-002`, `ENTRY-001`, `SRP-001`,
+and `EVIDENCE-001` read the cases the external audit found.
+
+- M-114 (DELIVERY-001): an approval is bound to the artifact digest and to an approver other than the dispatcher.
+  The platform reviewers are `NOT VERIFIED`, never passed.
+- M-115 (EXEC-001): a claim that an agent or a prompt ran cites the client invocation, not a direct CLI call.
+- M-116 (DELIVERY-002): gates and deploy consume the built artifact by its digest, not a re-checkout of a ref.
+- M-117 (IMPORT-001): a source module performs no effect when it is imported.
+- M-118 (ERR-002, ENTRY-001): each error branch and each exit code is covered on its own.
+- M-107 and M-109: the claim check reads the Spanish single-responsibility wording, and the count check reads the
+  Spanish nouns of a set.
+
+The text checks require the anchors on the surfaces that carry them, the registry rows, the regression rows,
+the sweep wiring, and the coverage table. The behavioral part builds defective fixtures and their compliant
+twins in a temporary directory outside the repository, verifies each defect is reported with `file:line`,
+verifies each twin is clean, and removes the directory.
+
+Limits, stated by the rules themselves: `DELIVERY-001` reads the approval statement and the digest comparison,
+not the platform's reviewer settings, which are `NOT VERIFIED`. `IMPORT-001` reads column-zero calls and
+module-scope `process.` assignments, not a constant that a call initializes; the reviewer reads those. `ERR-002`
+counts test references, a proxy for the branch coverage that the emitting file must cite. `EXEC-001` reads the
+words of the claim within two lines and the cited evidence; it cannot tell whether an agent actually ran, only
+whether the report proves it.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+oc="workflows/output-compliance.md"
+sa="workflows/system-audit.md"
+apc="references/audit-pass-criteria.md"
+rmx="references/system-workflow-regression-matrix.md"
+mr="references/mandatory-rules.md"
+vs="workflows/system-validation.md"
+sd="workflows/secure-delivery.md"
+ag="AGENTS.md"
+
+need() {
+  grep -qF -- "$2" "$root/$1" || { echo "FAIL V2.93: $1 does not carry $3"; failures=1; }
+}
+
+need "$ag" 'bound to the artifact it authorizes' "the M-114 canonical wording"
+need "$ag" 'cites the client invocation' "the M-115 canonical wording"
+need "$ag" 'consume the built artifact by its digest' "the M-116 canonical wording"
+need "$ag" 'performs no effect when it is imported' "the M-117 canonical wording"
+need "$ag" 'covered on its own' "the M-118 canonical wording"
+need "$ag" '`única`, `una sola`, `un solo`' "the M-107 Spanish claim wording"
+need "$sd" 'Approval Binding and Artifact Consumption (M-114, M-116)' "the approval binding section"
+need "$sd" 'DELIVERY-001' "the DELIVERY-001 reference"
+need "$apc" 'bound to the artifact it authorizes' "the Dimension 6 anchor of M-114"
+need "$apc" 'performs no effect when it is imported' "the Dimension 3 anchor of M-117"
+need "$apc" 'covered on its own' "the Dimension 7 anchor of M-118"
+need "$apc" 'cites the client invocation' "the judgment rule anchor of M-115"
+need "$apc" 'consume the built artifact by its digest' "the Dimension 6 anchor of M-116"
+need "$oc" 'Limit: the detector reads the statement and the comparison' "the DELIVERY-001 limit"
+need "$sa" 'A delivery approval or a gate that consumes an artifact' "the system audit mapping row for delivery"
+
+for m in M-114 M-115 M-116 M-117 M-118; do
+  grep -q "^| $m |" "$root/$mr" || { echo "FAIL V2.93: no $m row in the registry"; failures=1; }
+done
+for r in R-180 R-181 R-182 R-183 R-184; do
+  grep -q "^| $r |" "$root/$rmx" || { echo "FAIL V2.93: no $r row in the regression matrix"; failures=1; }
+done
+for rule in DELIVERY-001 DELIVERY-002 IMPORT-001 EXEC-001; do
+  grep -qF "| \`$rule\` |" "$root/$oc" || { echo "FAIL V2.93: the coverage table has no $rule row"; failures=1; }
+  grep -q "^### $rule " "$root/$oc" || { echo "FAIL V2.93: $oc has no $rule section"; failures=1; }
+done
+grep -qF 'approval_binding_check . $workflows' "$root/$oc" || { echo "FAIL V2.93: the sweep does not run DELIVERY-001"; failures=1; }
+grep -qF 'artifact_ref_check . $workflows' "$root/$oc" || { echo "FAIL V2.93: the sweep does not run DELIVERY-002"; failures=1; }
+grep -qF 'import_effect_check . $src' "$root/$oc" || { echo "FAIL V2.93: the sweep does not run IMPORT-001"; failures=1; }
+grep -qF 'exec_claim_check . $mds' "$root/$oc" || { echo "FAIL V2.93: the sweep does not run EXEC-001"; failures=1; }
+grep -q '^- V2.93 ' "$root/$vs" || { echo "FAIL V2.93: V2.93 is not in the validation index"; failures=1; }
+
+# Behavioral part: the detectors load from their sections and run on fixtures.
+for cmd in awk grep sed tr cut sort mktemp; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V2.93: $cmd is not available, the behavioral fixtures were not run"; exit 2; }
+done
+
+extract_sec() {
+  awk -v h="$1" '
+    index($0, "### " h " ") == 1 { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }
+  ' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v293.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+{
+  extract_sec "DELIVERY-001"
+  extract_sec "DELIVERY-002"
+  extract_sec "IMPORT-001"
+  extract_sec "EXEC-001"
+  extract_sec "ERR-002 and ERR-003"
+  extract_sec "ENTRY-001"
+  extract_sec "SRP-001"
+  extract_sec "EVIDENCE-001"
+} > "$fx/detectors.sh"
+. "$fx/detectors.sh" || { echo "FAIL V2.93: the detector blocks do not load"; exit 1; }
+for fn in approval_binding_check artifact_ref_check import_effect_check exec_claim_check error_outcome_check entry_point_check srp_claim_check evidence_claim_check; do
+  grep -q "^$fn() {" "$fx/detectors.sh" || { echo "FAIL V2.93: $fn is not loaded from its section"; failures=1; }
+done
+
+bad="$fx/bad"; ok="$fx/ok"
+mkdir -p "$bad/.github/workflows" "$ok/.github/workflows" "$bad/src/cli" "$ok/src/cli" "$bad/tests" "$ok/tests" \
+         "$bad/docs/decisions" "$ok/docs/decisions" "$bad/docs" "$ok/docs"
+
+# F-1 (M-114): an approval recorded from the dispatching actor, with no digest comparison (violation); the
+# compliant twin compares the digest of the artifact with the approval (its environment is NOT VERIFIED only).
+printf '%s\n' 'name: promote' 'on:' '  workflow_dispatch:' '    inputs:' '      ref: { required: true }' \
+  '      approval: { required: true }' 'jobs:' '  deploy:' '    runs-on: ubuntu-latest' '    environment: production' \
+  '    steps:' '      - uses: actions/checkout@v4' '        with:' '          ref: ${{ inputs.ref }}' \
+  '      - name: record approval' '        env:' '          APPROVED_BY: ${{ github.actor }}' \
+  '          APPROVAL: ${{ inputs.approval }}' '        run: echo "$APPROVAL"' '      - run: ./scripts/deploy.sh' \
+  > "$bad/.github/workflows/release.yml"
+printf '%s\n' 'name: promote' 'on:' '  workflow_dispatch:' '    inputs:' '      digest: { required: true }' \
+  '      approval_digest: { required: true }' 'jobs:' '  deploy:' '    runs-on: ubuntu-latest' '    environment: production' \
+  '    steps:' '      - uses: actions/download-artifact@v4' '      - name: verify approval binds digest' '        run: |' \
+  '          [ "${{ inputs.approval_digest }}" = "$(sha256sum app.tgz | cut -c1-64)" ] || exit 1' \
+  '      - run: ./scripts/deploy.sh' > "$ok/.github/workflows/release.yml"
+d1="$(approval_binding_check "$bad" .github/workflows/release.yml)"
+printf '%s\n' "$d1" | grep -qF 'FAIL DELIVERY-001: .github/workflows/release.yml:' \
+  || { echo "FAIL V2.93: DELIVERY-001 did not report the approval with file:line: $d1"; failures=1; }
+printf '%s\n' "$d1" | grep -qF 'the approver is the actor that dispatched the run' \
+  || { echo "FAIL V2.93: DELIVERY-001 did not report the dispatcher as approver: $d1"; failures=1; }
+d2="$(approval_binding_check "$ok" .github/workflows/release.yml)"
+printf '%s\n' "$d2" | grep -q '^FAIL DELIVERY-001' && { echo "FAIL V2.93: DELIVERY-001 reports the bound approval twin: $d2"; failures=1; }
+printf '%s\n' "$d2" | grep -qF 'NOT VERIFIED DELIVERY-001' || { echo "FAIL V2.93: DELIVERY-001 does not hold the platform reviewers as NOT VERIFIED: $d2"; failures=1; }
+
+# F-2 (M-116): a dispatched ref re-checked out in a file that deploys (violation); the twin downloads the artifact.
+d3="$(artifact_ref_check "$bad" .github/workflows/release.yml)"
+printf '%s\n' "$d3" | grep -qF 'FAIL DELIVERY-002: .github/workflows/release.yml:' \
+  || { echo "FAIL V2.93: DELIVERY-002 did not report the re-checkout of the dispatched ref: $d3"; failures=1; }
+d4="$(artifact_ref_check "$ok" .github/workflows/release.yml)"
+[ -z "$d4" ] || { echo "FAIL V2.93: DELIVERY-002 reports the twin that consumes the artifact: $d4"; failures=1; }
+
+# F-3 (M-117): a column-zero call runs an effect at import (violation); the twin keeps the call in a function.
+printf '%s\n' 'import { x } from "./x";' 'export const a = 1;' 'main().catch((e) => { process.exitCode = 1; });' \
+  'function main() { return x; }' > "$bad/src/cli/deploy.ts"
+printf '%s\n' 'export const main = async () => 0;' 'if (require.main === module) { main(); }' > "$ok/src/cli/deploy.ts"
+i1="$(import_effect_check "$bad" src/cli/deploy.ts)"
+printf '%s\n' "$i1" | grep -qF 'FAIL IMPORT-001: src/cli/deploy.ts:3:' \
+  || { echo "FAIL V2.93: IMPORT-001 did not report the call at import with file:line: $i1"; failures=1; }
+i2="$(import_effect_check "$ok" src/cli/deploy.ts)"
+printf '%s\n' "$i2" | grep -q '^FAIL IMPORT-001' && { echo "FAIL V2.93: IMPORT-001 reports the guarded twin: $i2"; failures=1; }
+
+# F-4 (M-115): a claim that the prompt ran through a direct CLI call (violation); the twin cites the session.
+printf '%s\n' '# Report' 'Se ejecutó el prompt con la CLI directamente: `node dist/cli.js run`.' > "$bad/docs/claim.md"
+printf '%s\n' '# Report' 'The prompt ran in session ses_9f2 through `opencode run`; the transcript is attached.' > "$ok/docs/claim.md"
+x1="$(exec_claim_check "$bad" docs/claim.md)"
+printf '%s\n' "$x1" | grep -qF 'NOT VERIFIED EXEC-001: docs/claim.md:2: an agent or prompt execution is claimed' \
+  || { echo "FAIL V2.93: EXEC-001 did not report the direct-call claim with file:line: $x1"; failures=1; }
+x2="$(exec_claim_check "$ok" docs/claim.md)"
+[ -z "$x2" ] || { echo "FAIL V2.93: EXEC-001 reports the claim that cites the session: $x2"; failures=1; }
+
+# F-5 (M-118, ERR-002): one code emitted from three sites, named by one test line (violation); three test lines (twin).
+printf '%s\n' 'export const check = (m: string, c: string) => {' '  if (m !== c) throw new Error("RELEASE_INVALID: metadata mismatch");' \
+  '  if (!m) throw new Error("RELEASE_INVALID: metadata missing");' '  if (!c) throw new Error("RELEASE_INVALID: ref missing");' '};' > "$bad/src/etl.ts"
+cp "$bad/src/etl.ts" "$ok/src/etl.ts"
+printf '%s\n' '# Contract' '| Code | Meaning |' '|---|---|' '| `RELEASE_INVALID` | exit 1 when the release record is invalid |' \
+  > "$bad/docs/contract.md"
+cp "$bad/docs/contract.md" "$ok/docs/contract.md"
+printf '%s\n' 'import { check } from "../src/etl";' 'test("RELEASE_INVALID on mismatch", () => { expect(() => check("a", "b")).toThrow("RELEASE_INVALID"); });' \
+  > "$bad/tests/etl.test.ts"
+printf '%s\n' 'import { check } from "../src/etl";' 'test("RELEASE_INVALID on mismatch", () => { expect(() => check("a", "b")).toThrow("RELEASE_INVALID"); });' \
+  'test("RELEASE_INVALID on empty metadata", () => { expect(() => check("", "b")).toThrow("RELEASE_INVALID"); });' \
+  'test("RELEASE_INVALID on missing ref", () => { expect(() => check("a", "")).toThrow("RELEASE_INVALID"); });' \
+  > "$ok/tests/etl.test.ts"
+e1="$(error_outcome_check "$bad" src/etl.ts -- tests/etl.test.ts -- docs/contract.md)"
+printf '%s\n' "$e1" | grep -qF 'NOT VERIFIED ERR-002: src/etl.ts:2: error code RELEASE_INVALID is emitted from 3 sites' \
+  || { echo "FAIL V2.93: ERR-002 did not hold the three sites with one test as NOT VERIFIED: $e1"; failures=1; }
+e2="$(error_outcome_check "$ok" src/etl.ts -- tests/etl.test.ts -- docs/contract.md)"
+printf '%s\n' "$e2" | grep -q 'ERR-002: src/etl.ts:2: error code RELEASE_INVALID is emitted' \
+  && { echo "FAIL V2.93: ERR-002 holds the twin with one test per site: $e2"; failures=1; }
+
+# F-6 (M-118, ENTRY-001): exit codes 0, 1, and 2; the test asserts only 0 (violation); the twin asserts all three.
+printf '%s\n' 'const code = process.argv[2];' 'if (code === "bad") process.exit(1);' 'if (code === "usage") process.exit(2);' \
+  'process.exit(0);' > "$bad/src/cli/run.ts"
+cp "$bad/src/cli/run.ts" "$ok/src/cli/run.ts"
+printf '%s\n' 'import { spawnSync } from "node:child_process";' 'import { test, expect } from "vitest";' \
+  'test("run.ts exits 0 on success", () => {' '  const r = spawnSync("node", ["src/cli/run.ts", "ok"]);' \
+  '  expect(r.status).toBe(0);' '});' > "$bad/tests/run.test.ts"
+printf '%s\n' 'import { spawnSync } from "node:child_process";' 'import { test, expect } from "vitest";' \
+  'test("run.ts exits 0 on success", () => {' '  expect(spawnSync("node", ["src/cli/run.ts", "ok"]).status).toBe(0);' '});' \
+  'test("run.ts exits 1 on bad input", () => {' '  expect(spawnSync("node", ["src/cli/run.ts", "bad"]).status).toBe(1);' '});' \
+  'test("run.ts exits 2 on usage", () => {' '  expect(spawnSync("node", ["src/cli/run.ts", "usage"]).status).toBe(2);' '});' \
+  > "$ok/tests/run.test.ts"
+n1="$(entry_point_check "$bad" src/cli/run.ts -- tests/run.test.ts)"
+printf '%s\n' "$n1" | grep -qF 'FAIL ENTRY-001: src/cli/run.ts:1: exit code 1 is set by the entry point and no test' \
+  || { echo "FAIL V2.93: ENTRY-001 did not report exit code 1 with no assertion: $n1"; failures=1; }
+printf '%s\n' "$n1" | grep -qF 'exit code 2 is set by the entry point' \
+  || { echo "FAIL V2.93: ENTRY-001 did not report exit code 2 with no assertion: $n1"; failures=1; }
+n2="$(entry_point_check "$ok" src/cli/run.ts -- tests/run.test.ts)"
+[ -z "$n2" ] || { echo "FAIL V2.93: ENTRY-001 reports the test that asserts every code: $n2"; failures=1; }
+
+# F-6b (M-118, ENTRY-001): an exit constant the file declares and returns through a function (violation: no test
+# asserts 3); the twin asserts it by its name.
+printf '%s\n' 'const EXIT_BAD = 3;' 'const main = (): number => EXIT_BAD;' 'if (import.meta.main) process.exit(main(process.argv.slice(2)));' \
+  > "$bad/src/cli/exit.ts"
+printf '%s\n' 'const EXIT_BAD = 3;' 'const main = (): number => EXIT_BAD;' 'if (import.meta.main) process.exit(main(process.argv.slice(2)));' \
+  > "$ok/src/cli/exit.ts"
+printf '%s\n' 'import { test } from "node:test";' 'import { spawnSync } from "node:child_process";' \
+  'test("exit.ts exits with the status of its run", () => {' '  spawnSync("node", ["src/cli/exit.ts"]);' '});' > "$bad/tests/exit.test.ts"
+printf '%s\n' 'import { test } from "node:test";' 'import { spawnSync } from "node:child_process";' 'import assert from "node:assert/strict";' \
+  'test("exit.ts exits with the constant it returns", () => {' '  assert.equal(spawnSync("node", ["src/cli/exit.ts"]).status, EXIT_BAD);' '});' \
+  'const EXIT_BAD = 3;' > "$ok/tests/exit.test.ts"
+x1="$(entry_point_check "$bad" src/cli/exit.ts -- tests/exit.test.ts)"
+printf '%s\n' "$x1" | grep -qF 'FAIL ENTRY-001: src/cli/exit.ts:1: exit code 3 is set by the entry point and no test' \
+  || { echo "FAIL V2.93: ENTRY-001 did not report the constant exit code no test asserts: $x1"; failures=1; }
+x2="$(entry_point_check "$ok" src/cli/exit.ts -- tests/exit.test.ts)"
+[ -z "$x2" ] || { echo "FAIL V2.93: ENTRY-001 reports the test that asserts the constant by name: $x2"; failures=1; }
+
+# F-7 (M-107): a Spanish row that claims one responsibility for a listed unit (violation); the twin lists the responsibilities.
+printf '%s\n' 'const args = process.argv.slice(2);' 'function takeValue(name: string) { return args[args.indexOf(name) + 1]; }' \
+  'async function run(manifest: string) {' '  const data = JSON.parse(manifest);' '  console.log("ok");' '  return 0;' '}' \
+  'run(takeValue("--manifest")).then((code) => { process.exitCode = code; });' > "$bad/src/cli/deploy.ts"
+cp "$bad/src/cli/deploy.ts" "$ok/src/cli/deploy.ts"
+printf '%s\n' '# Decision record' '| Unit | Responsibility |' '|---|---|' '| src/cli/deploy.ts | responsabilidad única: despliegue |' > "$bad/docs/decisions/deploy.md"
+printf '%s\n' '# Decision record' '| Unit | Responsibility |' '|---|---|' '| src/cli/deploy.ts | parseo, orquestación, salida y códigos de salida |' > "$ok/docs/decisions/deploy.md"
+s1="$(srp_claim_check "$bad" docs/decisions/deploy.md src/cli/deploy.ts)"
+printf '%s\n' "$s1" | grep -qF 'FAIL DEC-001: docs/decisions/deploy.md:4: src/cli/deploy.ts is claimed to have one responsibility' \
+  || { echo "FAIL V2.93: the claim check did not contradict the Spanish single-responsibility row: $s1"; failures=1; }
+s2="$(srp_claim_check "$ok" docs/decisions/deploy.md src/cli/deploy.ts)"
+[ -z "$s2" ] || { echo "FAIL V2.93: the claim check contradicts the row that lists its responsibilities: $s2"; failures=1; }
+
+# F-8 (M-109): a count of Spanish files with no enumerated list (violation); the twin cites its list.
+printf '%s\n' 'a.ts' 'b.ts' 'c.ts' 'd.ts' 'e.ts' 'f.ts' 'g.ts' > "$ok/files.txt"
+printf '%s\n' '# Informe' 'Revisé 7 ficheros del cambio.' > "$bad/report.md"
+printf '%s\n' '# Informe' 'Revisé 7 ficheros listados en `files.txt`, según el comando `git diff --name-only`.' > "$ok/report.md"
+v1="$(evidence_claim_check "$bad" report.md)"
+printf '%s\n' "$v1" | grep -qF 'NOT VERIFIED EVIDENCE-001: report.md:2: the count 7 cites no enumerated file' \
+  || { echo "FAIL V2.93: EVIDENCE-001 did not report the Spanish count with no list: $v1"; failures=1; }
+v2="$(evidence_claim_check "$ok" report.md)"
+[ -z "$v2" ] || { echo "FAIL V2.93: EVIDENCE-001 reports the count that cites its list: $v2"; failures=1; }
+
+echo "V2.93 behavioral fixtures: $fx (removed on exit)"
+[ "$failures" -eq 0 ] && echo "V2.93 PASS" || echo "V2.93 FAIL"
 [ "$failures" -eq 0 ]
 ```
