@@ -91,6 +91,16 @@ tool, or schema style without a justified reason and human approval.
   migrated database. A test named for the legacy or previous schema is the
   evidence; a claim of order-safety with no such test is a false claim and is
   reported as `NOT VERIFIED`.
+- A visibility change (M-100) hides, revokes, or deletes rows, for example a
+  `deleted_at` tombstone or a status that filters reads. The previous release
+  keeps reading the table without the filter, so the change is sequenced
+  expand-contract: the hiding write runs only after no deployed release, and no
+  release a rollback can reach, reads the table without the filter. The
+  deploy-order test asserts the previous release's result on a row with the flag
+  set, and `DB-005` reports a visibility migration that has no such test.
+- A value derived from the schema state is re-read for each operation or
+  revalidated after a migration; it is never captured in a field or constant at
+  process start (M-102). `DB-006` reports each capture.
 - Application code never changes the schema (M-70). A `CREATE`, `ALTER`, or
   `DROP` statement, including `CREATE ... IF NOT EXISTS`, is written only in a
   migration and run only by the migration tooling. Startup, boot, and request

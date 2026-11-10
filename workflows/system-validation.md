@@ -1016,6 +1016,8 @@ Return:
 - V2.84 untracked scope and missing manifest, analysis-only writes, approval quotes, teardown gate, and verdict-status enumeration (M-80, M-90 to M-93):
 - V2.85 native task mirror at stage level: stage start and end rewrites, the `Stage:` marker, and the panel completeness check (M-35, R-156):
 - V2.86 concrete imports, cited artifacts, removed test cases, preflight state, PASS evidence, teardown targets, and node:test (M-47, M-89, M-93 to M-98, R-157 to R-163):
+- V2.87 pre-code design review gate and its independence contract (M-99, R-164):
+- V2.88 visibility changes, caches that decide actions, and schema state at process start (M-100 to M-102, R-165 to R-167):
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -6654,3 +6656,159 @@ sed '/Pre-code design review\./,/^$/d' "$fx/workflows/task-to-code.md" > "$fx/t"
 echo "gate removed:"; design_review_check "$fx" | grep 'FAIL V2.87: the pre-code' || echo "NOT DETECTED"
 rm -rf "$fx"
 ```
+
+## V2.88 Regression — Visibility Changes, Caches That Decide Actions, and Schema State at Process Start
+
+Verify that the rules added after the external audit of a soft-delete change
+are canonical, reachable, and effective, and that the detectors close the gaps
+that let its findings through:
+
+- M-100: "the previous release keeps working" is observable behavior. A visibility
+  change (a tombstone such as `deleted_at`, or a status that hides rows) is
+  sequenced expand-contract, and its previous-release read path is asserted on a
+  row with the flag set (R-165). `DB-005` reports a visibility migration with no
+  such test with `file:line`. The external audit found a previous release reading
+  the table without the filter, and the sentence "the previous release keeps
+  working" was not marked by `CLAIM-001`: the claim went through unmarked.
+- M-101: caches never decide a charge, an authorization, or a revocation alone
+  (R-166). `CACHE-001` reports a cache read in a file that decides such an action
+  as `NOT VERIFIED` with its line. The external audit found a process cache that
+  kept serving a deleted method to other processes until the TTL expired.
+- M-102: a value derived from the schema state is re-read for each operation, never
+  captured at process start (R-167). `DB-006` reports `this.x = hasColumn(...)` and a module constant
+  captured from a schema probe with `file:line`. The external audit found a store
+  that fixed its deletion support at construction, so a migration with the server
+  running left deletes refused until a restart.
+
+The text checks run on the repository. The behavioral part extracts the detector
+blocks of `workflows/output-compliance.md` (DB-002, DB-005, DB-006, CACHE-001,
+CLAIM-001), builds the violation fixtures and their compliant twins in a temporary
+directory outside the repository, verifies each defect is reported with
+`file:line`, repairs the fixtures, verifies they are clean, and removes the
+directory. It needs `awk`, `grep`, `sed`, `tr`, and `mktemp`; without them the
+behavioral part is `NOT VERIFIED`, and the text checks still run.
+
+Limits, stated by the rules themselves: the detectors are textual. `DB-005`
+proves the test names the column and the previous read path, not that it passes;
+the expand-contract sequencing is a plan requirement reviewed under Dimension 5;
+`CACHE-001` is a candidate that the reviewer confirms; `DB-006` does not see a
+schema value that enters through options rather than a probe. The text checks
+below require the anchors of M-100, M-101, and M-102 on every required surface.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+db="skills/database-engineering/SKILL.md"
+vs="workflows/system-validation.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.88: $1 is missing $3"; failures=1; }
+}
+
+# Canonical wording and reachability of M-100, M-101, and M-102 on every required surface.
+for surface in "$ag" "$mr" "$rmx" "$oc" "$vs"; do
+  need "$surface" "visibility change" "the M-100 anchor"
+  need "$surface" "caches never decide a charge" "the M-101 anchor"
+  need "$surface" "is re-read for each operation" "the M-102 anchor"
+done
+need "$db" "visibility change" "the M-100 anchor"
+need "$db" "is re-read for each operation" "the M-102 anchor"
+grep -qE 'keeps working|still (works|serves|reads)' "$root/$oc" || { echo "FAIL V2.88: $oc has no CLAIM-001 compatibility wording (M-100)"; failures=1; }
+
+for id in M-100 M-101 M-102; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.88: no $id row in the registry"; failures=1; }
+done
+for id in R-165 R-166 R-167; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.88: no $id row in the regression matrix"; failures=1; }
+done
+for rule in DB-005 DB-006 CACHE-001; do
+  grep -qF "| \`$rule\` |" "$root/$oc" || { echo "FAIL V2.88: the coverage table has no $rule row"; failures=1; }
+done
+grep -qF 'db_visibility_check . $migrations -- $tests' "$root/$oc" || { echo "FAIL V2.88: the sweep does not run DB-005"; failures=1; }
+grep -qF 'cache_decision_check . $src' "$root/$oc" || { echo "FAIL V2.88: the sweep does not run CACHE-001"; failures=1; }
+grep -qF 'db_schema_state_check . $src' "$root/$oc" || { echo "FAIL V2.88: the sweep does not run DB-006"; failures=1; }
+grep -qF 'db_deploy_order_check . $migrations -- $tests' "$root/$oc" || { echo "FAIL V2.88: the sweep does not run DB-002"; failures=1; }
+grep -q '^- V2.88 ' "$root/$vs" || { echo "FAIL V2.88: V2.88 is not in the validation index"; failures=1; }
+
+# Behavioral part: the detectors run on fixtures in a temporary directory outside the repository.
+for cmd in awk grep sed tr mktemp; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V2.88: $cmd is not available, the behavioral fixtures were not run"; exit 2; }
+done
+
+extract_sec() {
+  awk -v h="$1" '
+    $0 ~ ("^### " h " ") { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }
+  ' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v288.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+{ extract_sec "DB-002"; extract_sec "DB-005"; extract_sec "CACHE-001"; extract_sec "DB-006"; extract_sec "CLAIM-001"; } > "$fx/detectors.sh"
+. "$fx/detectors.sh" || { echo "FAIL V2.88: the detector blocks do not load"; exit 1; }
+
+bad="$fx/bad"; ok="$fx/ok"
+mkdir -p "$bad/migrations" "$bad/tests" "$bad/src" "$ok/migrations" "$ok/tests" "$ok/src" "$bad/docs" "$ok/docs"
+
+# M-100: a visibility migration with no previous-release test (violation) and its twin with one.
+printf 'ALTER TABLE saved_payment_methods ADD COLUMN deleted_at TEXT;\n' > "$bad/migrations/0002_soft_delete.sql"
+printf 'import { test } from "vitest";\ntest("deletes a method", () => {});\n' > "$bad/tests/store.test.ts"
+printf 'ALTER TABLE saved_payment_methods ADD COLUMN deleted_at TEXT;\n' > "$ok/migrations/0002_soft_delete.sql"
+printf '%s\n' 'test("previous release reads without deleted_at: a row with deleted_at set stays hidden", () => {});' > "$ok/tests/deploy-order.test.ts"
+d_bad="$(db_visibility_check "$bad" migrations/0002_soft_delete.sql -- tests/store.test.ts)"
+printf '%s\n' "$d_bad" | grep -q '^FAIL DB-005: migrations/0002_soft_delete.sql:1:' \
+  || { echo "FAIL V2.88: DB-005 did not detect the visibility migration with no previous-release test: $d_bad"; failures=1; }
+d_ok="$(db_visibility_check "$ok" migrations/0002_soft_delete.sql -- tests/deploy-order.test.ts)"
+printf '%s\n' "$d_ok" | grep -q '^NOT VERIFIED DB-005: migrations/0002_soft_delete.sql:1:' \
+  || { echo "FAIL V2.88: DB-005 did not accept the twin with a previous-release test: $d_ok"; failures=1; }
+printf '%s\n' "$d_ok" | grep -q '^FAIL' && { echo "FAIL V2.88: DB-005 reports FAIL on the compliant twin"; failures=1; }
+printf 'test("previous release reads without deleted_at: a row with deleted_at set stays hidden", () => {});\n' > "$bad/tests/store.test.ts"
+d_fixed="$(db_visibility_check "$bad" migrations/0002_soft_delete.sql -- tests/store.test.ts)"
+printf '%s\n' "$d_fixed" | grep -q '^NOT VERIFIED DB-005' || { echo "FAIL V2.88: DB-005 did not clear after the repair: $d_fixed"; failures=1; }
+
+# M-100: the external audit's sentence is marked by CLAIM-001, and a sentence without the claim is not.
+printf '%s\n' 'The release starts on a database that has not yet received its migration, and the previous release keeps working on the migrated database.' > "$bad/docs/decision.md"
+printf '%s\n' 'Both orders are executed by the test that names the legacy schema.' > "$ok/docs/decision.md"
+c_bad="$(claim_check "$bad" docs/decision.md)"
+printf '%s\n' "$c_bad" | grep -q '^NOT VERIFIED CLAIM-001: docs/decision.md:1:' \
+  || { echo "FAIL V2.88: CLAIM-001 did not mark 'the previous release keeps working': $c_bad"; failures=1; }
+c_ok="$(claim_check "$ok" docs/decision.md)"
+[ -z "$c_ok" ] || { echo "FAIL V2.88: CLAIM-001 marks a sentence with no compatibility claim: $c_ok"; failures=1; }
+
+# M-101: a cache read in a charge module (violation) and a display-only twin.
+printf '%s\n' 'const cache = new Map<string, Method>();' 'export const charge = async (userId: string) => {' '  const method = cache.get(userId);' '  return method;' '};' > "$bad/src/charge.ts"
+printf '%s\n' 'const cache = new Map<string, Method>();' 'export const renderCatalog = (userId: string) => cache.get(userId);' > "$ok/src/catalog.ts"
+c1="$(cache_decision_check "$bad" src/charge.ts)"
+printf '%s\n' "$c1" | grep -q '^NOT VERIFIED CACHE-001: src/charge.ts:3:' \
+  || { echo "FAIL V2.88: CACHE-001 did not detect the cache that decides a charge: $c1"; failures=1; }
+c2="$(cache_decision_check "$ok" src/catalog.ts)"
+[ -z "$c2" ] || { echo "FAIL V2.88: CACHE-001 reports the display-only twin: $c2"; failures=1; }
+printf '%s\n' 'export const charge = async (repo: Repo, userId: string) => repo.findActive(userId);' > "$bad/src/charge.ts"
+c3="$(cache_decision_check "$bad" src/charge.ts)"
+[ -z "$c3" ] || { echo "FAIL V2.88: CACHE-001 still reports after the source-of-truth read: $c3"; failures=1; }
+
+# M-102: a store that captures the schema probe in a field (violation) and the per-operation twin.
+printf '%s\n' 'export class SqliteStore {' 'constructor(private db: Db) {' '    this.tracksDeletions = hasColumn(db, "saved_payment_methods", "deleted_at");' '  }' '}' > "$bad/src/store.ts"
+printf '%s\n' 'export const removeMethod = (db: Db) => {' '  const tracks = hasColumn(db, "saved_payment_methods", "deleted_at");' '  return tracks;' '};' > "$ok/src/store.ts"
+s1="$(db_schema_state_check "$bad" src/store.ts)"
+printf '%s\n' "$s1" | grep -q '^FAIL DB-006: src/store.ts:3:' \
+  || { echo "FAIL V2.88: DB-006 did not detect the schema probe captured at construction: $s1"; failures=1; }
+s2="$(db_schema_state_check "$ok" src/store.ts)"
+[ -z "$s2" ] || { echo "FAIL V2.88: DB-006 reports the per-operation twin: $s2"; failures=1; }
+printf '%s\n' 'export class SqliteStore {' 'constructor(private db: Db) {' '  }' '  remove() { return hasColumn(this.db, "saved_payment_methods", "deleted_at"); }' '}' > "$bad/src/store.ts"
+s3="$(db_schema_state_check "$bad" src/store.ts)"
+[ -z "$s3" ] || { echo "FAIL V2.88: DB-006 still reports after the per-operation repair: $s3"; failures=1; }
+
+echo "V2.88 behavioral fixtures: $fx (removed on exit)"
+[ "$failures" -eq 0 ] && echo "V2.88 PASS" || echo "V2.88 FAIL"
+[ "$failures" -eq 0 ]

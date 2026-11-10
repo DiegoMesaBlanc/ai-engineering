@@ -1204,6 +1204,9 @@ project_safety_sweep() {
   read_transaction_check . $src
   db_runtime_ddl_check . $src
   db_deploy_order_check . $migrations -- $tests
+  db_visibility_check . $migrations -- $tests
+  cache_decision_check . $src
+  db_schema_state_check . $src
   index_coverage_check . $src $migrations
   timer_hold_check . $tests
   bound_test_check . $src -- $tests
@@ -1494,7 +1497,7 @@ claim_check() {
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (universal or exclusive claim: enumerate its scope before keeping it, M-68)#"
     claim_text "$root/$f" | grep -Ei "capturas?|screenshots?|\.png|\.jpe?g|\.gif|evidence|evidencia" |
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (claim that cites an artifact: confirm the artifact is in the repository, M-68)#"
-    claim_text "$root/$f" | grep -Ei "order-safe|order safe|either order|any deployment order|both directions|ambas direcciones|cualquier orden|en ambos sentidos" |
+    claim_text "$root/$f" | grep -Ei "order-safe|order safe|either order|any deployment order|both directions|ambas direcciones|cualquier orden|en ambos sentidos|keeps working|still (works|serves|reads)|(previous|old|older|prior|legacy) (release|version|instance|build|schema)[^.]*(keeps|continues|still)[[:space:]]+(working|serving|reading|running)|(versi[oó]n|release) anterior[^.]*sigue[[:space:]]+(funcionando|operando|sirviendo|leyendo)|sigue funcionando" |
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (compatibility claim: keep it only with a test that executes each deployment order, M-69)#"
     claim_text "$root/$f" | grep -Ei "(^|[^A-Za-z])(faster|más rápid[oa]s?|speed(s|ed)? up|accelerat(es|ed|e))([^A-Za-z]|$)" |
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (performance claim: cite the before and after measurement of the named query, M-65)#"
@@ -1769,6 +1772,92 @@ db_deploy_order_check() {
     else
       echo "FAIL DB-002: $m:1: no test executes this migration in either deployment order (M-69)"
     fi
+  done
+}
+```
+
+### DB-005 — A visibility migration asserts the previous release on a hidden row
+
+M-100: "the previous release keeps working" is observable behavior. A migration that
+adds a tombstone or a visibility column is a visibility change (`deleted_at`, `archived_at`, `revoked_at`,
+`is_deleted`, `hidden_at`, `tombstone`) hides rows from the reads of every release
+that does not filter on it. The deploy-order test must name that column and the
+previous or legacy read path, so that the previous release's result on a row with
+the flag set is asserted. The detector is textual: it proves the test names both,
+and the test must still be executed before the claim is kept. The sequencing of the
+hiding write (expand-contract) is a plan requirement reviewed under Dimension 5; this
+detector does not decide it. It reuses `DEPLOY_ORDER_TEST_RE` from `DB-002`.
+
+```sh
+# $1 = repository root; $2... = migration files, then `--`, then test files, relative to it.
+VISIBILITY_COL_RE='deleted_at|archived_at|revoked_at|is_deleted|hidden_at|tombstone'
+db_visibility_check() {
+  root="$1"; shift
+  migs=""
+  while [ "$#" -gt 0 ] && [ "$1" != "--" ]; do migs="$migs $1"; shift; done
+  [ "$#" -gt 0 ] && shift
+  for m in $migs; do
+    grep -qiE "$VISIBILITY_COL_RE" "$root/$m" 2>/dev/null || continue
+    col="$(grep -oiE "$VISIBILITY_COL_RE" "$root/$m" | sed -n '1p')"
+    ok=""
+    for t in "$@"; do
+      if grep -qiE "$col" "$root/$t" 2>/dev/null && grep -qiE "$DEPLOY_ORDER_TEST_RE" "$root/$t" 2>/dev/null; then ok="$t"; fi
+    done
+    if [ -n "$ok" ]; then
+      echo "NOT VERIFIED DB-005: $m:1: visibility column $col; $ok names the previous read path; execute it on a row with $col set before the claim is kept (M-100)"
+    else
+      echo "FAIL DB-005: $m:1: visibility column $col with no test that runs the previous release against a row with $col set (M-100)"
+    fi
+  done
+}
+```
+
+### CACHE-001 — A cache never decides a charge, an authorization, or a revocation alone
+
+M-101: caches never decide a charge, an authorization, or a revocation alone. A
+process-local cache is read in a file that also decides such an action; invalidating
+the process that wrote does not reach the others, so a TTL is not a bound. The
+detector reports each such file as a candidate with its first cache read. The
+result is `NOT VERIFIED` until the reviewer shows the source-of-truth read on the
+decision path, and a cache used only for display is not a finding. Test files are
+excluded.
+
+```sh
+CACHE_READ_RE='(cache|Cache)\.(get|has)\(|readCache\(|getCached|lruCache\.get|memo\.get\('
+CACHE_DECISION_RE='(^|[^A-Za-z])(charge|authori[sz]e|checkout|pay|revoke|refund|debit)[A-Za-z]*'
+cache_decision_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.py|*.go|*.java|*.kt|*.cs|*.rb|*.php|*.swift|*.dart) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/test/*|*/tests/*|*__tests__*) continue ;; esac
+    grep -qE "$CACHE_READ_RE" "$root/$f" 2>/dev/null || continue
+    grep -qE "$CACHE_DECISION_RE" "$root/$f" 2>/dev/null || continue
+    line="$(grep -nE "$CACHE_READ_RE" "$root/$f" | sed -n '1p' | cut -d: -f1)"
+    echo "NOT VERIFIED CACHE-001: $f:$line: a cache is read in a file that decides a charge, authorization, or revocation; show the source-of-truth read on that path (M-101)"
+  done
+}
+```
+
+### DB-006 — Schema state is re-read per operation, not captured at process start
+
+M-102: a value derived from the schema state is re-read for each operation or
+revalidated after a migration. A capture in a field (`this.x = ...`) or in a
+module-level constant freezes it at process start, so a migration that runs while the
+process serves traffic is never seen: the store keeps refusing deletes until a restart.
+The detector reports the capture with `file:line`. A probe inside a method body is a
+per-operation read and is not reported. Test files and migrations are excluded.
+
+```sh
+SCHEMA_PROBE_RE='PRAGMA[[:space:]]+table_info|information_schema|hasColumn|columnExists|hasDeleted|tracksDeletions|hasTable|tableExists'
+db_schema_state_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.py|*.go|*.java|*.kt|*.cs|*.rb|*.php|*.swift|*.dart) ;; *) continue ;; esac
+    case "$f" in *migration*|*migrate*|*.test.*|*.spec.*|*/test/*|*/tests/*|*__tests__*) continue ;; esac
+    grep -nE "^[[:space:]]*this\.[A-Za-z_]+[[:space:]]*=.*($SCHEMA_PROBE_RE)" "$root/$f" 2>/dev/null |
+      sed "s#^#FAIL DB-006: $f:#; s#\$#  (schema state captured at process start: re-read it per operation, M-102)#"
+    grep -nE "^(const|let|var)[[:space:]].*=.*($SCHEMA_PROBE_RE)" "$root/$f" 2>/dev/null |
+      sed "s#^#FAIL DB-006: $f:#; s#\$#  (schema state captured in a module constant: re-read it per operation, M-102)#"
   done
 }
 ```
@@ -2892,9 +2981,12 @@ report_matrix_check() {
 | `ENTRY-001` | source files and test files in the change set and the sweep | a source file reads `process.argv` |
 | `VAL-001` | source files in the change set and the sweep | a source file reads `process.argv` |
 | `DB-003` | source files in the change set and the sweep | a source file holds a page query inside a loop |
-| `DB-001` | source files in the change set | any source file is created or modified |
-| `DB-002` | migrations and tests in the change set | a migration is created or modified |
+| `DB-001` | source files in the change set and the sweep (a pre-existing runtime DDL is a finding, not a blocker) | any source file is created or modified |
+| `DB-002` | migrations and tests in the change set and the sweep | a migration is created or modified |
 | `DB-004` | source files and migrations in the change set and the sweep | a source file issues a `SELECT` with a `WHERE` or `AND` equality, or a migration creates an index (M-85) |
+| `DB-005` | migrations and tests in the change set and the sweep | a migration adds a visibility column such as `deleted_at` (M-100) |
+| `DB-006` | source files in the change set and the sweep | a source file captures a schema probe in a field or module constant (M-102) |
+| `CACHE-001` | source files in the change set and the sweep | a source file reads a cache and decides a charge, authorization, or revocation (M-101) |
 | `AUTH-002` | changed authorization, permission, role, or scope files | such a file is created or modified (M-86) |
 | `COMMIT-002` | commits in `base..HEAD` against the approved scope manifest | a commit proposal is prepared (M-87) |
 | `SCOPE-001` | change set, tracked and untracked, against the approved manifest | any change set exists; a missing manifest is a `FAIL` (M-90, M-91) |
