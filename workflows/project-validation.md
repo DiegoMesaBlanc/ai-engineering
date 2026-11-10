@@ -414,11 +414,14 @@ Run each check, and record its command, status, and evidence:
    A pre-existing DDL statement in a store file is a finding of the probe, never a
    pass, and a performance or plan claim is never reported as verified by the probe.
 7. **Outbound timeouts and cleartext endpoints (M-54, M-55).** The sweep of item 6
-   covers `SAFE-001` and `SAFE-002` over the project source. Every external call
-   has an explicit timeout (M-54), so an outbound call with no timeout is a
-   `SAFE-001` finding, and `http://` is rejected for every non-local build (M-55),
-   so a cleartext endpoint or a URL setting that accepts any scheme is a `SAFE-002`
-   finding. Each is reported with its `file:line`, without blocking an unrelated
+   covers `SAFE-001` and `SAFE-002` over the project source, shell scripts, and
+   workflow YAML (M-54, M-55). Every external call has an explicit timeout (M-54), so
+   an outbound call with no timeout is a `SAFE-001` finding, including a `curl` or
+   `wget` statement with no time bound and a workflow step that calls the network with
+   no step `timeout-minutes`. `http://` is rejected for every non-local build, and the
+   URL authority is parsed, so userinfo or an empty host is a `SAFE-002` finding (M-55).
+   A guard in a shell or workflow file with no versioned test that names it is a
+   `GUARD-001` finding (M-113). Each is reported with its `file:line`, without blocking an unrelated
    task, and the probe never reports them as passing. A rejected credential ends
    the session (M-60): the sweep's `SAFE-006` finding covers it, and the device
    behavior is `NOT VERIFIED` until it is run.

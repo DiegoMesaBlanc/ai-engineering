@@ -1020,6 +1020,7 @@ Return:
 - V2.88 visibility changes, caches that decide actions, and schema state at process start (M-100 to M-102, R-165 to R-167):
 - V2.89 destructive paths, parsed values, duplicated helpers, document-catalog traceability, and units with several responsibilities (M-103 to M-107, R-168 to R-172):
 - V2.90 cited paths and directories, evidence for windows and counts, declared initial states, approval wiring across documents, and baseline health findings (M-108 to M-112, R-173 to R-177):
+- V2.91 guards in shell and workflow artifacts, URL authority, step bounds, duplicated blocks, responsibility claims, and tool coverage claims (M-54, M-55, M-105, M-107, M-109, M-113, R-178):
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -7270,3 +7271,235 @@ printf '%s\n' "$d2" | grep -qF 'PASS DEP-RANGE-001: package.json has no caret or
 echo "V2.90 behavioral fixtures: $fx (removed on exit)"
 [ "$failures" -eq 0 ] && echo "V2.90 PASS" || echo "V2.90 FAIL"
 [ "$failures" -eq 0 ]
+```
+
+## V2.91 Regression — Guards in Shell and Workflow Artifacts, URL Authority, Step Bounds, Duplicated Blocks, Responsibility Claims, and Tool Coverage
+
+Verify that the gaps the fourth external audit exposed are closed in the canonical rules, reachable from
+every required surface, wired into the procedures that run them, and that the detectors find the defects
+the audit found and pass their compliant twins:
+
+- M-55 (F-A): the cleartext guard parses the URL authority (`SAFE-002`). A URL with userinfo
+  (`http://localhost:1@evil.com`) is a `FAIL` because its host is `evil.com`; an `https://` URL with
+  no host is a `FAIL`; `http://` is accepted only for an exact local or documentation host. The audit
+  found the substring guard passing that URL, and the detector read only source and shell, so the
+  workflow YAML that held the guard was never read. The sweep now reads workflow YAML too.
+- M-54 (F-D): a curl or wget statement carries a time bound, and a workflow step that calls the network
+  declares its own `timeout-minutes` (`SAFE-001`, `safe_bound_check`). A job timeout is not a step bound.
+  The runtime proof, a dependency that never resolves under controlled time, is still `NOT VERIFIED`
+  when no runner exists, as Dimension 8 requires.
+- M-107 (F-B): `SRP-001` reads workflow YAML, and `srp_claim_check` contradicts a decision-record row that
+  says a listed unit has one responsibility (`only`, `solo`, `single`). The audit found "deploys only"
+  for a workflow that validates, digests, parses, and deploys.
+- M-105 (F-E): `dup_block_check` finds a six-line block repeated in two shell or workflow files, which
+  `DUP-001` for TypeScript never read.
+- M-113 (F-C): a guard in a shell or workflow artifact is behavior, and the change ships a versioned test that runs it. `GUARD-001` reports a guard in a shell or workflow artifact that no tracked test names.
+  The audit found a guard whose only evidence was a log of one-off runs.
+- M-109 (F-F): `EVIDENCE-001` reports a claim that a tool covers a set of files when no output of the
+  tool's own file resolution is cited (`prettier --file-info`, `ruff check --show-files`). The audit found
+  "Prettier covered the 7 files" where the tool had no parser for one of them.
+
+The text checks require the anchors on every required surface, the registry row, the regression row, the
+coverage rows, the sweep calls, the Dimension 2, 6, and 7 criteria, the code-audit call, the Phase 8a
+item, and the index entry. The behavioral part builds a defective fixture and its compliant twin for each
+detector in a temporary directory outside the repository, verifies each defect is reported with
+`file:line`, verifies the twin is clean, verifies a guard with no test is `FAIL` until a test names it,
+and removes the directory.
+
+Limits, stated by the rules themselves: the URL check reads one URL per match and does not decode
+percent-encoding; the step check is lexical (a step is a list item), and a network call through a helper
+is a candidate for the reviewer. `GUARD-001` reads that a test names the artifact, not that the test passes;
+the execution of the guard test is the reviewer's check under Dimension 7. `DUP-001` for shell and YAML
+compares text. The tool-coverage claim is evidenced only by the tool's own output: this environment has no
+`prettier` binary, so the real `--file-info` run is `NOT VERIFIED` here and is not claimed by the fixture.
+The external repository the audit examined is evidence only and was not modified.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+pv="workflows/project-validation.md"
+vs="workflows/system-validation.md"
+apc="references/audit-pass-criteria.md"
+ca="workflows/code-audit.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.91: $1 is missing $3"; failures=1; }
+}
+
+# Canonical wording and reachability of M-113 on every required surface, and the M-54, M-55, M-107, M-109 extensions.
+for surface in "$ag" "$mr" "$rmx" "$oc" "$vs"; do
+  need "$surface" "ships a versioned test that runs" "the M-113 anchor"
+done
+need "$ag" "parses the URL and does not match a substring" "the M-55 parsing anchor"
+need "$ag" "reads workflow YAML as well as source" "the M-107 anchor"
+need "$ag" "a tool covers a set of files" "the M-109 tool anchor"
+need "$ag" "each workflow step that calls the network declares its own" "the M-54 step anchor"
+need "$apc" "a record row that says a listed unit has one responsibility" "the Dimension 2 contradiction anchor"
+need "$apc" "a log of one-off runs is not a test" "the Dimension 7 guard anchor"
+need "$apc" "a URL with userinfo is a" "the Dimension 6 userinfo anchor"
+
+grep -q "^| M-113 |" "$root/$mr" || { echo "FAIL V2.91: no M-113 row in the registry"; failures=1; }
+grep -q "^| R-178 |" "$root/$rmx" || { echo "FAIL V2.91: no R-178 row in the regression matrix"; failures=1; }
+for rule in GUARD-001; do
+  grep -qF "| \`$rule\` |" "$root/$oc" || { echo "FAIL V2.91: the coverage table has no $rule row"; failures=1; }
+  grep -q "^### $rule " "$root/$oc" || { echo "FAIL V2.91: $oc has no $rule section"; failures=1; }
+done
+grep -qF '`SAFE-001`, `SAFE-002`, `SAFE-003` | changed files of any type' "$root/$oc" || { echo "FAIL V2.91: the SAFE coverage row does not cover shell and workflow files"; failures=1; }
+grep -q '^### DUP-001 (shell and workflow YAML) ' "$root/$oc" || { echo "FAIL V2.91: $oc has no DUP-001 shell and workflow section"; failures=1; }
+grep -qF 'safe_bound_check . $shells $workflows' "$root/$oc" || { echo "FAIL V2.91: the sweep does not run safe_bound_check (M-54)"; failures=1; }
+grep -qF 'safe_cleartext_check . $src $shells $workflows' "$root/$oc" || { echo "FAIL V2.91: the sweep does not run SAFE-002 over the workflow YAML (M-55)"; failures=1; }
+grep -qF 'srp_workflow_check . $workflows' "$root/$oc" || { echo "FAIL V2.91: the sweep does not run SRP-001 over the workflow YAML (M-107)"; failures=1; }
+grep -qF 'srp_claim_check . "$d" $src $workflows' "$root/$oc" || { echo "FAIL V2.91: the sweep does not run the DEC-001 claim check (M-107)"; failures=1; }
+grep -qF 'dup_block_check . -- $shells $workflows' "$root/$oc" || { echo "FAIL V2.91: the sweep does not run DUP-001 over shell and workflow YAML (M-105)"; failures=1; }
+grep -qF 'guard_test_check . $shells $workflows -- $tests' "$root/$oc" || { echo "FAIL V2.91: the sweep does not run GUARD-001 (M-113)"; failures=1; }
+grep -qF 'srp_claim_check' "$root/$ca" || { echo "FAIL V2.91: the code audit does not run the claim check (M-107)"; failures=1; }
+grep -qF 'GUARD-001' "$root/$pv" || { echo "FAIL V2.91: the health probe does not list GUARD-001 in Phase 8a (M-113)"; failures=1; }
+grep -q '^- V2.91 ' "$root/$vs" || { echo "FAIL V2.91: V2.91 is not in the validation index"; failures=1; }
+
+# Behavioral part: the detectors run on fixtures in a temporary directory outside the repository.
+for cmd in awk grep sed tr cut sort mktemp; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V2.91: $cmd is not available, the behavioral fixtures were not run"; exit 2; }
+done
+
+extract_sec() {
+  awk -v h="$1" '
+    index($0, "### " h " ") == 1 { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }
+  ' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v291.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+{
+  extract_sec "SAFE-001, SAFE-002, SAFE-003"
+  extract_sec "SRP-001"
+  extract_sec "DUP-001 (shell and workflow YAML)"
+  extract_sec "GUARD-001"
+  extract_sec "EVIDENCE-001"
+} > "$fx/detectors.sh"
+. "$fx/detectors.sh" || { echo "FAIL V2.91: the detector blocks do not load"; exit 1; }
+for fn in safe_cleartext_check safe_bound_check srp_workflow_check srp_claim_check dup_block_check guard_test_check evidence_claim_check; do
+  grep -q "^$fn() {" "$fx/detectors.sh" || { echo "FAIL V2.91: $fn is not loaded from its section"; failures=1; }
+done
+
+bad="$fx/bad"; ok="$fx/ok"
+mkdir -p "$bad/ci" "$ok/ci" "$bad/tests" "$ok/tests" "$bad/.github/workflows" "$ok/.github/workflows" \
+         "$bad/docs/decisions" "$ok/docs/decisions" "$bad/evidence" "$ok/evidence"
+
+# The shared block of six significant lines, longer than 120 characters, repeated in two workflow files.
+block='      - name: resolve the payment base URL
+        run: |
+          while IFS= read -r line; do
+            key="${line%%=*}"
+            value="${line#*=}"
+            case "$key" in PAYMENT_PROVIDER_BASE_URL) BASE_URL="$value" ;; esac
+          done < contract.env'
+
+# M-55 (SAFE-002): a userinfo URL, an https URL with no host, and a cleartext host (violation); the local twin.
+printf '%s\n' '#!/bin/sh' '# guard for the base URL' 'case "$BASE" in' '  http://localhost:1@evil.com) ;;' 'esac' \
+  'DEFAULT_BASE="https:///"' 'API_URL="http://evil.example.net/v1"' 'if [ -z "$API_URL" ]; then exit 1; fi' \
+  'curl -s https://api.example.net/health' > "$bad/ci/guard.sh"
+printf '%s\n' '#!/bin/sh' '# guard for the base URL' 'case "$BASE" in' '  http://localhost:8080) ;;' 'esac' \
+  'DEFAULT_BASE="https://api.example.net"' 'API_URL="https://api.example.net/v1"' 'if [ -z "$API_URL" ]; then exit 1; fi' \
+  'curl --max-time 10 -s "$DEFAULT_BASE/health"' > "$ok/ci/guard.sh"
+s1="$(safe_cleartext_check "$bad" ci/guard.sh)"
+printf '%s\n' "$s1" | grep -qF 'FAIL SAFE-002: ci/guard.sh:4: a URL with userinfo names a host the reader does not see' \
+  || { echo "FAIL V2.91: SAFE-002 did not report the userinfo URL with file:line: $s1"; failures=1; }
+printf '%s\n' "$s1" | grep -qF 'FAIL SAFE-002: ci/guard.sh:6: an https URL with no host' \
+  || { echo "FAIL V2.91: SAFE-002 did not report the https URL with no host: $s1"; failures=1; }
+printf '%s\n' "$s1" | grep -qF 'FAIL SAFE-002: ci/guard.sh:7: cleartext http:// to a host that is not local' \
+  || { echo "FAIL V2.91: SAFE-002 did not report the cleartext host: $s1"; failures=1; }
+s2="$(safe_cleartext_check "$ok" ci/guard.sh)"
+[ -z "$s2" ] || { echo "FAIL V2.91: SAFE-002 reports the local and https twin: $s2"; failures=1; }
+printf '%s\n' 'export const isSecure = (value: string) => value.startsWith("https://");' > "$ok/scheme-check.ts"
+s5="$(safe_cleartext_check "$ok" scheme-check.ts)"
+[ -z "$s5" ] || { echo "FAIL V2.91: SAFE-002 reports a scheme comparison, which is not an endpoint: $s5"; failures=1; }
+printf '%s\n' 'API_URL="https://"' > "$bad/ci/empty-host.env"
+s6="$(safe_cleartext_check "$bad" ci/empty-host.env)"
+printf '%s\n' "$s6" | grep -qF 'FAIL SAFE-002: ci/empty-host.env:1: an https URL with no host' \
+  || { echo "FAIL V2.91: SAFE-002 did not report an endpoint with an empty host: $s6"; failures=1; }
+
+# M-54 (SAFE-001, shell): a curl with no time bound (violation); the bounded twin is clean.
+b1="$(safe_bound_check "$bad" ci/guard.sh)"
+printf '%s\n' "$b1" | grep -qF 'FAIL SAFE-001: ci/guard.sh:9: curl or wget with no time bound' \
+  || { echo "FAIL V2.91: SAFE-001 did not report the unbounded curl with file:line: $b1"; failures=1; }
+b2="$(safe_bound_check "$ok" ci/guard.sh)"
+[ -z "$b2" ] || { echo "FAIL V2.91: SAFE-001 reports the bounded curl twin: $b2"; failures=1; }
+
+# M-54 (SAFE-001, workflow): a network step with no step timeout-minutes (violation); the twin declares it.
+printf '%s\n' 'name: promote' 'on: workflow_call' 'jobs:' '  deploy:' '    runs-on: ubuntu-latest' '    timeout-minutes: 30' \
+  '    steps:' '      - name: validate config' '        run: node -e "JSON.parse(process.env.CFG)"' \
+  '      - name: verify digest' '        run: sha256sum -c release.sha256' \
+  '      - name: parse release' '        run: jq -e ".version" release.json' \
+  '      - name: deploy' '        run: curl -X POST https://deploy.example.net/release' \
+  "$block" > "$bad/.github/workflows/promote.yml"
+printf '%s\n' 'name: promote' 'on: workflow_call' 'jobs:' '  deploy:' '    runs-on: ubuntu-latest' \
+  '    steps:' '      - name: deploy' '        timeout-minutes: 10' '        run: curl --max-time 60 -X POST https://deploy.example.net/release' > "$ok/.github/workflows/promote.yml"
+y1="$(safe_bound_check "$bad" .github/workflows/promote.yml)"
+printf '%s\n' "$y1" | grep -qF 'FAIL SAFE-001: .github/workflows/promote.yml:14: a workflow step calls the network with no step timeout-minutes' \
+  || { echo "FAIL V2.91: SAFE-001 did not report the network step with no step bound: $y1"; failures=1; }
+y2="$(safe_bound_check "$ok" .github/workflows/promote.yml)"
+[ -z "$y2" ] || { echo "FAIL V2.91: SAFE-001 reports the step with its own timeout-minutes: $y2"; failures=1; }
+
+# M-107 (SRP-001 over workflow YAML): four kinds in one workflow are listed; the twin has one kind.
+s3="$(srp_workflow_check "$bad" .github/workflows/promote.yml)"
+printf '%s\n' "$s3" | grep -qF 'FAIL SRP-001: .github/workflows/promote.yml:' \
+  || { echo "FAIL V2.91: SRP-001 did not list the workflow with several kinds: $s3"; failures=1; }
+printf '%s\n' "$s3" | grep -qF '4 kinds of responsibility' \
+  || { echo "FAIL V2.91: SRP-001 did not count the four kinds of the workflow: $s3"; failures=1; }
+s4="$(srp_workflow_check "$ok" .github/workflows/promote.yml)"
+[ -z "$s4" ] || { echo "FAIL V2.91: SRP-001 lists the single-kind workflow twin: $s4"; failures=1; }
+
+# M-107 (DEC-001 claim): a row that says "deploys only" for a listed workflow is contradicted (violation); the record for the single-kind workflow is clean.
+printf '%s\n' '# Decision record' '| Unit | Responsibility |' '| promote.yml | deploys only |' > "$bad/docs/decisions/promote.md"
+printf '%s\n' '# Decision record' '| Unit | Responsibility |' '| promote.yml | deploys only |' > "$ok/docs/decisions/promote.md"
+r1="$(srp_claim_check "$bad" docs/decisions/promote.md .github/workflows/promote.yml)"
+printf '%s\n' "$r1" | grep -qF 'FAIL DEC-001: docs/decisions/promote.md:3: .github/workflows/promote.yml is claimed to have one responsibility' \
+  || { echo "FAIL V2.91: the claim check did not contradict 'deploys only' with file:line: $r1"; failures=1; }
+r2="$(srp_claim_check "$ok" docs/decisions/promote.md .github/workflows/promote.yml)"
+[ -z "$r2" ] || { echo "FAIL V2.91: the claim check contradicts the single-kind workflow twin: $r2"; failures=1; }
+
+# M-105 (DUP-001 over shell and YAML): the block repeated in a changed file (violation); the twin repeats nothing.
+{ printf '%s\n' 'name: pipeline' 'on: push' 'jobs:' '  build:' '    steps:'; printf '%s\n' "$block"; } > "$bad/.github/workflows/pipeline.yml"
+{ printf '%s\n' 'name: pipeline' 'on: push' 'jobs:' '  build:' '    steps:' '      - name: build' '        run: npm run build'; } > "$ok/.github/workflows/pipeline.yml"
+d1="$(dup_block_check "$bad" .github/workflows/pipeline.yml -- .github/workflows/pipeline.yml .github/workflows/promote.yml)"
+printf '%s\n' "$d1" | grep -q '^FAIL DUP-001: .github/workflows/pipeline.yml:[0-9]*: a six-line block is repeated in 2 files' \
+  || { echo "FAIL V2.91: DUP-001 did not report the repeated block in the changed file: $d1"; failures=1; }
+d2="$(dup_block_check "$ok" .github/workflows/pipeline.yml -- .github/workflows/pipeline.yml .github/workflows/promote.yml)"
+printf '%s\n' "$d2" | grep -q '^FAIL' && { echo "FAIL V2.91: DUP-001 reports the twin with no repeated block: $d2"; failures=1; }
+
+# M-113 (GUARD-001): a guard with no test that names it (violation); the same guard with a test that names it passes.
+g1="$(guard_test_check "$bad" ci/guard.sh --)"
+printf '%s\n' "$g1" | grep -qF 'FAIL GUARD-001: ci/guard.sh:8: a guard in a non-TypeScript artifact has no versioned test that names it' \
+  || { echo "FAIL V2.91: GUARD-001 did not report the guard with no test: $g1"; failures=1; }
+printf '%s\n' '#!/bin/sh' 'sh ci/guard.sh' > "$ok/tests/guard.test.sh"
+g2="$(guard_test_check "$ok" ci/guard.sh -- tests/guard.test.sh)"
+[ -z "$g2" ] || { echo "FAIL V2.91: GUARD-001 reports the guard that a test names: $g2"; failures=1; }
+g3="$(guard_test_check "$ok" ci/guard.sh --)"
+printf '%s\n' "$g3" | grep -q '^FAIL GUARD-001' || { echo "FAIL V2.91: GUARD-001 passes the guard with no test in the control probe: $g3"; failures=1; }
+
+# F-F (EVIDENCE-001, tool coverage): a count of covered files with no tool output (violation); the twin cites --file-info.
+printf '%s\n' 'a.ts' 'b.ts' 'c.ts' 'd.ts' 'e.ts' 'f.ts' 'g.txt' > "$bad/evidence/new-files.txt"
+cp "$bad/evidence/new-files.txt" "$ok/evidence/new-files.txt"
+printf '%s\n' '# Report' 'Prettier covered the 7 files (`evidence/new-files.txt`) and passed.' > "$bad/docs-report.md"
+printf '%s\n' '# Report' 'Prettier covered the 7 files (`evidence/new-files.txt`, the output of `prettier --file-info`).' > "$ok/docs-report.md"
+e1="$(evidence_claim_check "$bad" docs-report.md)"
+printf '%s\n' "$e1" | grep -qF 'NOT VERIFIED EVIDENCE-001: docs-report.md:2: a tool is said to cover files, but no output of its own file resolution is cited' \
+  || { echo "FAIL V2.91: EVIDENCE-001 did not report the tool coverage claim with no tool output: $e1"; failures=1; }
+e2="$(evidence_claim_check "$ok" docs-report.md)"
+[ -z "$e2" ] || { echo "FAIL V2.91: EVIDENCE-001 reports the twin that cites the tool output: $e2"; failures=1; }
+
+echo "V2.91 behavioral fixtures: $fx (removed on exit)"
+[ "$failures" -eq 0 ] && echo "V2.91 PASS" || echo "V2.91 FAIL"
+[ "$failures" -eq 0 ]
+```

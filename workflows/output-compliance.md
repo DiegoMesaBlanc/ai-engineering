@@ -789,11 +789,20 @@ These detections enforce the delivery-safety rules of `AGENTS.md`:
   header block and passes an unrelated `timeout` that belongs to another statement.
   A call that is not closed within 40 lines is `NOT VERIFIED`, never clean. The
   retry loop is judged by the same test on each attempt.
-- **SAFE-002 (M-55).** `http://` is rejected for every non-local build. A string
-  literal that starts with `http://` in a changed source file is a `FAIL`, unless
-  its host is `localhost`, `127.0.0.1`, `10.0.2.2` (the Android emulator loopback),
-  or a documentation domain (`example.com`, `example.org`), and the literal is
-  named as a local development address.
+- **SAFE-002 (M-55).** `http://` is rejected for every non-local build. Every
+  `http://` and `https://` URL in a changed file, of any type (source, shell,
+  workflow YAML, configuration), is **parsed**, not substring-matched: the
+  authority is the text up to the first `/`, `?`, or `#`. A URL whose authority
+  carries userinfo (`user@host`, or `localhost:1@evil.com`) is a `FAIL`, because
+  the host the reader sees is not the host the request reaches. An `http://` URL is
+  accepted only when its authority is exactly `localhost`, `127.0.0.1`, or `10.0.2.2`
+  (the Android emulator loopback), with an optional port, or the documentation
+  domains `example.com` and `example.org`; any other host is a `FAIL`. An `https://`
+  URL with no host (`https://`, `https:///path`) is a `FAIL`. The scheme and host
+  are checked against the parsed authority, never against a substring of the line.
+  Limit: the detector reads one URL per match on a line and does not decode
+  percent-encoding; a host written in an encoded form is `NOT VERIFIED` for the
+  reviewer under Dimension 6.
 - **SAFE-003 (M-58).** No hardcoded environment endpoint and no fixed shared
   temporary path. A `localhost` or `127.0.0.1` URL in non-test TypeScript or
   JavaScript source is a `FAIL`, and a fixed temporary-directory path literal in a changed script is
@@ -841,14 +850,65 @@ safe_timeout_check() {
   done
 }
 
-# $1 = repository root; $2... = changed TypeScript, JavaScript, or shell files.
+# $1 = repository root; $2... = changed files of any type (source, shell, workflow YAML,
+# configuration), relative to it. Markdown is excluded: documentation is not a request.
+# M-55: the authority of each URL is parsed up to the first /, ?, or #; userinfo is a
+# FAIL; http:// is accepted only for an exact local or documentation host; https:// needs a host.
 safe_cleartext_check() {
   root="$1"; shift
   for f in "$@"; do
     case "$f" in *.md) continue ;; esac
-    grep -nE "[\"'\`]http://" "$root/$f" 2>/dev/null |
-      grep -vE 'localhost|127\.0\.0\.1|10\.0\.2\.2|example\.(com|org)' |
-      sed "s#^#FAIL SAFE-002: $f:#"
+    grep -noE "https?://[^\"'\` ),;<>]*" "$root/$f" 2>/dev/null |
+    while IFS= read -r hit; do
+      n="${hit%%:*}"; url="${hit#*:}"
+      scheme="${url%%://*}"; rest="${url#*://}"
+      auth="${rest%%[/?#]*}"
+      if [ -z "$auth" ]; then
+        # A bare scheme in a comparison (startsWith("https://")) is a scheme check, not an endpoint.
+        case "$(sed -n "${n}p" "$root/$f")" in *startsWith*|*endsWith*|*includes*|*indexOf*) continue ;; esac
+      fi
+      case "$auth" in
+        *@*) echo "FAIL SAFE-002: $f:$n: a URL with userinfo names a host the reader does not see (M-55)"; continue ;;
+      esac
+      case "$scheme" in
+        https) [ -n "$auth" ] || echo "FAIL SAFE-002: $f:$n: an https URL with no host (M-55)" ;;
+        http)
+          case "$auth" in
+            localhost|localhost:[0-9]*|127.0.0.1|127.0.0.1:[0-9]*|10.0.2.2|10.0.2.2:[0-9]*|example.com|example.com:[0-9]*|example.org|example.org:[0-9]*) ;;
+            *) echo "FAIL SAFE-002: $f:$n: cleartext http:// to a host that is not local (M-55)" ;;
+          esac ;;
+      esac
+    done
+  done
+}
+
+# $1 = repository root; $2... = changed shell or workflow YAML files, relative to it.
+# M-54 for shell and workflow steps: a curl or wget statement carries a time bound, and a
+# workflow step that calls the network declares its own timeout-minutes. A job timeout
+# bounds the job, not the step, so it does not satisfy this check.
+safe_bound_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in
+      *.sh|*.bash|*.zsh)
+        awk -v file="$f" '
+          /(^|[^A-Za-z0-9_.-])(curl|wget)([ \t]|$)/ && !/^[ \t]*#/ {
+            if ($0 ~ /--max-time|--connect-timeout|(^|[ \t])-m[ \t]|--timeout|(^|[ \t])-T[ \t]/) next
+            if ($0 ~ /\\[ \t]*$/) { printf "NOT VERIFIED SAFE-001: %s:%d: the time bound of this curl or wget statement continues on the next line; read that line (M-54)\n", file, NR; next }
+            printf "FAIL SAFE-001: %s:%d: curl or wget with no time bound (M-54)\n", file, NR
+          }' "$root/$f" ;;
+      *.yml|*.yaml)
+        awk -v file="$f" '
+          /^[ \t]*-[ \t]/ {
+            if (step && net && !tmo) printf "FAIL SAFE-001: %s:%d: a workflow step calls the network with no step timeout-minutes (M-54)\n", file, step
+            step = NR; net = 0; tmo = 0
+          }
+          /timeout-minutes:/ { tmo = 1 }
+          /(^|[^A-Za-z0-9_.-])(curl|wget|gh api|gh release|docker (pull|push))([ \t]|$)/ { net = 1 }
+          END {
+            if (step && net && !tmo) printf "FAIL SAFE-001: %s:%d: a workflow step calls the network with no step timeout-minutes (M-54)\n", file, step
+          }' "$root/$f" ;;
+    esac
   done
 }
 
@@ -1168,12 +1228,14 @@ project_safety_sweep() {
   decisions=$(printf '%s\n' "$files" | grep -E '(^|/)docs/decisions/.*\.md$')
   catalogs=$(printf '%s\n' "$files" | grep -E '\.md$' | grep -iE '(^|/)catalog[^/]*\.md$')
   contracts=$(printf '%s\n' "$files" | grep -E '\.md$' | grep -iE 'contract|contrato|api|error|docs/')
+  workflows=$(printf '%s\n' "$files" | grep -E '\.(ya?ml)$')
   migrations=$(printf '%s\n' "$files" | grep -E '(^|/)(migrations?|db/migrate)/')
   tests=$(printf '%s\n' "$files" | grep -E '(\.test\.|\.spec\.|(^|/)(tests?|__tests__)/)')
   echo "SWEEP scanned: $(printf '%s\n' "$src" | sed '/^$/d' | wc -l | tr -d ' ') source files, $(printf '%s\n' "$shells" | sed '/^$/d' | wc -l | tr -d ' ') shell scripts, $(printf '%s\n' "$manifests" | sed '/^$/d' | wc -l | tr -d ' ') build manifests"
   echo "SWEEP excluded: node_modules, dist, build, .next, coverage, .git, and declaration files (*.d.ts)"
   safe_timeout_check . $src
-  safe_cleartext_check . $src $shells
+  safe_cleartext_check . $src $shells $workflows
+  safe_bound_check . $shells $workflows
   safe_endpoint_check . $src $shells
   url_scheme_check . $src
   id_encoding_check . $src
@@ -1219,7 +1281,11 @@ project_safety_sweep() {
   destructive_path_check . $src
   parse_dereference_check . $src
   srp_unit_check . $src
+  srp_workflow_check . $workflows
+  for d in $decisions; do srp_claim_check . "$d" $src $workflows; done
   dup_helper_check . -- $src
+  dup_block_check . -- $shells $workflows
+  guard_test_check . $shells $workflows -- $tests
   approval_citation_check . $mds
   [ -n "$catalogs" ] && echo "NOT VERIFIED TRACE-001: a catalog is tracked; run trace_check . <catalog> <prefix> $mds with the catalog's requirement prefix" ||
     echo "NOT VERIFIED TRACE-001: no catalog is tracked, so no document-catalog link was checked"
@@ -2433,11 +2499,16 @@ evidence_claim_check() {
             if (match(win, /`[A-Za-z0-9_.\/@-]+`/)) p = substr(win, RSTART + 1, RLENGTH - 2)
             print "CNT\t" i "\t" cnt "\t" p
           }
+          if (lo ~ /(cubri|cubre|covered|covers|covera|checked by|formatted by|linted by)/ && lo ~ /prettier|eslint|ruff|checkstyle|sqlfluff|formatter|linter|formateador/) {
+            ev = (win ~ /`[^`]*(--file-info|--list-different|--show-files|--debug-check|--print-config|--list-files)[^`]*`/)
+            if (!ev) print "TOOL\t" i
+          }
         }
       }' "$root/$f" |
     while IFS="$(printf '\t')" read -r tag n cnt p; do
       case "$tag" in
         TEMP) echo "NOT VERIFIED EVIDENCE-001: $f:$n: a temporal claim (run window, mtime) cites no timestamp or command output; cite the stat output and the window bounds (M-109)" ;;
+        TOOL) echo "NOT VERIFIED EVIDENCE-001: $f:$n: a tool is said to cover files, but no output of its own file resolution is cited (for example prettier --file-info or ruff check --show-files); a file the tool ignores is not covered, so a count of covered files is not evidence of coverage (M-109)" ;;
         CNT)
           if [ -z "$p" ] || [ ! -f "$root/$p" ]; then
             echo "NOT VERIFIED EVIDENCE-001: $f:$n: the count $cnt cites no enumerated file in the repository; cite the list or the command that produces it (M-109)"
@@ -3149,6 +3220,46 @@ srp_record_check() {
       echo "FAIL DEC-001: $record:1: SRP-001 lists $f with several responsibilities and the record names no row for it (M-107)"
   done
 }
+
+# $1 = repository root; $2... = changed workflow YAML files, relative to it.
+# M-107 for a workflow file: a file that combines three or more kinds of responsibility
+# is listed, as a source unit is. The kinds are read from its steps, not from its name.
+srp_workflow_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.yml|*.yaml) ;; *) continue ;; esac
+    awk -v file="$f" '
+      function kind(name, re) { if (!(name in seen) && $0 ~ re) seen[name] = NR }
+      {
+        kind("contract validation", "validate|jq -e|node -e|python3? -c")
+        kind("digest verification", "sha256|digest|checksum")
+        kind("deploy or publish", "deploy|kubectl|gh release|publish|upload")
+        kind("release record parsing", "release\\.json|JSON\\.parse|jq ")
+        kind("orchestration", "uses: *\\./|uses: *[^ ]*/\\.github/workflows/")
+      }
+      END {
+        n = 0; first = 0; list = ""
+        for (k in seen) { n++; list = list k " (line " seen[k] "); "; if (first == 0 || seen[k] < first) first = seen[k] }
+        if (n >= 3) printf "FAIL SRP-001: %s:%d: %d kinds of responsibility in one workflow: %s(M-107)\n", file, first, n, list
+      }' "$root/$f"
+  done
+}
+
+# $1 = repository root; $2 = decision record, relative to it; $3... = changed files.
+# M-107 and DEC-001: a record row that says a listed unit has one responsibility ("only",
+# "solo", "single") is contradicted by SRP-001 when the unit is listed. The row's claim
+# is traced to the code, never accepted from the row itself.
+srp_claim_check() {
+  root="$1"; record="$2"; shift 2
+  listed="$( { srp_unit_check "$root" "$@"; srp_workflow_check "$root" "$@"; } |
+    sed -n 's/^FAIL SRP-001: \([^:]*\):.*/\1/p' | sort -u)"
+  for f in $listed; do
+    b="$(basename "$f")"
+    grep -nF -- "$b" "$root/$record" 2>/dev/null |
+      grep -iE '(^|[^a-z])(only|solo|single)([^a-z]|$)' |
+      sed "s#^\([0-9]*\):#FAIL DEC-001: $record:\1: $f is claimed to have one responsibility and SRP-001 lists it with several kinds (M-107): #"
+  done
+}
 ```
 
 ### DUP-001 — A helper repeated in two units is promoted, not copied
@@ -3210,6 +3321,97 @@ dup_helper_check() {
       }
     }' "$work/blocks.tsv"
   rm -rf "$work"
+}
+```
+
+### DUP-001 (shell and workflow YAML) — A block repeated in two files is promoted, not copied
+
+M-105 applies to shell and workflow YAML as it does to source. The text-block detector of
+`dup_helper_check` reads TypeScript and JavaScript declarations only, so a loop copied into
+two workflow files was never read. This detector normalizes each significant line (trimmed,
+blank and comment lines dropped, tabs replaced), takes every window of six consecutive
+significant lines of at least 120 characters, and groups the windows that appear in two or
+more files. A copy in a changed file is a `FAIL` at its first line; a group with no changed
+copy is a `FINDING`. Limit: it compares text, so a repeated block with renamed variables is
+not matched; the reviewer compares the candidates the detector lists with the base revision.
+
+```sh
+# $1 = repository root; $2... = changed shell or workflow files, then -- and every such file of the tree.
+dup_block_check() {
+  root="$1"; shift
+  changed=""
+  while [ "$#" -gt 0 ] && [ "$1" != "--" ]; do changed="$changed $1"; shift; done
+  [ "$#" -gt 0 ] && shift
+  work="$(mktemp -d)" || return 1
+  for f in "$@"; do
+    case "$f" in *.sh|*.bash|*.zsh|*.yml|*.yaml) ;; *) continue ;; esac
+    awk -v file="$f" '
+      {
+        line = $0; gsub(/\t/, " ", line); sub(/^ +/, "", line); sub(/ +$/, "", line)
+      }
+      line == "" || line ~ /^#/ { next }
+      { n++; L[n] = line; N[n] = NR }
+      END {
+        for (i = 1; i + 5 <= n; i++) {
+          key = ""
+          for (k = 0; k < 6; k++) key = key "\034" L[i + k]
+          if (length(key) >= 120) print N[i] "\t" file "\t" key
+        }
+      }' "$root/$f" >> "$work/blocks.tsv"
+  done
+  [ -f "$work/blocks.tsv" ] || { rm -rf "$work"; return 0; }
+  awk -F '\t' -v changed="$changed" '
+    BEGIN { n = split(changed, arr, " "); for (i = 1; i <= n; i++) isch[arr[i]] = 1 }
+    {
+      if (!(($3 SUBSEP $2) in seen)) { seen[$3 SUBSEP $2] = 1; units[$3]++ }
+      row[NR] = $0
+    }
+    END {
+      for (r = 1; r <= NR; r++) {
+        split(row[r], c, "\t")
+        if (units[c[3]] < 2) continue
+        if (c[2] in isch)
+          printf "FAIL DUP-001: %s:%s: a six-line block is repeated in %d files; promote it to the shared unit that owns it (M-105)\n", c[2], c[1], units[c[3]]
+        else
+          printf "FINDING DUP-001: %s:%s: a six-line block is repeated in %d files, none of them changed; recorded, not blocking (M-105)\n", c[2], c[1], units[c[3]]
+      }
+    }' "$work/blocks.tsv"
+  rm -rf "$work"
+}
+```
+
+### GUARD-001 — A guard in a shell or workflow artifact has a versioned test (M-113)
+
+M-113: a guard in a non-TypeScript artifact (a shell script, a workflow step, a
+configuration) is behavior, and the change ships a versioned test that runs it with a
+violating input and a compliant input. The external audit found a cleartext guard in a
+workflow whose only evidence was a log of one-off runs; the log did not include the
+userinfo case, so the bypass passed unseen. The detector finds each changed artifact that
+contains a guard (an `exit` with a non-zero status, an `exit $`, a `::error` annotation, or
+`|| exit`) and requires a tracked test file that names the artifact. The test's execution is
+read by the reviewer: a test that names the artifact and never runs it is not a pass, and a
+log is never accepted in place of a test. Limit: the detector reads the name, not the
+assertion; the twin and the violating input are verified in the behavioral part of
+`workflows/system-validation.md` V2.91.
+
+```sh
+# $1 = repository root; $2... = changed shell or workflow files, then -- and the tracked test files.
+guard_test_check() {
+  root="$1"; shift
+  changed=""
+  while [ "$#" -gt 0 ] && [ "$1" != "--" ]; do changed="$changed $1"; shift; done
+  [ "$#" -gt 0 ] && shift
+  for f in $changed; do
+    case "$f" in *.sh|*.bash|*.zsh|*.yml|*.yaml) ;; *) continue ;; esac
+    g="$(grep -nE 'exit [1-9]|exit \$|::error|\|\| *exit' "$root/$f" 2>/dev/null | head -1)"
+    [ -n "$g" ] || continue
+    b="$(basename "$f")"; covered=0
+    for t in "$@"; do
+      [ -f "$root/$t" ] || continue
+      grep -qF -- "$b" "$root/$t" && { covered=1; break; }
+    done
+    [ "$covered" = 1 ] || echo "FAIL GUARD-001: $f:${g%%:*}: a guard in a non-TypeScript artifact has no versioned test that names it (M-113)"
+  done
 }
 ```
 
@@ -3399,7 +3601,8 @@ report_matrix_check() {
 | `TEST-001`, `TEST-002` | created and modified test files | a test file is created or modified |
 | `TEST-003` | test and test-support files, change set and sweep | a test or test-support file is created or modified |
 | `DEAD-EXPORT-001` | modules that add an export | an export is added |
-| `SAFE-001`, `SAFE-002`, `SAFE-003` | changed files | outbound calls, endpoints, or temporary paths change |
+| `SAFE-001`, `SAFE-002`, `SAFE-003` | changed files of any type, including shell scripts and workflow YAML (`safe_cleartext_check`, `safe_bound_check`) | outbound calls, URLs, endpoints, or temporary paths change in any file type (M-54, M-55, M-58) |
+| `GUARD-001` | changed shell and workflow YAML files, against the tracked test files | a changed shell or workflow file contains a guard (M-113) |
 | `SAFE-004`, `SAFE-005`, `SAFE-006`, `SAFE-007`, `AUTH-001` | changed files | URLs, cache, credentials, backup, or identity change |
 | `DEP-001` | manifest and lockfile diff | a manifest or lockfile changes |
 | `SAFE-008`, `SAFE-009` | changed files | cross-origin, development tools, uploads, or file writes change |
@@ -3424,7 +3627,7 @@ report_matrix_check() {
 | `SCOPE-001` | change set, tracked and untracked, against the approved manifest | any change set exists; a missing manifest is a `FAIL` (M-90, M-91) |
 | `SCOPE-002` | change set diff against the approved manifest | a source, configuration, or test file is modified |
 | `APPROVAL-001` | reports, decision records, checkpoints, and proposals in the change set, and every Markdown document of the sweep (M-92, M-111) | such a file claims a human approval (M-92) |
-| `EVIDENCE-001` | documents in the change set and the sweep | a document claims a time window or counts a set (M-109) |
+| `EVIDENCE-001` | documents in the change set and the sweep | a document claims a time window, counts a set, or says a tool covers files without the tool's file resolution (M-109) |
 | `PRECOND-001` | documents in the change set and the sweep | a document declares an initial state or a precondition (M-108) |
 | `CI-001`, `NODE-001`, `DEP-RANGE-001` | the whole project, from the health probe | the health probe runs (M-112) |
 | `TEARDOWN-001` | the task checkpoint in the handoff directory | a commit proposal is prepared (M-93) |
@@ -3442,8 +3645,8 @@ report_matrix_check() {
 | `DEC-002` | decision records and contract documents, every line with a citation | a record or contract document is in the change set (R-136, R-145) |
 | `DEL-001` | source files in the change set and the sweep | a source file removes a path recursively or overwrites a supplied path (M-103) |
 | `PARSE-001` | source files in the change set and the sweep | a source file assigns the result of `JSON.parse(` (M-104) |
-| `SRP-001` | source files in the change set and the sweep; `srp_record_check` for each decision record | a source file contains three or more kinds of responsibility, or a decision record names a listed unit (M-107) |
-| `DUP-001` | source files in the change set against the source tree | a changed file declares a helper of three or more lines that another unit also declares (M-105) |
+| `SRP-001` | source files and workflow YAML in the change set and the sweep; `srp_record_check` and `srp_claim_check` for each decision record | a source file or workflow contains three or more kinds of responsibility, or a decision record names a listed unit or claims one responsibility for it (M-107) |
+| `DUP-001` | source files in the change set against the source tree; `dup_block_check` over shell and workflow YAML | a changed file declares a helper of three or more lines that another unit also declares, or a changed shell or workflow file repeats a six-line block (M-105) |
 | `TRACE-001` | catalog and documents in the change set; `trace_check` takes the catalog and its prefix | a document cites a requirement identifier of a catalog, or a catalog lists a document (M-106) |
 | `REPORT-001` | every delivered audit, review, or gate report that carries a verdict matrix | a report with a dimension matrix is delivered (M-80: a verdict matrix is consistent with its own rules) |
 | `CHECK-001`, `CHECK-002` | phase reports | the work reports phases or checklists |

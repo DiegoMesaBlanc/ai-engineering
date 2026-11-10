@@ -168,7 +168,11 @@ dimension. A criterion is never presented as a framework standard.
   candidates are listed by `SRP-001` in `workflows/output-compliance.md` with their
   `file:line`, the reviewer confirms each listed unit, and the decision record names
   every listed unit (`srp_record_check`). A listed unit the record does not name is a
-  `FAIL` of this dimension.
+  `FAIL` of this dimension. A record row that says a listed unit has one responsibility
+  (`only`, `solo`, `single`) is contradicted by the listing and is a `FAIL` of this
+  dimension, whatever the row says (`srp_claim_check`, M-107): the listing reads workflow
+  YAML as well as source, so a workflow that validates, digests, parses, and deploys is not
+  described as "deploys only".
 - A helper repeated in two or more units is a duplicate (M-105): a change that
   introduces a copy of a helper that another unit already declares promotes the helper
   to the shared unit that owns it and imports it from there. `DUP-001` reports each copy with its
@@ -376,7 +380,10 @@ dimension. A criterion is never presented as a framework standard.
   cleartext (M-55). A base URL of an endpoint that receives a credential is
   validated by its scheme, and `http://` is rejected for every non-local build;
   a build that accepts it is a `FAIL` of this Dimension at the severity of the
-  credential exposure.
+  credential exposure. The validation parses the URL: a guard that matches a substring
+  such as `localhost` accepts `http://localhost:1@evil.com`, whose host is `evil.com`, so
+  a URL with userinfo is a `FAIL` and an `https://` URL with no host is a `FAIL` (`SAFE-002`,
+  M-55). A guard in a workflow or shell file is read too, and its test is Dimension 7 (M-113).
 - Client-side cached data is partitioned by the identity that owns it and
   cleared when that identity signs out (M-56). A cache key without the user,
   tenant, or account is a `FAIL` of this Dimension when the device can hold data
@@ -484,6 +491,14 @@ dimension. A criterion is never presented as a framework standard.
   branch: safe-area insets, orientation or viewport-height branches (for example
   a compact layout below a height threshold), and keyboard avoidance. A test
   helper that injects a value without asserting its effect is not coverage.
+
+- A guard in a shell script, a workflow step, or a configuration file is behavior, and the change ships a versioned test that runs it (M-113).
+  The change ships a versioned test that runs the guard with a violating input and a
+  compliant input; the cases the guard must reject (for a URL: userinfo, an empty host,
+  a prefix that matches a local name) are in that test. A log of one-off runs is not a
+  test and is not evidence. `GUARD-001` in `workflows/output-compliance.md` lists each
+  guard that no tracked test names, with its `file:line`; that finding is `FAIL` of this
+  dimension, and a `PASS` cites the test file and the command that ran it.
 
 ### 8. Performance
 

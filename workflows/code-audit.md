@@ -306,7 +306,7 @@ For each applicable dimension:
 
 1. **Selection record check**
     - Run `approval_citation_check` (`APPROVAL-001`, M-92) over every decision note in the change set and the sweep: an approval the note attributes to the user is kept only with its verbatim quote, and an uncited one is `NOT VERIFIED` for this dimension.
-    - Run `srp_unit_check` (`SRP-001`, M-107) over the changed source files, then `srp_record_check` over the decision note for each file it lists: a listed unit the note does not name is a `FAIL` of this dimension, and the DIP row must cite the composition root with `file:line` (`DEC-001`).
+    - Run `srp_unit_check` and `srp_workflow_check` (`SRP-001`, M-107) over the changed source and workflow files, then `srp_record_check` and `srp_claim_check` (a row claiming one responsibility for a listed unit is a `FAIL`) over the decision note for each file it lists: a listed unit the note does not name is a `FAIL` of this dimension, and the DIP row must cite the composition root with `file:line` (`DEC-001`).
     - Compare the implemented patterns against the decision note in the change set (see the Allowed artifact rule of Independent Mode), which records the selection made from `references/design-patterns.md`.
     - A decision note that is absent from the change set is `NOT VERIFIED` for this dimension, not a PASS, and the reason is recorded.
     - A change that introduces or changes a pattern without a selection record is a finding: `PATTERN_UNJUSTIFIED`.
