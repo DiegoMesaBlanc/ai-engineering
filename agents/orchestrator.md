@@ -366,7 +366,10 @@ Every task shows a phase plan before the work starts, including a one-phase
 plan, and carries a live checklist during each phase: it leads every update,
 is refreshed at every step transition rather than only at the end, and is
 mirrored to the client's native task surface when one exists, before each
-mutating step. A new task starts a new list: it is rewritten from its own
+mutating step. The mirror is rewritten at the start of the phase and at the
+start and the end of each stage (subfase), with every phase, its stages, and the
+steps of the stage in progress, so the panel never shows only the phases or
+only the steps. A new task starts a new list: it is rewritten from its own
 phase plan, so nothing from a previous task remains in it, finished or not;
 the previous task's state is reported and preserved by its checkpoint instead.
 When a phase or step is delegated to a subagent,

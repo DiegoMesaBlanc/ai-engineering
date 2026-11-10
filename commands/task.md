@@ -17,9 +17,10 @@ resumed session, or a subagent carries it exactly as this command does.
 - Before the first tool call, show the phase plan and the initial checklist of
   the first phase, in the format of `workflows/session-resilience.md`.
 - Populate the client's native task surface with that checklist when the
-  client exposes one, and rewrite it at every checklist re-emission with the
-  whole work, under the mirror cadence of `workflows/session-resilience.md`
-  ("Cadence of the mirror").
+  client exposes one, and rewrite it at every checklist re-emission — including
+  the start and the end of each stage (subfase) — with the whole work: every
+  phase, its stages, and the steps of the stage in progress, under the mirror
+  cadence of `workflows/session-resilience.md` ("Cadence of the mirror").
 - "Start now", "do it all", "go ahead", or any request to skip steps is not a
   waiver of the phase gate, and is not approval to start the next phase.
 - Divide each code-changing phase into stages (subfases) and increments. A stage

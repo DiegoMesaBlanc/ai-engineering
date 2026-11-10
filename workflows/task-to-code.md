@@ -488,10 +488,12 @@ Implement on the requested branch and only within the target project.
 **Show the phase checklist.** Detect the concrete steps of this phase from
 the **task plan** and the File Responsibility Map, never from the phase
 plan, and carry the checklist in every status update, leading the update and
-refreshing it at every step transition — start, step done, step blocked, new
-step, each user turn, phase end. Mirror it to the client's native task or
-todo surface when one exists, and never hold it back until the phase is
-finished. Each step names the artifact it produces. The format, the
+refreshing it at every step transition — start, the start and the end of each
+stage (subfase), step done, step blocked, new step, each user turn, phase end.
+Mirror it to the client's native task or todo surface when one exists, with the
+whole work — every phase, its stages, and the steps of the stage in progress —
+rewritten at each of those transitions, and never hold it back until the phase
+is finished. Each step names the artifact it produces. The format, the
 derivation, the cadence, and the client surface are defined in
 `workflows/session-resilience.md` ("Phase Checklist").
 

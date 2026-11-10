@@ -1013,6 +1013,7 @@ Return:
 - V2.82 project-wide error model, error codes in both directions, entry-point tests, validation order, read transactions, and retry budgets (M-54, M-77, M-81 to M-84):
 - V2.83 structural gate in the commit workflow, pre-existing test findings, consumer groups, citations outside tables, index coverage, permission grants, scope of commits, performance metrics, and the teardown in the plan (M-08, M-47, M-78, M-85 to M-89):
 - V2.84 untracked scope and missing manifest, analysis-only writes, approval quotes, teardown gate, and verdict-status enumeration (M-80, M-90 to M-93):
+- V2.85 native task mirror at stage level: stage start and end rewrites, the `Stage:` marker, and the panel completeness check (M-35, R-156):
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -6173,5 +6174,136 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v284.XXXXXX")"
 echo "V2.84 probe: fixtures in $fx were checked and are removed"
 rm -rf "$fx"
 
+exit "$failures"
+```
+
+## V2.85 Regression — Native Task Mirror at Stage Level
+
+Verify that the native task mirror follows the stage (subfase) level as well as
+the phase level, so the panel shows where in the phase the work is:
+
+- `AGENTS.md` states that the checklist and its mirror are re-emitted at the
+  start and at the end of each stage, and that the rewrite carries the stages of
+  each phase with their state and the steps of the stage in progress.
+- `workflows/session-resilience.md` carries the stage rows of the cadence table,
+  the `Stage:` marker that tells a stage line from a step line, and the rule that
+  a rewrite never drops a phase or a stage.
+- `workflows/task-to-code.md`, `agents/orchestrator.md`, and `commands/task.md`
+  name the stage start and end in their operational instruction.
+- `references/mandatory-rules.md` carries the stage transitions in M-35 and
+  `references/system-workflow-regression-matrix.md` includes R-156.
+- Proof: the panel check below accepts a compliant two-stage panel and rejects a
+  phase-only panel, a panel that keeps only the last stage, a stage-less step
+  mixed into a staged phase, and a stage in progress with no steps, each with the
+  `file:line` of the defect. The check verifies the panel's content only; that the
+  rewrite happens at each transition is a limit of the client surface, reported
+  in the audit, not proven by this block.
+
+```sh
+failures=0
+has() { tr '\n' ' ' < "$1" | tr -s ' ' | grep -qF "$2"; }
+has AGENTS.md "the start and the end of each stage (subfase)" || { echo "FAIL V2.85: AGENTS.md has no stage transition"; failures=1; }
+has AGENTS.md "the stages of the phase with their state" || { echo "FAIL V2.85: AGENTS.md has no stage state in the rewrite"; failures=1; }
+has workflows/session-resilience.md "A stage (subfase) starts" || { echo "FAIL V2.85: no stage start row in the cadence table"; failures=1; }
+has workflows/session-resilience.md "A stage (subfase) ends" || { echo "FAIL V2.85: no stage end row in the cadence table"; failures=1; }
+has workflows/session-resilience.md "the \`Stage:\` word marks the line as a stage" || { echo "FAIL V2.85: no Stage: marker rule"; failures=1; }
+has workflows/session-resilience.md "step never uses a phase label" || { echo "FAIL V2.85: no ban on phase labels as step prefixes"; failures=1; }
+has workflows/task-to-code.md "the start and the end of each stage" || { echo "FAIL V2.85: no stage transition in task-to-code.md"; failures=1; }
+has agents/orchestrator.md "the start and the end of each stage" || { echo "FAIL V2.85: no stage transition in orchestrator.md"; failures=1; }
+has commands/task.md "the start and the end of each stage" || { echo "FAIL V2.85: no stage transition in commands/task.md"; failures=1; }
+grep -q "^| M-35 |.*the start and the end of each stage" references/mandatory-rules.md || { echo "FAIL V2.85: M-35 does not carry the stage transition"; failures=1; }
+grep -q "^| R-156 |" references/system-workflow-regression-matrix.md || { echo "FAIL V2.85: no R-156"; failures=1; }
+
+# Panel check. One item per line: "<status> <content>". A phase is "N. name", a
+# stage is "N.S Stage: name", a step of a stage is "N.S.K artifact", and a step
+# of a phase without stages is "N.K artifact". Prints FAIL lines with file:line.
+panel_check() {
+  awk '
+  function fail(msg) { print "FAIL V2.85: " FILENAME ":" NR ": " msg; bad = 1 }
+  {
+    st = $1
+    c = $0
+    sub(/^[^ ]+ /, "", c)
+    if (st != "pending" && st != "in_progress" && st != "completed") fail("unknown status " st)
+    if (c ~ /^[0-9]+\. /) {
+      p = c; sub(/\..*/, "", p)
+      phase[p] = 1; pstat[p] = st; plines[p] = NR
+      next
+    }
+    if (c ~ /^[0-9]+\.[0-9]+ Stage: /) {
+      split(c, a, " "); split(a[1], n, "."); p = n[1]; s = n[2]
+      stage[p "." s] = 1; sstat[p "." s] = st; sline[p "." s] = NR
+      hasStage[p] = 1; haschild[p] = 1
+      if (s + 0 > maxs[p] + 0) maxs[p] = s + 0
+      next
+    }
+    if (c ~ /^[0-9]+\.[0-9]+\.[0-9]+ /) {
+      split(c, a, " "); split(a[1], n, ".")
+      p = n[1]; s = n[2]
+      if (!((p "." s) in stage)) fail("step " a[1] " has no stage line " p "." s)
+      haschild[p "." s] = 1; haschild[p] = 1
+      next
+    }
+    if (c ~ /^[0-9]+\.[0-9]+ /) {
+      split(c, a, " "); split(a[1], n, ".")
+      plain[n[1]] = 1; haschild[n[1]] = 1
+      next
+    }
+    fail("item is neither a phase, a stage, nor a step: " c)
+  }
+  END {
+    maxp = 0
+    for (p in phase) if (p + 0 > maxp) maxp = p + 0
+    for (i = 1; i <= maxp; i++) if (!(i in phase)) { print "FAIL V2.85: " FILENAME ": phase " i " is missing"; bad = 1 }
+    for (p in phase) {
+      if (pstat[p] == "in_progress" && !haschild[p]) { print "FAIL V2.85: " FILENAME ":" plines[p] ": phase " p " in progress with no stage or step"; bad = 1 }
+      if (hasStage[p] && plain[p]) { print "FAIL V2.85: " FILENAME ": phase " p " mixes stage-less steps with stages"; bad = 1 }
+    }
+    for (p in maxs) for (i = 1; i <= maxs[p]; i++) if (!((p "." i) in stage)) { print "FAIL V2.85: " FILENAME ": missing stage " p "." i " of phase " p; bad = 1 }
+    for (k in sstat) if (sstat[k] == "in_progress" && !haschild[k]) { print "FAIL V2.85: " FILENAME ":" sline[k] ": stage " k " in progress with no steps"; bad = 1 }
+    exit bad
+  }' "$1"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v285.XXXXXX")"
+printf '%s\n' \
+  'completed 1. Detect and analyze the repository' \
+  'completed 1.1 Inventory the fixture' \
+  'completed 1.2 Locate the orders table definition' \
+  'completed 2. Align requirements and approach' \
+  'completed 2.1 Stage: partitioning rationale' \
+  'completed 2.1.1 Strategy comparison for orders' \
+  'in_progress 2.2 Stage: migration plan' \
+  'in_progress 2.2.1 Online reversible migration steps' \
+  'pending 2.2.2 Scope manifest for orders' \
+  'in_progress 3. Implement schema and queries' \
+  'pending 3.1 Stage: schema' \
+  'pending 3.1.1 orders partition DDL' \
+  'pending 4. Review and validate' \
+  'pending 4.1 Run the format and lint gates' > "$fx/ok.txt"
+grep -v '^completed 2\.1' "$fx/ok.txt" | grep -v '^pending 2\.2\.2' > "$fx/last-stage-only.txt"
+grep -E '^[a-z_]+ [0-9]+\. ' "$fx/ok.txt" > "$fx/phase-only.txt"
+sed 's/^pending 3\.1 Stage/in_progress 3.1 Stage/' "$fx/ok.txt" | grep -v '^pending 3\.1\.1' > "$fx/stage-no-steps.txt"
+cp "$fx/ok.txt" "$fx/mixed.txt"; printf '%s\n' 'pending 3.2 Write the rollback notes' >> "$fx/mixed.txt"
+
+(
+  [ -z "$(panel_check "$fx/ok.txt")" ] || { echo "FAIL V2.85: the compliant panel was rejected: $(panel_check "$fx/ok.txt")"; exit 1; }
+  p1="$(panel_check "$fx/phase-only.txt")"
+  printf '%s\n' "$p1" | grep -qF 'phase 3 in progress with no stage or step' \
+    || { echo "FAIL V2.85: a phase-only panel was not detected: $p1"; exit 1; }
+  p2="$(panel_check "$fx/last-stage-only.txt")"
+  printf '%s\n' "$p2" | grep -qF 'missing stage 2.1 of phase 2' \
+    || { echo "FAIL V2.85: a panel without the first stage was not detected: $p2"; exit 1; }
+  p3="$(panel_check "$fx/mixed.txt")"
+  printf '%s\n' "$p3" | grep -qF 'phase 3 mixes stage-less steps with stages' \
+    || { echo "FAIL V2.85: a stage-less step in a staged phase was not detected: $p3"; exit 1; }
+  p4="$(panel_check "$fx/stage-no-steps.txt")"
+  printf '%s\n' "$p4" | grep -qF 'stage 3.1 in progress with no steps' \
+    || { echo "FAIL V2.85: a stage in progress without steps was not detected: $p4"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.85 probe: fixtures in $fx were checked and are removed"
+rm -rf "$fx"
 exit "$failures"
 ```

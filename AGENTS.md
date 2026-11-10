@@ -458,9 +458,10 @@ names is a defect.
 
 The checklist is **live, not a closing summary.** It leads the update that
 reports a change, and it is re-emitted at every step transition: the start
-of the phase, a step completed, a step blocked, a newly discovered step,
-each user turn while the phase is open, and the end of the phase. Holding
-it back until the task or the phase is finished is a defect.
+of the phase, the start and the end of each stage (subfase), a step
+completed, a step blocked, a newly discovered step, each user turn while the
+phase is open, and the end of the phase. Holding it back until the task or the
+phase is finished is a defect.
 
 **A new task starts a new list.** When a new task begins, the checklist and
 its native mirror are rewritten in full from that task's own phase plan,
@@ -476,15 +477,18 @@ When the client exposes a native task or todo surface — for example a
 `todowrite` tool that renders a persistent todo panel — the mirror is
 **mandatory, not optional**: it is rewritten at **every checklist
 re-emission**, the same moments at which the conversation re-emits the
-checklist — the start of the phase, a step about to change the repository,
-a step completed, blocked, or newly discovered, each user turn while the
-phase is open, and the end of the phase — and never only before each step
-that changes the repository or only at the phase boundary. A turn that
-only re-emits the checklist, with no repository change, is a mirror write.
-Every rewrite carries the **whole** work — every phase of the plan with its
-state, and the steps of the phase in progress under it — so a rewrite for a
-new checklist updates the steps of the phase in progress and never replaces
-the phase list with the checklist. The copy in the conversation remains
+checklist — the start of the phase, the start and the end of each stage
+(subfase), a step about to change the repository, a step completed, blocked,
+or newly discovered, each user turn while the phase is open, and the end of
+the phase — and never only before each step that changes the repository or
+only at the phase or stage boundary. A turn that only re-emits the checklist,
+with no repository change, is a mirror write. Every rewrite carries the
+**whole** work — every phase of the plan with its state, the stages of the
+phase with their state, and the steps of the stage in progress under them —
+so a rewrite for a new checklist updates the stage and the steps in progress
+and never replaces the phase list with the checklist. Each item is numbered
+by its phase, its stage, and its step, so the user reads the position of the
+work in the panel without reading the conversation. The copy in the conversation remains
 the authority, and a surface that exists but is never populated is a defect.
 A panel that renders only the client's own state, such as the list of
 configured MCP connections, is not a writable surface: the agent never claims

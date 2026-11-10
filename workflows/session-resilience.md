@@ -538,6 +538,8 @@ re-emitted at every step transition:
 | Moment | What is emitted |
 |---|---|
 | The phase starts | The full derived checklist, every step pending |
+| A stage (subfase) starts | The mirror rewritten with the stage in progress and its steps pending, under its phase |
+| A stage (subfase) ends | The mirror rewritten with the stage marked `completed` and its steps marked, before the next stage starts |
 | A step is about to change the repository | The checklist, so the panel shows the step in progress before it runs |
 | A step is completed | The checklist with `[ x ]` on that step, leading the update |
 | A step is blocked or fails | The checklist with `[ ! ]` and the reason, leading the update |
@@ -637,52 +639,64 @@ the top-level items. It is one flat list, populated in this order:
 
 1. every **phase** of the phase plan, with its state (`pending`, `in_progress`,
    `completed`), so the position in the task is always visible;
-2. under the phase in progress, every **step** of its checklist, each as its
-   own item prefixed with the phase number (for example `2.3 Wiring the
-   session endpoint`), with the same state as the conversation;
+2. under each phase, its **stages** (subfases) when the phase has them, each
+   with its state and its expected verdict in the phase plan. Under the stage
+   in progress, every **step** of its checklist, as its own item numbered by
+   its phase and stage (for example `2.1.3 Wiring the session endpoint`), with
+   the same state as the conversation. A phase without stages lists its steps
+   directly under it, numbered `N.M` (for example `2.3 Wiring the session
+   endpoint`);
 3. a step discovered later is inserted in execution order, and a completed
-   phase keeps its completed steps in the list, so nothing that was done in
-   this task disappears from the panel. A new task replaces the whole list, per
-   **Task boundary and reset** above.
+   stage or phase keeps its completed steps in the list, so nothing that was
+   done in this task disappears from the panel. A new task replaces the whole
+   list, per **Task boundary and reset** above.
 
-A list that carries only phases, or only the steps of the last phase, is an
-incomplete mirror and a defect. The mirror is rewritten in full on every
-call (the surface replaces its state), so each call must contain the complete
-list, not a delta.
+A list that carries only phases, only the stages, or only the steps of the last
+stage is an incomplete mirror and a defect. The mirror is rewritten in full on
+every call (the surface replaces its state), so each call must contain the
+complete list, not a delta.
 
 **Encoding in the flat list.** The `todowrite` surface accepts only
 `content` and `status` per item, with no parent field. The hierarchy is
 therefore encoded in the text, and it is fixed:
 
 - a phase is `N. <phase name>`, for example `2. Implement`;
-- a step is `N.M <artifact it produces>`, for example `2.3 session endpoint
-  in src/auth/session.ts`, always under its phase and always with the number
-  of its phase;
-- the status of a phase or step is the status of the list item: `pending`,
-  `in_progress`, or `completed`; a blocked step is `in_progress` with the
-  reason written after the artifact, and the conversation shows `[ ! ]`;
-- a step never uses a phase label such as `F1:` or `Phase 1 check`; the
-  number pair `N.M` is what the user reads to follow the work.
+- a stage (subfase) is `N.S Stage: <stage name>`, for example `2.1 Stage:
+  billing contracts`, always under its phase and always with the number of its
+  phase; the `Stage:` word marks the line as a stage and is the only way to tell
+  it from a step;
+- a step of a stage is `N.S.K <artifact it produces>`, for example `2.1.3
+  session endpoint in src/auth/session.ts`, always under its stage and always
+  with the numbers of its stage and phase;
+- a step of a phase without stages is `N.K <artifact it produces>`, for example
+  `2.3 session endpoint in src/auth/session.ts`, with no `Stage:` word;
+- the status of a phase, stage, or step is the status of the list item:
+  `pending`, `in_progress`, or `completed`; a blocked step is `in_progress` with
+  the reason written after the artifact, and the conversation shows `[ ! ]`;
+- a step never uses a phase label such as `F1:` or `Phase 1 check`; the number
+  sequence is what the user reads to follow the work.
 
 **Cadence of the mirror.** The mirror is rewritten at **every checklist
 re-emission** — the same moments as the cadence table in Emission and
-cadence: the phase start, a step about to change the repository, a step
-completed, blocked, or newly discovered, each user turn while the phase is
-open, and the phase end — so the panel never trails the conversation by a
-step. A turn that only re-emits the checklist, with no repository change
-(a plan approved, a commit text presented, a correction), is a mirror
-write. Rewriting it only before mutating steps, only at the phase
-boundary, or only when a file changed is a defect.
+cadence: the phase start, the start and the end of each stage, a step
+about to change the repository, a step completed, blocked, or newly
+discovered, each user turn while the phase is open, and the phase end — so the
+panel never trails the conversation by a stage or a step. A turn that only
+re-emits the checklist, with no repository change (a plan approved, a commit
+text presented, a correction), is a mirror write. Rewriting it only before
+mutating steps, only at the phase boundary, only at the phase start, or only
+when a file changed is a defect.
 
 **Rewrites never lose the phase list.** Every mirror rewrite is the full
-content defined above — the phases of the plan first, the steps of the
-phase in progress under it — because the surface replaces its whole state
-on each call. Updating the checklist for a new state therefore rewrites
-the steps of the phase in progress and rewrites the phase list with its
-current states; it never deletes the phase items to show only the
-checklist, and it never shows the checklist without its phase. A panel
-that holds only phases, or only the steps of the last re-emission, is the
-defect defined above, from either direction.
+content defined above — the phases of the plan first, the stages of each
+phase with their states, and the steps of the stage in progress under it —
+because the surface replaces its whole state on each call. Updating the
+checklist for a new state therefore rewrites the stage in progress and its
+steps, and rewrites the phase list with its current states; it never deletes
+the phase or stage items to show only the checklist, and it never shows the
+checklist without its phase. A panel that holds only phases, only stages, or
+only the steps of the last re-emission, is the defect defined above, from
+either direction.
 
 The mirror never replaces the cadence above: it makes the same checklist
 persistent, and an out-of-date mirror is corrected on the next transition
