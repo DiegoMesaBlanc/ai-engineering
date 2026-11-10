@@ -80,6 +80,7 @@ Check for the existence of:
 - workflows/estimation.md
 - workflows/project-initialization.md
 - workflows/engineering-baseline.md
+- workflows/design-review.md
 - workflows/system-audit.md
 - workflows/output-compliance.md
 
@@ -6579,4 +6580,77 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v286.XXXXXX")"
 echo "V2.86 probe: fixtures in $fx were checked and are removed"
 rm -rf "$fx"
 exit "$failures"
+```
+
+## V2.87 Regression — Pre-Code Design Review
+
+Verify that a proposal is reviewed by a fresh-context reviewer before the
+first file is written, that the reviewer never receives the conversation,
+and that the gate cannot be removed from the canonical flow without the check
+detecting it (M-99):
+
+- `AGENTS.md` states the rule in its canonical wording, with the anchor
+  `fresh-context reviewer`, and names `workflows/design-review.md`.
+- `workflows/design-review.md` exists, lists the denied input, reuses the
+  Independence Contract of `workflows/code-audit.md`, and states that
+  independence is `NOT ESTABLISHED` when the conversation is present.
+- `workflows/task-to-code.md` places the gate in Phase 9, after the plan and
+  before `## Phase 10 — Implement`.
+- `references/mandatory-rules.md` has the M-99 row and
+  `references/system-workflow-regression-matrix.md` has the R-164 row.
+- `workflows/system-validation.md` lists `workflows/design-review.md` in the
+  required-file inventory.
+
+The check runs over any root directory, so the removal probe below can run it
+over a temporary copy:
+
+```sh
+design_review_check() {
+  root="$1"
+  dr="$root/workflows/design-review.md"
+  tt="$root/workflows/task-to-code.md"
+  [ -f "$dr" ] || echo "FAIL V2.87: workflows/design-review.md is missing"
+  [ -f "$tt" ] || echo "FAIL V2.87: workflows/task-to-code.md is missing"
+  if [ -f "$tt" ]; then
+    gate=$(grep -n 'Pre-code design review\.' "$tt" | head -1 | cut -d: -f1)
+    p9=$(grep -n '^## Phase 9 — Plan' "$tt" | head -1 | cut -d: -f1)
+    p10=$(grep -n '^## Phase 10 — Implement' "$tt" | head -1 | cut -d: -f1)
+    if [ -z "$gate" ] || [ -z "$p9" ] || [ -z "$p10" ] ||
+       [ "$gate" -le "$p9" ] || [ "$gate" -ge "$p10" ]; then
+      echo "FAIL V2.87: the pre-code design review gate is not in Phase 9 before Phase 10"
+    fi
+  fi
+  if [ -f "$dr" ]; then
+    grep -q 'Denied input' "$dr" || echo "FAIL V2.87: design-review.md has no Denied input list"
+    grep -q 'NOT ESTABLISHED' "$dr" || echo "FAIL V2.87: design-review.md does not state independence NOT ESTABLISHED"
+    grep -q 'workflows/code-audit.md' "$dr" || echo "FAIL V2.87: design-review.md does not reuse the Independence Contract"
+  fi
+  grep -q 'fresh-context reviewer' "$root/AGENTS.md" 2>/dev/null ||
+    echo "FAIL V2.87: AGENTS.md does not state the rule"
+  grep -q '^| M-99 |' "$root/references/mandatory-rules.md" 2>/dev/null ||
+    echo "FAIL V2.87: M-99 is not in the registry"
+  grep -q '^| R-164 |' "$root/references/system-workflow-regression-matrix.md" 2>/dev/null ||
+    echo "FAIL V2.87: R-164 is not in the regression matrix"
+  grep -q '^- workflows/design-review.md' "$root/workflows/system-validation.md" 2>/dev/null ||
+    echo "FAIL V2.87: design-review.md is not in the required-file inventory"
+}
+
+# Canonical check: its output is the verdict. No FAIL line means PASS.
+design_review_check .
+```
+
+Removal probe. Run the check over a temporary copy, with the Phase 9 gate
+removed and then with the denied-input list removed, and confirm each is
+detected. The probe never touches the repository:
+
+```sh
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v287.XXXXXX")
+mkdir -p "$fx/workflows" "$fx/references"
+cp AGENTS.md "$fx/"
+cp references/mandatory-rules.md references/system-workflow-regression-matrix.md "$fx/references/"
+cp workflows/design-review.md workflows/task-to-code.md workflows/system-validation.md "$fx/workflows/"
+echo "compliant copy:"; design_review_check "$fx"
+sed '/Pre-code design review\./,/^$/d' "$fx/workflows/task-to-code.md" > "$fx/t" && mv "$fx/t" "$fx/workflows/task-to-code.md"
+echo "gate removed:"; design_review_check "$fx" | grep 'FAIL V2.87: the pre-code' || echo "NOT DETECTED"
+rm -rf "$fx"
 ```

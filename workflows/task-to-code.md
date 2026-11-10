@@ -491,6 +491,14 @@ A new dependency must be authorized through the approval gate in
 treat approval to implement the task as authorization to introduce
 libraries.
 
+**Pre-code design review.** Once the task plan and the proposal are drafted,
+and before the proposal is presented for approval, a fresh-context reviewer
+checks the proposal against the requirement and its cited evidence, as
+`workflows/design-review.md` defines. The review runs for R2, R3, and R4 tasks
+and is skipped with its reason for R1. Its findings are shown with the proposal,
+every finding receives a disposition, and an open P1 finding keeps the task
+before Phase 10 until it is resolved.
+
 ## Phase 10 — Implement
 
 Implement on the requested branch and only within the target project.

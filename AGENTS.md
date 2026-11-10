@@ -222,6 +222,15 @@ Constraints:
 - Do not ask the user to choose a framework, library, design pattern, file structure, or implementation detail when the correct choice can be inferred safely from evidence and existing conventions.
 - Follow the existing branch-name policy before modifying application code.
 
+**Pre-code design review (M-99).** Before a software implementation task of
+Medium or higher rigor shows its proposal for approval, a fresh-context reviewer
+checks the proposal. The reviewer receives only the requirement, the proposal,
+and the evidence the proposal cites, never the conversation. Every finding
+receives a recorded disposition, and an open P1 finding blocks implementation
+until it is resolved. The procedure is `workflows/design-review.md`, and the
+independence rules are those of the Independent Mode in
+`workflows/code-audit.md`.
+
 ## Autonomous Implementation After Alignment
 
 Once the task scope and approach are aligned, independently carry out routine implementation work. Make decisions required to:
