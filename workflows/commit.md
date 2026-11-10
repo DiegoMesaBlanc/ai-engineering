@@ -90,8 +90,14 @@ configuration without explicit user authorization.
 
 **Structural compliance is a blocking gate of this workflow (M-08).** Run the
 structural compliance check of `workflows/output-compliance.md` over the scoped
-change set, as the project's validation requires: every detector whose "Applies
-when" row the change set meets, with its `file:line` output. A `FAIL` in the
+change set: write the scoped paths (tracked and untracked, from Phase 1) to a
+file, one per line, and run `project_safety_sweep <that-file>` from the project
+root. This runs every delivery-safety detector over the change set with its
+`file:line` output; a detector is never selected by hand from its "Applies when"
+row, because a row the agent does not read is a detector that never runs. The
+whole-project sweep without an argument is the health probe's job, not the gate's.
+A `NOT VERIFIED` line from the sweep for a scoped file blocks the commit, the same
+as a `FAIL`. A `FAIL` in the
 change set blocks the commit exactly as a failing linter does, and it is never
 downgraded to a warning in Phase 10. A `FINDING` (a violation that already existed
 in the base revision) is listed in the proposal and does not block. The check is

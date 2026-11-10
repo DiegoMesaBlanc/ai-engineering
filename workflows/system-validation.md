@@ -1024,6 +1024,7 @@ Return:
 - V2.92 pattern-matched URL guards, guard test cases, job-named responsibility claims, the report gate, and the structural step bound (M-54, M-55, M-107, M-109, M-113, R-179):
 - V2.93 bound approvals, execution claims, gates on the artifact, effects at import, per-site error and exit coverage, and Spanish responsibility and count wording (M-107, M-109, M-114 to M-118, R-180 to R-184):
 - V2.94 prose PASS verdicts, wall-clock and timer-option tests, the active Node runtime against the pin, approval wording, and agent-behavior claims (M-76, M-80, M-92, M-111, M-112, M-115, R-185 to R-190):
+- V2.95 scheme checks that name http: or are silent, change-set sweep wiring, the zsh guard, and the REPORT-001 output (M-55, M-75, M-80, R-191)
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -8050,3 +8051,88 @@ x2="$(exec_claim_check "$ok" docs/r.md)"
 echo "V2.94 behavioral fixtures: $fx (removed on exit)"
 [ "$failures" -eq 0 ] && echo "V2.94 PASS" || echo "V2.94 FAIL"
 [ "$failures" -eq 0 ]
+
+## V2.95 Regression — Scheme Checks That Pass Silently, Change-Set Wiring, zsh, and Report Output
+
+A later external audit of a payments project found that the system had the rules and still let four defects
+reach the report: a credential endpoint whose scheme check named `http:` in a `new URL` allowlist, which
+`url_scheme_check` skipped because the file mentioned `protocol` (F1); a `startsWith("http://")` comparison that
+`safe_cleartext_check` skipped as a scheme check (F1); a generic `throw new Error` in a project with a typed error
+class that the gate never ran, because only the whole-project sweep ran the detector (F2); and unexecuted reviews
+written as `NOT VERIFIED` in a matrix that was delivered without `REPORT-001` output (process). The sweep also ran
+under zsh, where its unquoted detector lists are not split, so ERR-001 checked nothing while reporting nothing. The
+fixes are: a scheme check that names `http:` or `http://` is `NOT VERIFIED`, never silent (M-55, `SAFE-002`); the
+commit gate runs the sweep over the change set (`project_safety_sweep <list>`, `workflows/commit.md` Phase 2); the
+sweep refuses to report under zsh (M-75); and the delivered report carries the `REPORT-001` output (M-80).
+
+No new rule is added by this section. The behavioral part builds defective fixtures and their compliant twins in a
+temporary directory outside the repository, runs the detectors extracted from `workflows/output-compliance.md`, and
+removes the directory.
+
+Limits: the scheme detector is lexical. It cannot decide whether a `http:` comparison admits a non-local host, so it
+reports `NOT VERIFIED` for the reviewer, which blocks delivery until the reviewer confirms the local host is exact.
+The change-set sweep classifies a pre-existing violation in a changed file as a finding only when the reviewer compares
+it with the base revision. Whether a pre-existing violation in a changed unit blocks the task is an open policy
+question and is not decided here.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+oc="workflows/output-compliance.md"
+cm="workflows/commit.md"
+rmx="references/system-workflow-regression-matrix.md"
+vs="workflows/system-validation.md"
+failures=0
+
+grep -qF 'project_safety_sweep <that-file>' "$root/$cm" || { echo "FAIL V2.95: the commit gate does not name the change-set sweep"; failures=1; }
+grep -qF 'ZSH_VERSION' "$root/$oc" || { echo "FAIL V2.95: the sweep has no zsh guard"; failures=1; }
+grep -qF 'carries the output of this check over its own matrix' "$root/$oc" || { echo "FAIL V2.95: REPORT-001 does not require its output in the report"; failures=1; }
+grep -q '^- V2.95 ' "$root/$vs" || { echo "FAIL V2.95: V2.95 is not in the validation index"; failures=1; }
+grep -q '^| R-191 |' "$root/$rmx" || { echo "FAIL V2.95: no R-191 row in the regression matrix"; failures=1; }
+
+command -v awk >/dev/null 2>&1 && command -v git >/dev/null 2>&1 || { echo "NOT VERIFIED V2.95: awk or git is not available, the behavioral fixtures were not run"; exit 2; }
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v295-XXXXXX")"
+awk '/^```sh$/{on=1; n++; f=fx "/blk" n ".sh"; next} /^```$/{ if(on){close(f)}; on=0} on{print > f}' fx="$fx" "$root/$oc"
+: > "$fx/detectors.sh"
+for b in "$fx"/blk*.sh; do sh -n "$b" 2>/dev/null && cat "$b" >> "$fx/detectors.sh"; done
+. "$fx/detectors.sh" || { echo "FAIL V2.95: the detector blocks do not load"; rm -rf "$fx"; exit 1; }
+
+# Defect 1 (F1): a protocol allowlist naming http: must not be silent.
+mkdir -p "$fx/d/src/config"
+printf '%s\n' 'export const p = (raw: string): URL => {' '  const u = new URL(raw);' '  if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("x");' '  return u;' '};' > "$fx/d/src/config/allow.ts"
+# Defect 2 (F1): a startsWith comparison that accepts the bare http:// scheme must not be silent.
+printf '%s\n' 'export const c = (raw: string): string => raw.startsWith("http://") ? raw : raw;' > "$fx/d/src/config/starts.ts"
+# Defect 3 (F1 case glob): a case pattern that matches http://localhost:* is a FAIL.
+mkdir -p "$fx/d/.github/workflows"
+printf '%s\n' 'case "$U" in' '  http://localhost:*) echo ok ;;' 'esac' > "$fx/d/.github/workflows/promote.yml"
+# Defect 4 (F2): a generic Error in a project with a typed error class.
+mkdir -p "$fx/d/src/payments"
+printf '%s\n' 'export class PaymentError extends Error {}' > "$fx/d/src/payments/errors.ts"
+printf '%s\n' 'export const pay = (): void => { throw new Error("no"); };' > "$fx/d/src/payments/pay.ts"
+# Compliant twin: https only, typed error.
+printf '%s\n' 'export const p = (raw: string): URL => { const u = new URL(raw); if (u.protocol !== "https:") throw new PaymentError("x"); return u; };' > "$fx/d/src/config/ok.ts"
+# Defect 5 (process): a NOT VERIFIED reason that is an unexecuted review, and a matrix with no output.
+printf '%s\n' '| Dimension | Status | Reason |' '|---|---|---|' '| 1. Architecture | NOT VERIFIED | Los detectores LAYER/TYPE no se ejecutaron |' > "$fx/report.md"
+
+cd "$fx/d" || exit 1
+a1="$(url_scheme_check . src/config/allow.ts)"
+printf '%s\n' "$a1" | grep -qF 'NOT VERIFIED SAFE-002: src/config/allow.ts:3:' || { echo "FAIL V2.95: url_scheme_check is silent on the http: allowlist: $a1"; failures=1; }
+a2="$(url_scheme_check . src/config/ok.ts)"
+printf '%s\n' "$a2" | grep -q 'SAFE-002' && { echo "FAIL V2.95: url_scheme_check reports the https-only twin: $a2"; failures=1; }
+s1="$(safe_cleartext_check . src/config/starts.ts)"
+printf '%s\n' "$s1" | grep -qF 'NOT VERIFIED SAFE-002: src/config/starts.ts:1:' || { echo "FAIL V2.95: safe_cleartext_check is silent on startsWith(http://): $s1"; failures=1; }
+s2="$(safe_cleartext_check . .github/workflows/promote.yml)"
+printf '%s\n' "$s2" | grep -qF 'FAIL SAFE-002: .github/workflows/promote.yml:2:' || { echo "FAIL V2.95: the case glob is not reported with file:line: $s2"; failures=1; }
+e1="$(error_model_check . src/payments/pay.ts)"
+printf '%s\n' "$e1" | grep -qF 'FAIL ERR-001: src/payments/pay.ts:1:' || { echo "FAIL V2.95: ERR-001 did not report the generic Error: $e1"; failures=1; }
+printf 'src/config/allow.ts\nsrc/config/starts.ts\n.github/workflows/promote.yml\nsrc/payments/pay.ts\n' > "$fx/changed.txt"
+w="$(sh -c ". '$fx/detectors.sh' && project_safety_sweep '$fx/changed.txt'" 2>/dev/null)"
+printf '%s\n' "$w" | grep -qF 'FAIL ERR-001: src/payments/pay.ts:1:' || { echo "FAIL V2.95: the change-set sweep does not run ERR-001: $w"; failures=1; }
+cp "$fx/report.md" "$fx/d/report.md"
+r="$(report_matrix_check . report.md)"
+printf '%s\n' "$r" | grep -qF 'FAIL REPORT-001: report.md:3: NOT VERIFIED reason is an unexecuted review' || { echo "FAIL V2.95: REPORT-001 did not hold the unexecuted review: $r"; failures=1; }
+
+cd "$root" && rm -rf "$fx"
+echo "V2.95 behavioral fixtures: $fx (removed on exit)"
+[ "$failures" -eq 0 ] && echo "V2.95 PASS" || echo "V2.95 FAIL"
+```

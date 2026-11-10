@@ -254,6 +254,12 @@ skipped or weakened for any environment, including fast-moving ones.
 - build or compilation
 - the security checks selected in Phase 3
 - database migration validation when the change includes migrations
+- configuration preflight for the **target** environment: every key the target
+  requires is present, including the credential scoped to that environment, checked
+  by name only and before the deploy step runs. The required list is read from the
+  environment's configuration contract, never from a fixed list that predates a new
+  environment; a promotion that lacks the target's credential fails here, not at
+  process start after deployment.
 
 Run focused gates first and broaden with risk. The same gates run locally
 through the project's scripts, so local, CI, and deployed environments

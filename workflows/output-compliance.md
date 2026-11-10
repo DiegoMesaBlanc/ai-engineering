@@ -881,6 +881,12 @@ safe_cleartext_check() {
       auth="${rest%%[/?#]*}"
       if [ -z "$auth" ]; then
         # A bare scheme in a comparison (startsWith("https://")) is a scheme check, not an endpoint.
+        # A comparison that accepts the bare http:// scheme is NOT silenced: it can admit cleartext
+        # to any host, so it is NOT VERIFIED until the reviewer confirms the local host is exact (M-55).
+        if [ "$scheme" = http ]; then
+          echo "NOT VERIFIED SAFE-002: $f:$n: a comparison accepts the bare http:// scheme; confirm the local host is exact (M-55)"
+          continue
+        fi
         case "$(sed -n "${n}p" "$root/$f")" in *startsWith*|*endsWith*|*includes*|*indexOf*) continue ;; esac
       fi
       case "$auth" in
@@ -1003,10 +1009,17 @@ url_scheme_check() {
   root="$1"; shift
   for f in "$@"; do
     case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
-    grep -qE '\.url\(' "$root/$f" 2>/dev/null || continue
-    grep -qE 'refine|superRefine|startsWith|protocol' "$root/$f" && continue
-    awk -v file="$f" '/\.url\(/ {
-      printf "FAIL SAFE-002: %s:%d: a URL setting accepts any scheme, so cleartext http:// passes (M-55)\n", file, NR
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*) continue ;; esac
+    grep -qE '\.url\(|new URL\(|URL\.parse\(' "$root/$f" 2>/dev/null || continue
+    # M-55: a scheme check that names the http scheme (a protocol allowlist, startsWith, a refinement)
+    # is never a silent pass: it may admit cleartext, so the reviewer confirms it (NOT VERIFIED).
+    if grep -qE 'refine|superRefine|startsWith|protocol' "$root/$f"; then
+      grep -nE "[\"'\`]http(:|://)[\"'\`]?|http://" "$root/$f" 2>/dev/null |
+        sed "s#^#NOT VERIFIED SAFE-002: $f:#; s#\$#  (a scheme check names http: or http://; confirm the local host is exact, M-55)#"
+      continue
+    fi
+    awk -v file="$f" '/\.url\(|new URL\(|URL\.parse\(/ {
+      printf "FAIL SAFE-002: %s:%d: a URL setting is parsed with no scheme check, so cleartext http:// passes (M-55)\n", file, NR
     }' "$root/$f"
   done
 }
@@ -1234,8 +1247,24 @@ runs on the change set instead.
 
 ```sh
 # Run from the project root. Falls back to find when the project is not a git repository.
+# $1 (optional): a file listing the paths to scan, one per line, relative to the root. When given,
+# the sweep runs the same detectors over that change set only. The commit gate and the change-set
+# review MUST pass the change set here (workflows/commit.md Phase 2), so a detector that reads a
+# changed file is never skipped because only the whole-project sweep was run. Typed-class
+# detection (ERR-001) still reads the whole project.
 project_safety_sweep() {
-  files=$( (git ls-files --cached --others --exclude-standard 2>/dev/null) || (find . -type f | sed 's#^\./##') )
+  # The detectors pass lists unquoted and rely on POSIX word splitting. zsh does not split
+  # them, so every detector would receive one argument and check nothing while reporting
+  # nothing (the M-75 failure). The sweep refuses to run under zsh instead of passing silently.
+  if [ -n "${ZSH_VERSION:-}" ]; then
+    echo "NOT VERIFIED SWEEP: run under POSIX sh, not zsh (word splitting differs; a sweep under zsh checks nothing). Invoke: sh -c '. <detectors> && project_safety_sweep <list>'"
+    return 1
+  fi
+  if [ -n "${1:-}" ]; then
+    files=$(cat "$1")
+  else
+    files=$( (git ls-files --cached --others --exclude-standard 2>/dev/null) || (find . -type f | sed 's#^\./##') )
+  fi
   files=$(printf '%s\n' "$files" | sed '/^$/d' | grep -vE '(^|/)(node_modules|dist|build|\.next|coverage|\.git)/')
   src=$(printf '%s\n' "$files" | grep -E '\.(ts|tsx|js|jsx|mjs|cjs)$' | grep -vE '\.d\.ts$')
   shells=$(printf '%s\n' "$files" | grep -E '\.(sh|bash|zsh)$')
@@ -3717,6 +3746,11 @@ delivered. The check reads the report's own text and reports each defect with it
   with a runtime, language, or version name) is `NOT VERIFIED` until the claim is
   executed on that version and the evidence is cited (M-80).
 
+The delivered report carries the output of this check over its own matrix. A report
+that states verdicts without that output was not checked and is not delivered. An
+external audit delivered a matrix with unexecuted reviews that this check would have
+failed, because the check was never run.
+
 The lexical check finds the phrases above; it does not judge whether a phrase is used
 in its literal sense. A matrix that uses other words for the same defect is `NOT
 VERIFIED` for the reviewer to decide, never `PASS`.
@@ -3770,7 +3804,7 @@ report_matrix_check() {
               if (num in seen) print "FAIL REPORT-001: " f ":" NR ": dimension " num " has a second row (M-80)"
               seen[num] = 1; numbered = 1
             }
-            if (st ~ /^NOT[ _]VERIFIED$/ && mot ~ /(no ejecut|no se ejecut|no auditad|sin auditar|not executed|not run|not audited|no review)/)
+            if (st ~ /^NOT[ _]VERIFIED$/ && mot ~ /(no ejecut|no se ejecut|sin ejecut|no fue ejecut|no auditad|sin auditar|not executed|not run|not audited|no review|was not|did not run|pending run|pendiente de ejecut)/)
               print "FAIL REPORT-001: " f ":" NR ": NOT VERIFIED reason is an unexecuted review; run the review before the verdict (M-80)"
             if (st == "PASS" && mot ~ /(pendiente|pending|not run|no ejecut|sin ejecutar|equivalen|equivalent|diff le|solo el diff|only the diff|ambig|por confirmar|to be confirmed|simulat)/)
               print "FAIL REPORT-001: " f ":" NR ": PASS carries an open item; the dimension is reopened (M-80)"
