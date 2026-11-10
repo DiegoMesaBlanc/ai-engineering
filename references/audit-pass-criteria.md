@@ -452,6 +452,10 @@ dimension. A criterion is never presented as a framework standard.
   sees is asserted (M-54). A test that makes the dependency return a timeout result
   does not cover the guarantee: it proves the dependency, not the bound. A
   missing one is a `FAIL` of this Dimension at the test file that claims the bound.
+  The declaration is read without a runner: a workflow step that calls the network with no
+  step `timeout-minutes` is a `FAIL` of this Dimension at its `file:line` (`SAFE-001`,
+  `safe_bound_check`), whatever the environment can execute. A job-level timeout does not
+  satisfy it. Only the controlled-time proof is `NOT VERIFIED` when no runner exists.
   The bound is any declared wait, not only an HTTP timeout: a database busy or lock
   wait is covered too, and so is a retry budget (a number of attempts or retries,
   M-54): a test holds the dependency until the budget is spent under controlled time
@@ -495,8 +499,9 @@ dimension. A criterion is never presented as a framework standard.
 - A guard in a shell script, a workflow step, or a configuration file is behavior, and the change ships a versioned test that runs it (M-113).
   The change ships a versioned test that runs the guard with a violating input and a
   compliant input; the cases the guard must reject (for a URL: userinfo, an empty host,
-  a prefix that matches a local name) are in that test. A log of one-off runs is not a
-  test and is not evidence. `GUARD-001` in `workflows/output-compliance.md` lists each
+  a prefix that matches a local name) are in that test. `GUARD-001` checks that each of
+  the three cases is present in the test, so a test that only names the guard is a `FAIL`.
+  A log of one-off runs is not a test and is not evidence. `GUARD-001` in `workflows/output-compliance.md` lists each
   guard that no tracked test names, with its `file:line`; that finding is `FAIL` of this
   dimension, and a `PASS` cites the test file and the command that ran it.
 

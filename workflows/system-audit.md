@@ -169,6 +169,14 @@ Produce:
   an open item, no closure is claimed over an open row, and a red gate outside
   the change set is `BASELINE_FAILURE`. A `FAIL` is corrected in the report
   before it is delivered, and the correction is reported.
+- **Claims of the text.** `EVIDENCE-001` and `APPROVAL-001`
+  (`workflows/output-compliance.md`) run over the whole report text, not only over
+  the matrix. A count of a set (files, lines) is checked against its cited list, a
+  claim that a tool covers files is checked against the tool's own file resolution
+  (`prettier --file-info`, `ruff check --show-files`), and a claimed time window
+  cites its timestamp. A report that states "the formatter covered the 7 new files"
+  without that resolution is `NOT VERIFIED` for that claim until it is cited (M-109,
+  M-92).
 - **Defects found in the system's own artifacts**, if any.
 - **Limits**: what could not be verified and why. Distinguish what the
   mechanism guarantees from what depends on an agent following the flow.

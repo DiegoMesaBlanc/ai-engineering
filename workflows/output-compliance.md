@@ -800,6 +800,9 @@ These detections enforce the delivery-safety rules of `AGENTS.md`:
   domains `example.com` and `example.org`; any other host is a `FAIL`. An `https://`
   URL with no host (`https://`, `https:///path`) is a `FAIL`. The scheme and host
   are checked against the parsed authority, never against a substring of the line.
+  A guard that matches a URL by a glob or an alternative pattern (`http://localhost:*`,
+  `http://127.0.0.1:*|...`) does not parse the authority and is a `FAIL` with that reason,
+  whatever the pattern accepts (M-55, F-A).
   Limit: the detector reads one URL per match on a line and does not decode
   percent-encoding; a host written in an encoded form is `NOT VERIFIED` for the
   reviewer under Dimension 6.
@@ -869,6 +872,7 @@ safe_cleartext_check() {
       fi
       case "$auth" in
         *@*) echo "FAIL SAFE-002: $f:$n: a URL with userinfo names a host the reader does not see (M-55)"; continue ;;
+        *\**|*\|*|*\[*) echo "FAIL SAFE-002: $f:$n: a URL is matched by a glob or alternative pattern, not parsed; the guard must parse the authority (M-55)"; continue ;;
       esac
       case "$scheme" in
         https) [ -n "$auth" ] || echo "FAIL SAFE-002: $f:$n: an https URL with no host (M-55)" ;;
@@ -3247,18 +3251,25 @@ srp_workflow_check() {
 
 # $1 = repository root; $2 = decision record, relative to it; $3... = changed files.
 # M-107 and DEC-001: a record row that says a listed unit has one responsibility ("only",
-# "solo", "single") is contradicted by SRP-001 when the unit is listed. The row's claim
+# "solo", "single") is contradicted by SRP-001 when the unit is listed. The row names the
+# unit by its file, its stem, or the key of one of its workflow jobs. The row's claim
 # is traced to the code, never accepted from the row itself.
 srp_claim_check() {
   root="$1"; record="$2"; shift 2
   listed="$( { srp_unit_check "$root" "$@"; srp_workflow_check "$root" "$@"; } |
     sed -n 's/^FAIL SRP-001: \([^:]*\):.*/\1/p' | sort -u)"
   for f in $listed; do
-    b="$(basename "$f")"
-    grep -nF -- "$b" "$root/$record" 2>/dev/null |
-      grep -iE '(^|[^a-z])(only|solo|single)([^a-z]|$)' |
-      sed "s#^\([0-9]*\):#FAIL DEC-001: $record:\1: $f is claimed to have one responsibility and SRP-001 lists it with several kinds (M-107): #"
-  done
+    b="$(basename "$f")"; stem="${b%.*}"
+    # A row names the unit by its file, its stem, or the key of one of its workflow jobs
+    # ("deploy job ... deploys only" names the job deploy of promote.yml).
+    jobs="$(awk '/^jobs:/ { j = 1; next } j && /^[^ #]/ { j = 0 }
+      j && /^  [A-Za-z0-9_-]+:[ \t]*$/ { sub(/^  /, ""); sub(/:[ \t]*$/, ""); printf "%s ", $0 }' "$root/$f" 2>/dev/null)"
+    for nm in $b $stem $jobs; do
+      grep -nE "(^|[^A-Za-z0-9_-])$nm([^A-Za-z0-9_-]|\$)" "$root/$record" 2>/dev/null |
+        grep -iE '(^|[^a-z])(only|solo|single)([^a-z]|$)' |
+        sed "s#^\([0-9]*\):#FAIL DEC-001: $record:\1: $f is claimed to have one responsibility and SRP-001 lists it with several kinds (M-107): #"
+    done
+  done | sort -u
 }
 ```
 
@@ -3388,11 +3399,16 @@ violating input and a compliant input. The external audit found a cleartext guar
 workflow whose only evidence was a log of one-off runs; the log did not include the
 userinfo case, so the bypass passed unseen. The detector finds each changed artifact that
 contains a guard (an `exit` with a non-zero status, an `exit $`, a `::error` annotation, or
-`|| exit`) and requires a tracked test file that names the artifact. The test's execution is
-read by the reviewer: a test that names the artifact and never runs it is not a pass, and a
-log is never accepted in place of a test. Limit: the detector reads the name, not the
-assertion; the twin and the violating input are verified in the behavioral part of
-`workflows/system-validation.md` V2.91.
+`|| exit`) and requires a tracked test file that names the artifact. A file counts as a test
+only when its path names a test (`test`, `spec`, `__tests__`), so a log never counts. When the
+guard reads a URL (`http://` or `https://` in the artifact), the test must also contain a
+userinfo URL, an `https://` with an empty host, and a `localhost` host-prefix URL; a missing
+case is a `FAIL` naming the case. A test that only names the guard passes the naming check
+and proves none of these cases, so it is a `FAIL` of GUARD-001 for each missing case. The
+test's execution is read by the reviewer: a test that names the artifact and never runs it
+is not a pass. Limit: the detector reads the name and
+the presence of the three cases, not the assertion; the twin and the violating input are
+verified in the behavioral part of `workflows/system-validation.md` V2.92.
 
 ```sh
 # $1 = repository root; $2... = changed shell or workflow files, then -- and the tracked test files.
@@ -3405,12 +3421,26 @@ guard_test_check() {
     case "$f" in *.sh|*.bash|*.zsh|*.yml|*.yaml) ;; *) continue ;; esac
     g="$(grep -nE 'exit [1-9]|exit \$|::error|\|\| *exit' "$root/$f" 2>/dev/null | head -1)"
     [ -n "$g" ] || continue
-    b="$(basename "$f")"; covered=0
+    b="$(basename "$f")"; covered=""
     for t in "$@"; do
       [ -f "$root/$t" ] || continue
-      grep -qF -- "$b" "$root/$t" && { covered=1; break; }
+      case "$t" in *test*|*spec*|*__tests__*) ;; *) continue ;; esac
+      grep -qF -- "$b" "$root/$t" && { covered="$t"; break; }
     done
-    [ "$covered" = 1 ] || echo "FAIL GUARD-001: $f:${g%%:*}: a guard in a non-TypeScript artifact has no versioned test that names it (M-113)"
+    if [ -z "$covered" ]; then
+      echo "FAIL GUARD-001: $f:${g%%:*}: a guard in a non-TypeScript artifact has no versioned test that names it (M-113)"
+      continue
+    fi
+    # M-113: a guard that reads a URL is tested with the cases it must reject: userinfo,
+    # an empty https host, and a host prefix that matches a local name. A test that only
+    # names the guard passes the naming check and proves none of these.
+    grep -qE 'https?://' "$root/$f" 2>/dev/null || continue
+    grep -qE 'https?://[^/ ]*@' "$root/$covered" 2>/dev/null ||
+      echo "FAIL GUARD-001: $covered: the test of $f has no userinfo URL case (M-113)"
+    grep -qE 'https://([^A-Za-z0-9_.-]|$)' "$root/$covered" 2>/dev/null ||
+      echo "FAIL GUARD-001: $covered: the test of $f has no empty-host https case (M-113)"
+    grep -qE 'https?://localhost[.-]' "$root/$covered" 2>/dev/null ||
+      echo "FAIL GUARD-001: $covered: the test of $f has no host-prefix case (M-113)"
   done
 }
 ```

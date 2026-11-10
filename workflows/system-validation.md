@@ -1021,6 +1021,7 @@ Return:
 - V2.89 destructive paths, parsed values, duplicated helpers, document-catalog traceability, and units with several responsibilities (M-103 to M-107, R-168 to R-172):
 - V2.90 cited paths and directories, evidence for windows and counts, declared initial states, approval wiring across documents, and baseline health findings (M-108 to M-112, R-173 to R-177):
 - V2.91 guards in shell and workflow artifacts, URL authority, step bounds, duplicated blocks, responsibility claims, and tool coverage claims (M-54, M-55, M-105, M-107, M-109, M-113, R-178):
+- V2.92 pattern-matched URL guards, guard test cases, job-named responsibility claims, the report gate, and the structural step bound (M-54, M-55, M-107, M-109, M-113, R-179):
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -7482,7 +7483,8 @@ printf '%s\n' "$d2" | grep -q '^FAIL' && { echo "FAIL V2.91: DUP-001 reports the
 g1="$(guard_test_check "$bad" ci/guard.sh --)"
 printf '%s\n' "$g1" | grep -qF 'FAIL GUARD-001: ci/guard.sh:8: a guard in a non-TypeScript artifact has no versioned test that names it' \
   || { echo "FAIL V2.91: GUARD-001 did not report the guard with no test: $g1"; failures=1; }
-printf '%s\n' '#!/bin/sh' 'sh ci/guard.sh' > "$ok/tests/guard.test.sh"
+printf '%s\n' '#!/bin/sh' 'sh ci/guard.sh "http://localhost:1@evil.com"' 'sh ci/guard.sh "https://"' \
+  'sh ci/guard.sh "http://localhost.evil.example"' > "$ok/tests/guard.test.sh"
 g2="$(guard_test_check "$ok" ci/guard.sh -- tests/guard.test.sh)"
 [ -z "$g2" ] || { echo "FAIL V2.91: GUARD-001 reports the guard that a test names: $g2"; failures=1; }
 g3="$(guard_test_check "$ok" ci/guard.sh --)"
@@ -7501,5 +7503,153 @@ e2="$(evidence_claim_check "$ok" docs-report.md)"
 
 echo "V2.91 behavioral fixtures: $fx (removed on exit)"
 [ "$failures" -eq 0 ] && echo "V2.91 PASS" || echo "V2.91 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V2.92 Regression — Pattern-Matched URL Guards, Guard Test Cases, Job-Named Responsibility Claims, and the Report Gate
+
+Verify that the gaps the fifth external audit exposed are closed in the detectors, wired into the report
+gate and the criteria, and reachable from every required surface:
+
+- M-55 (F-A): a guard that matches a URL by a glob or an alternative pattern (`http://localhost:*`,
+  `http://127.0.0.1:*|...`) does not parse the authority and is a `FAIL` with that reason. The external
+  guard accepted `http://localhost:1@evil.com` because it matched a pattern, not an authority.
+- M-113 (F-C): a guard that reads a URL is tested with its userinfo, empty-host, and host-prefix cases.
+  `GUARD-001` reports each missing case. A test that only names the guard passed the naming check, and
+  the external evidence was a log that never ran the userinfo case.
+- M-107 (F-B): a decision-record row that claims one responsibility for a listed unit is contradicted
+  when it names the unit by its file, its stem, or the key of one of its workflow jobs ("deploy job ...
+  deploys only"), not only by the file name.
+- M-109 (F-F): the report gate runs `EVIDENCE-001` and `APPROVAL-001` over the report text, not only
+  `REPORT-001` over the matrix, so "the formatter covered the 7 new files" is checked against the tool's
+  own file resolution before the report is delivered.
+- M-54 (F-D): the structural absence of a network step's `timeout-minutes` is a `FAIL` of Dimension 8 at its
+  `file:line` without a runner; only the controlled-time proof is `NOT VERIFIED` when no runner exists.
+
+The text checks require the anchors on the surfaces that carry them, the regression row, and the index entry.
+The behavioral part builds defective fixtures and their compliant twins in a temporary directory outside the
+repository, verifies each defect is reported with `file:line`, verifies each twin is clean, and removes the
+directory.
+
+Limits, stated by the rules themselves: `GUARD-001` reads the presence of the three URL cases, not their
+assertions, and the reviewer confirms the test runs the guard. The job-name match finds a row that names the
+job or the file; a single-responsibility row that names neither is not traced by the detector and stays a
+reviewer check under Dimension 2. The glob branch reads one pattern per URL on a line.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+oc="workflows/output-compliance.md"
+sa="workflows/system-audit.md"
+apc="references/audit-pass-criteria.md"
+rmx="references/system-workflow-regression-matrix.md"
+vs="workflows/system-validation.md"
+
+need() {
+  grep -qF -- "$2" "$root/$1" || { echo "FAIL V2.92: $1 does not carry $3"; failures=1; }
+}
+
+need "$oc" 'a URL is matched by a glob or alternative pattern, not parsed' "the M-55 glob-pattern FAIL"
+need "$oc" 'has no userinfo URL case (M-113)' "the M-113 userinfo case message"
+need "$oc" 'has no host-prefix case (M-113)' "the M-113 host-prefix case message"
+need "$oc" 'A test that only names the guard passes the naming check' "the M-113 naming-only limit"
+need "$oc" 'the key of one of its workflow jobs' "the M-107 job-key anchor"
+need "$sa" 'the whole report text' "the report-gate scope of EVIDENCE-001 and APPROVAL-001"
+need "$sa" '`EVIDENCE-001` and `APPROVAL-001`' "the EVIDENCE-001 and APPROVAL-001 report gate"
+need "$apc" 'the three cases is present in the test' "the Dimension 7 case anchor"
+need "$apc" 'is read without a runner' "the Dimension 8 structural anchor"
+grep -q "^| R-179 |" "$root/$rmx" || { echo "FAIL V2.92: no R-179 row in the regression matrix"; failures=1; }
+grep -q '^- V2.92 ' "$root/$vs" || { echo "FAIL V2.92: V2.92 is not in the validation index"; failures=1; }
+grep -q '^## V2.92 ' "$root/$vs" || { echo "FAIL V2.92: V2.92 has no section"; failures=1; }
+
+# Behavioral part: the detectors load from their sections and run on fixtures.
+for cmd in awk grep sed tr cut sort mktemp; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V2.92: $cmd is not available, the behavioral fixtures were not run"; exit 2; }
+done
+
+extract_sec() {
+  awk -v h="$1" '
+    index($0, "### " h " ") == 1 { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }
+  ' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v292.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+{
+  extract_sec "SAFE-001, SAFE-002, SAFE-003"
+  extract_sec "SRP-001"
+  extract_sec "GUARD-001"
+  extract_sec "EVIDENCE-001"
+} > "$fx/detectors.sh"
+. "$fx/detectors.sh" || { echo "FAIL V2.92: the detector blocks do not load"; exit 1; }
+for fn in safe_cleartext_check srp_claim_check guard_test_check; do
+  grep -q "^$fn() {" "$fx/detectors.sh" || { echo "FAIL V2.92: $fn is not loaded from its section"; failures=1; }
+done
+
+bad="$fx/bad"; ok="$fx/ok"
+mkdir -p "$bad/ci" "$ok/ci" "$bad/tests" "$ok/tests" "$bad/.github/workflows" "$ok/.github/workflows" \
+         "$bad/docs/decisions" "$ok/docs/decisions"
+
+# F-A (SAFE-002): a glob-pattern guard (violation); the exact-host guard (twin) is clean.
+printf '%s\n' '#!/bin/sh' 'case "$BASE" in' '  http://localhost:*|http://127.0.0.1:*) ;;' '  https://*) ;;' \
+  '  *) exit 1 ;;' 'esac' > "$bad/ci/guard.sh"
+printf '%s\n' '#!/bin/sh' 'case "$BASE" in' '  http://localhost:8080) ;;' '  https://api.example.net) ;;' \
+  '  *) exit 1 ;;' 'esac' > "$ok/ci/guard.sh"
+printf '%s\n' '#!/bin/sh' 'BASE="http://localhost:1@evil.com"' > "$bad/ci/userinfo.sh"
+a1="$(safe_cleartext_check "$bad" ci/guard.sh)"
+printf '%s\n' "$a1" | grep -qF 'FAIL SAFE-002: ci/guard.sh:3: a URL is matched by a glob or alternative pattern, not parsed' \
+  || { echo "FAIL V2.92: SAFE-002 did not report the glob-pattern guard with file:line: $a1"; failures=1; }
+a2="$(safe_cleartext_check "$ok" ci/guard.sh)"
+[ -z "$a2" ] || { echo "FAIL V2.92: SAFE-002 reports the exact-host guard twin: $a2"; failures=1; }
+a3="$(safe_cleartext_check "$bad" ci/userinfo.sh)"
+printf '%s\n' "$a3" | grep -qF 'FAIL SAFE-002: ci/userinfo.sh:2: a URL with userinfo names a host the reader does not see' \
+  || { echo "FAIL V2.92: SAFE-002 did not report the userinfo URL with file:line: $a3"; failures=1; }
+
+# F-C (GUARD-001): a test that only names the guard (violation); a test with the three cases (twin); a log (control).
+printf '%s\n' '#!/bin/sh' 'sh ci/guard.sh' > "$bad/tests/guard.test.sh"
+printf '%s\n' '#!/bin/sh' 'sh ci/guard.sh "http://localhost:1@evil.com"' 'sh ci/guard.sh "https://"' \
+  'sh ci/guard.sh "http://localhost.evil.example"' > "$ok/tests/guard.test.sh"
+c1="$(guard_test_check "$bad" ci/guard.sh -- tests/guard.test.sh)"
+for want in 'has no userinfo URL case' 'has no empty-host https case' 'has no host-prefix case'; do
+  printf '%s\n' "$c1" | grep -qF "$want (M-113)" || { echo "FAIL V2.92: GUARD-001 did not report the missing case '$want': $c1"; failures=1; }
+done
+c2="$(guard_test_check "$ok" ci/guard.sh -- tests/guard.test.sh)"
+[ -z "$c2" ] || { echo "FAIL V2.92: GUARD-001 reports the test with the three cases: $c2"; failures=1; }
+echo "one-off run" > "$bad/guards-executed.log"
+c3="$(guard_test_check "$bad" ci/guard.sh -- guards-executed.log)"
+printf '%s\n' "$c3" | grep -qF 'FAIL GUARD-001: ci/guard.sh:' || { echo "FAIL V2.92: GUARD-001 accepts a log as the test: $c3"; failures=1; }
+
+# F-B (SRP-001 / DEC-001): a row that names the job "deploy" and says "deploys only" (violation); the row without "only" (twin).
+printf '%s\n' 'name: promote' 'on: workflow_call' 'jobs:' '  deploy:' '    runs-on: ubuntu-latest' '    timeout-minutes: 15' \
+  '    steps:' '      - name: validate config' '        run: node -e "JSON.parse(process.env.CFG)"' \
+  '      - name: verify digest' '        run: sha256sum -c release.sha256' \
+  '      - name: parse release' '        run: jq -e ".version" release.json' \
+  '      - name: deploy' '        timeout-minutes: 10' '        run: gh release upload v1 release.json' \
+  > "$bad/.github/workflows/promote.yml"
+cp "$bad/.github/workflows/promote.yml" "$ok/.github/workflows/promote.yml"
+printf '%s\n' '# Decision record' '| Unit | Responsibility |' '| deploy job of promote | deploys only |' > "$bad/docs/decisions/promote.md"
+printf '%s\n' '# Decision record' '| Unit | Responsibility |' '| deploy job of promote | validates, digests, parses and deploys |' > "$ok/docs/decisions/promote.md"
+r1="$(srp_claim_check "$bad" docs/decisions/promote.md .github/workflows/promote.yml)"
+printf '%s\n' "$r1" | grep -qF 'FAIL DEC-001: docs/decisions/promote.md:3: .github/workflows/promote.yml is claimed to have one responsibility' \
+  || { echo "FAIL V2.92: the claim check did not contradict the job-named row with file:line: $r1"; failures=1; }
+r2="$(srp_claim_check "$ok" docs/decisions/promote.md .github/workflows/promote.yml)"
+[ -z "$r2" ] || { echo "FAIL V2.92: the claim check contradicts the row that claims several responsibilities: $r2"; failures=1; }
+
+# F-F (EVIDENCE-001, report gate): a tool-coverage claim in report text with no tool output (violation); the cited twin is clean.
+printf '%s\n' 'a.ts' 'b.ts' 'c.ts' 'd.ts' 'e.ts' 'f.ts' 'g.ts' > "$ok/evidence-files.txt"
+printf '%s\n' '# Report' 'Prettier covered the 7 files of the change.' > "$bad/report.md"
+printf '%s\n' '# Report' 'Prettier covered the 7 files listed in `evidence-files.txt`, the output of `prettier --file-info`.' > "$ok/report.md"
+e1="$(evidence_claim_check "$bad" report.md)"
+printf '%s\n' "$e1" | grep -qF 'NOT VERIFIED EVIDENCE-001: report.md:2: a tool is said to cover files, but no output of its own file resolution is cited' \
+  || { echo "FAIL V2.92: EVIDENCE-001 did not report the uncited tool coverage in the report: $e1"; failures=1; }
+e2="$(evidence_claim_check "$ok" report.md)"
+[ -z "$e2" ] || { echo "FAIL V2.92: EVIDENCE-001 reports the report that cites the tool output: $e2"; failures=1; }
+
+echo "V2.92 behavioral fixtures: $fx (removed on exit)"
+[ "$failures" -eq 0 ] && echo "V2.92 PASS" || echo "V2.92 FAIL"
 [ "$failures" -eq 0 ]
 ```
