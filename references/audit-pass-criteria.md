@@ -119,6 +119,10 @@ dimension. A criterion is never presented as a framework standard.
   mechanism.
 - No pattern is present without a signal, and no abstraction exists without
   a second consumer or a stated reason.
+- A decision record that claims a human approval quotes the verbatim user message and its
+  turn (M-92). Decision records in the change set and in the sweep run through
+  `approval_citation_check` (`APPROVAL-001` in `workflows/output-compliance.md`); an
+  uncited approval is `NOT VERIFIED` and blocks the gate that depends on it.
 - An SRP row names the unit and each responsibility it keeps, and every consumer
   claim of a design record is traced to the code (M-78). An SRP row with no `file:line` is a `FAIL` of this dimension (`DEC-001`).
   The auditor then reads the cited unit and lists the responsibilities it keeps: a
@@ -159,7 +163,17 @@ dimension. A criterion is never presented as a framework standard.
 ### 3. Code quality & separation (SRP)
 
 - Each unit has one reason to change. A unit that renders, queues, retries,
-  records dead letters, and logs is a violation.
+  records dead letters, and logs is a violation. A unit with more than one reason to
+  change is an SRP violation even when its design record says otherwise (M-107): the
+  candidates are listed by `SRP-001` in `workflows/output-compliance.md` with their
+  `file:line`, the reviewer confirms each listed unit, and the decision record names
+  every listed unit (`srp_record_check`). A listed unit the record does not name is a
+  `FAIL` of this dimension.
+- A helper repeated in two or more units is a duplicate (M-105): a change that
+  introduces a copy of a helper that another unit already declares promotes the helper
+  to the shared unit that owns it and imports it from there. `DUP-001` reports each copy with its
+  `file:line`; a copy in a changed file is a `FAIL`, and a duplicate that existed in
+  the base revision is a finding that does not block the task.
 - Errors are explicit: no swallowed exceptions, typed or documented error
   paths, and boundary input validated.
 - A `catch` that converts a failure into a fallback value, state, or default
@@ -317,6 +331,19 @@ dimension. A criterion is never presented as a framework standard.
 - Personal data is retained only as long as needed: any in-memory or
   persistent store that holds it has an explicit bound (size, time, or count).
 - Input from outside the process is validated at the boundary.
+- A recursive removal or an overwrite of a path the user supplies (an option such as
+  `--scratch`, `--out`, or `--target`) operates only inside a subdirectory the program
+  creates for the run, removes nothing else, and rejects a supplied path that equals or
+  contains a data, backup, manifest, or source path before any side effect (M-103).
+  `DEL-001` in `workflows/output-compliance.md` reports the removal with its `file:line`.
+  A program that removes a supplied path is a `FAIL` of this dimension until the overlap
+  guard is shown by a test that passes the overlapping path and asserts that nothing was
+  removed or overwritten.
+- A value a parser returns from external input is typed before it is dereferenced
+  (M-104): `null`, a scalar, or an array where an object is required is rejected by the
+  validator of that input, and an invalid source maps to the input-error status, never to
+  the verification-mismatch status. `PARSE-001` in `workflows/output-compliance.md` reports
+  each dereference with its `file:line`, and a test that passes `null` asserts the status.
 - A secret or content scan that excludes inputs by extension, path, or size
   reports every input it did not read as `NOT VERIFIED`, never as clean (M-51).
   A scan that reports clean without listing its exclusions is a `FAIL` of this
@@ -563,6 +590,10 @@ dimension. A criterion is never presented as a framework standard.
 
 ### 14. Organization boundaries
 
+- Where the project keeps a catalog of requirement identifiers, a document that cites one and
+  a catalog that lists a document are traceable in both directions (M-106). `TRACE-001` in
+  `workflows/output-compliance.md` reports each one-way or missing link with its `file:line`,
+  and a catalog with another layout is `NOT VERIFIED` for the lines it cannot read.
 - Applicable only to multi-package or multi-project changes. Otherwise `N/A`.
 - Changes stay inside the target project; package boundaries and dependency
   direction are respected.

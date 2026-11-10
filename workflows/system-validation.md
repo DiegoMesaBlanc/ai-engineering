@@ -1018,6 +1018,7 @@ Return:
 - V2.86 concrete imports, cited artifacts, removed test cases, preflight state, PASS evidence, teardown targets, and node:test (M-47, M-89, M-93 to M-98, R-157 to R-163):
 - V2.87 pre-code design review gate and its independence contract (M-99, R-164):
 - V2.88 visibility changes, caches that decide actions, and schema state at process start (M-100 to M-102, R-165 to R-167):
+- V2.89 destructive paths, parsed values, duplicated helpers, document-catalog traceability, and units with several responsibilities (M-103 to M-107, R-168 to R-172):
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -4415,7 +4416,7 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v273.XXXXXX")"
   printf '%s\n' "import { test } from 'vitest';" "test('renders under ar', () => { expect('ar').toBeDefined(); });" > src/features/payment/components/checkbox-row/checkbox-row.test.tsx
   printf '%s\n' "import { test } from 'vitest';" "test('renders under ar', () => { expect('ar').toBeDefined(); });" > src/features/payment/components/payment-screen/payment-screen.test.tsx
   printf '%s\n' "export const message = (t: (key: string) => string, amount: string) => t('notifications.received').replace('{amount}', amount);" > src/features/notifications/services/demo-push/demo-push.ts
-  printf '%s\n' "# MB-09" "| Pattern | Force | Signal | Consumers (\`file:line\`) | Stack translation |" "|---|---|---|---|---|" "| Adapter | Locale source | BE1 | \`locale.adapter.ts:8\`, \`format.ts:3\` | expo-localization adapter |" "Count: 1 selected" "| Principle | Status | Unit | Evidence |" "|---|---|---|---|" "| SRP | APPLIES | locale adapter | \`locale.adapter.ts:8\` reads the locale only |" "| OCP | PRESERVED | locale adapter | no edit |" "| LSP | NOT APPLICABLE | no substitution | none |" "| ISP | PRESERVED | locale port | small |" "| DIP | APPLIES | composition root | adapter behind port |" > docs/decisions/mb-09.md
+  printf '%s\n' "# MB-09" "| Pattern | Force | Signal | Consumers (\`file:line\`) | Stack translation |" "|---|---|---|---|---|" "| Adapter | Locale source | BE1 | \`locale.adapter.ts:8\`, \`format.ts:3\` | expo-localization adapter |" "Count: 1 selected" "| Principle | Status | Unit | Evidence |" "|---|---|---|---|" "| SRP | APPLIES | locale adapter | \`locale.adapter.ts:8\` reads the locale only |" "| OCP | PRESERVED | locale adapter | no edit |" "| LSP | NOT APPLICABLE | no substitution | none |" "| ISP | PRESERVED | locale port | small |" "| DIP | APPLIES | composition root \`src/composition/root.ts:1\` | adapter behind port |" > docs/decisions/mb-09.md
   printf '%s\n' "# App" "Las pruebas RTL de checkbox-row y payment-screen usan el locale ar." > README.md
   printf '%s\n' "export const announce = (m: string) => AccessibilityInfo.announceForAccessibility(m);" "export const Status = () => <Text accessibilityLiveRegion=\"polite\" />;" > src/features/notifications/services/announce.tsx
 
@@ -6812,3 +6813,255 @@ s3="$(db_schema_state_check "$bad" src/store.ts)"
 echo "V2.88 behavioral fixtures: $fx (removed on exit)"
 [ "$failures" -eq 0 ] && echo "V2.88 PASS" || echo "V2.88 FAIL"
 [ "$failures" -eq 0 ]
+```
+
+## V2.89 Regression — Destructive Paths, Parsed Values, Duplicated Helpers, Traceability, and Unit Responsibilities
+
+Verify that the rules added after the external audit of a backup-verification
+tool are canonical, reachable, wired into the procedures that run them, and that
+the detectors find the defects the audit found and pass their compliant twins:
+
+- M-103: code that deletes or overwrites a supplied path operates only inside a
+  subdirectory the program creates for the run, and rejects an overlapping path
+  before any side effect (R-168). `DEL-001` reports a recursive removal of a path the
+  program was given, with no per-run directory it created. The audit found a
+  `--scratch` option used as the working directory and then removed whole, which also
+  overwrote the live data it overlapped.
+- M-104: a value a parser returns from external input is typed before it is
+  dereferenced (R-169). `PARSE-001` reports `JSON.parse("null")` followed by a
+  dereference with no type guard. The audit found an invalid manifest reported as a
+  verification mismatch.
+- M-105: a helper repeated in two or more units promotes the helper to the shared
+  unit, not a copy (R-170). `DUP-001` reports the copy in a changed file as `FAIL`
+  and a pre-existing copy as `FINDING`. The audit found one helper in three files.
+- M-106: a document and its catalog are traceable in both directions (R-171).
+  `TRACE-001` reports a cited requirement that the catalog does not list under the
+  document, and a catalog line that names a document which does not cite the
+  requirement. The audit found `DB-12` citing `R-35` that the catalog did not link.
+- M-107: a unit with more than one reason to change is an SRP violation even when
+  its record says otherwise (R-172). `SRP-001` lists such a unit; `srp_record_check`
+  requires the decision record to name it; `DEC-001` requires the DIP row to cite the
+  composition root with `file:line`. The audit found a CLI unit with several
+  responsibilities and a record whose SRP row named only its folder.
+
+The rule `APPROVAL-001` (M-92) was defined and wired only into the commit gate, so
+a decision record checked by a code audit was never run through it (M-75, an
+unwired control). The text checks below require that `code-audit.md` runs it and
+that the sweep runs it on the decision records.
+
+The text checks require the anchors of M-103 to M-107 on every required surface,
+the registry rows, the regression rows, the coverage rows, the sweep calls, and the
+index entry. The behavioral part extracts the detector blocks of
+`workflows/output-compliance.md`, builds a defective fixture and its compliant twin
+for each detector in a temporary directory outside the repository, verifies each
+defect is reported with `file:line`, repairs the fixture, verifies it is clean, and
+removes the directory. It needs `awk`, `grep`, `sed`, `tr`, `cut`, `sort`, and
+`mktemp`; without them the behavioral part is `NOT VERIFIED`, and the text checks
+still run.
+
+Limits, stated by the rules themselves: `DEL-001`, `SRP-001`, and `PARSE-001` are
+candidates that the reviewer confirms. The overlap guard of M-103 and the status
+mapping of M-104 are decided by the owning project's tests, not by text; this
+section verifies only that the detectors exist, are wired, and find their fixtures.
+`DUP-001` reads the base revision only through the reviewer. `TRACE-001` reads one
+catalog layout. The behavior of the external tool itself is not verified here.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+ap="references/audit-pass-criteria.md"
+ca="workflows/code-audit.md"
+sk="skills/implementation-recipes/SKILL.md"
+vs="workflows/system-validation.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.89: $1 is missing $3"; failures=1; }
+}
+
+# Canonical wording and reachability of M-103 to M-107 on every required surface.
+for surface in "$ag" "$mr" "$rmx" "$oc" "$ap" "$vs"; do
+  need "$surface" "operates only inside a subdirectory the program creates" "the M-103 anchor"
+  need "$surface" "is typed before it is dereferenced" "the M-104 anchor"
+  need "$surface" "promotes the helper to the shared unit" "the M-105 anchor"
+  need "$surface" "traceable in both directions" "the M-106 anchor"
+  need "$surface" "A unit with more than one reason to change" "the M-107 anchor"
+done
+need "$sk" "operates only inside a subdirectory the program creates" "the M-103 anchor"
+need "$sk" "is typed before it is dereferenced" "the M-104 anchor"
+need "$sk" "promotes the helper to the shared unit" "the M-105 anchor"
+
+for id in M-103 M-104 M-105 M-106 M-107; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.89: no $id row in the registry"; failures=1; }
+done
+for id in R-168 R-169 R-170 R-171 R-172; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.89: no $id row in the regression matrix"; failures=1; }
+done
+for rule in DEL-001 PARSE-001 SRP-001 DUP-001 TRACE-001; do
+  grep -qF "| \`$rule\` |" "$root/$oc" || { echo "FAIL V2.89: the coverage table has no $rule row"; failures=1; }
+  grep -q "^### $rule " "$root/$oc" || { echo "FAIL V2.89: $oc has no $rule section"; failures=1; }
+done
+grep -qF 'destructive_path_check . $src' "$root/$oc" || { echo "FAIL V2.89: the sweep does not run DEL-001"; failures=1; }
+grep -qF 'parse_dereference_check . $src' "$root/$oc" || { echo "FAIL V2.89: the sweep does not run PARSE-001"; failures=1; }
+grep -qF 'srp_unit_check . $src' "$root/$oc" || { echo "FAIL V2.89: the sweep does not run SRP-001"; failures=1; }
+grep -qF 'dup_helper_check . -- $src' "$root/$oc" || { echo "FAIL V2.89: the sweep does not run DUP-001"; failures=1; }
+grep -qF 'approval_citation_check . $decisions' "$root/$oc" || { echo "FAIL V2.89: the sweep does not run APPROVAL-001 on the decision records"; failures=1; }
+grep -qF 'cites no file:line for the composition root (M-107)' "$root/$oc" || { echo "FAIL V2.89: DEC-001 does not require the DIP row to cite the composition root"; failures=1; }
+grep -qF 'approval_citation_check' "$root/$ca" || { echo "FAIL V2.89: the code audit does not run APPROVAL-001 (M-75, unwired control)"; failures=1; }
+grep -qF 'srp_record_check' "$root/$ca" || { echo "FAIL V2.89: the code audit does not run the SRP-001 record check"; failures=1; }
+grep -q '^- V2.89 ' "$root/$vs" || { echo "FAIL V2.89: V2.89 is not in the validation index"; failures=1; }
+
+# Behavioral part: the detectors run on fixtures in a temporary directory outside the repository.
+for cmd in awk grep sed tr cut sort mktemp; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V2.89: $cmd is not available, the behavioral fixtures were not run"; exit 2; }
+done
+
+extract_sec() {
+  awk -v h="$1" '
+    $0 ~ ("^### " h " ") { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }
+  ' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v289.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+{ extract_sec "DEL-001"; extract_sec "PARSE-001"; extract_sec "SRP-001"; extract_sec "DUP-001"; extract_sec "TRACE-001"; extract_sec "DIP-001"; extract_sec "DEC-001"; } > "$fx/detectors.sh"
+. "$fx/detectors.sh" || { echo "FAIL V2.89: the detector blocks do not load"; exit 1; }
+
+bad="$fx/bad"; ok="$fx/ok"
+mkdir -p "$bad/src/cli" "$ok/src/cli" "$bad/src/a" "$bad/src/b" "$ok/src/a" "$ok/src/b" "$bad/docs/decisions" "$ok/docs/decisions" "$bad/docs" "$ok/docs"
+
+# M-103 (DEL-001): a recursive removal of a supplied --scratch path (violation), the per-run twin, and a fixed-path build clean.
+cat > "$bad/src/cli/restore.ts" <<'EOF'
+export const run = (argv: string[]) => {
+  const options = parse(argv)
+  const scratch = options.scratch
+  rmSync(scratch, { recursive: true, force: true })
+}
+EOF
+cat > "$ok/src/cli/restore.ts" <<'EOF'
+export const run = (argv: string[]) => {
+  const options = parse(argv)
+  const run = mkdtempSync(join(options.scratch, "run-"))
+  rmSync(run, { recursive: true, force: true })
+}
+EOF
+printf '%s\n' 'export const clean = () => rmSync("dist", { recursive: true });' > "$ok/src/cli/clean.ts"
+d1="$(destructive_path_check "$bad" src/cli/restore.ts)"
+printf '%s\n' "$d1" | grep -qF 'FAIL DEL-001: src/cli/restore.ts:4:' \
+  || { echo "FAIL V2.89: DEL-001 did not report the removal of the supplied path with file:line: $d1"; failures=1; }
+d2="$(destructive_path_check "$ok" src/cli/restore.ts)"
+[ -z "$d2" ] || { echo "FAIL V2.89: DEL-001 reports the per-run twin: $d2"; failures=1; }
+d3="$(destructive_path_check "$ok" src/cli/clean.ts)"
+printf '%s\n' "$d3" | grep -qF 'NOT VERIFIED DEL-001: src/cli/clean.ts:1:' \
+  || { echo "FAIL V2.89: DEL-001 did not list a removal with no supplied path as NOT VERIFIED: $d3"; failures=1; }
+printf '%s\n' "$d3" | grep -q '^FAIL' && { echo "FAIL V2.89: DEL-001 fails a removal with no supplied path: $d3"; failures=1; }
+
+# M-104 (PARSE-001): a manifest dereferenced straight after JSON.parse (violation) and the typed twin.
+cat > "$bad/src/manifest.ts" <<'EOF'
+export const readManifest = (text: string) => {
+  const manifest = JSON.parse(text)
+  return manifest.files.length
+}
+EOF
+cat > "$ok/src/manifest.ts" <<'EOF'
+export const readManifest = (text: string) => {
+  const raw: unknown = JSON.parse(text)
+  if (typeof raw !== "object" || raw === null) throw new Error("invalid")
+  const manifest = raw as { files: string[] }
+  return manifest.files.length
+}
+EOF
+p1="$(parse_dereference_check "$bad" src/manifest.ts)"
+printf '%s\n' "$p1" | grep -qF 'FAIL PARSE-001: src/manifest.ts:3:' \
+  || { echo "FAIL V2.89: PARSE-001 did not report the dereference after JSON.parse: $p1"; failures=1; }
+p2="$(parse_dereference_check "$ok" src/manifest.ts)"
+[ -z "$p2" ] || { echo "FAIL V2.89: PARSE-001 reports the typed twin: $p2"; failures=1; }
+
+# M-107 (SRP-001): a CLI unit with several responsibilities (violation) and a single-responsibility twin.
+cat > "$bad/src/cli/db-backup.ts" <<'EOF'
+import { parseArgs } from "node:util"
+export const main = (argv: string[]) => {
+  const options = parseArgs(argv)
+  console.log("backup")
+  const manifest = JSON.parse(readFileSync(options.manifest, "utf8"))
+  rmSync(options.scratch, { recursive: true })
+  process.exit(0)
+}
+EOF
+cat > "$ok/src/cli/db-backup.ts" <<'EOF'
+export const readManifest = (text: string) => JSON.parse(text)
+export const isNonEmpty = (value: string) => value.length > 0
+EOF
+s1="$(srp_unit_check "$bad" src/cli/db-backup.ts)"
+printf '%s\n' "$s1" | grep -qF 'FAIL SRP-001: src/cli/db-backup.ts:1:' \
+  || { echo "FAIL V2.89: SRP-001 did not list the unit with several responsibilities: $s1"; failures=1; }
+s2="$(srp_unit_check "$ok" src/cli/db-backup.ts)"
+[ -z "$s2" ] || { echo "FAIL V2.89: SRP-001 lists the single-responsibility twin: $s2"; failures=1; }
+printf '%s\n' '# Decision' '| SRP | src/backup/index.ts:1 names only its folder |' > "$bad/docs/decisions/backup.md"
+printf '%s\n' '# Decision' '| SRP | src/cli/db-backup.ts:1 parses, exits, prints, removes, validates |' > "$ok/docs/decisions/backup.md"
+r1="$(srp_record_check "$bad" docs/decisions/backup.md src/cli/db-backup.ts)"
+printf '%s\n' "$r1" | grep -qF 'FAIL DEC-001: docs/decisions/backup.md:1: SRP-001 lists src/cli/db-backup.ts' \
+  || { echo "FAIL V2.89: srp_record_check did not report the record that names no row for the unit: $r1"; failures=1; }
+r2="$(srp_record_check "$ok" docs/decisions/backup.md src/cli/db-backup.ts)"
+[ -z "$r2" ] || { echo "FAIL V2.89: srp_record_check reports the record that names the unit: $r2"; failures=1; }
+
+# M-105 (DUP-001): the takeValue helper in two units (violation: the change touched src/b) and the shared twin.
+cat > "$bad/src/a/cli.ts" <<'EOF'
+export const takeValue = (args: string[], flag: string) => {
+  const index = args.indexOf(flag)
+  if (index < 0) return undefined
+  return args[index + 1]
+}
+EOF
+cp "$bad/src/a/cli.ts" "$bad/src/b/restore.ts"
+cp "$bad/src/a/cli.ts" "$ok/src/a/cli.ts"
+printf '%s\n' 'import { takeValue } from "../a/cli"' 'export const useIt = (args: string[]) => takeValue(args, "--x")' > "$ok/src/b/restore.ts"
+u1="$(dup_helper_check "$bad" src/b/restore.ts -- src/a/cli.ts src/b/restore.ts)"
+printf '%s\n' "$u1" | grep -qF 'FAIL DUP-001: src/b/restore.ts:1:' \
+  || { echo "FAIL V2.89: DUP-001 did not report the copy in the changed file: $u1"; failures=1; }
+printf '%s\n' "$u1" | grep -qF 'FINDING DUP-001: src/a/cli.ts:1:' \
+  || { echo "FAIL V2.89: DUP-001 did not record the unchanged copy as a finding: $u1"; failures=1; }
+u2="$(dup_helper_check "$ok" src/b/restore.ts -- src/a/cli.ts src/b/restore.ts)"
+printf '%s\n' "$u2" | grep -q 'DUP-001' && { echo "FAIL V2.89: DUP-001 reports the shared-helper twin: $u2"; failures=1; }
+
+# M-106 (TRACE-001): DB-12 cites R-35 and R-07; the catalog does not list DB-12 under R-35 and lists R-99 for DB-12 (violation).
+printf '%s\n' '| Requirement | Document |' '| R-35 | DB-11 |' '| R-07 | DB-12 |' '| R-99 | DB-12 |' > "$bad/CATALOG.md"
+printf '%s\n' '# DB-12' 'Covers R-35 and R-07.' > "$bad/docs/DB-12.md"
+printf '%s\n' '| Requirement | Document |' '| R-35 | DB-11, DB-12 |' '| R-07 | DB-12 |' > "$ok/CATALOG.md"
+printf '%s\n' '# DB-12' 'Covers R-35 and R-07.' > "$ok/docs/DB-12.md"
+t1="$(trace_check "$bad" CATALOG.md R docs/DB-12.md)"
+printf '%s\n' "$t1" | grep -qF 'FAIL TRACE-001: docs/DB-12.md:2: R-35 is cited by DB-12' \
+  || { echo "FAIL V2.89: TRACE-001 did not report the requirement the catalog does not list under the document: $t1"; failures=1; }
+printf '%s\n' "$t1" | grep -qF 'FAIL TRACE-001: CATALOG.md:4: the catalog lists R-99 under DB-12' \
+  || { echo "FAIL V2.89: TRACE-001 did not report the catalog line the document does not cite: $t1"; failures=1; }
+t2="$(trace_check "$ok" CATALOG.md R docs/DB-12.md)"
+[ -z "$t2" ] || { echo "FAIL V2.89: TRACE-001 reports the linked twin: $t2"; failures=1; }
+t3="$(trace_check "$ok" MISSING.md R docs/DB-12.md)"
+printf '%s\n' "$t3" | grep -qF 'NOT VERIFIED TRACE-001' \
+  || { echo "FAIL V2.89: TRACE-001 did not report an absent catalog as NOT VERIFIED: $t3"; failures=1; }
+
+# M-107 (DEC-001): a DIP row that claims APPLIES without the composition root's file:line (violation) and its twin that cites it.
+mkdir -p "$bad/docs/decisions" "$ok/docs/decisions"
+printf '%s\n' '# Decision' '| Pattern | Force | Signal | Consumers | Stack translation |' '|---|---|---|---|---|' '| Adapter | Locale source | BE1 | `locale.adapter.ts:8`, `format.ts:3` | adapter |' '' '| Principle | Status | Unit | Evidence |' '|---|---|---|---|' '| SRP | APPLIES | locale adapter | `locale.adapter.ts:8` reads the locale only |' '| OCP | PRESERVED | format | `format.ts:3` |' '| LSP | NOT APPLICABLE | none | no subtype |' '| ISP | APPLIES | port | `port.ts:2` |' '| DIP | APPLIES | composition root | adapter behind port |' > "$bad/docs/decisions/dip-cite.md"
+sed 's/| DIP | APPLIES | composition root |/| DIP | APPLIES | composition root `src\/composition\/root.ts:1` |/' "$bad/docs/decisions/dip-cite.md" > "$ok/docs/decisions/dip-cite.md"
+v1="$(decision_record_check "$bad" docs/decisions/dip-cite.md)"
+printf '%s\n' "$v1" | grep -qF 'FAIL DEC-001: docs/decisions/dip-cite.md: the DIP row claims APPLIES or PRESERVED and cites no file:line for the composition root (M-107)' \
+  || { echo "FAIL V2.89: DEC-001 did not report the DIP row with no composition-root file:line: $v1"; failures=1; }
+v2="$(decision_record_check "$ok" docs/decisions/dip-cite.md)"
+printf '%s\n' "$v2" | grep -q 'cites no file:line for the composition root' \
+  && { echo "FAIL V2.89: DEC-001 reports the DIP row that cites the composition root: $v2"; failures=1; }
+
+echo "V2.89 behavioral fixtures: $fx (removed on exit)"
+[ "$failures" -eq 0 ] && echo "V2.89 PASS" || echo "V2.89 FAIL"
+[ "$failures" -eq 0 ]
+```

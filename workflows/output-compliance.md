@@ -1166,6 +1166,7 @@ project_safety_sweep() {
   nonbarrel=$(printf '%s\n' "$src" | grep -vE '(^|/)index\.(ts|tsx|js|jsx|mjs|cjs)$')
   mds=$(printf '%s\n' "$files" | grep -E '\.md$')
   decisions=$(printf '%s\n' "$files" | grep -E '(^|/)docs/decisions/.*\.md$')
+  catalogs=$(printf '%s\n' "$files" | grep -E '\.md$' | grep -iE '(^|/)catalog[^/]*\.md$')
   contracts=$(printf '%s\n' "$files" | grep -E '\.md$' | grep -iE 'contract|contrato|api|error|docs/')
   migrations=$(printf '%s\n' "$files" | grep -E '(^|/)(migrations?|db/migrate)/')
   tests=$(printf '%s\n' "$files" | grep -E '(\.test\.|\.spec\.|(^|/)(tests?|__tests__)/)')
@@ -1210,6 +1211,13 @@ project_safety_sweep() {
   index_coverage_check . $src $migrations
   timer_hold_check . $tests
   bound_test_check . $src -- $tests
+  destructive_path_check . $src
+  parse_dereference_check . $src
+  srp_unit_check . $src
+  dup_helper_check . -- $src
+  approval_citation_check . $decisions
+  [ -n "$catalogs" ] && echo "NOT VERIFIED TRACE-001: a catalog is tracked; run trace_check . <catalog> <prefix> $mds with the catalog's requirement prefix" ||
+    echo "NOT VERIFIED TRACE-001: no catalog is tracked, so no document-catalog link was checked"
   [ -n "$manifests" ] || echo "NOT VERIFIED M-61: no build manifest or app configuration is tracked, so backup is not verified"
   echo "NOT VERIFIED M-57 (downgrade): needs a base revision; run dependency_downgrade_check on the change set"
   echo "NOT VERIFIED COMMIT-001: needs a proposed commit group; run commit_group_closure_check on each group (workflows/commit.md Phase 11)"
@@ -1442,6 +1450,11 @@ decision_record_check() {
     # M-96: a DIP row that claims APPLIES or PRESERVED is contradicted by any DIP-001 finding
     # in the source tree. The record states the composition root; the concrete imports decide.
     dip_row="$(grep -E "^\| *DIP *\|" "$root/$f" 2>/dev/null | head -n 1)"
+    # M-107: a DIP row that claims APPLIES or PRESERVED cites the composition root with file:line.
+    if printf '%s\n' "$dip_row" | grep -qE "APPLIES|PRESERVED" &&
+       ! printf '%s\n' "$dip_row" | grep -qE '[A-Za-z0-9_./-]+\.[A-Za-z0-9]+:[0-9]+'; then
+      echo "FAIL DEC-001: $f: the DIP row claims APPLIES or PRESERVED and cites no file:line for the composition root (M-107)"
+    fi
     if printf '%s\n' "$dip_row" | grep -qE "APPLIES|PRESERVED"; then
       dip_hits="$(cd "$root" && find . -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' -o -name '*.mjs' -o -name '*.cjs' \) -not -path '*/node_modules/*' -not -path '*/dist/*' -not -path '*/build/*' | sed 's#^\./##' | while IFS= read -r src; do dip_concrete_check . "$src"; done)"
       if [ -n "$dip_hits" ]; then
@@ -2820,6 +2833,238 @@ decision_citation_check() {
 }
 ```
 
+### DEL-001 — A destructive operation on a supplied path is confined to a run directory
+
+M-103: code that deletes, overwrites, or replaces a supplied path operates only inside a
+subdirectory the program creates for the run. It is the rule of `AGENTS.md` (Workspace Safety:
+never destroy or replace user work). A recursive removal (`rmSync` with `recursive`, `rm -rf`, `shutil.rmtree`,
+`os.RemoveAll`, `FileUtils.rm_rf`) whose target the program does not create itself
+deletes whatever the user pointed at. The external audit found a `--scratch` option
+that was used as the working directory and then removed whole, which also overwrote
+the live data directory it overlapped. The detector reads each non-test source file.
+A file that removes a path and reads a supplied value (`argv`, `parseArgs`,
+`options.`, `opts.`, `flags.`, `args.`) and creates no per-run temporary directory
+(`mkdtemp`, `mktemp`, `tempfile`, `MkdirTemp`, `tmpdir`) is a `FAIL` at the removal
+line. A file that removes a path with no supplied value is `NOT VERIFIED`: the
+reviewer confirms the program owns the path. The overlap guard (a supplied path that
+equals or contains a data, backup, or manifest path is rejected before any side
+effect) is not decided by text; it is verified by the behavioral fixture of the
+owning project, so this detector never reports a guarded program as clean.
+
+```sh
+# $1 = repository root; $2... = source files, relative to it.
+destructive_path_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.py|*.go|*.rs|*.rb|*.php|*.java|*.kt|*.cs|*.sh) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*_test.*|*/__tests__/*|*/tests/*|*/test/*|*/test_*|*/testing/*) continue ;; esac
+    awk -v file="$f" '
+      /rmSync\(|rmdirSync\(|shutil\.rmtree|os\.RemoveAll|FileUtils\.rm_rf|remove_all\(|rm -rf|rm -r / { n++; at[n] = NR }
+      /mkdtemp|mktemp|tempfile|MkdirTemp|tmpdir\(/ { tmp = 1 }
+      /argv|parseArgs|options\.|opts\.|flags\.|args\./ { supplied = 1 }
+      END {
+        for (i = 1; i <= n; i++) {
+          if (tmp) continue
+          if (supplied)
+            printf "FAIL DEL-001: %s:%d: a recursive removal of a path the program was given, with no per-run directory it created (M-103)\n", file, at[i]
+          else
+            printf "NOT VERIFIED DEL-001: %s:%d: a recursive removal; the reviewer confirms the program owns the path (M-103)\n", file, at[i]
+        }
+      }' "$root/$f"
+  done
+}
+```
+
+### PARSE-001 — A parsed external value is typed before it is dereferenced
+
+M-104: a value a parser returns from external input is typed before it is dereferenced. The
+external audit found `JSON.parse("null")` returning `null`, which the
+code dereferenced outside the handler that mapped the error. A line that assigns the
+result of `JSON.parse(` to a name is checked: within fifteen lines the name must meet
+a type or null guard (`typeof X`, `X === null`, `Array.isArray(X)`, an `is...(X)`
+validator, or the optional-access form `X?.`) before it is dereferenced (`X.`, `X[`).
+A dereference that comes first is a `FAIL` at its line. A parse that goes straight
+into a schema validator (`safeParse`, `.parse(` of a schema) is not a dereference
+and is not reported. The detector is a candidate: the reviewer confirms that the
+guard rejects with the input-error status, because the status mapping is not text.
+
+```sh
+# $1 = repository root; $2... = source files, relative to it.
+parse_dereference_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*) continue ;; esac
+    awk -v file="$f" '
+      { L[NR] = $0 }
+      END {
+        for (i = 1; i <= NR; i++) {
+          if (L[i] !~ /JSON\.parse\(/ || L[i] ~ /safeParse|\.parse\(.*\)\)|validate/) continue
+          if (match(L[i], /(const|let|var)[ \t]+[A-Za-z_$][A-Za-z0-9_$]*[ \t]*(:[^=]*)?=[ \t]*JSON\.parse\(/) == 0) continue
+          v = L[i]
+          sub(/^[ \t]*(const|let|var)[ \t]+/, "", v); sub(/[^A-Za-z0-9_$].*$/, "", v)
+          for (k = i + 1; k <= NR && k <= i + 15; k++) {
+            if (L[k] ~ ("typeof " v "[^A-Za-z0-9_$]|" v " *(===|!==|==|!=) *null|null *(===|!==|==|!=) *" v "[^A-Za-z0-9_$]|Array\\.isArray\\(" v "\\)|is[A-Za-z]*\\(" v "\\)|" v "\\?\\.")) break
+            if (L[k] ~ ("(^|[^A-Za-z0-9_$.])" v "[.\\[]")) {
+              printf "FAIL PARSE-001: %s:%d: %s is dereferenced before the parsed value is typed (M-104)\n", file, k, v
+              break
+            }
+          }
+        }
+      }' "$root/$f"
+  done
+}
+```
+
+### SRP-001 — A unit that combines several responsibilities is listed for its record
+
+M-107 and M-78. A unit with more than one reason to change violates SRP even when
+its record says `APPLIES`. The detector counts, for each non-test source file, the
+kinds of responsibility the file contains: argument parsing, exit status, output,
+file lifecycle, manifest or contract validation, and orchestration (an `await` or a
+`.then` chain). A file with three or more kinds is listed with its kinds and the
+line of the first one. The threshold is a candidate, not a verdict: the reviewer
+confirms each listed unit, and a unit the reviewer accepts keeps its reason in the
+decision record. `srp_record_check` then requires the decision record to name every
+listed file, so an SRP row that covers only the folder that holds the unit is a
+`FAIL`.
+
+```sh
+# $1 = repository root; $2... = source files, relative to it.
+srp_unit_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*|*.d.ts) continue ;; esac
+    awk -v file="$f" '
+      function kind(name, re) { if (!(name in seen) && $0 ~ re) seen[name] = NR }
+      {
+        kind("argument parsing", "argv|parseArgs|takeValue|--[a-z][a-z-]*")
+        kind("exit status", "process\\.exit|exitCode|EXIT_[A-Z]")
+        kind("output", "console\\.(log|error|info|warn)|process\\.std(out|err)\\.write")
+        kind("file lifecycle", "rmSync|mkdirSync|renameSync|copyFileSync|writeFileSync|unlinkSync|mkdtemp")
+        kind("manifest or contract validation", "JSON\\.parse|\\.parse\\(|validate[A-Z][A-Za-z]*\\(|isRecord|safeParse")
+        kind("orchestration", "await [A-Za-z_$.]+\\(|\\.then\\(")
+      }
+      END {
+        n = 0; first = 0; list = ""
+        for (k in seen) { n++; list = list k " (line " seen[k] "); "; if (first == 0 || seen[k] < first) first = seen[k] }
+        if (n >= 3) printf "FAIL SRP-001: %s:%d: %d kinds of responsibility in one unit: %s(M-107)\n", file, first, n, list
+      }' "$root/$f"
+  done
+}
+
+# $1 = repository root; $2 = decision record, relative to it; $3... = files SRP-001 listed.
+srp_record_check() {
+  root="$1"; record="$2"; shift 2
+  for f in "$@"; do
+    grep -qF -- "$(basename "$f")" "$root/$record" 2>/dev/null ||
+      echo "FAIL DEC-001: $record:1: SRP-001 lists $f with several responsibilities and the record names no row for it (M-107)"
+  done
+}
+```
+
+### DUP-001 — A helper repeated in two units is promoted, not copied
+
+M-105: a helper repeated in two or more units is not copied; the change promotes the helper
+to the shared unit that owns it. The external audit found the same `takeValue` helper in three
+files. The detector extracts each top-level declaration of at least three lines (a `const`,
+`let`, or `function` whose body closes at depth zero), normalizes its whitespace, and
+groups the declarations that have the same name and body in two or more files. A copy
+in a changed file is a `FAIL` at its declaration line, because the change introduced
+it or touched it; the copy must be replaced by an import of the shared unit that owns
+the helper. A group with no changed copy is a `FINDING` (a pre-existing duplicate),
+recorded and not blocking. Limit: a changed file whose copy already existed in the
+base revision is reported as `FAIL` by this text check; the reviewer reads the base
+revision (`git show`) and downgrades it to a finding, with the reason recorded.
+
+```sh
+# $1 = repository root; $2... = changed files, then -- and every source file of the tree.
+dup_helper_check() {
+  root="$1"; shift
+  changed=""
+  while [ "$#" -gt 0 ] && [ "$1" != "--" ]; do changed="$changed $1"; shift; done
+  [ "$#" -gt 0 ] && shift
+  work="$(mktemp -d)" || return 1
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+    case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*|*.d.ts) continue ;; esac
+    awk -v file="$f" '
+      {
+        o = gsub(/[[{(]/, "&"); c = gsub(/[]})]/, "&")
+        if (depth == 0 && $0 ~ /^(export )?(const|let|function) [A-Za-z_$][A-Za-z0-9_$]* *(=|\()/) {
+          nm = $0; sub(/^export /, "", nm); sub(/^(const|let|function) /, "", nm); sub(/[^A-Za-z0-9_$].*$/, "", nm)
+          cur = nm; start = NR; body = ""
+        }
+        if (cur != "") { norm = $0; gsub(/[ \t]+/, " ", norm); sub(/^ /, "", norm); body = body " " norm }
+        depth += o - c
+        if (cur != "" && depth <= 0) {
+          if (NR - start + 1 >= 3) print cur "\t" file "\t" start "\t" body
+          cur = ""; depth = 0
+        }
+      }' "$root/$f" >> "$work/blocks.tsv"
+  done
+  [ -f "$work/blocks.tsv" ] || { rm -rf "$work"; return 0; }
+  awk -F '\t' -v changed="$changed" '
+    BEGIN { n = split(changed, arr, " "); for (i = 1; i <= n; i++) isch[arr[i]] = 1 }
+    {
+      key = $1 SUBSEP $4
+      if (!((key SUBSEP $2) in seen)) { seen[key SUBSEP $2] = 1; units[key]++ }
+      row[NR] = $0; rk[NR] = key
+    }
+    END {
+      for (r = 1; r <= NR; r++) {
+        if (units[rk[r]] < 2) continue
+        split(row[r], c, "\t")
+        if (c[2] in isch)
+          printf "FAIL DUP-001: %s:%s: %s is repeated in %d units; import the shared helper from the unit that owns it (M-105)\n", c[2], c[3], c[1], units[rk[r]]
+        else
+          printf "FINDING DUP-001: %s:%s: %s is repeated in %d units, none of them changed; recorded, not blocking (M-105)\n", c[2], c[3], c[1], units[rk[r]]
+      }
+    }' "$work/blocks.tsv"
+  rm -rf "$work"
+}
+```
+
+### TRACE-001 — A document and its catalog cite each other
+
+M-106: a document and its catalog are traceable in both directions. The external audit found
+`guias/datos/DB-12.md` citing `R-35` and `R-07`
+while the catalog did not list `DB-12` under them. The check is given the catalog
+file, the prefix of its requirement identifiers (for example `R`), and the documents.
+For each requirement a document cites, the catalog must have a line that names both
+the requirement and the document; for each catalog line that names the document and
+a requirement, the document must cite that requirement. A catalog that is absent is
+`NOT VERIFIED`. The check depends on the catalog putting the document and its
+requirements on one line, which is the convention it reads; a catalog with another
+layout is `NOT VERIFIED` for the lines it cannot read.
+
+```sh
+# $1 = repository root; $2 = catalog, relative to it; $3 = requirement prefix (for example R);
+# $4... = documents, relative to the root. The document id is the file name without .md.
+trace_check() {
+  root="$1"; catalog="$2"; prefix="$3"; shift 3
+  [ -f "$root/$catalog" ] || { echo "NOT VERIFIED TRACE-001: $catalog: catalog not found, so the links were not checked"; return 0; }
+  for d in "$@"; do
+    [ -f "$root/$d" ] || continue
+    id="$(basename "$d" .md)"
+    grep -oE "${prefix}-[0-9]+" "$root/$d" | sort -u | while read -r r; do
+      if ! grep -qE "(^|[^A-Za-z0-9_-])$r([^0-9]|\$)" "$root/$catalog" ||
+         ! grep -E "(^|[^A-Za-z0-9_-])$r([^0-9]|\$)" "$root/$catalog" | grep -qE "(^|[^A-Za-z0-9_-])$id([^0-9A-Za-z-]|\$)"; then
+        ln="$(grep -nE "(^|[^A-Za-z0-9_-])$r([^0-9]|\$)" "$root/$d" | head -n 1 | cut -d: -f1)"
+        echo "FAIL TRACE-001: $d:${ln:-1}: $r is cited by $id, but $catalog does not list $id under $r (M-106)"
+      fi
+    done
+    grep -nE "(^|[^A-Za-z0-9_-])$id([^0-9A-Za-z-]|\$)" "$root/$catalog" | while IFS=: read -r ln rest; do
+      printf '%s\n' "$rest" | grep -oE "${prefix}-[0-9]+" | sort -u | while read -r r; do
+        grep -qE "(^|[^A-Za-z0-9_-])$r([^0-9]|\$)" "$root/$d" ||
+          echo "FAIL TRACE-001: $catalog:$ln: the catalog lists $r under $id, but $d does not cite $r (M-106)"
+      done
+    done
+  done
+}
+```
+
 ### REPORT-001 — A verdict matrix is consistent with its own rules
 
 M-80: a verdict matrix is consistent with its own rules. An audit, review, or gate
@@ -3005,6 +3250,11 @@ report_matrix_check() {
 | `BOUND-001` | changed source files that declare a bound, and the test files | a changed source declares a timeout, a busy or lock wait, a deadline, or a retry budget |
 | `COMMENT-001` | changed TypeScript or JavaScript files | a changed file contains a comment |
 | `DEC-002` | decision records and contract documents, every line with a citation | a record or contract document is in the change set (R-136, R-145) |
+| `DEL-001` | source files in the change set and the sweep | a source file removes a path recursively or overwrites a supplied path (M-103) |
+| `PARSE-001` | source files in the change set and the sweep | a source file assigns the result of `JSON.parse(` (M-104) |
+| `SRP-001` | source files in the change set and the sweep; `srp_record_check` for each decision record | a source file contains three or more kinds of responsibility, or a decision record names a listed unit (M-107) |
+| `DUP-001` | source files in the change set against the source tree | a changed file declares a helper of three or more lines that another unit also declares (M-105) |
+| `TRACE-001` | catalog and documents in the change set; `trace_check` takes the catalog and its prefix | a document cites a requirement identifier of a catalog, or a catalog lists a document (M-106) |
 | `REPORT-001` | every delivered audit, review, or gate report that carries a verdict matrix | a report with a dimension matrix is delivered (M-80: a verdict matrix is consistent with its own rules) |
 | `CHECK-001`, `CHECK-002` | phase reports | the work reports phases or checklists |
 | `GATE-001` | installation proposals | a dependency or tooling installation is proposed |

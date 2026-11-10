@@ -103,6 +103,19 @@ implementation are:
 - **Input is validated before any side effect**: an entry point validates
   every argument and option before it opens a file, a connection, a database, or
   a network resource, so an invalid value leaves no artifact (M-83; `VAL-001`).
+- **A destructive operation on a supplied path stays inside a run directory**:
+  a recursive removal or an overwrite of a path the user gave operates only
+  inside a subdirectory the program creates for the run, and a supplied path that
+  overlaps a data, backup, manifest, or source path is rejected before any side
+  effect. Each removal is reviewed for ownership of its target (M-103; `DEL-001`).
+- **A parsed external value is typed before it is dereferenced**: `null`, a scalar,
+  or an array where an object is required is rejected by the input's validator, and
+  the invalid source maps to the input-error status, not to the mismatch status
+  (M-104; `PARSE-001`).
+- **A helper is not copied into a second unit**: when a second unit needs a helper
+  that another unit declares, the change promotes the helper to the shared unit
+  that owns it and imports it from there (M-105; `DUP-001`). A unit that combines several
+  responsibilities is split or listed in the decision record (M-107; `SRP-001`).
 - **Retry budgets are bounds**: a retry loop declares its attempts and its
   backoff ceiling, and a test under controlled time holds the dependency until
   the budget is spent and asserts the attempt count and the terminal state
