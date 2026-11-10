@@ -624,7 +624,8 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
 - In a TypeScript or JavaScript test file that a task creates or modifies, every
   test API the file uses — `describe`, `test`, `it`, `expect`, `vi`, and the
   hooks — is imported explicitly from the module of the framework that declares
-  it (for Vitest, `vitest`; for Jest, `@jest/globals`). Test globals are never
+  it (for Vitest, `vitest`; for Jest, `@jest/globals`; for Node's test runner,
+  `node:test`). Test globals are never
   relied on, so the type checker needs no global test declaration to accept a
   test. A test case is declared with `test`, not `it`: in Vitest `it` is an
   alias of `test`, and one form keeps the suite uniform. A violation on a line
@@ -715,6 +716,11 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
 - A request whose outcome is an analysis, a decision, or an estimate authorizes no file change in any project, including a scratch, demo, or throwaway project. Its approved manifest is empty, so any changed file is a `SCOPE-001` `FAIL`. Only an implementation request authorizes writing files, and a request that later needs code starts a new alignment (M-91).
 - A human approval that a report, decision record, checkpoint, or proposal attributes to the user is kept only when it quotes the verbatim user message and its turn. An approval that is claimed without that quote is `NOT VERIFIED` and blocks the gate that depends on it; `APPROVAL-001` lists the uncited claims (M-92).
 - A teardown, reset, or cleanup step that the checkpoint records as `NOT DONE` blocks the commit proposal until the user resolves it or accepts it in writing. `TEARDOWN-001` lists each unresolved step with its file and line (M-93).
+- A test case that existed in the base revision and is absent from the working copy is a change of behavior, not of form: it removed or renamed a behavior. The approved scope manifest names it on a line of its own, `behavior: <exact title>`, and `BEHAVIOR-001` reports each removed or renamed title the manifest does not name (M-94).
+- Before alignment the state of the target repository is recorded: the branch, the HEAD, and the working tree. A detached HEAD stops alignment and the branch is asked for, and a working tree with uncommitted paths stops alignment unless the task checkpoint records them as preserved (`working tree:`). `PREFLIGHT-001` reports both before the first file write (M-95).
+- A concrete module (an adapter, a store, a policy, or a module under `infrastructure/`) is imported only by the composition root. `DIP-001` reports every non-composition file that imports one by a relative or aliased path, and a decision record whose DIP row claims APPLIES or PRESERVED is contradicted by any such finding, so the record cannot state the rule the code breaks (M-96).
+- A document that cites an artifact is kept only when every cited artifact resolves inside the repository. A path that points outside the repository is a `FAIL`, and a path that is not in the repository is `NOT VERIFIED`, which blocks delivery. `ARTIFACT-001` reports each cited path with its file and line (M-97, M-68).
+- A PASS in a verdict matrix carries its evidence: a `file:line`, a detector ID with its output, a command in backticks, or its exit code. A PASS with a claim and no evidence is not a PASS, and `REPORT-001` reports it (M-98).
 - A reinforcement of an engineering discipline adopted from an external
   methodology (test-first discipline, root-cause debugging, verification before
   completion, response to review feedback, alignment questions) is accepted

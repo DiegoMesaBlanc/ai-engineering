@@ -601,7 +601,7 @@ otherwise. The check reports `file:line`; it never rewrites code.
 
 A TypeScript or JavaScript test file the change set creates or modifies
 imports every test API it uses explicitly from the framework module that
-declares it (`vitest`, or `@jest/globals` for Jest), so the type checker
+declares it (`vitest`, `@jest/globals` for Jest, or `node:test` for Node's test runner), so the type checker
 accepts it without a global test declaration (M-47, `AGENTS.md`). Without
 the import the file fails with `Cannot find name 'describe'` (TS2593). A
 test case is declared with `test`, not `it`.
@@ -616,7 +616,7 @@ touch is never read.
 
 **Detection.** The function reads each file and reports every line where a
 test API is called or read as a member, `(?<![.\w$])NAME(` or `NAME.identifier`,
-and every `it(` case. The name must appear in an import from `vitest` or
+and every `it(` case. The name must appear in an import from `vitest`, `node:test`, or
 `@jest/globals`. Prose such as `the test. Next` does not match, because a member
 access has no space after the dot. When a second argument names a file of
 added line numbers, only those lines are reported.
@@ -631,7 +631,7 @@ test_api_check() {
     if ($filter) { open my $a, "<", $added or die "$added: $!"; my @l = do { local $/ = "\n"; <$a> }; close $a; %on = map { my $x = $_; $x =~ s/\s+$//; ($x => 1) } @l; }
     open my $h, "<", $f or die "$f: $!"; my $s = <$h>; close $h;
     my %imp;
-    while ($s =~ /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["\x27](?:vitest|\@jest\/globals)["\x27]/g) {
+    while ($s =~ /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["\x27](?:vitest|\@jest\/globals|node:test)["\x27]/g) {
       for my $n (split /,/, $1) { $n =~ s/^\s+|\s+$//g; $n =~ s/\s+as\s+\S+$//; $imp{$n} = 1 if length $n; }
     }
     for my $n (qw(describe test it expect vi beforeEach afterEach beforeAll afterAll)) {
@@ -1191,6 +1191,8 @@ project_safety_sweep() {
   a11y_live_region_check . $src
   a11y_android_path_check . $src
   platform_side_effect_check . $src
+  for f in $src; do dip_concrete_check . "$f"; done
+  artifact_path_check . $mds
   decision_record_check . $decisions
   decision_citation_check . $decisions
   claim_check . $mds $src
@@ -1208,6 +1210,8 @@ project_safety_sweep() {
   [ -n "$manifests" ] || echo "NOT VERIFIED M-61: no build manifest or app configuration is tracked, so backup is not verified"
   echo "NOT VERIFIED M-57 (downgrade): needs a base revision; run dependency_downgrade_check on the change set"
   echo "NOT VERIFIED COMMIT-001: needs a proposed commit group; run commit_group_closure_check on each group (workflows/commit.md Phase 11)"
+  echo "NOT VERIFIED BEHAVIOR-001 (M-94): needs the base revision and the approved manifest; run test_title_removal_check in the commit gate"
+  echo "NOT VERIFIED PREFLIGHT-001 (M-95): is a task-level check; run preflight_state_check before alignment"
 }
 ```
 
@@ -1432,6 +1436,17 @@ decision_record_check() {
       [ "$refs" -ge 2 ] ||
         echo "FAIL DEC-001: $f: a pattern row names $refs consumer(s) with file:line, two are required (M-78): ${prow%%:*}"
     done
+    # M-96: a DIP row that claims APPLIES or PRESERVED is contradicted by any DIP-001 finding
+    # in the source tree. The record states the composition root; the concrete imports decide.
+    dip_row="$(grep -E "^\| *DIP *\|" "$root/$f" 2>/dev/null | head -n 1)"
+    if printf '%s\n' "$dip_row" | grep -qE "APPLIES|PRESERVED"; then
+      dip_hits="$(cd "$root" && find . -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' -o -name '*.mjs' -o -name '*.cjs' \) -not -path '*/node_modules/*' -not -path '*/dist/*' -not -path '*/build/*' | sed 's#^\./##' | while IFS= read -r src; do dip_concrete_check . "$src"; done)"
+      if [ -n "$dip_hits" ]; then
+        count="$(printf '%s\n' "$dip_hits" | wc -l | tr -d ' ')"
+        first="$(printf '%s\n' "$dip_hits" | head -n 1)"
+        echo "FAIL DEC-001: $f:1: the DIP row claims a status that DIP-001 contradicts: $count concrete import(s), first: $first (M-96)"
+      fi
+    fi
   done
 }
 ```
@@ -1986,6 +2001,12 @@ never the repository itself.
 teardown_gate_check() {
   for f in "$@"; do
     [ -f "$f" ] || { echo "NOT VERIFIED TEARDOWN-001: $f: checkpoint not found; the teardown state is unknown"; continue; }
+    # M-89: a teardown, reset, cleanup, or rollback step that targets a path outside the target
+    # project is a human gate. It passes only when the checkpoint records the authorization.
+    grep -niE 'teardown|reset|cleanup|rollback' "$f" | grep -E '\.\./|~/|/Users/|/home/|/private/' |
+      grep -viE 'authorized in the current conversation|accepted in writing|resolved by user' | while IFS=: read -r n rest; do
+      echo "FAIL TEARDOWN-001: $f:$n: a teardown step targets a path outside the target project with no recorded authorization (M-89, M-93)"
+    done
     grep -nE 'NOT[ _]DONE' "$f" | grep -viE 'accepted in writing|resolved by user' | while IFS=: read -r n rest; do
       echo "FAIL TEARDOWN-001: $f:$n: a required step is NOT DONE and unresolved; the proposal is blocked until the user resolves it or accepts it in writing (M-93)"
     done
@@ -2113,6 +2134,149 @@ platform_side_effect_check() {
     grep -nE "^import \{[^}]*$" "$root/$f" 2>/dev/null |
       sed "s#^#NOT VERIFIED DIP-002: $f:#; s#\$#  (multi-line import: the names cannot be read on one line)#"
   done
+}
+```
+
+### DIP-001 — A concrete module is imported only by the composition root
+
+M-96: AGENTS.md makes the composition root the only exception to the dependency rule.
+A non-composition module (a service, a use case, an adapter, a hook, a domain module)
+that imports a concrete module by a relative or aliased path depends on the
+implementation and bypasses its port. `DIP-002` covers the platform side effects of
+React Native and Expo; this check covers every other concrete module of the project.
+
+A **concrete module** is recognized by its path or its file name: a folder named
+`infrastructure/`, `adapters/`, `adapter/`, `persistence/`, `storage/`, `policies/`,
+or `policy/`, or a file whose name ends in `.adapter`, `-adapter`, `-store`, `.store`,
+`-policy`, or `.policy`. A project that names its concrete modules differently declares
+its pattern in the decision record and the reviewer confirms each match. The
+**composition root** is exempt: `main.*`, `index.*`, `server.*`, `app.*`, `cli.*`,
+`bin.*`, `container.*`, `composition-root.*`, and any file under `composition/`, `bin/`,
+`cli/`, `app/`, or `main/`. Tests and test support are exempt, and so is a type-only
+import (`import type`), because a contract is not a behavior.
+
+The check reads each static import and each re-export. A multi-line import is read
+through its closing line (`} from '…'`), so a concrete specifier cannot hide behind a
+line break. A type-only import that spans several lines is a candidate for the reviewer.
+
+```sh
+# $1 = repository root; $2 = source file, relative to it. Prints FAIL DIP-001 for a
+# non-composition module that imports a concrete module.
+dip_concrete_check() {
+  root="$1"; f="$2"
+  case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) return 0 ;; esac
+  case "$f" in *.test.*|*.spec.*|*.d.ts|*/__tests__/*|*/tests/*|*/test/*|*/testing/*) return 0 ;; esac
+  case "$f" in */bin/*|*/cli/*|*/composition/*|*/app/*|*/main/*) return 0 ;; esac
+  case "$(basename "$f")" in main.*|index.*|server.*|app.*|cli.*|bin.*|container.*|composition-root.*|*.config.*) return 0 ;; esac
+  [ -f "$root/$f" ] || return 0
+  grep -nE "^((import|export) [^;]*|\}) from ['\"](\.{1,2}/|@/)[^'\"]*['\"]" "$root/$f" 2>/dev/null |
+    grep -vE '^[0-9]+:import type ' |
+    grep -E "(infrastructure|adapters?|persistence|storage|policies|policy)/|[-.](adapter|store|policy)(\.[a-z]+)?['\"]" |
+    sed "s#^#FAIL DIP-001: $f:#; s#\$#  (concrete module imported by a non-composition file; receive it through a port and wire it in the composition root, M-96)#"
+}
+```
+
+### ARTIFACT-001 — A cited artifact resolves inside the repository
+
+M-97: a document that cites an artifact (a benchmark result, a query plan, a log, a
+screenshot) is kept only when the artifact is in the repository. The check reads each
+Markdown file and finds the paths it cites: a path with a directory and an artifact
+extension, or a file name in backticks with an artifact extension. A cited path that
+points outside the repository (an absolute path, or one that climbs with `..`) is a
+`FAIL`. A cited path that is not in the repository is `NOT VERIFIED`, because the claim
+that cites it cannot be checked, and an unverified claim blocks delivery (M-68). A line
+that holds a URL is not read, so a web address is never mistaken for a path.
+
+```sh
+# $1 = repository root; $2... = documents, relative to it.
+artifact_path_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.md) ;; *) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    awk '
+      /https?:\/\// { next }
+      {
+        s = $0
+        while (match(s, /`[A-Za-z0-9_.-]+\.(json|txt|csv|png|jpe?g|pdf|log|svg|html|xml|ya?ml)`|[A-Za-z0-9_.\/-]*\/[A-Za-z0-9_.\/-]+\.(json|txt|csv|png|jpe?g|pdf|log|svg|html|xml|ya?ml)/)) {
+          tok = substr(s, RSTART, RLENGTH); gsub(/`/, "", tok)
+          print NR "\t" tok
+          s = substr(s, RSTART + RLENGTH)
+        }
+      }' "$root/$f" |
+    while IFS="$(printf '\t')" read -r n p; do
+      case "$p" in
+        /*|*..*) echo "FAIL ARTIFACT-001: $f:$n: $p points outside the repository (M-97)" ;;
+        *) [ -e "$root/$p" ] || echo "NOT VERIFIED ARTIFACT-001: $f:$n: $p is not in the repository, so the claim that cites it is not verified (M-97, M-68)" ;;
+      esac
+    done
+  done
+}
+```
+
+### BEHAVIOR-001 — A removed or renamed test case is an approved behavior change
+
+M-94: a test case that existed in the base revision and is absent from the working copy
+was removed or renamed, and that is a change of behavior, not of form. The check
+compares the titles of `describe`, `test`, and `it` in each test file the change set
+modifies against the base revision. A title that disappeared is a `FAIL` unless the
+approved scope manifest names it on a line of its own, in the form
+`behavior: <exact title>`. The manifest is the one recorded at alignment (M-90), so the
+removal is a decision the user approved, not a by-product of a rewrite.
+
+**Scope limit.** The check reads titles. A test whose title is unchanged and whose
+expectation changed is not seen here; that is judged under Dimension 7 by reading the
+assertion, and it is reported as a finding until the reader confirms it.
+
+```sh
+# $1 = repository root; $2 = base revision; $3 = approved scope manifest; $4... = changed files, relative to root.
+test_titles() {
+  grep -oE "(^|[^A-Za-z0-9_.])(test|it|describe)\(['\"\`][^'\"\`]+" | sed -E "s/.*\((['\"\`])//" | sort -u
+}
+
+test_title_removal_check() {
+  root="$1"; base="$2"; manifest="$3"; shift 3
+  work="$(mktemp -d)" || return 1
+  for f in "$@"; do
+    case "$f" in *.test.*|*.spec.*) ;; *) continue ;; esac
+    git -C "$root" cat-file -e "$base:$f" 2>/dev/null || continue
+    git -C "$root" show "$base:$f" | test_titles > "$work/before"
+    if [ -f "$root/$f" ]; then test_titles < "$root/$f" > "$work/after"; else : > "$work/after"; fi
+    comm -23 "$work/before" "$work/after" | while IFS= read -r title; do
+      grep -qxF -- "behavior: $title" "$manifest" 2>/dev/null && continue
+      echo "FAIL BEHAVIOR-001: $f:1: test case \"$title\" was removed or renamed and the approved manifest does not name it as a behavior change (M-94)"
+    done
+  done
+  rm -rf "$work"
+}
+```
+
+### PREFLIGHT-001 — The repository state is recorded before alignment
+
+M-95: before alignment the state of the target repository is recorded: the branch, the
+HEAD, and `git status --porcelain`. A detached HEAD stops alignment, because a change set
+has no branch to belong to, and the branch is asked for (`AGENTS.md`, Task Branch
+Policy). A working tree with uncommitted paths stops alignment unless the task checkpoint
+records them in a `working tree:` line as preserved, so no unrecorded user work is
+carried into a change set. The check reads state only and never modifies the repository.
+
+```sh
+# $1 = repository root; $2 = task checkpoint (optional), absolute path in the handoff directory.
+preflight_state_check() {
+  root="$1"; checkpoint="${2:-}"
+  git -C "$root" rev-parse --git-dir >/dev/null 2>&1 ||
+    { echo "NOT VERIFIED PREFLIGHT-001: $root is not a git repository, so the state was not recorded"; return 0; }
+  ref="$(git -C "$root" symbolic-ref --short -q HEAD 2>/dev/null)"
+  [ -n "$ref" ] || echo "FAIL PREFLIGHT-001: $root: HEAD is detached; alignment stops and the branch is asked for (M-95)"
+  dirty="$(git -C "$root" status --porcelain 2>/dev/null)"
+  if [ -n "$dirty" ]; then
+    n="$(printf '%s\n' "$dirty" | wc -l | tr -d ' ')"
+    if [ -n "$checkpoint" ] && [ -f "$checkpoint" ] && grep -q '^working tree:' "$checkpoint"; then
+      :
+    else
+      echo "FAIL PREFLIGHT-001: $root: $n uncommitted path(s) and no recorded state; alignment stops until the user decides to preserve or include them (M-95)"
+    fi
+  fi
 }
 ```
 
@@ -2582,6 +2746,8 @@ delivered. The check reads the report's own text and reports each defect with it
 - a grouped dimension cell (`9, 10, 12, 13`) is a `FAIL`: each dimension needs its own
   row and its own reason; a dimension number that repeats is a `FAIL`;
 - when the matrix numbers its dimensions, every one of the 14 dimensions has a row;
+- a `PASS` row with no evidence (no `file:line`, no detector ID, no command in backticks,
+  no exit code) is a `FAIL`: a PASS in a verdict matrix carries its evidence (M-98);
 - a conclusion line that claims a closure (`cierra`, `closes`, `closed`, `resolved`)
   while a row stays `NOT VERIFIED`, `AMBIGUOUS`, or `FAIL` is a `FAIL` of that line;
 - a red whole-project gate line (`npm run`, `format:check`, `lint`, `typecheck`, `test`
@@ -2635,6 +2801,9 @@ report_matrix_check() {
             rows++
             if (curdim) dimrows++
             if (st ~ /^(NOT VERIFIED|NOT_VERIFIED|AMBIGUOUS|FAIL|BLOCKED|BASELINE_FAILURE|NOT_RUN|NOT RUN|SKIPPED|SIMULATED|NOT_CONFIGURED|SETUP_REQUIRED)$/) open_rows++
+            # M-98: a PASS row carries its evidence: file:line, a detector ID, a command in backticks, or an exit code.
+            if (st == "PASS" && $0 !~ /[A-Za-z0-9_.\/-]+:[0-9]+|[A-Z][A-Z0-9]*-[0-9][0-9][0-9]|`[^`]+`|exit [0-9]/)
+              print "FAIL REPORT-001: " f ":" NR ": PASS carries no evidence; cite file:line, a detector ID with its output, a command in backticks, or its exit code (M-98)"
             if (dim ~ /^[0-9]+ *(,|y |and )/) {
               print "FAIL REPORT-001: " f ":" NR ": grouped dimension \"" dim "\" gets one verdict; each dimension needs its own row (M-80)"
             } else if (dim ~ /^[0-9]+/) {
@@ -2736,6 +2905,10 @@ report_matrix_check() {
 | `STATE-001` | read-only gates | a read-only gate runs |
 | `A11Y-001`, `A11Y-002` | changed UI and platform files | accessibility applies |
 | `DIP-002` | changed logic modules | a logic module imports platform code |
+| `DIP-001` | every source file of the change set and the sweep; the `DEC-001` cross-check reads the whole source tree | a source file is created or modified, or a decision record claims APPLIES or PRESERVED for DIP (M-96) |
+| `ARTIFACT-001` | documents in the change set and the sweep | a document cites an artifact path (M-97) |
+| `BEHAVIOR-001` | modified test files against the base revision, and the approved manifest | a test file is modified (M-94) |
+| `PREFLIGHT-001` | the target repository, before alignment | a task begins alignment (M-95) |
 | `COMMIT-001` | each proposed commit group, from `workflows/commit.md` Phase 11 | a commit group is proposed |
 | `BOUND-001` | changed source files that declare a bound, and the test files | a changed source declares a timeout, a busy or lock wait, a deadline, or a retry budget |
 | `COMMENT-001` | changed TypeScript or JavaScript files | a changed file contains a comment |

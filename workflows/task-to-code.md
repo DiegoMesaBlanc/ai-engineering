@@ -164,6 +164,16 @@ Once the stack is detected (language, framework, runtime, versions), **consult `
 **When to consult:** After Phase 4 completes stack detection, before Phase 8 (architecture evaluation).
 **Scope:** Only the sections relevant to the detected stack and the current task. Do not load entire documentation sites.
 
+### Preflight state before alignment (M-95)
+
+Before alignment the state of the target repository is recorded: the branch, the HEAD,
+and `git status --porcelain`. Run `preflight_state_check` (`PREFLIGHT-001`,
+`workflows/output-compliance.md`) over it. A detached HEAD stops the flow and the
+branch is asked for. A working tree with uncommitted paths stops the flow until the
+task checkpoint records them in a `working tree:` line as preserved, or the user decides
+to include them. The state is written to the checkpoint, never to the repository, and
+the check never modifies the repository.
+
 ## Phase 5 — Intent and Alignment
 
 Identify the engineering intent from the request. The intent modes are the

@@ -57,6 +57,11 @@ patterns, or over-engineering.
   commits of the approved scope: a commit that touches a path the manifest does not
   name is a `FAIL` that blocks the proposal (M-87). The base is the revision the
   approved scope was measured against, not the first commit of the branch.
+- **Removed or renamed test cases (M-94).** Run `test_title_removal_check` (`BEHAVIOR-001`)
+  over the modified test files against the base. A test case that the base has and the
+  change set lacks is a `FAIL` unless the approved scope manifest names it on a line of
+  its own, `behavior: <exact title>`. A removed case is a behavior change the user approved
+  or it is not delivered.
 - **Teardown gate (M-93).** Run `teardown_gate_check` (`TEARDOWN-001`) over the task
   checkpoint. A step recorded `NOT DONE` that the user has neither resolved nor accepted
   in writing blocks the commit proposal until the user resolves it or accepts it in

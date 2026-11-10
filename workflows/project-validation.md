@@ -407,6 +407,10 @@ Run each check, and record its command, status, and evidence:
    a migration with no deploy-order test (`DB-002`, M-69), and every universal,
    artifact, compatibility, performance, or technical-property claim in the
    documents and the source comments as `NOT VERIFIED CLAIM-001` (M-65, M-68, M-69).
+   The same sweep reports every non-composition module that imports a concrete module
+   (`DIP-001`, M-96: a concrete module is imported only by the composition root) and every
+   cited artifact that does not resolve inside the repository (`ARTIFACT-001`, M-97: a
+   cited artifact resolves inside the repository).
    A pre-existing DDL statement in a store file is a finding of the probe, never a
    pass, and a performance or plan claim is never reported as verified by the probe.
 7. **Outbound timeouts and cleartext endpoints (M-54, M-55).** The sweep of item 6

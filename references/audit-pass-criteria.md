@@ -22,6 +22,10 @@ dimension. A criterion is never presented as a framework standard.
   and each criterion's `PASS` cites its evidence: a command with its exit code, a
   `file:line`, or a measurement. An assertion without cited evidence is not a `PASS`;
   it is `NOT VERIFIED` (M-75).
+- A PASS in a verdict matrix carries its evidence: a `file:line`, a detector ID with its
+  output, a command in backticks, or its exit code. A PASS row with no such evidence is a
+  `FAIL` of `REPORT-001` (M-98), and a dimension that cites no detector it ran is not
+  verified by a detector, whatever its status says.
 - A dimension with a criterion `AMBIGUOUS` is never `PASS`. It stays open until the user
   resolves the criterion (M-75). A detector or check that a workflow defines is a control only when the procedure that a verdict cites runs it on the scope it covers (M-75).
 - A criterion that is violated by the change set is a defect of the task. It
@@ -100,6 +104,13 @@ dimension. A criterion is never presented as a framework standard.
   `workflows/output-compliance.md`). A component that renders only platform
   primitives is exempt. A pre-existing violation is a finding, not a blocker, for
   a task that does not touch it.
+- A concrete module is imported only by the composition root (the concrete-module
+  rule of M-96). Every non-composition file that imports an
+  adapter, store, policy, or `infrastructure/` module by a relative or aliased path is
+  a DIP `FAIL` at the file and line, detected by `DIP-001` in
+  `workflows/output-compliance.md`. A decision record whose DIP row says APPLIES or
+  PRESERVED while `DIP-001` reports a finding is a `FAIL` of `DEC-001` (M-96). The
+  Dimension 1 verdict cites the `DIP-001` run, never a reading of the record.
 
 ### 2. Patterns & complexity
 

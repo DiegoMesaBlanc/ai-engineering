@@ -1014,6 +1014,7 @@ Return:
 - V2.83 structural gate in the commit workflow, pre-existing test findings, consumer groups, citations outside tables, index coverage, permission grants, scope of commits, performance metrics, and the teardown in the plan (M-08, M-47, M-78, M-85 to M-89):
 - V2.84 untracked scope and missing manifest, analysis-only writes, approval quotes, teardown gate, and verdict-status enumeration (M-80, M-90 to M-93):
 - V2.85 native task mirror at stage level: stage start and end rewrites, the `Stage:` marker, and the panel completeness check (M-35, R-156):
+- V2.86 concrete imports, cited artifacts, removed test cases, preflight state, PASS evidence, teardown targets, and node:test (M-47, M-89, M-93 to M-98, R-157 to R-163):
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -3823,14 +3824,23 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v270.XXXXXX")"
   { extract "SAFE-004 to SAFE-007"; extract "SAFE-008, SAFE-009"; } > new.sh
   # The sweep calls the V2.73 detectors too, so they are loaded with it.
   { extract "Whole-project sweep"
-    awk '/^### (I18N-00[1-4]|DEC-001|CLAIM-001|A11Y-001|A11Y-002|DIP-002) / { on = 1; next }
+    awk '/^### (I18N-00[1-4]|DEC-001|DEC-002|CLAIM-001|COMMENT-001|ERR-001|A11Y-001|A11Y-002|DIP-001|DIP-002|ARTIFACT-001) / { on = 1; next }
       /^### / { on = 0 }
       on && /^```sh$/ { inb = 1; next }
       inb && /^```$/ { inb = 0; next }
       inb { print }' "$root/$oc"
   } > sweep.sh
-  [ -s safe.sh ] && [ -s dead.sh ] && [ -s new.sh ] && [ -s sweep.sh ] || {
+  # Every function the sweep calls is loaded, so no sweep line runs as "command not found"
+  # and silently checks nothing (M-75: a check the coverage procedure omits is not a control).
+  awk '
+    /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; infn = 0; next }
+    inb && /^[A-Za-z_][A-Za-z0-9_]*\(\) \{/ { infn = 1 }
+    inb && infn { print }
+    inb && infn && /^\}/ { infn = 0 }' "$root/$oc" > allfn.sh
+  [ -s safe.sh ] && [ -s dead.sh ] && [ -s new.sh ] && [ -s sweep.sh ] && [ -s allfn.sh ] || {
     echo "FAIL V2.70: a detector or sweep block was not extracted"; exit 1; }
+  . ./allfn.sh
   . ./safe.sh
   . ./dead.sh
   . ./new.sh
@@ -4332,7 +4342,7 @@ command -v awk >/dev/null 2>&1 && command -v grep >/dev/null 2>&1 && command -v 
 # Extracts the sh blocks of the detector sections of workflows/output-compliance.md.
 extract() {
   awk '
-    /^### (I18N-00[1-4]|CONSUME-001|DEC-001|CLAIM-001|A11Y-001|A11Y-002|DIP-002) / { on = 1; next }
+    /^### (I18N-00[1-4]|CONSUME-001|DEC-001|CLAIM-001|A11Y-001|A11Y-002|DIP-001|DIP-002) / { on = 1; next }
     /^### / { on = 0 }
     on && /^```sh$/ { inb = 1; next }
     inb && /^```$/ { inb = 0; next }
@@ -5367,17 +5377,17 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v280.XXXXXX")"
   {
     printf '%s\n' '# Audit' '| Dimensión | Estado | Motivo |' '|---|---|---|'
     printf '%s\n' \
-      '| 1 Arquitectura | PASS | Evidencia: output-compliance sin hallazgos en el cambio. |' \
-      '| 2 Patrones | PASS | Selección vacía justificada. |' \
-      '| 3 Calidad | PASS | Evidencia: npm run lint con código de salida 0. |' \
+      '| 1 Arquitectura | PASS | Evidencia: `output-compliance` sin hallazgos en el cambio. |' \
+      '| 2 Patrones | PASS | Selección vacía justificada: `design-patterns` exit 0. |' \
+      '| 3 Calidad | PASS | Evidencia: `npm run lint` con código de salida 0. |' \
       '| 4 API | NOT VERIFIED | Requiere revisión de contrato externo. |' \
       '| 5 Datos | AMBIGUOUS | El tratamiento de los registros legados lo decide el usuario. |' \
       '| 6 Seguridad | N/A | El cambio no añade autenticación ni secretos. |' \
-      '| 7 Pruebas | PASS | Evidencia: 515 pruebas con código de salida 0. |' \
+      '| 7 Pruebas | PASS | Evidencia: `npm test` con 515 pruebas y código de salida 0. |' \
       '| 8 Rendimiento | N/A | Sin superficie web. |' \
       '| 9 Interfaz | N/A | Sin interfaz de usuario. |' \
       '| 10 Accesibilidad | N/A | Sin interfaz de usuario. |' \
-      '| 11 Internacionalización | PASS | El formateador exige locale. |' \
+      '| 11 Internacionalización | PASS | El formateador exige locale: `I18N-001` sin hallazgos. |' \
       '| 12 Estados | N/A | Sin interfaz de usuario. |' \
       '| 13 Responsive | N/A | Sin interfaz de usuario. |' \
       '| 14 Organización | N/A | Un solo paquete. |' \
@@ -5741,7 +5751,7 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v282.XXXXXX")"
   # M-80, the verdict matrix: an unnumbered matrix is not held to 14 rows (its own rule
   # says only a numbered matrix must number every dimension); a numbered matrix of 3 rows is.
   . ./rep.sh || { echo "FAIL V2.82: the REPORT-001 block does not load"; exit 1; }
-  printf '%s\n' '| Dimension | Status | Reason |' '|---|---|---|' '| Structure | PASS | the checks ran with exit 0 |' '| Behavior | PASS | the fixtures ran |' > unnumbered.md
+  printf '%s\n' '| Dimension | Status | Reason |' '|---|---|---|' '| Structure | PASS | `structure checks` exit 0 |' '| Behavior | PASS | `fixtures` exit 0 |' > unnumbered.md
   r1="$(report_matrix_check . unnumbered.md)"
   [ -z "$r1" ] || { echo "FAIL V2.82: REPORT-001 holds an unnumbered matrix to 14 rows: $r1"; exit 1; }
   printf '%s\n' '| Dimension | Status | Reason |' '|---|---|---|' '| 1 | PASS | ok |' '| 2 | PASS | ok |' '| 3 | PASS | ok |' > numbered.md
@@ -6144,7 +6154,7 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v284.XXXXXX")"
   printf '%s\n' "$r1" | grep -qF 'FAIL REPORT-001: rep1.md:6: unrecognized status' \
     || { echo "FAIL V2.84: REPORT-001 skipped the grouped free-text status: $r1"; exit 1; }
   { echo '# Audit'; echo '| Dim. | Estado | Motivo |'; echo '|---|---|---|'
-    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do echo "| $i. Dimensión $i | PASS | evidencia del criterio $i |"; done; } > rep2.md
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do echo "| $i. Dimensión $i | PASS | \`criterio $i\` exit 0 |"; done; } > rep2.md
   r2="$(report_matrix_check . rep2.md)"
   [ -z "$r2" ] || { echo "FAIL V2.84: REPORT-001 reports the compliant twin: $r2"; exit 1; }
 
@@ -6304,6 +6314,269 @@ cp "$fx/ok.txt" "$fx/mixed.txt"; printf '%s\n' 'pending 3.2 Write the rollback n
 ) || failures=1
 
 echo "V2.85 probe: fixtures in $fx were checked and are removed"
+rm -rf "$fx"
+exit "$failures"
+```
+
+## V2.86 Regression — Concrete Imports, Cited Artifacts, Removed Test Cases, Preflight State, PASS Evidence, Teardown Targets, and node:test
+
+Verify that the gaps an external audit exposed in one run cannot pass again, and that
+each new detector reports its defect with `file:line` and passes its compliant twin:
+
+- M-94: a removed or renamed test case is an approved behavior change; `BEHAVIOR-001`
+  reports a title the manifest does not name as `behavior: <title>` (R-157).
+- M-95: the state of the target repository is recorded before alignment; `PREFLIGHT-001`
+  stops on a detached HEAD and on an uncommitted tree with no `working tree:` record (R-158).
+- M-96: a concrete module is imported only by the composition root; `DIP-001` reports it,
+  and a decision record whose DIP row claims APPLIES or PRESERVED is contradicted by it
+  (R-159).
+- M-97: a cited artifact resolves inside the repository; `ARTIFACT-001` reports a path
+  outside it as `FAIL` and a missing one as `NOT VERIFIED` (R-160).
+- M-98: a PASS in a verdict matrix carries its evidence; `REPORT-001` reports a PASS with
+  none (R-161).
+- M-89 and M-93: a teardown step that targets a path outside the target project with no
+  recorded authorization is a `TEARDOWN-001` `FAIL` (R-162).
+- M-47: `TEST-001` and `TEST-002` accept an import from `node:test` and still report a
+  test API used with no import (R-163).
+- The new detectors are in the sweep and in the coverage table, so none is an unwired
+  control.
+
+The static part reads the repository. The behavioral part extracts the `sh` blocks of
+`BEHAVIOR-001`, `PREFLIGHT-001`, `DIP-001`, `DEC-001`, `ARTIFACT-001`, `REPORT-001`,
+`TEARDOWN-001`, and `TEST-001`/`TEST-002` from `workflows/output-compliance.md`, runs them
+on fixtures in a temporary directory outside the repository, which is removed. It needs
+`awk`, `grep`, `sed`, `comm`, `tr`, `perl`, `git`, and `mktemp`; without them the
+behavioral part is `NOT VERIFIED`, never passed.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+oc="workflows/output-compliance.md"
+tc="workflows/task-to-code.md"
+cm="workflows/commit.md"
+pv="workflows/project-validation.md"
+ap="references/audit-pass-criteria.md"
+sv="workflows/system-validation.md"
+
+flat() { tr '\n' ' ' < "$root/$1" | tr -s ' ' | tr 'A-Z' 'a-z'; }
+
+need() {
+  needle="$(printf '%s' "$2" | tr 'A-Z' 'a-z')"
+  grep -qF -- "$needle" <<< "$(flat "$1")" || { echo "FAIL V2.86: $1 is missing $3"; failures=1; }
+}
+
+# Canonical wording and each listed surface carries its anchor.
+need "$ag" "names it on a line of its own" "the M-94 canonical wording"
+need "$ag" "the state of the target repository is recorded" "the M-95 canonical wording"
+need "$ag" "is imported only by the composition root" "the M-96 canonical wording"
+need "$ag" "resolves inside the repository" "the M-97 canonical wording"
+need "$ag" "a pass in a verdict matrix carries its evidence" "the M-98 canonical wording"
+need "$oc" "names it on a line of its own" "the M-94 detector statement"
+need "$cm" "names it on a line of its own" "the M-94 commit gate"
+need "$tc" "the state of the target repository is recorded" "the M-95 alignment step"
+need "$oc" "the state of the target repository is recorded" "the M-95 detector statement"
+need "$oc" "is imported only by the composition root" "the M-96 detector statement"
+need "$ap" "is imported only by the composition root" "the M-96 audit criterion"
+need "$oc" "resolves inside the repository" "the M-97 detector statement"
+need "$pv" "resolves inside the repository" "the M-97 probe item"
+need "$oc" "a pass in a verdict matrix carries its evidence" "the M-98 detector statement"
+need "$ap" "a pass in a verdict matrix carries its evidence" "the M-98 audit criterion"
+need "$rmx" "names it on a line of its own" "the R-157 row"
+need "$rmx" "the state of the target repository is recorded" "the R-158 row"
+need "$rmx" "is imported only by the composition root" "the R-159 row"
+need "$rmx" "a cited artifact resolves inside the repository" "the R-160 row"
+need "$rmx" "a pass in a verdict matrix carries its evidence" "the R-161 row"
+need "$oc" "node:test" "the TEST-001 import list"
+need "$ag" "node:test" "the M-47 canonical wording"
+
+for id in M-94 M-95 M-96 M-97 M-98; do
+  grep -q "^| $id |" "$root/$mr" || { echo "FAIL V2.86: no $id row in the registry"; failures=1; }
+done
+for id in R-157 R-158 R-159 R-160 R-161 R-162 R-163; do
+  grep -q "^| $id |" "$root/$rmx" || { echo "FAIL V2.86: no $id row in the regression matrix"; failures=1; }
+done
+for rule in BEHAVIOR-001 PREFLIGHT-001 DIP-001 ARTIFACT-001; do
+  grep -qF "| \`$rule\` |" "$root/$oc" || { echo "FAIL V2.86: the coverage table has no $rule row"; failures=1; }
+done
+grep -qF 'for f in $src; do dip_concrete_check . "$f"; done' "$root/$oc" || { echo "FAIL V2.86: the sweep does not run DIP-001"; failures=1; }
+grep -qF 'artifact_path_check . $mds' "$root/$oc" || { echo "FAIL V2.86: the sweep does not run ARTIFACT-001"; failures=1; }
+grep -qF 'test_title_removal_check' "$root/$cm" || { echo "FAIL V2.86: the commit gate does not run BEHAVIOR-001"; failures=1; }
+grep -qF 'preflight_state_check' "$root/$tc" || { echo "FAIL V2.86: the alignment step does not run PREFLIGHT-001"; failures=1; }
+
+# Behavioral part: the detectors run on fixtures in a temporary directory outside the repository.
+for cmd in git awk grep sed tr mktemp comm perl; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V2.86: $cmd is not available, the behavioral fixtures were not run"; exit 2; }
+done
+
+extract_sec() {
+  awk -v h="$1" '
+    $0 ~ ("^### " h " ") { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v286.XXXXXX")"
+(
+  cd "$fx" || exit 1
+  extract_sec "BEHAVIOR-001" > behavior.sh && . ./behavior.sh || { echo "FAIL V2.86: the BEHAVIOR-001 block does not load"; exit 1; }
+  extract_sec "PREFLIGHT-001" > preflight.sh && . ./preflight.sh || { echo "FAIL V2.86: the PREFLIGHT-001 block does not load"; exit 1; }
+  extract_sec "DIP-001" > dip.sh && . ./dip.sh || { echo "FAIL V2.86: the DIP-001 block does not load"; exit 1; }
+  extract_sec "DEC-001" > dec.sh && . ./dec.sh || { echo "FAIL V2.86: the DEC-001 block does not load"; exit 1; }
+  extract_sec "ARTIFACT-001" > artifact.sh && . ./artifact.sh || { echo "FAIL V2.86: the ARTIFACT-001 block does not load"; exit 1; }
+  extract_sec "REPORT-001" > report.sh && . ./report.sh || { echo "FAIL V2.86: the REPORT-001 block does not load"; exit 1; }
+  extract_sec "TEARDOWN-001" > teardown.sh && . ./teardown.sh || { echo "FAIL V2.86: the TEARDOWN-001 block does not load"; exit 1; }
+  extract_sec "TEST-001 and TEST-002" | sed -n '/^test_api_check() {/,/^}/p' > testapi.sh
+  . ./testapi.sh || { echo "FAIL V2.86: the test_api_check function does not load"; exit 1; }
+
+  # BEHAVIOR-001: base has two cases; the working copy renames one. Twin: the manifest names it.
+  git init -q repo && cd repo || exit 1
+  git config user.email v@v && git config user.name v
+  mkdir -p tests
+  printf '%s\n' "test('upgrades a database created before the owner column', () => {});" "test('keeps the order', () => {});" > tests/order-history.test.ts
+  git add -A && git commit -qm base
+  base_rev="$(git rev-parse HEAD)"
+  printf '%s\n' "test('refuses a database without the owner column', () => {});" "test('keeps the order', () => {});" > tests/order-history.test.ts
+  printf '%s\n' 'tests/order-history.test.ts' > ../m-none.txt
+  printf '%s\n' 'tests/order-history.test.ts' 'behavior: upgrades a database created before the owner column' > ../m-named.txt
+  b1="$(test_title_removal_check . "$base_rev" ../m-none.txt tests/order-history.test.ts)"
+  printf '%s\n' "$b1" | grep -qF 'FAIL BEHAVIOR-001: tests/order-history.test.ts:1: test case "upgrades a database created before the owner column" was removed or renamed' \
+    || { echo "FAIL V2.86: BEHAVIOR-001 did not report the renamed case: $b1"; exit 1; }
+  b2="$(test_title_removal_check . "$base_rev" ../m-named.txt tests/order-history.test.ts)"
+  [ -z "$b2" ] || { echo "FAIL V2.86: BEHAVIOR-001 reports the manifest-named twin: $b2"; exit 1; }
+  cd "$fx" || exit 1
+
+  # PREFLIGHT-001: a detached HEAD, an uncommitted path with no record, and the clean twin.
+  git init -q pre && cd pre || exit 1
+  git config user.email v@v && git config user.name v
+  printf '%s\n' 'a' > a.txt && git add -A && git commit -qm base
+  p0="$(preflight_state_check .)"
+  [ -z "$p0" ] || { echo "FAIL V2.86: PREFLIGHT-001 reports the clean attached repository: $p0"; exit 1; }
+  git checkout -q --detach
+  p1="$(preflight_state_check .)"
+  printf '%s\n' "$p1" | grep -qF 'FAIL PREFLIGHT-001: .: HEAD is detached' \
+    || { echo "FAIL V2.86: PREFLIGHT-001 did not report the detached HEAD: $p1"; exit 1; }
+  git checkout -q - 2>/dev/null || git checkout -q main 2>/dev/null || git checkout -q master 2>/dev/null
+  printf '%s\n' 'dirty' > dirty.txt
+  p2="$(preflight_state_check . ../missing-checkpoint.md)"
+  printf '%s\n' "$p2" | grep -qF 'FAIL PREFLIGHT-001: .: 1 uncommitted path(s) and no recorded state' \
+    || { echo "FAIL V2.86: PREFLIGHT-001 did not report the unrecorded working tree: $p2"; exit 1; }
+  printf '%s\n' '# checkpoint' 'working tree: dirty.txt preserved by the user' > ../cp-ok.md
+  p3="$(preflight_state_check . ../cp-ok.md)"
+  [ -z "$p3" ] || { echo "FAIL V2.86: PREFLIGHT-001 reports the recorded working tree: $p3"; exit 1; }
+  cd "$fx" || exit 1
+
+  # DIP-001: an adapter imports two policies by relative path; the composition root imports the adapter.
+  mkdir -p src/adapters src/policies src/services
+  printf '%s\n' 'export const orderPolicy = 1;' > src/policies/order-policy.ts
+  printf '%s\n' 'export const feePolicy = 1;' > src/policies/fee-policy.ts
+  printf '%s\n' "import { orderPolicy } from '../policies/order-policy';" "import { feePolicy } from '../policies/fee-policy';" 'export const store = () => [orderPolicy, feePolicy];' > src/adapters/sqlite-order-search-store.ts
+  printf '%s\n' "import { store } from './adapters/sqlite-order-search-store';" 'export const boot = () => store();' > src/server.ts
+  printf '%s\n' "import type { Policy } from '../policies/order-policy';" 'export const svc = (p: Policy) => p;' > src/services/order-service.ts
+  d1="$(dip_concrete_check . src/adapters/sqlite-order-search-store.ts)"
+  printf '%s\n' "$d1" | grep -qF 'FAIL DIP-001: src/adapters/sqlite-order-search-store.ts:1:' \
+    && printf '%s\n' "$d1" | grep -qF 'FAIL DIP-001: src/adapters/sqlite-order-search-store.ts:2:' \
+    || { echo "FAIL V2.86: DIP-001 did not report the two concrete imports with file:line: $d1"; exit 1; }
+  d2="$(dip_concrete_check . src/server.ts)"
+  [ -z "$d2" ] || { echo "FAIL V2.86: DIP-001 reports the composition root: $d2"; exit 1; }
+  d3="$(dip_concrete_check . src/services/order-service.ts)"
+  [ -z "$d3" ] || { echo "FAIL V2.86: DIP-001 reports a type-only import: $d3"; exit 1; }
+
+  # DEC-001: a record that claims PRESERVED for DIP while DIP-001 reports the adapter; the twin claims NOT APPLICABLE.
+  mkdir -p docs/decisions
+  { echo '# Decision'; echo; echo '| Pattern | Force | Signal | Consumers (`file:line`) | Stack translation |'
+    echo '|---|---|---|---|---|'
+    echo '| Adapter | Order search | store | `src/adapters/sqlite-order-search-store.ts:1`, `src/server.ts:1` | sqlite |'
+    echo; echo '| Principle | Status | Unit | Evidence |'; echo '|---|---|---|---|'
+    echo '| SRP | APPLIES | store | `src/adapters/sqlite-order-search-store.ts:1` reads orders only |'
+    echo '| OCP | PRESERVED | store | no edit |'
+    echo '| LSP | NOT APPLICABLE | none | no substitution |'
+    echo '| ISP | PRESERVED | port | small |'
+    echo '| DIP | PRESERVED | composition root `src/server.ts` | adapter behind port |'; } > docs/decisions/dip.md
+  e1="$(decision_record_check . docs/decisions/dip.md)"
+  printf '%s\n' "$e1" | grep -qF 'FAIL DEC-001: docs/decisions/dip.md:1: the DIP row claims a status that DIP-001 contradicts' \
+    || { echo "FAIL V2.86: DEC-001 did not contradict the PRESERVED DIP row: $e1"; exit 1; }
+  sed 's/| DIP | PRESERVED |/| DIP | NOT APPLICABLE |/' docs/decisions/dip.md > docs/decisions/dip-na.md
+  e2="$(decision_record_check . docs/decisions/dip-na.md)"
+  printf '%s\n' "$e2" | grep -qF 'contradicts' \
+    && { echo "FAIL V2.86: DEC-001 contradicts a NOT APPLICABLE DIP row: $e2"; exit 1; }
+
+  # ARTIFACT-001: an outside path, a missing path, and a backticked missing name; the twin cites a present artifact.
+  mkdir -p evidence && printf '%s\n' 'ok' > evidence/ok.txt
+  { echo '# Report'; echo 'Result in ../outside/result.json and evidence/missing.txt.'
+    echo 'Benchmark: `benchmark-results.json`.'; } > docs/report.md
+  a1="$(artifact_path_check . docs/report.md)"
+  printf '%s\n' "$a1" | grep -qF 'FAIL ARTIFACT-001: docs/report.md:2: ../outside/result.json points outside the repository' \
+    || { echo "FAIL V2.86: ARTIFACT-001 did not report the outside path with file:line: $a1"; exit 1; }
+  printf '%s\n' "$a1" | grep -qF 'NOT VERIFIED ARTIFACT-001: docs/report.md:2: evidence/missing.txt is not in the repository' \
+    || { echo "FAIL V2.86: ARTIFACT-001 did not report the missing path: $a1"; exit 1; }
+  printf '%s\n' "$a1" | grep -qF 'NOT VERIFIED ARTIFACT-001: docs/report.md:3: benchmark-results.json is not in the repository' \
+    || { echo "FAIL V2.86: ARTIFACT-001 did not report the backticked missing name: $a1"; exit 1; }
+  printf '%s\n' '# Report' 'Result in evidence/ok.txt, see https://example.com/result.json.' > docs/twin.md
+  a2="$(artifact_path_check . docs/twin.md)"
+  [ -z "$a2" ] || { echo "FAIL V2.86: ARTIFACT-001 reports the present artifact or the URL: $a2"; exit 1; }
+
+  # REPORT-001 (M-98): a PASS with no evidence; the twin cites a command, a file:line, or a detector.
+  { echo '# Audit'; echo '| Dim. | Estado | Motivo |'; echo '|---|---|---|'
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do
+      if [ "$i" = 6 ]; then echo "| $i. Seguridad | PASS | evidencia: grep de interpolación |"
+      else echo "| $i. Dimensión $i | PASS | \`criterio $i\` exit 0 |"; fi
+    done; } > rep-noev.md
+  r1="$(report_matrix_check . rep-noev.md)"
+  printf '%s\n' "$r1" | grep -qF 'FAIL REPORT-001: rep-noev.md:9: PASS carries no evidence' \
+    || { echo "FAIL V2.86: REPORT-001 did not report the PASS with no evidence: $r1"; exit 1; }
+  { echo '# Audit'; echo '| Dim. | Estado | Motivo |'; echo '|---|---|---|'
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do
+      if [ "$i" = 6 ]; then echo "| $i. Seguridad | PASS | \`grep -n '\${' src\` exit 0; src/a.ts:3 |"
+      else echo "| $i. Dimensión $i | PASS | \`criterio $i\` exit 0 |"; fi
+    done; } > rep-ev.md
+  r2="$(report_matrix_check . rep-ev.md)"
+  [ -z "$r2" ] || { echo "FAIL V2.86: REPORT-001 reports the PASS that cites its evidence: $r2"; exit 1; }
+
+  # TEARDOWN-001: a reset that targets ../demo-backend with no authorization; the twin is authorized.
+  printf '%s\n' '# Checkpoint' '- Teardown: reset ../demo-backend to its base commit.' > cp-td1.md
+  t1="$(teardown_gate_check cp-td1.md)"
+  printf '%s\n' "$t1" | grep -qF 'FAIL TEARDOWN-001: cp-td1.md:2: a teardown step targets a path outside the target project' \
+    || { echo "FAIL V2.86: TEARDOWN-001 did not report the outside teardown target: $t1"; exit 1; }
+  printf '%s\n' '# Checkpoint' '- Teardown: reset ../demo-backend, authorized in the current conversation: "resetea demo-backend".' > cp-td2.md
+  t2="$(teardown_gate_check cp-td2.md)"
+  [ -z "$t2" ] || { echo "FAIL V2.86: TEARDOWN-001 reports the authorized teardown twin: $t2"; exit 1; }
+
+  # TEST-001 / TEST-002 with node:test: a test API used with no import is a FAIL; the imported form passes.
+  printf '%s\n' "describe('order', () => {" "  test('keeps the order', () => {});" "});" > node-noimport.test.ts
+  n1="$(test_api_check node-noimport.test.ts)"
+  printf '%s\n' "$n1" | grep -qF 'FAIL TEST-001: node-noimport.test.ts:1: describe is used without an explicit import' \
+    || { echo "FAIL V2.86: TEST-001 did not report describe with no node:test import: $n1"; exit 1; }
+  printf '%s\n' "import { describe, test } from 'node:test';" "describe('order', () => {" "  test('keeps the order', () => {});" "});" > node-ok.test.ts
+  n2="$(test_api_check node-ok.test.ts)"
+  [ -z "$n2" ] || { echo "FAIL V2.86: TEST-001 reports the node:test import: $n2"; exit 1; }
+
+  # Wiring: the whole-project sweep loads every function it calls and reports the adapter
+  # with file:line, and the composition root is not reported.
+  awk '
+    /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; infn = 0; next }
+    inb && /^[A-Za-z_][A-Za-z0-9_]*\(\) \{/ { infn = 1 }
+    inb && infn { print }
+    inb && infn && /^\}/ { infn = 0 }' "$root/$oc" > sweep-all.sh
+  extract_sec "Whole-project sweep" > sweep-body.sh
+  { cat sweep-all.sh; cat sweep-body.sh; } > sweep-load.sh
+  . ./sweep-load.sh || { echo "FAIL V2.86: the sweep does not load"; exit 1; }
+  sw="$(cd "$fx" && project_safety_sweep 2>&1)"
+  printf '%s\n' "$sw" | grep -q 'command not found' \
+    && { echo "FAIL V2.86: the sweep calls a function that is not loaded: $(printf '%s\n' "$sw" | grep 'command not found' | head -1)"; exit 1; }
+  printf '%s\n' "$sw" | grep -qF 'FAIL DIP-001: src/adapters/sqlite-order-search-store.ts:1:' \
+    || { echo "FAIL V2.86: the whole-project sweep did not report the adapter's concrete import with file:line"; exit 1; }
+  printf '%s\n' "$sw" | grep -q 'FAIL DIP-001: src/server.ts' \
+    && { echo "FAIL V2.86: the whole-project sweep reports the composition root"; exit 1; }
+  exit 0
+) || failures=1
+
+echo "V2.86 probe: fixtures in $fx were checked and are removed"
 rm -rf "$fx"
 exit "$failures"
 ```

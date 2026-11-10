@@ -71,6 +71,7 @@ from the adjustment text, never from an external scope argument.
 | A duplicated contract declaration | `TYPE-004` reports each copy with `file:line`, and a name declared once or in one file is not reported | Two files that declare the same contract, one as an interface and one as a JSDoc typedef, and one file that declares a name once |
 | A target version, or a stack's version support | The artifact is built for the **confirmed target version**, not for whatever version the environment happens to have | The toolchain reports the target version, or the check that could not run against it is reported as `NOT VERIFIED` with the reason |
 | A framework or language convention | The conventions come from the official documentation of that framework, for the target version | The convention is checked against the official source, and the source is recorded |
+| A detector, a sweep, or a verdict PASS (M-75, M-98) | Every function the sweep calls is loaded by its probe, so no sweep line runs as "command not found" and silently checks nothing; every PASS row cites its evidence (`REPORT-001`); a mechanical check of a rule is run, not only its text | A fixture with one defect per detector, the sweep run over it with every function loaded, and a PASS row with no evidence next to its compliant twin |
 
 If the adjustment does not fit any row, derive the check from the rule it
 implements and state it in the report.
