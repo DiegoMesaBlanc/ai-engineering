@@ -11,8 +11,6 @@ A provider-agnostic, free-first engineering workflow with shared engineering gui
 - Evaluate architecture, reuse, and code organization before implementing, and validate the result against the proposed design and project conventions.
 - Ask the user for an exact branch name before implementation if one was not supplied.
 - Preserve user changes and use isolated worktrees for PR inspection when needed.
-- `/generate-pr` generates copy-ready PR text; it does not create a PR.
-- `/review-pr` creates evidence-based, copy-ready feedback grounded in the reviewed revision; it does not publish comments or modify remote repositories.
 - Prefer free/open-source options, but use company-provided licenses when authorized.
 - Use official documentation on demand for the detected technology and version.
 - Evaluate external Skills across the full supported stack without installing one per framework by default.
@@ -22,7 +20,7 @@ A provider-agnostic, free-first engineering workflow with shared engineering gui
 ## Current top-level structure
 
 - `agents/`: OpenCode agents and orchestration.
-- `commands/`: commands such as `/task`, `/generate-pr`, `/review-pr`, `/system-check`, `/validate`, `/code-audit`, `/commit`, `/audit-e2e`, `/create-project`, `/adopt-baseline`, `/checkpoint`, `/resume-work`, `/provider-check`, `/delivery-check`, and `/estimate`.
+- `commands/`: one adapter per command, listed in the Commands section, such as `/task`, `/generate-pr`, `/review-pr`, `/system-check`, `/validate`, `/code-audit`, `/commit`, `/audit-e2e`, `/create-project`, `/adopt-baseline`, `/bootstrap`, `/checkpoint`, `/resume-work`, `/provider-check`, `/delivery-check`, and `/estimate`.
 - `contracts/`: provider-neutral task, design, and Git contracts.
 - `integrations/`: provider access, security, cost, and compatibility policy.
 - `references/`: official documentation indexes and technical references.
@@ -40,50 +38,26 @@ Do not create `core/` or `external/` solely to match a previous folder proposal.
 - `/task`: start or continue an engineering task.
 - `/generate-pr`: generate copy-ready PR/MR content.
 - `/review-pr`: generate copy-ready review feedback.
-- `/system-check`: read-only validation of repository consistency and
-  OpenCode and Codex CLI integration.
+- `/system-check`: see "System validation versus project validation".
 - `/checkpoint`: write a user-level checkpoint of the current task state
   outside the target project's source tree, without modifying source files
   or remote state.
-- `/validate`: validate project changes using existing tools and
-  risk-based checks without modifying application source code.
+- `/validate`: see "System validation versus project validation".
 - `/resume-work`: recover a long-running task from a checkpoint by verifying
   actual repository state and continuing from the first incomplete action.
-- `/provider-check`: verify actual task, design, and Git provider
-  capabilities with evidence-based statuses, read-only and without
-  exposing credentials.
-- `/delivery-check`: read-only assessment of the current project's
-  CI/CD, security, and delivery readiness, with evidence-based statuses
-  and without modifying the project or performing remote writes.
-- `/code-audit`: read-only senior/staff whole-cycle audit of generated
-  code for architecture, patterns, quality, security, data, tests,
-  performance, a11y, i18n, SEO, UI, and mobile. Auditing a deliverable **we**
-  produced runs the same flow in Independent Mode (see below).
-- `/commit`: generate and validate commits from the current change set using
-  project-native quality gates (format, lint, typecheck, tests, build,
-  security, AI sanity review), creating atomic commits with English
-  messages. It creates commits only after showing the change set and
-  receiving explicit approval; a prompt asking for the commit is not
-  approval. Never pushes or deploys.
-- `/estimate`: estimate effort, duration, and optional cost for a complete
-  project from start to finish, from a supplied project artifact (brief,
-  document, text, link, file, or image), producing a durable document in the
-  current working directory without starting implementation.
-- `/audit-e2e`: apply an adjustment to the AI Engineering System and prove it
-  in the same run, with a structural audit of the repository and a behavioral
-  audit that builds a real artifact, verifies it passes, injects the violation
-  the adjustment was meant to prevent, and verifies it is detected. The
-  adjustment text is the only input.
-- `/create-project`: create a new project from scratch, progressively and
-  with user-controlled stopping points. It recovers the source analysis,
-  agrees the scope catalog, asks for the architectural style, then creates
-  one step at a time, stopping at every checkpoint with the progress
-  tracker and the next suggested step.
-- `/adopt-baseline`: adopt an opt-in engineering baseline that removes the
-  need for an existing team member to explain the project from memory when
-  someone new joins, and reduces the configuration repeated at the start. It
-  diagnoses read-only, applies one module at a time, verifies each one, and
-  records the state in `docs/engineering-baseline.md`.
+- `/provider-check`: see "Provider verification".
+- `/delivery-check`: see "Delivery and secure CI/CD readiness".
+- `/code-audit`: see "Code audit" and "Independent audit of our own deliverable".
+- `/commit`: see "Commit generation".
+- `/bootstrap`: prepare this machine (links and local state root) so every
+  client discovers the system. Runs once per repository; see
+  `workflows/bootstrap.md`.
+- `/estimate`: see "Estimation".
+- `/audit-e2e`: apply an adjustment to the AI Engineering System and audit it
+  structurally and behaviorally. See `workflows/system-audit.md`.
+- `/create-project`: create a new project progressively, with stopping points
+  at every checkpoint. See `workflows/project-initialization.md`.
+- `/adopt-baseline`: see "Engineering baseline".
 
 OpenCode supports Markdown commands and agents with permissions defined in
 frontmatter. Those files are OpenCode adapters; they do not create slash
@@ -98,8 +72,8 @@ repository's `commands/` directory.
 - `/validate` audits the current software project's changes using
   detected tooling, relevant tests, static checks, and build validation,
   and configures the mandatory formatter and linter when they are missing.
-- `/delivery-check` assesses CI/CD, security, and delivery readiness of
-  the target project in read-only mode; it does not change the project.
+- `/delivery-check` is described once, in "Delivery and secure CI/CD
+  readiness" below.
 - Formatting and linting live in the project's own `eslint.config.*` and
   Prettier configuration. The structural policy is verified by
   `workflows/output-compliance.md`; no custom rule file, plugin, or checker
@@ -114,8 +88,6 @@ repository's `commands/` directory.
   reports improvement suggestions ordered by impact; it never applies them and
   never blocks a commit by itself. It does not check out commits or change the
   working tree.
-- It is distinct from `/system-check` (system config), `/validate` (tool
-  execution), and `/review-pr` (colleague's PR feedback).
 
 ### Independent audit of our own deliverable
 
@@ -136,9 +108,7 @@ repository's `commands/` directory.
   project's gates and the structural compliance checks, falsifies every
   delivery claim, applies the code-audit dimensions, and issues one verdict:
   `PASS`, `PASS WITH FINDINGS`, `FAIL`, or `NOT VERIFIED`.
-- It is read-only. A skipped check is `NOT_VERIFIED`, never a pass. It is
-  distinct from `/code-audit` on foreign code, `/review-pr` (a colleague's
-  PR), `/validate` (gate execution), and `/audit-e2e` (the system itself).
+- It is read-only. A skipped check is `NOT_VERIFIED`, never a pass.
 
 ### Engineering baseline
 
@@ -162,14 +132,11 @@ repository's `commands/` directory.
   the **newcomer test** passes: a clean copy plus a fresh session following
   only `docs/onboarding.md`, with zero questions and a green suite.
   `docs-gate` is an executable `scripts/check-docs` wired into CI and
-  `/validate`, not prose.
+  the project's validation gates, not prose.
 - The state lives in `docs/engineering-baseline.md`, in the target project,
   with `status`, `version`, `date`, and the per-module state. It travels with
   the repository and survives sessions.
-- It is distinct from `/create-project` (which creates the project and
-  offers the baseline), `/validate` (which executes the gates), and
-  the Independent Mode of `/code-audit` (which audits from a fresh session). The baseline
-  changes the project; it does not audit it.
+- The baseline changes the project; it does not audit it.
 - The out-of-scope declaration is explicit: incident response,
   infrastructure provisioning, capacity and cost, privacy and compliance,
   and product analytics remain separate gaps.
@@ -182,9 +149,6 @@ repository's `commands/` directory.
   English messages only after the user reviewed the proposed change set and
   approved it in the current conversation, including when the prompt itself
   asks for the commit. It creates commits; it does not push or deploy.
-- It is distinct from `/validate` (read-only validation without commit
-  creation), `/code-audit` (senior/staff architecture and patterns audit),
-  and `/generate-pr` (copy-ready PR content).
 - Documentation-only repositories skip application gates; only Git hygiene
   and commit message rules apply.
 
@@ -209,9 +173,6 @@ repository's `commands/` directory.
   publish, or change CI configuration. Recommended controls are handled as
   scoped implementation work under the existing authorization and branch
   policies.
-- `/delivery-check` is distinct from `/validate`, which validates the
-  current change set with the project's tools, and from `/provider-check`,
-  which verifies the capabilities of task, design, and Git providers.
 - Missing controls are recommendations for a later implementation, not
   proof of execution. Documentation-only repositories are not converted
   into software projects to satisfy software-project CI/CD checks.
@@ -243,7 +204,7 @@ repository's `commands/` directory.
 
 ### Architecture-first engineering
 
-- `/task` evaluates architecture, reuse, and code organization before
+- The task flow evaluates architecture, reuse, and code organization before
   implementing, for every framework, language, and application type. The
   canonical evaluation lives in `skills/architecture-advisor/SKILL.md` and
   is performed in the architecture phase of `workflows/task-to-code.md`.
@@ -299,7 +260,7 @@ repository's `commands/` directory.
 
 ### Proportional planning (SDD)
 
-- `/task` plans proportionally to the change. Complexity is classified and a
+- The task flow plans proportionally to the change. Complexity is classified and a
   rigor level is recommended in `skills/complexity-advisor/SKILL.md`; the
   procedure lives in `workflows/task-planning.md`, and the retained result
   belongs to `skills/task-context/SKILL.md`.

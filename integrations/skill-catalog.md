@@ -427,7 +427,7 @@ test framework's documentation.
 
 ## Dependency Auditing and Secret Scanning
 
-- OWASP Dependency-Check: https://dependency-check.github.io/
+- OWASP Dependency-Check: https://dependency-check.github.io/DependencyCheck/
 - OSV-Scanner: https://google.github.io/osv-scanner/
 - Trivy: https://aquasecurity.github.io/trivy/
 - gitleaks: https://github.com/gitleaks/gitleaks

@@ -39,6 +39,7 @@ Check for the existence of:
 - commands/review-pr.md
 - commands/commit.md
 - commands/audit-e2e.md
+- commands/bootstrap.md
 - commands/create-project.md
 - commands/adopt-baseline.md
 - commands/system-check.md
@@ -65,6 +66,10 @@ Check for the existence of:
 - references/mandatory-rules.md
 - references/project-startup-decisions.md
 - references/project-creation-order.md
+- references/audit-pass-criteria.md
+- references/styling-options.md
+- references/folder-architectures.md
+- references/portability.md
 - workflows/task-to-code.md
 - workflows/pull-request-review.md
 - workflows/code-audit.md
@@ -82,6 +87,7 @@ Check for the existence of:
 - workflows/engineering-baseline.md
 - workflows/design-review.md
 - workflows/system-audit.md
+- workflows/bootstrap.md
 - workflows/output-compliance.md
 
 Check that CLAUDE.md references AGENTS.md rather than duplicating
@@ -646,9 +652,10 @@ done
 # Non-portable constructs in shared procedures.
 # The patterns live in references/portability.md, so they are defined once.
 # The character classes keep this pattern from matching itself.
-grep -rnE '/[t]mp/|/var/[f]olders/|~?/\.[c]onfig/opencode|~?/\.[c]laude' \
+grep -rnE '/[t]mp/|/var/[f]olders/|~?/\.[c]onfig/opencode|~?/\.[c]laude|~?/\.[c]odex' \
   workflows/ references/ skills/ commands/ 2>/dev/null |
   grep -vE 'references/+portability\.md:' |
+  grep -vE 'workflows/+bootstrap\.md:[0-9]+:([[:space:]]*link_one "\$root/[A-Za-z./]+" "\$HOME/(\.config/opencode/(AGENTS\.md|commands|agents)|\.claude/(AGENTS\.md|CLAUDE\.md|skills)|\.codex/AGENTS\.md)"|\| `\$HOME/(\.config/opencode/(AGENTS\.md|commands|agents)|\.claude/(AGENTS\.md|CLAUDE\.md|skills)|\.codex/AGENTS\.md)` \| )' |
   grep -v 'README.md' |
   sed 's/^/  /'
 ```

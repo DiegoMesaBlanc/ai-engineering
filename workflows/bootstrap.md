@@ -25,7 +25,12 @@ are the paths the user authorized:
 | `$HOME/.claude/CLAUDE.md` | `CLAUDE.md`, which imports `@AGENTS.md` |
 | `$HOME/.claude/skills` | `skills/` |
 | `$HOME/.codex/AGENTS.md` | `AGENTS.md` |
-| `$HOME/.codex/skills` | `skills/` |
+
+Codex's own skill directory is never linked to the repository. It was observed
+that Codex writes its built-in system skills into the directory it reads, and a
+link from that directory to `skills/` made it write them into the repository.
+Codex reads the shared instructions through its `AGENTS.md` link, and reaches
+the Skills of this repository as the README's Codex CLI setup describes.
 
 A broken link is repaired: a symbolic link whose target no longer exists, for
 example after the repository was moved, is pointed at the current repository. A
@@ -132,7 +137,6 @@ restart the client once after the first run.
     link_one "$root/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
     link_one "$root/skills" "$HOME/.claude/skills"
     link_one "$root/AGENTS.md" "$HOME/.codex/AGENTS.md"
-    link_one "$root/skills" "$HOME/.codex/skills"
 
     if [ "$failures" -eq 0 ]; then
       key=$(printf '%s' "$root" | cksum | awk '{print $1}')
@@ -171,7 +175,7 @@ key=$(printf '%s' "$(git rev-parse --show-toplevel)" | cksum | awk '{print $1}')
    hardcoded. The canonical files must exist.
 3. **State root.** `${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}` gets its
    directories and the ledger header, created only when missing.
-4. **Global links.** The eight links above. A link that already points to the
+4. **Global links.** The seven links above. A link that already points to the
    repository is accepted. Anything else at the destination is a `FAIL`, and it is
    kept.
 5. **Record.** Only when every check passes does the block write the record file
@@ -183,7 +187,7 @@ key=$(printf '%s' "$(git rev-parse --show-toplevel)" | cksum | awk '{print $1}')
 ## Safety
 
 - The writes are the state root, the ledger header when missing, the record, and
-  the eight authorized links. Nothing in the repository is modified.
+  the seven authorized links. Nothing in the repository is modified.
 - The block does not edit any shell profile, does not set environment variables,
   and does not change git configuration.
 - A rerun changes nothing that is already in place.
@@ -204,15 +208,18 @@ key=$(printf '%s' "$(git rev-parse --show-toplevel)" | cksum | awk '{print $1}')
 
 `AGENTS.md` cites its workflows relative to the repository. From another project,
 an agent resolves them from the root that the global link points to:
-`readlink "$HOME/.config/opencode/AGENTS.md"` gives the path of `AGENTS.md` in the
+`readlink` on the first link of the authorized-paths table gives the path of `AGENTS.md` in the
 repository, and its directory is the root.
 
 ## Limits
 
-- **macOS:** the block ran natively in a temporary HOME, including the link rules
-  for existing and differing destinations.
-- **Linux:** run in an Alpine container from a copy of the repository: first run,
-  rerun, and run without git. Other distributions are `NOT VERIFIED`.
+- **macOS:** the current seven-link block ran natively against the real HOME and
+  the record check reports `ready`. The interactive link confirmation and the
+  link rules for existing and differing destinations were exercised on the earlier
+  eight-link block and are `NOT VERIFIED` for the current one.
+- **Linux:** the Alpine container run (first run, rerun, and run without git) was
+  executed on the earlier eight-link block. It is `NOT VERIFIED` for the current
+  block, and other distributions are `NOT VERIFIED`.
 - **Windows:** simulated with command shims. A real run in Git Bash is `NOT
   VERIFIED`.
 - Whether each client follows `AGENTS.md` and runs the first-run check on its own

@@ -122,5 +122,5 @@ new PerformanceObserver((list) => {
 ## Sources
 
 * [Optimize CLS](https://web.dev/articles/optimize-cls)
-* [Debug layout shifts](https://developer.chrome.com/docs/devtools/performance/insights#cls-culprits)
+* [Debug layout shifts](https://web.dev/articles/debug-layout-shifts)
 * [CSS font metric overrides](https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/size-adjust)
