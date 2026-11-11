@@ -145,3 +145,5 @@ This list is the single source the audit check reads.
 - Hardcode an operating-system path in a shared procedure.
 - Report a check that did not execute as passed.
 - Depend on a client-specific feature for a rule to apply.
+
+The first-run rule is First Run on This Machine in AGENTS.md (M-120).

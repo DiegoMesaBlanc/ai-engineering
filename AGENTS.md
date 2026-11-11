@@ -246,7 +246,7 @@ Medium or higher rigor shows its proposal for approval, a fresh-context reviewer
 checks the proposal. The reviewer receives only the requirement, the proposal,
 and the evidence the proposal cites, never the conversation. Every finding
 receives a recorded disposition, and an open P1 finding blocks implementation
-until it is resolved. The procedure is `workflows/design-review.md`, and the
+until it is resolved. A declared skip of this review is not a deviation: without the review's record and its dispositions, the proposal is `BLOCKED` and the skip is reported as a process failure. The procedure is `workflows/design-review.md`, and the
 independence rules are those of the Independent Mode in
 `workflows/code-audit.md`.
 
@@ -757,7 +757,9 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
 - Before alignment the state of the target repository is recorded: the branch, the HEAD, and the working tree. A detached HEAD stops alignment and the branch is asked for, and a working tree with uncommitted paths stops alignment unless the task checkpoint records them as preserved (`working tree:`). `PREFLIGHT-001` reports both before the first file write (M-95).
 - A concrete module (an adapter, a store, a policy, or a module under `infrastructure/`) is imported only by the composition root. `DIP-001` reports every non-composition file that imports one by a relative or aliased path, and a decision record whose DIP row claims APPLIES or PRESERVED is contradicted by any such finding, so the record cannot state the rule the code breaks (M-96).
 - A document that cites an artifact is kept only when every cited artifact resolves inside the repository. A path that points outside the repository is a `FAIL`, and a path that is not in the repository is `NOT VERIFIED`, which blocks delivery. `ARTIFACT-001` reports each cited path with its file and line (M-97, M-68).
-- A PASS in a verdict matrix carries its evidence: a `file:line`, a detector ID with its output, a command in backticks, or its exit code. A PASS with a claim and no evidence is not a PASS, and `REPORT-001` reports it (M-98).
+- A PASS in a verdict matrix carries its evidence: a detector ID with its output, or a command in backticks with its exit code. A `file:line` alone is not evidence of a dimension verdict, because it shows where the code is and not that a check ran. A PASS with a claim and no evidence is not a PASS, and `REPORT-001` reports it (M-98).
+- A gate step is never allowed to fail silently. A workflow step or a shell line that runs a gate (tests, lint, typecheck, audit, secret or static scan, build, format check) and carries `|| true` or `continue-on-error: true` is a `FAIL` of `GATE-002` in `workflows/output-compliance.md`: a failing gate fails the pipeline, and a failure is handled by a bounded fix or a rollback, never by a weaker gate (M-123).
+- A redaction claim is kept only when the artifact it cites carries no author, e-mail, or personal field. A document that says a field is redacted while the cited artifact still holds it is contradicted, and `CLAIM-002` in `workflows/output-compliance.md` reports it with the artifact path (M-124).
 - A reinforcement of an engineering discipline adopted from an external
   methodology (test-first discipline, root-cause debugging, verification before
   completion, response to review feedback, alignment questions) is accepted

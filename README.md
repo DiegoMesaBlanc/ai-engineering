@@ -458,3 +458,7 @@ For a task, the assistant must ask for the exact branch name before changing app
 ## PR policy
 
 The assistant prepares copy-ready titles, descriptions, checks, and feedback, grounding review findings in the reviewed revision with evidence, severity, and confidence. The user manually creates the PR and pastes review comments. Current workflows must not publish comments, create PRs, approve, merge, or update remote tasks.
+
+The shared procedures assume a POSIX shell (M-22).
+
+The first-run rule of this repository is First Run on This Machine in AGENTS.md (M-120).

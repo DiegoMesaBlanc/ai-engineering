@@ -1338,6 +1338,8 @@ project_safety_sweep() {
   artifact_ref_check . $workflows
   import_effect_check . $src
   exec_claim_check . $mds
+  gate_swallow_check . $workflows $shells
+  redaction_claim_check . $mds
   [ -n "$catalogs" ] && echo "NOT VERIFIED TRACE-001: a catalog is tracked; run trace_check . <catalog> <prefix> $mds with the catalog's requirement prefix" ||
     echo "NOT VERIFIED TRACE-001: no catalog is tracked, so no document-catalog link was checked"
   [ -n "$manifests" ] || echo "NOT VERIFIED M-61: no build manifest or app configuration is tracked, so backup is not verified"
@@ -1801,6 +1803,31 @@ error_outcome_check() {
     done | awk '{ s += $1 } END { print s + 0 }')"
     [ "$kt" -ge 1 ] ||
       echo "FAIL ERR-002: $kf:$kl: error branch '$kk' is handled by the source and no test names it (M-118; candidate: confirm it is an error branch)"
+  done
+  # External audit (F4, M-77, M-118): a documented error outcome that is not an upper-snake code, an exit
+  # status named in prose, or an error envelope shape is still an outcome. Each one needs an executing test.
+  # Limit: an exit list written as "Exit codes: 0 …, 1 …, 2 …" is read for its first code only.
+  printf '%s' "$docs" | while IFS= read -r d; do
+    [ -n "$d" ] && [ -f "$root/$d" ] || continue
+    grep -noE '(exit[a-z]*( code[s]?)?:? *[0-9]+|sale con [0-9]+|salir con [0-9]+|exits? [0-9]+)' "$root/$d" |
+    while IFS= read -r hit; do
+      n="$(printf '%s' "$hit" | grep -oE '[0-9]+$')"
+      [ -n "$n" ] || continue
+      ok="$(printf '%s' "$tests" | while IFS= read -r t; do
+        [ -n "$t" ] && [ -f "$root/$t" ] || continue
+        grep -vE '^[[:space:]]*(test|it|describe)\(' "$root/$t" 2>/dev/null |
+          grep -E "(status|exitCode|[Ee]xit|code)[^;]*(^|[^0-9])$n([^0-9]|\$)|(^|[^0-9])$n([^0-9]|\$)[^;]*(status|exitCode|[Ee]xit)"
+      done | head -1)"
+      [ -n "$ok" ] || echo "FAIL ERR-002: $d:${hit%%:*}: documented exit status $n has no executing test that asserts it (M-77, M-118)"
+    done
+    envl="$(grep -nE '"error" *: *\{|\{"error"|\{ *error *:' "$root/$d" | head -1 | cut -d: -f1)"
+    if [ -n "$envl" ]; then
+      ok="$(printf '%s' "$tests" | while IFS= read -r t; do
+        [ -n "$t" ] && [ -f "$root/$t" ] || continue
+        grep -E 'expect\(.*error|error.*(toEqual|toMatch|toBe|toHaveProperty|toMatchObject)|\.error' "$root/$t" 2>/dev/null
+      done | head -1)"
+      [ -n "$ok" ] || echo "FAIL ERR-002: $d:$envl: the documented error envelope has no executing test that asserts its error key (M-77, M-118)"
+    fi
   done
 }
 ```
@@ -2800,6 +2827,74 @@ exec_claim_check() {
           }
         }
       }' "$root/$f"
+  done
+}
+```
+
+### GATE-002 — A gate step never fails silently
+
+M-123. A gate step is never allowed to fail silently. A workflow step or a shell line that runs a gate (tests, lint, typecheck, audit, a secret or static scan,
+build, a format check) and carries `|| true` or `continue-on-error: true` lets a failing gate pass. The check reads the
+line and the three lines around it, so a `continue-on-error` key is read with the step's `run` or `name`. A line that
+swallows the failure of a non-gate command is not a finding.
+
+```sh
+# M-123: a gate step never fails silently. $1 = repository root; $2... = workflow and shell files, relative to it.
+gate_swallow_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.yml|*.yaml|*.sh) ;; *) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    awk -v file="$f" '
+      { L[NR] = $0 }
+      END {
+        for (i = 1; i <= NR; i++) {
+          if (L[i] !~ /\|\| *true|continue-on-error: *true/) continue
+          ctx = ""; for (j = i - 3; j <= i + 3; j++) if (j >= 1 && j <= NR) ctx = ctx " " tolower(L[j])
+          if (ctx ~ /(npm|pnpm|yarn|bun) (run )?(test|lint|typecheck|build|audit|check)|tsc|eslint|prettier|vitest|jest|pytest|ruff|gitleaks|semgrep|trivy|snyk|--check|secret|scan|audit|verify|gate/)
+            printf "FAIL GATE-002: %s:%d: a gate step is allowed to fail (|| true or continue-on-error); the gate must fail the pipeline, and a failure gets a bounded fix or a rollback (M-123)\n", file, i
+        }
+      }' "$root/$f"
+  done
+}
+```
+
+### CLAIM-002 — A redaction claim is contradicted by the artifact it cites
+
+M-124. A redaction claim is kept only when the artifact it cites carries no personal field. A document that says a field, a value, or a personal datum is redacted, and cites an artifact in the same
+passage, is checked against that artifact. The artifact still carries an author field, an e-mail address, or a
+personal key, so the claim is contradicted and is a `FAIL` with the artifact path. The check reads the claim within two
+lines and the backticked paths in that window; a path that does not resolve in the repository is `NOT VERIFIED`
+through `ARTIFACT-001`, not here. Limit: the fields are recognized by name, so a personal value stored under an
+unlisted name is the reviewer's to read.
+
+```sh
+# M-124: a redaction claim is contradicted by the cited artifact. $1 = repository root; $2... = documents.
+redaction_claim_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.md) ;; *) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    awk '
+      { L[NR] = $0 }
+      END {
+        for (i = 1; i <= NR; i++) {
+          if (tolower(L[i]) !~ /redact/) continue
+          for (j = i - 2; j <= i + 2; j++) {
+            if (j < 1 || j > NR) continue
+            s = L[j]
+            while (match(s, /`[A-Za-z0-9_.\/-]+\.(json|txt|log|md|ya?ml|csv)`/)) {
+              print substr(s, RSTART + 1, RLENGTH - 2)
+              s = substr(s, RSTART + RLENGTH)
+            }
+          }
+        }
+      }' "$root/$f" | sort -u | while IFS= read -r p; do
+      [ -f "$root/$p" ] || continue
+      if grep -qiE '("?(author|authorEmail|email|e-mail|committer)"?) *[:=]|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}' "$root/$p"; then
+        echo "FAIL CLAIM-002: $f: a redaction claim cites $p, which still carries author or e-mail fields (M-124)"
+      fi
+    done
   done
 }
 ```
@@ -3833,7 +3928,12 @@ report_matrix_check() {
     awk -v f="$f" '
       function low(s) { return tolower(s) }
       function trim(s) { gsub(/^[ \t`*]+|[ \t`*]+$/, "", s); return s }
+      # M-80 (external audit): a verdict is one of the enumerated statuses, whatever column holds it.
+      function isverdict(s) { return toupper(trim(s)) ~ /^(PASS|FAIL|WARN|NOT VERIFIED|NOT_VERIFIED|N\/A|AMBIGUOUS|BLOCKED|BASELINE_FAILURE|NOT_RUN|NOT RUN|SKIPPED|SIMULATED|NOT_CONFIGURED|NOT_APPLICABLE|SETUP_REQUIRED)$/ }
       {
+        # M-80 (external audit): a matrix pasted with tabs has no pipes and was never read as rows.
+        # A tab-separated line is normalised to the pipe form before it is read.
+        if ($0 !~ /\|/ && $0 ~ /\t/) { gsub(/\t/, " | "); $0 = "| " $0 " |" }
         line = low($0)
         if (line ~ /baseline_failure/) {
           baseline = 1
@@ -3842,7 +3942,11 @@ report_matrix_check() {
         }
         if ($0 ~ /^\|/) {
           n = split($0, c, "|")
-          dim = trim(c[2]); st = toupper(trim(c[3])); mot = low(trim(c[4]))
+          # M-80: the status column holds the verdict. A matrix that names the dimension in the second
+          # column ("| 8 | Performance | NOT VERIFIED | reason |") has the status in the fourth; it is read there.
+          sidx = 3
+          if (!isverdict(c[3]) && (isverdict(c[4]) || low(trim(c[4])) ~ /^(status|estado)$/)) sidx = 4
+          dim = trim(c[2]); st = toupper(trim(c[sidx])); mot = low(trim(c[sidx + 1]))
           if (low(st) ~ /^(status|estado)$/ && low(dim) ~ /^dimensi|^dimension|^dim\.?$/) {
             curdim = 1; dimhdr = 1; next
           }
@@ -3851,9 +3955,9 @@ report_matrix_check() {
           # and a free-text status ("No ejecutadas en esta pasada") is never silently skipped (M-80).
           if (dim ~ /^[0-9]/ && st !~ /^(PASS|FAIL|WARN|NOT VERIFIED|NOT_VERIFIED|N\/A|AMBIGUOUS|BLOCKED|BASELINE_FAILURE|NOT_RUN|NOT RUN|SKIPPED|SIMULATED|NOT_CONFIGURED|NOT_APPLICABLE|SETUP_REQUIRED)$/) {
             if (st ~ /^PASS[ ,(]/)
-              print "FAIL REPORT-001: " f ":" NR ": PASS carries a qualifier \"" trim(c[3]) "\"; grade it WARN with the observation, or reopen the dimension (M-80)"
+              print "FAIL REPORT-001: " f ":" NR ": PASS carries a qualifier \"" trim(c[sidx]) "\"; grade it WARN with the observation, or reopen the dimension (M-80)"
             else
-              print "FAIL REPORT-001: " f ":" NR ": unrecognized status \"" trim(c[3]) "\"; a verdict is one of the enumerated values, and a dimension that was not run is run before its verdict is written (M-80)"
+              print "FAIL REPORT-001: " f ":" NR ": unrecognized status \"" trim(c[sidx]) "\"; a verdict is one of the enumerated values, and a dimension that was not run is run before its verdict is written (M-80)"
             rows++; bad_rows++; if (curdim) dimrows++
             num = dim; sub(/[^0-9].*$/, "", num)
             if (!(num in seen)) { seen[num] = 1; numbered = 1 }
@@ -3864,8 +3968,10 @@ report_matrix_check() {
             if (curdim) dimrows++
             if (st ~ /^(NOT VERIFIED|NOT_VERIFIED|AMBIGUOUS|FAIL|BLOCKED|BASELINE_FAILURE|NOT_RUN|NOT RUN|SKIPPED|SIMULATED|NOT_CONFIGURED|SETUP_REQUIRED)$/) open_rows++
             # M-98: a PASS row carries its evidence: file:line, a detector ID, a command in backticks, or an exit code.
-            if (st == "PASS" && $0 !~ /[A-Za-z0-9_.\/-]+:[0-9]+|[A-Z][A-Z0-9]*-[0-9][0-9][0-9]|`[^`]+`|exit [0-9]/)
-              print "FAIL REPORT-001: " f ":" NR ": PASS carries no evidence; cite file:line, a detector ID with its output, a command in backticks, or its exit code (M-98)"
+            # M-98 (external audit): file:line alone shows where the code is, not that a check ran. A numbered PASS
+            # needs a detector ID with its output, or a command in backticks with its exit code.
+            if (st == "PASS" && !($0 ~ /[A-Z][A-Z0-9]*-[0-9][0-9][0-9]/ || ($0 ~ /`[^`]+`/ && $0 ~ /(exit|salida)[^|]*[0-9]/)))
+              print "FAIL REPORT-001: " f ":" NR ": PASS carries no check evidence; cite a detector ID with its output, or a command in backticks with its exit code; file:line alone is not evidence of a dimension verdict (M-98)"
             # The external audit matrix grouped dimensions 8–14 in one row: a range ("8–14", "8-14") is a grouped cell as much as a list is (M-80).
             if (dim ~ /^[0-9]+ *(,|y |and )/ || dim ~ /^[0-9]+ *(-|–|—) *[0-9]+/) {
               print "FAIL REPORT-001: " f ":" NR ": grouped dimension \"" dim "\" gets one verdict; each dimension needs its own row (M-80)"
@@ -3903,7 +4009,9 @@ report_matrix_check() {
           print "NOT VERIFIED REPORT-001: " f ":" NR ": a runtime or version equivalence is claimed; keep it only with its execution on that version (M-80)"
       }
       END {
-        if (numbered && dimrows != 14) print "FAIL REPORT-001: " f ": the numbered dimension matrix has " dimrows " rows; the code audit has 14 dimensions (M-72, M-80)"
+        # Counted from the numbered rows, not from a "Dimension" header, so a matrix headed "#" is read the same way.
+        nseen = 0; for (k in seen) nseen++
+        if (numbered && nseen != 14) print "FAIL REPORT-001: " f ": the numbered dimension matrix has " nseen " numbered rows; the code audit has 14 dimensions (M-72, M-80)"
         if (open_rows > 0 && closure != "")
           print "FAIL REPORT-001: " f ": lines " closure "claim a closure or a PASS verdict while " open_rows " row(s) stay open (M-80)"
         if (pp && (open_rows > 0 || op > 0))
@@ -4050,6 +4158,8 @@ ws_root_check() {
 | `DELIVERY-002` | workflow YAML in the change set and the sweep | a workflow checks out a dispatched ref and deploys (M-116) |
 | `IMPORT-001` | source files in the change set and the sweep | a source module is changed (M-117) |
 | `EXEC-001` | reports and documents in the change set and the sweep | a document claims that an agent or a prompt ran (M-115) |
+| `GATE-002` | workflow files and shell scripts in the change set and the sweep | a workflow or script is created or modified (M-123) |
+| `CLAIM-002` | documents in the change set and the sweep; `redaction_claim_check` | a document claims a field is redacted (M-124) |
 | `VAL-001` | source files in the change set and the sweep | a source file reads `process.argv` |
 | `DB-003` | source files in the change set and the sweep | a source file holds a page query inside a loop |
 | `DB-001` | source files in the change set and the sweep (a pre-existing runtime DDL is a finding, not a blocker) | any source file is created or modified |

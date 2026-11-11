@@ -227,3 +227,5 @@ repository, and its directory is the root.
 - `references/portability.md` — the portability contract this workflow serves.
 - `workflows/system-validation.md` — the structural check of the repository.
 - `commands/system-check.md` — the discovery check run after bootstrap.
+
+The first-run rule is First Run on This Machine in AGENTS.md (M-120).

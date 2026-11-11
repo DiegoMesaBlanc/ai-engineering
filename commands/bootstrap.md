@@ -13,3 +13,5 @@ call from the repository root. Report its output as printed.
 The block creates only the links listed in `workflows/bootstrap.md`, and it
 never overwrites a destination it does not own. Do not install tools; report the
 install command the block prints.
+
+The first-run rule is First Run on This Machine in AGENTS.md (M-120).

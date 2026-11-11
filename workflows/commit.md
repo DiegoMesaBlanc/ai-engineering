@@ -57,6 +57,12 @@ patterns, or over-engineering.
   commits of the approved scope: a commit that touches a path the manifest does not
   name is a `FAIL` that blocks the proposal (M-87). The base is the revision the
   approved scope was measured against, not the first commit of the branch.
+- **Changed values of existing behavior (M-79, SCOPE-002).** Run `changed_value_check`
+  (`SCOPE-002` in `workflows/output-compliance.md`) over the change set against the base
+  revision and the approved manifest. It is a gate of this proposal, not only a row of the
+  coverage table: a changed timeout, limit, threshold, or default that the manifest does not
+  name is a `FAIL` that blocks the proposal until the user approves it. A value that changed
+  in a file the manifest names still needs its number named.
 - **Removed or renamed test cases (M-94).** Run `test_title_removal_check` (`BEHAVIOR-001`)
   over the modified test files against the base. A test case that the base has and the
   change set lacks is a `FAIL` unless the approved scope manifest names it on a line of

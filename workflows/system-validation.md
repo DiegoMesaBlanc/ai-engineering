@@ -1026,6 +1026,9 @@ Return:
 - V2.94 prose PASS verdicts, wall-clock and timer-option tests, the active Node runtime against the pin, approval wording, and agent-behavior claims (M-76, M-80, M-92, M-111, M-112, M-115, R-185 to R-190):
 - V2.95 scheme checks that name http: or are silent, change-set sweep wiring, the zsh guard, and the REPORT-001 output (M-55, M-75, M-80, R-191)
 - V2.96 gate claims that cite no versioned test, a bound declared by AbortSignal, lowercase error branches, a range of dimensions and an Overall PASS, the count of packages, a decision attributed to the user, and a generic one-responsibility claim (M-54, M-76, M-80, M-92, M-107, M-109, M-118, M-119, R-192)
+- V2.97 published packages, peer dependencies, verification artifacts, and workspace roots (M-121, R-194)
+- V2.98 report matrices without pipes, documented exit statuses and error envelopes, and the SCOPE-002 commit gate (M-77, M-79, M-80, M-118, R-196 to R-198)
+- V2.99 gate steps that fail silently, redaction claims contradicted by their artifact, and numbered PASS rows that cite only file:line (M-98, M-99, M-123, M-124, R-199 to R-201)
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -5389,7 +5392,7 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v280.XXXXXX")"
   {
     printf '%s\n' '# Audit' '| Dimensión | Estado | Motivo |' '|---|---|---|'
     printf '%s\n' \
-      '| 1 Arquitectura | PASS | Evidencia: `output-compliance` sin hallazgos en el cambio. |' \
+      '| 1 Arquitectura | PASS | Evidencia: `IMPORT-001` sin hallazgos en el cambio. |' \
       '| 2 Patrones | PASS | Selección vacía justificada: `design-patterns` exit 0. |' \
       '| 3 Calidad | PASS | Evidencia: `npm run lint` con código de salida 0. |' \
       '| 4 API | NOT VERIFIED | Requiere revisión de contrato externo. |' \
@@ -5768,7 +5771,7 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v282.XXXXXX")"
   [ -z "$r1" ] || { echo "FAIL V2.82: REPORT-001 holds an unnumbered matrix to 14 rows: $r1"; exit 1; }
   printf '%s\n' '| Dimension | Status | Reason |' '|---|---|---|' '| 1 | PASS | ok |' '| 2 | PASS | ok |' '| 3 | PASS | ok |' > numbered.md
   r2="$(report_matrix_check . numbered.md)"
-  printf '%s\n' "$r2" | grep -qF 'the numbered dimension matrix has 3 rows' \
+  printf '%s\n' "$r2" | grep -qF 'the numbered dimension matrix has 3 numbered rows' \
     || { echo "FAIL V2.82: REPORT-001 did not hold a numbered 3-row matrix to 14: $r2"; exit 1; }
   exit 0
 ) || failures=1
@@ -6539,7 +6542,7 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v286.XXXXXX")"
       else echo "| $i. Dimensión $i | PASS | \`criterio $i\` exit 0 |"; fi
     done; } > rep-noev.md
   r1="$(report_matrix_check . rep-noev.md)"
-  printf '%s\n' "$r1" | grep -qF 'FAIL REPORT-001: rep-noev.md:9: PASS carries no evidence' \
+  printf '%s\n' "$r1" | grep -qF 'FAIL REPORT-001: rep-noev.md:9: PASS carries no check evidence' \
     || { echo "FAIL V2.86: REPORT-001 did not report the PASS with no evidence: $r1"; exit 1; }
   { echo '# Audit'; echo '| Dim. | Estado | Motivo |'; echo '|---|---|---|'
     for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do
@@ -8273,7 +8276,7 @@ b2="$(bound_test_check "$ok" src/client.ts -- tests/client.test.ts)"
   echo '# Informe'
   echo '| Dimensión | Estado | Motivo / evidencia |'
   echo '|---|---|---|'
-  for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do printf '| %s | PASS | `ok` |\n' "$i"; done
+  for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do printf '| %s | PASS | `ok` exit 0 |\n' "$i"; done
   echo ''
   echo 'Overall: PASS, `ok`'
 } > "$ok/docs/rep.md"
@@ -8499,3 +8502,215 @@ echo "V2.97 behavioral fixtures removed"
 [ "$failures" -eq 0 ] && echo "V2.97 PASS" || echo "V2.97 FAIL"
 [ "$failures" -eq 0 ]
 ```
+
+## V2.98 Regression — Report Matrices Without Pipes, Documented Exit Statuses and Error Envelopes, and the SCOPE-002 Commit Gate
+
+A third external audit found that the same defects passed again. Four gaps were in the system, not in the audited
+application: `REPORT-001` read only pipe tables, so a matrix pasted with tabs was never read row by row and an
+`Overall: PASS` over an open row passed; the status column was read as the third column only, so a matrix that names
+the dimension in column two was misread; `ERR-002` read upper-snake codes only, so an exit status named in prose
+(`exits 2`) and a documented error envelope (`{"error":{...}}`) had no test requirement; and `SCOPE-002`
+(`changed_value_check`) was in the coverage table but not in the commit gate, so an unlisted changed value reached the
+proposal (M-79, M-77, M-80, M-118). The fixes are in `workflows/output-compliance.md` and `workflows/commit.md`; the
+rules are unchanged. The regression rows are R-196, R-197, and R-198.
+
+The text checks require the wiring of each fix. The behavioral part builds a defective fixture and its compliant twin
+in a temporary directory outside the repository, verifies each defect with its rule ID, verifies each twin is silent,
+and removes the directory.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+oc="workflows/output-compliance.md"
+cm="workflows/commit.md"
+rmx="references/system-workflow-regression-matrix.md"
+
+need() {
+  grep -qF -- "$2" "$root/$1" || { echo "FAIL V2.98: $1 does not carry $3"; failures=1; }
+}
+
+need "$cm" 'Run `changed_value_check`' "the SCOPE-002 commit gate (R-198)"
+need "$oc" 'function isverdict(' "the verdict reader of the status column (R-196)"
+need "$oc" 'documented error envelope has no executing test' "the envelope check of ERR-002 (R-197)"
+need "$oc" 'documented exit status' "the prose exit-status check of ERR-002 (R-197)"
+need "$rmx" '| R-196 |' "the R-196 regression row"
+need "$rmx" '| R-197 |' "the R-197 regression row"
+need "$rmx" '| R-198 |' "the R-198 regression row"
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v298.XXXXXX")"
+awk '/^```sh$/{on=1; n++; f=fx "/blk" n ".sh"; next} /^```$/{ if(on){close(f)}; on=0} on{print > f}' fx="$fx" "$root/$oc"
+for b in "$fx"/blk*.sh; do
+  grep -q 'report_matrix_check\|error_outcome_check' "$b" && . "$b"
+done
+
+put() { mkdir -p "$(dirname "$1")"; cat > "$1"; }
+
+# REPORT-001 (R-196): a tab-separated matrix is read row by row. The defect says Overall PASS over an open row.
+mk_matrix() {
+  {
+    printf '# Report\n\n#\tDimension\tStatus\tEvidence\n'
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do
+      if [ "$i" = 8 ]; then st='NOT VERIFIED'; ev='no runner in this environment'; else st='PASS'; ev='`npm test` exit 0'; fi
+      printf '%s\tDim%s\t%s\t%s\n' "$i" "$i" "$st" "$ev"
+    done
+    printf '\n%s\n' "$2"
+  } > "$1"
+}
+mk_matrix "$fx/rep-bad.md" 'Overall: PASS'
+mk_matrix "$fx/rep-ok.md" 'Overall: NOT VERIFIED on row 8 (no runner)'
+r1="$(cd "$fx" && report_matrix_check . rep-bad.md 2>&1)"
+printf '%s\n' "$r1" | grep -q 'FAIL REPORT-001: rep-bad.md: lines .* claim a closure or a PASS verdict while 1 row' \
+  || { echo "FAIL V2.98: REPORT-001 did not read the tab matrix and the Overall PASS over the open row 8: $r1"; failures=1; }
+r2="$(cd "$fx" && report_matrix_check . rep-ok.md 2>&1)"
+printf '%s\n' "$r2" | grep -q 'FAIL REPORT-001' \
+  && { echo "FAIL V2.98: REPORT-001 reports the compliant tab twin: $r2"; failures=1; }
+
+# ERR-002 (R-197): an exit status named in prose and an error envelope need an executing test.
+put "$fx/err/docs/usage.md" <<'EOF'
+# Usage
+
+Exit codes: 0 clean, 1 finding, 2 invalid arguments.
+
+On an unexpected error the CLI prints `{"error":{"message":"..."}}` and exits 2.
+EOF
+put "$fx/err/src/errors.ts" <<'EOF'
+export const usage = 2;
+EOF
+put "$fx/err/tests-bad/cli.test.ts" <<'EOF'
+import { test, expect } from 'vitest';
+test('exits 0 when clean', () => { expect(0).toBe(0); });
+test('exits 1 on a finding', () => { expect(1).toBe(1); });
+EOF
+put "$fx/err/tests-ok/cli.test.ts" <<'EOF'
+import { test, expect } from 'vitest';
+const run = (args: string[]) => ({ status: 0, stdout: '' });
+test('exits 0 when clean', () => { expect(run([]).status).toBe(0); });
+test('exits 2 on invalid arguments with the error envelope', () => {
+  const r = run(['--bad']);
+  expect(r.status).toBe(2);
+  expect(JSON.parse(r.stdout)).toMatchObject({ error: { message: expect.any(String) } });
+});
+EOF
+e1="$(cd "$fx/err" && error_outcome_check . src/errors.ts -- tests-bad/cli.test.ts -- docs/usage.md 2>&1)"
+printf '%s\n' "$e1" | grep -q 'FAIL ERR-002: docs/usage.md:5: documented exit status 2 has no executing test' \
+  || { echo "FAIL V2.98: ERR-002 did not report the prose exit status 2: $e1"; failures=1; }
+printf '%s\n' "$e1" | grep -q 'FAIL ERR-002: docs/usage.md:5: the documented error envelope' \
+  || { echo "FAIL V2.98: ERR-002 did not report the error envelope: $e1"; failures=1; }
+e2="$(cd "$fx/err" && error_outcome_check . src/errors.ts -- tests-ok/cli.test.ts -- docs/usage.md 2>&1 | grep 'ERR-002: docs/usage.md:5' || true)"
+[ -z "$e2" ] || { echo "FAIL V2.98: ERR-002 reports the compliant twin: $e2"; failures=1; }
+
+rm -rf "$fx"
+echo "V2.98 behavioral fixtures removed"
+[ "$failures" -eq 0 ] && echo "V2.98 PASS" || echo "V2.98 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V2.99 Regression — Silent Gate Steps, Redaction Claims, PASS Evidence, and the Pre-Code Review Skip
+
+A fourth external audit found four gaps that the rules did not close mechanically. A pipeline step that runs a gate
+carried `|| true`, so a failing gate passed (M-123, new). A report said that a field was redacted while the cited
+artifact still held an author and an e-mail address (M-124, new). A numbered `PASS` cited only `file:line`, which shows
+where the code is and not that a check ran (M-98, tightened). A pre-code design review was skipped and declared as a
+deviation, which the rules allowed (M-99, tightened: a declared skip blocks the proposal). The decisions were taken by
+the maintainer of the system: a gate step is never allowed to fail silently (M-123), a redaction claim is kept only when the artifact it cites carries no personal field (M-124), the gate rule applies to gate steps only, the redaction rule reads the cited artifact,
+the PASS rule requires a detector or a command, and a skip is a `BLOCKED` proposal, not an approved deviation.
+
+The text checks require the canonical wording in `AGENTS.md`, the registry rows, the coverage rows, the sweep lines,
+and the regression rows. The behavioral part builds a defective fixture and its compliant twin for `GATE-002`,
+`CLAIM-002`, and the PASS evidence in `REPORT-001`, in a temporary directory outside the repository, and removes it.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+oc="workflows/output-compliance.md"
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+
+need() {
+  grep -qF -- "$2" "$root/$1" || { echo "FAIL V2.99: $1 does not carry $3"; failures=1; }
+}
+
+need "$ag" 'A `file:line` alone is not evidence of a dimension verdict' "the M-98 tightened wording"
+need "$ag" 'is a `FAIL` of `GATE-002`' "the M-123 canonical wording"
+need "$ag" 'is contradicted, and `CLAIM-002`' "the M-124 canonical wording"
+need "$ag" 'the proposal is `BLOCKED` and the skip is reported as a process failure' "the M-99 skip wording"
+need "$mr" '| M-123 |' "the M-123 registry row"
+need "$mr" '| M-124 |' "the M-124 registry row"
+need "$oc" '### GATE-002 — A gate step never fails silently' "the GATE-002 section"
+need "$oc" '### CLAIM-002 — A redaction claim is contradicted by the artifact it cites' "the CLAIM-002 section"
+need "$oc" '| `GATE-002` |' "the GATE-002 coverage row"
+need "$oc" '| `CLAIM-002` |' "the CLAIM-002 coverage row"
+need "$oc" '  gate_swallow_check . $workflows $shells' "the GATE-002 sweep line"
+need "$oc" '  redaction_claim_check . $mds' "the CLAIM-002 sweep line"
+need "$rmx" '| R-199 |' "the R-199 regression row"
+need "$rmx" '| R-200 |' "the R-200 regression row"
+need "$rmx" '| R-201 |' "the R-201 regression row"
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v299.XXXXXX")"
+awk '/^```sh$/{on=1; n++; f=fx "/blk" n ".sh"; next} /^```$/{ if(on){close(f)}; on=0} on{print > f}' fx="$fx" "$root/$oc"
+for b in "$fx"/blk*.sh; do
+  grep -q 'gate_swallow_check\|redaction_claim_check\|report_matrix_check' "$b" && . "$b"
+done
+
+put() { mkdir -p "$(dirname "$1")"; cat > "$1"; }
+
+# GATE-002 (R-199)
+put "$fx/g/.github/workflows/bad.yml" <<'EOF'
+jobs:
+  ci:
+    steps:
+      - name: Unit tests
+        run: npm test || true
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
+EOF
+put "$fx/g/.github/workflows/ok.yml" <<'EOF'
+jobs:
+  ci:
+    steps:
+      - name: Print the version
+        run: node --version || true
+EOF
+g1="$(cd "$fx/g" && gate_swallow_check . .github/workflows/bad.yml .github/workflows/ok.yml 2>&1)"
+printf '%s\n' "$g1" | grep -q 'FAIL GATE-002: .github/workflows/bad.yml:5:' \
+  || { echo "FAIL V2.99: GATE-002 did not report npm test || true with file:line: $g1"; failures=1; }
+printf '%s\n' "$g1" | grep -q 'FAIL GATE-002: .github/workflows/bad.yml:8:' \
+  || { echo "FAIL V2.99: GATE-002 did not report continue-on-error on the lint step: $g1"; failures=1; }
+printf '%s\n' "$g1" | grep -q 'ok.yml' && { echo "FAIL V2.99: GATE-002 reports the non-gate twin: $g1"; failures=1; }
+
+# CLAIM-002 (R-200)
+put "$fx/c/evidence/gitleaks-bad.json" <<'EOF'
+{"Author":"Dev","Email":"dev@example.com","Secret":"***"}
+EOF
+put "$fx/c/evidence/gitleaks-ok.json" <<'EOF'
+{"Findings":[{"RuleID":"aws-key","File":"src/a.ts","Secret":"***"}]}
+EOF
+put "$fx/c/claim-bad.md" <<'EOF'
+Los campos sensibles quedan redactados en `evidence/gitleaks-bad.json`.
+EOF
+put "$fx/c/claim-ok.md" <<'EOF'
+Los campos sensibles quedan redactados en `evidence/gitleaks-ok.json`.
+EOF
+c1="$(cd "$fx/c" && redaction_claim_check . claim-bad.md claim-ok.md 2>&1)"
+printf '%s\n' "$c1" | grep -q 'FAIL CLAIM-002: claim-bad.md: a redaction claim cites evidence/gitleaks-bad.json' \
+  || { echo "FAIL V2.99: CLAIM-002 did not report the contradicted redaction claim: $c1"; failures=1; }
+printf '%s\n' "$c1" | grep -q 'claim-ok.md' && { echo "FAIL V2.99: CLAIM-002 reports the compliant twin: $c1"; failures=1; }
+
+# REPORT-001 PASS evidence (R-201)
+printf '| 1 | PASS | security-scan.ts:55 |\n' > "$fx/pass-bad.md"
+printf '| 1 | PASS | `npm test` exit 0 |\n' > "$fx/pass-ok.md"
+p1="$(cd "$fx" && report_matrix_check . pass-bad.md 2>&1)"
+printf '%s\n' "$p1" | grep -q 'FAIL REPORT-001: pass-bad.md:1: PASS carries no check evidence' \
+  || { echo "FAIL V2.99: REPORT-001 accepted file:line alone as PASS evidence: $p1"; failures=1; }
+p2="$(cd "$fx" && report_matrix_check . pass-ok.md 2>&1 | grep 'no check evidence' || true)"
+[ -z "$p2" ] || { echo "FAIL V2.99: REPORT-001 reports the command-evidence twin: $p2"; failures=1; }
+
+rm -rf "$fx"
+echo "V2.99 behavioral fixtures removed"
+[ "$failures" -eq 0 ] && echo "V2.99 PASS" || echo "V2.99 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+A published declaration names only files the package ships (M-121), as V2.97 checks.
