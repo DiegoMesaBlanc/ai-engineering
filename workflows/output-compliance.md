@@ -4105,7 +4105,10 @@ ws_root_check() {
 1. Resolve the target project root, the base revision, and the change set
    (staged, unstaged, untracked). Record HEAD and the branch.
 2. Exclude generated output, dependencies, and build artifacts.
-3. Run **every row of the coverage table below whose "Applies when" holds**.
+3. Read the coverage table below first. Then read only the detector sections
+   whose rows apply, located by their `###` headings. The file is large; a
+   section of a row that does not apply is not read, and that row is reported
+   as `N/A` with its reason, never as run. Run **every row of the coverage table below whose "Applies when" holds**.
    The table is the complete list of the detectors this file defines. A detector or check that a workflow defines is a control only when the procedure that a verdict cites runs it on the scope it covers (M-75). A row
    that applies and is not run is a skipped check: it is reported as
    `NOT VERIFIED` with its reason and never as passing. A detector that

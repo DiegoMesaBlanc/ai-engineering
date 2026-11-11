@@ -312,7 +312,7 @@ Rules:
 - **Learning-cycle record (M-122).** The task checkpoint must hold a
   learning-cycle record for this change set, written by the learning cycle of
   `workflows/task-to-code.md`: its date, the store entries applied, and the
-  `external-auditor` run with its findings by class. A missing or incomplete
+  `external-auditor` run with its findings by class, or, for an empty audit scope, the skip with the reused records and the gate evidence (M-125). A missing or incomplete
   record blocks the proposal: report it and stop, as for `SCOPE-001`. No hook
   triggers the cycle, so this gate is the check on it.
 

@@ -1036,6 +1036,7 @@ Return:
 - V2.97 published packages, peer dependencies, verification artifacts, and workspace roots (M-121, R-194)
 - V2.98 report matrices without pipes, documented exit statuses and error envelopes, and the SCOPE-002 commit gate (M-77, M-79, M-80, M-118, R-196 to R-198)
 - V2.99 gate steps that fail silently, redaction claims contradicted by their artifact, and numbered PASS rows that cite only file:line (M-98, M-99, M-123, M-124, R-199 to R-201)
+- V3.00 audit memory: a unit that passed is reused only on unchanged content, and cross-unit criteria are never reused (M-125, R-202)
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -8721,3 +8722,86 @@ echo "V2.99 behavioral fixtures removed"
 ```
 
 A published declaration names only files the package ships (M-121), as V2.97 checks.
+
+## V3.00 Regression — Audit Memory and the Re-Audit Skip (M-125)
+
+An already-passed unit is not audited again while its content and its criteria version are unchanged. The rule is
+canonical in `AGENTS.md`, its procedure and decision function are in `workflows/self-learning.md` ("Audit Memory"), and
+the learning cycle of `workflows/task-to-code.md` applies it. The behavioral part extracts `audit_memory_check` from
+`workflows/self-learning.md` (the function itself, not a copy), runs it on a compliant fixture and on defective fixtures
+in a temporary directory outside the repository, and injects a defect: a copy without the cross-unit case must reuse
+`DEAD-EXPORT-001`, which proves that the cross-unit guard is the one that prevents it (R-202).
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+need() {
+  grep -qF -- "$2" "$root/$1" || { echo "FAIL V3.00: $1 does not carry $3"; failures=1; }
+}
+
+need AGENTS.md 'Audit memory (M-125)' "the canonical M-125 wording"
+need workflows/self-learning.md '## Audit Memory (M-125)' "the Audit Memory section"
+need workflows/self-learning.md 'audit_memory_check() {' "the decision function"
+need workflows/task-to-code.md 'audit_memory_check' "the learning cycle call to the decision function"
+need agents/external-auditor.md 'the unit-local criteria already passed on unchanged content' "the auditor input that skips reused units"
+need workflows/output-compliance.md 'Read the coverage table below first' "the section-by-section reading rule"
+need references/mandatory-rules.md '| M-125 |' "the M-125 registry row"
+need references/system-workflow-regression-matrix.md '| R-202 |' "the R-202 regression row"
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v300.XXXXXX")"
+sed -n '/^audit_memory_check() {/,/^}/p' "$root/workflows/self-learning.md" > "$fx/fn.sh"
+[ -s "$fx/fn.sh" ] || { echo "FAIL V3.00: audit_memory_check is not extractable from workflows/self-learning.md"; failures=1; }
+
+mkdir -p "$fx/repo/src"
+printf 'export const a = 1\n' > "$fx/repo/src/a.ts"
+printf 'export const b = 2\n' > "$fx/repo/src/b.ts"
+sha_a=$(shasum -a 256 "$fx/repo/src/a.ts" | awk '{print $1}')
+sha_b=$(shasum -a 256 "$fx/repo/src/b.ts" | awk '{print $1}')
+ledger="$fx/ledger.tsv"
+printf 'criterion\tcriteria_version\tunit\tsha256\tverdict\tdate\ttask\tcommit\n' > "$ledger"
+printf 'FUNC-001\tv1\tsrc/a.ts\t%s\tPASS\t2026-11-11\tt1\tc1\n' "$sha_a" >> "$ledger"
+printf 'FUNC-001\tv1\tsrc/b.ts\t%s\tFAIL\t2026-11-11\tt1\tc1\n' "$sha_b" >> "$ledger"
+printf 'DEAD-EXPORT-001\tv1\tsrc/a.ts\t%s\tPASS\t2026-11-11\tt1\tc1\n' "$sha_a" >> "$ledger"
+
+(
+  . "$fx/fn.sh"
+  r1="$(audit_memory_check "$ledger" v1 FUNC-001 src/a.ts "$fx/repo")"
+  printf '%s\n' "$r1" | grep -q '^REUSE FUNC-001 src/a.ts' || { echo "FAIL V3.00: unchanged PASS unit not reused: $r1"; exit 1; }
+
+  printf 'export const a = 99\n' > "$fx/repo/src/a.ts"
+  r2="$(audit_memory_check "$ledger" v1 FUNC-001 src/a.ts "$fx/repo")"
+  printf '%s\n' "$r2" | grep -q '^AUDIT FUNC-001 src/a.ts: content changed' || { echo "FAIL V3.00: changed content reused: $r2"; exit 1; }
+
+  printf 'export const a = 1\n' > "$fx/repo/src/a.ts"
+  r3="$(audit_memory_check "$ledger" v2 FUNC-001 src/a.ts "$fx/repo")"
+  printf '%s\n' "$r3" | grep -q '^AUDIT FUNC-001 src/a.ts: no record for criteria version v2' || { echo "FAIL V3.00: other criteria version reused: $r3"; exit 1; }
+
+  r4="$(audit_memory_check "$ledger" v1 FUNC-001 src/b.ts "$fx/repo")"
+  printf '%s\n' "$r4" | grep -q '^AUDIT FUNC-001 src/b.ts: recorded verdict is FAIL' || { echo "FAIL V3.00: FAIL record reused: $r4"; exit 1; }
+
+  r5="$(audit_memory_check "$ledger" v1 DEAD-EXPORT-001 src/a.ts "$fx/repo")"
+  printf '%s\n' "$r5" | grep -q '^AUDIT DEAD-EXPORT-001 src/a.ts: cross-unit criterion, never reused' || { echo "FAIL V3.00: cross-unit criterion reused: $r5"; exit 1; }
+) || failures=1
+
+r7="$( PATH=/nonexistent; . "$fx/fn.sh"; audit_memory_check "$ledger" v1 FUNC-001 src/a.ts "$fx/repo" )"
+printf '%s\n' "$r7" | grep -q '^NOT VERIFIED FUNC-001 src/a.ts: shasum is missing' \
+  || { echo "FAIL V3.00: a missing shasum did not return NOT VERIFIED: $r7"; failures=1; }
+printf 'FUNC-001\tv1\t*\t-\tREPEAT\t2026-11-11\tt2\tc2\n' > "$fx/ledger-repeat.tsv"
+cat "$ledger" | tail -n +2 >> "$fx/ledger-repeat.tsv"
+(
+  . "$fx/fn.sh"
+  printf 'export const a = 1\n' > "$fx/repo/src/a.ts"
+  r6="$(audit_memory_check "$fx/ledger-repeat.tsv" v1 FUNC-001 src/a.ts "$fx/repo")"
+  printf '%s\n' "$r6" | grep -q '^AUDIT FUNC-001 src/a.ts: a repetition is recorded' || { echo "FAIL V3.00: a repeated criterion reused a PASS record: $r6"; exit 1; }
+) || failures=1
+need agents/external-auditor.md 'one `PASS` line for each' "the auditor PASS line schema the memory writes from"
+sed '/case "\$crit" in/,/esac/d' "$fx/fn.sh" > "$fx/injected.sh"
+inj="$( . "$fx/injected.sh"; audit_memory_check "$ledger" v1 DEAD-EXPORT-001 src/a.ts "$fx/repo" )"
+printf '%s\n' "$inj" | grep -q '^REUSE DEAD-EXPORT-001' \
+  || { echo "FAIL V3.00: the cross-unit injection was not reproduced, the guard is not proven: $inj"; failures=1; }
+
+rm -rf "$fx"
+echo "V3.00 behavioral fixtures removed"
+[ "$failures" -eq 0 ] && echo "V3.00 PASS" || echo "V3.00 FAIL"
+[ "$failures" -eq 0 ]
+```

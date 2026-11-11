@@ -221,7 +221,13 @@ sends a minimal prompt and nothing else:
 
 - the original requirement and its acceptance criteria;
 - the artifact root and the change-set scope;
-- the IDs of enforced checks already covered, which are not audited again.
+- the IDs of enforced checks already covered, which are not audited again;
+- the unit-local criteria already passed on unchanged content (audit memory,
+  M-125), which are not audited again. The caller decides them; the auditor
+  never reads the ledger.
+
+The auditor audits only the criteria it was sent. A criterion it was not sent
+is not reported as passed.
 
 The auditor never reads the learning store and never receives the implementation
 conversation. Every finding is returned with this fixed schema, so the caller can
@@ -238,6 +244,13 @@ classify it without reading the report:
 
 Findings without `location` and `evidence` are not findings; they are open
 questions.
+
+For the learning cycle, the auditor also returns one `PASS` line for each
+unit-local criterion it judged passed on a unit it was given, with this fixed
+schema: `criterion`, `unit` (the path as sent), `verdict` = `PASS`, and
+`evidence` (the command with its exit code, or the observed output). A criterion
+without such evidence is not returned as `PASS`. The caller uses these lines to
+write the audit memory (M-125); the auditor never computes or stores a hash.
 
 ## Responsibilities
 

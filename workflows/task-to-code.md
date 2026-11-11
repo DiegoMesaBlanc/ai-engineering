@@ -731,11 +731,31 @@ real gap found in the system's own artifacts.
    is a repetition: a defect of this task, fixed before continuing.
 2. **Audit.** Start `external-auditor` as a fresh subagent with the minimal
    contract in `agents/external-auditor.md` ("Learning-Cycle Invocation"):
-   requirement, artifact root, scope, and the IDs of the enforced checks to
-   skip. The delegation is mirrored as in `workflows/session-resilience.md`
-   ("Delegated work").
+   requirement, artifact root, scope, the IDs of the enforced checks to skip,
+   and the unit-local criteria already passed on unchanged content (M-125). The
+   scope sent to the auditor is the set of criteria that the Phase 12 gate did
+   not verify with executable evidence, minus those two skips. A criterion is
+   verified by the gate when its row in the "Evidence per criterion" table of
+   this phase cites a command with its exit code or a named test that runs it;
+   a row with only `file:line` is not verified and is sent. The auditor still
+   reads `references/audit-pass-criteria.md` in full, as Phase 5 of
+   `workflows/code-audit.md` requires. When the scope is empty, because every
+   criterion is reused or gate-verified, the auditor is not started. The M-122
+   record then states `auditor not started: empty scope`, with the list of reused
+   records and the gate evidence that covers each criterion. Each skip is
+   decided by `audit_memory_check` in `workflows/self-learning.md` ("Audit
+   Memory"), which prints `REUSE` or `AUDIT`; a `NOT VERIFIED` is audited. The
+   caller computes the criteria version and passes it to the decision. The
+   delegation is mirrored as in `workflows/session-resilience.md` ("Delegated
+   work").
 3. **Classify.** Each returned finding is classified with the table in
-   `workflows/self-learning.md` ("Evaluate Findings").
+   `workflows/self-learning.md` ("Evaluate Findings"). The caller then writes
+   the audit-memory rows of the audited units from the auditor's `PASS` lines,
+   each with the SHA-256 of the content it audited, and a `FAIL` or
+   `NOT VERIFIED` for the record only, never reused (M-125). A repetition
+   (an enforced entry whose check failed on this change) writes the `REPEAT`
+   row of its criterion and version, with `unit` = `*`. The same write removes
+   that row only when a full audit run of the criterion passes.
 4. **Close.** Defects of the task are fixed in the task. System gaps and
    unenforced learnings go to the gap closure of `workflows/self-learning.md`
    Phase 4. Nothing is committed here.

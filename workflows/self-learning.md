@@ -79,6 +79,82 @@ whether a lesson is enforced without reading every entry.
   index. Each write replaces the file as a whole after the change is computed,
   so an interrupted run never leaves a half-written row.
 
+## Audit Memory (M-125)
+
+The audit memory stops the learning cycle from re-auditing what it already
+verified. A unit that passed is correct until its content changes, so it is not
+audited again.
+
+- **File:** `${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}/audits/<repo-slug>/ledger.tsv`,
+  tab-separated, with a header line. Columns: `criterion`, `criteria_version`,
+  `unit`, `sha256`, `verdict`, `date`, `task`, `commit`.
+- **Path components** follow the Neutral Store rules of this file: `<repo-slug>`
+  is normalized, and the resolved path must stay under the neutral root.
+- **Key:** `criterion` + `criteria_version` + `unit`. One row per key; a new
+  result for the same key replaces the old row (whole-file write, as the
+  Ledger section does).
+- **Criteria version.** The first 16 hexadecimal digits of the SHA-256 of
+  `references/audit-pass-criteria.md` as it exists in the working tree of the
+  ai-engineering repository at the moment the audit runs. A committed or an
+  uncommitted edit of the criteria changes the version and invalidates every
+  record, which is the safe direction. The learning cycle computes it on each
+  run; it is never copied from a previous record.
+- **Repetition row.** When a repetition is recorded for a criterion, the learning
+  cycle writes a row with `unit` = `*` and `verdict` = `REPEAT` for that criterion
+  and version. Every record of that criterion is then audited. The row is
+  removed only after a full audit run of that criterion passes; the removal is
+  recorded in the same whole-file write as the new `PASS` rows.
+- **Only `PASS` is reusable.** `FAIL`, `NOT VERIFIED`, and `BLOCKED` are written
+  for the record and are always audited again.
+- **Unit-local criteria only.** A criterion whose verdict reads a file other than
+  its unit is never reused. The cross-unit set is: `DEAD-EXPORT-001`, `DUP-001`,
+  `DIP-001`, `CONSUME-001`, `ERR-002`, `ERR-003`, `ENTRY-001`, `TRACE-001`,
+  `DEC-001`, `DEC-002`, `SRP-001`, and every criterion of the families `SCOPE-`,
+  `APPROVAL-`, `CLAIM-`, `EVIDENCE-`, `DELIVERY-`, `CACHE-`, and `COMMIT-`. The
+  cross-unit set is fixed here; a new criterion that reads another unit is added
+  to it in the same change.
+- **Invalidation.** A record is not reused when the content hash differs, when
+  the criteria version differs, or when a repetition row exists for its criterion
+  and version (the function reads that row; it does not rely on the verdict of
+  the unit's own row).
+- **Gate results.** A gate result (a command with its exit code) is reusable only
+  when the command, the tool version, and the content of its inputs are unchanged.
+  Otherwise the command runs again.
+- **Writes.** Only the learning cycle of `workflows/task-to-code.md` writes this
+  ledger. The caller computes the SHA-256 of each unit at the moment it sends the
+  unit to the auditor, and writes a `PASS` row for each unit-local criterion that
+  the auditor returned as passed for that unit (the auditor's `PASS` lines, see
+  `agents/external-auditor.md`). A `FAIL` or `NOT VERIFIED` is written with the
+  same hash, for the record only.
+
+The decision is taken by the following procedure. It reads the ledger and the
+unit, and prints `REUSE` or `AUDIT` with the reason. It needs `shasum`; without
+it the result is `NOT VERIFIED`, never `REUSE`.
+
+```sh
+# M-125: decide whether a unit is reused from the audit memory.
+# $1 = ledger, $2 = criteria version, $3 = criterion, $4 = unit path relative to $5, $5 = repository root.
+audit_memory_check() {
+  ledger="$1"; cv="$2"; crit="$3"; unit="$4"; root="$5"
+  command -v shasum >/dev/null 2>&1 || { echo "NOT VERIFIED $crit $unit: shasum is missing"; return 0; }
+  case "$crit" in
+    DEAD-EXPORT-001|DUP-001|DIP-001|CONSUME-001|ERR-002|ERR-003|ENTRY-001|TRACE-001|DEC-001|DEC-002|SRP-001|SCOPE-*|APPROVAL-*|CLAIM-*|EVIDENCE-*|DELIVERY-*|CACHE-*|COMMIT-*)
+      echo "AUDIT $crit $unit: cross-unit criterion, never reused"; return 0 ;;
+  esac
+  rep=$(awk -F'\t' -v c="$crit" -v v="$cv" '$1==c && $2==v && $3=="*" && $5=="REPEAT" {print "x"; exit}' "$ledger" 2>/dev/null)
+  [ -z "$rep" ] || { echo "AUDIT $crit $unit: a repetition is recorded for this criterion"; return 0; }
+  [ -f "$root/$unit" ] || { echo "AUDIT $crit $unit: unit missing"; return 0; }
+  now=$(shasum -a 256 "$root/$unit" | awk '{print $1}')
+  rec=$(awk -F'\t' -v c="$crit" -v v="$cv" -v u="$unit" '$1==c && $2==v && $3==u {r=$0} END{print r}' "$ledger" 2>/dev/null)
+  [ -n "$rec" ] || { echo "AUDIT $crit $unit: no record for criteria version $cv"; return 0; }
+  sha=$(printf '%s\n' "$rec" | awk -F'\t' '{print $4}')
+  verdict=$(printf '%s\n' "$rec" | awk -F'\t' '{print $5}')
+  [ "$verdict" = "PASS" ] || { echo "AUDIT $crit $unit: recorded verdict is $verdict"; return 0; }
+  [ "$sha" = "$now" ] || { echo "AUDIT $crit $unit: content changed since the PASS record"; return 0; }
+  echo "REUSE $crit $unit: PASS record matches sha256 $now"
+}
+```
+
 ## Phase 1 — Apply (Consume)
 
 **Read the store before acting.** A lesson that is never consulted cannot

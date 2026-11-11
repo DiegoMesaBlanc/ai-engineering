@@ -386,7 +386,7 @@ Hard rules:
 - A commit proposal requires a learning-cycle record (M-122). The task
   checkpoint records, for this change set, the date of the learning cycle of
   `workflows/task-to-code.md`, the store entries it applied, and the
-  `external-auditor` run with its findings by class. No hook triggers the
+  `external-auditor` run with its findings by class, or, for an empty audit scope, the skip with the reused records and the gate evidence (M-125). No hook triggers the
   cycle; the gate verifies its record. A missing or incomplete record blocks
   the proposal and the agent reports it and stops.
 
@@ -854,6 +854,14 @@ layer. This is provider-neutral and is not a retrospective of people or
 teams.
 
 - The behavior is defined canonically in `workflows/self-learning.md`.
+- **Audit memory (M-125).** A unit that an independent audit already passed is
+  not audited again while its content and the criteria version are unchanged.
+  The learning cycle records each `PASS` with the unit path, the SHA-256 of its
+  content, the criterion ID, and the criteria version, and reuses it only for
+  unit-local criteria. Cross-unit criteria are always audited. A `FAIL`, a
+  `NOT VERIFIED`, or a repetition is never reusable, and a repetition invalidates
+  every record of its criterion. The memory lives in the neutral store, is read
+  and written only by the learning cycle, and never enters the repository.
 - Every implementation task runs the learning cycle of
   `workflows/self-learning.md` before its commit proposal. The evaluation is
   mandatory in every task: the applicable learnings are checked, and the
