@@ -522,6 +522,7 @@ dimension. A criterion is never presented as a framework standard.
   guard that no tracked test names, with its `file:line`; that finding is `FAIL` of this
   dimension, and a `PASS` cites the test file and the command that ran it.
 
+- A claim that a gate, pipeline, or contract was demonstrated to reject a violation cites a versioned test that injects that violation; a one-off run is `NOT VERIFIED` (M-119, `CLAIM-001`).
 - Each error branch and each exit code is covered on its own (M-118). A code emitted from
   several sites is `NOT VERIFIED` until its test references reach the sites or the branch
   coverage of the emitting file is cited (`ERR-002`); each exit code an entry point sets is

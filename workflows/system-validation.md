@@ -1025,6 +1025,7 @@ Return:
 - V2.93 bound approvals, execution claims, gates on the artifact, effects at import, per-site error and exit coverage, and Spanish responsibility and count wording (M-107, M-109, M-114 to M-118, R-180 to R-184):
 - V2.94 prose PASS verdicts, wall-clock and timer-option tests, the active Node runtime against the pin, approval wording, and agent-behavior claims (M-76, M-80, M-92, M-111, M-112, M-115, R-185 to R-190):
 - V2.95 scheme checks that name http: or are silent, change-set sweep wiring, the zsh guard, and the REPORT-001 output (M-55, M-75, M-80, R-191)
+- V2.96 gate claims that cite no versioned test, a bound declared by AbortSignal, lowercase error branches, a range of dimensions and an Overall PASS, the count of packages, a decision attributed to the user, and a generic one-responsibility claim (M-54, M-76, M-80, M-92, M-107, M-109, M-118, M-119, R-192)
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -8051,6 +8052,7 @@ x2="$(exec_claim_check "$ok" docs/r.md)"
 echo "V2.94 behavioral fixtures: $fx (removed on exit)"
 [ "$failures" -eq 0 ] && echo "V2.94 PASS" || echo "V2.94 FAIL"
 [ "$failures" -eq 0 ]
+```
 
 ## V2.95 Regression — Scheme Checks That Pass Silently, Change-Set Wiring, zsh, and Report Output
 
@@ -8135,4 +8137,203 @@ printf '%s\n' "$r" | grep -qF 'FAIL REPORT-001: report.md:3: NOT VERIFIED reason
 cd "$root" && rm -rf "$fx"
 echo "V2.95 behavioral fixtures: $fx (removed on exit)"
 [ "$failures" -eq 0 ] && echo "V2.95 PASS" || echo "V2.95 FAIL"
+```
+
+## V2.96 Regression — Gate Claims, Declared Bounds, Lowercase Error Branches, Report Ranges, Counts, Decisions, and Generic Responsibility Claims
+
+The third external audit of a delivery project found eight gaps that let defects pass with the rules already written.
+The matrix grouped dimensions 8–14 in one row and called an incomplete review `PASS` in a prose conclusion (F-1, F-8);
+a count of 118 packages was not read because `packages` was not a counted noun (F-2); a timeout declared with
+`AbortSignal.timeout` was not a declared bound (F-3); the error branches named by lowercase kinds (`timeout`, `network`,
+`unauthorized`, `unexpected_response`) were not read, because the error check reads upper-snake codes only (F-4); a
+claim that a mismatch broke the pipeline was backed by a manual run, with no versioned test (F-5); a decision the user
+made was worded without an approval verb (F-6); and a generic claim of one responsibility per unit, with a unit that
+joined transport, encoding, decoding, and classification, was not contradicted, because those kinds were not listed
+(F-8). The new rule is M-119; the other detectors read the wording of rules that already exist (M-54, M-76, M-80,
+M-92, M-107, M-109, M-118).
+
+- M-119 (CLAIM-001, `gate_claim_check`): a claim that a gate, pipeline, or contract was demonstrated to reject a violation
+  cites a versioned test that injects it.
+- M-54, M-76 (BOUND-001): a declared bound includes `AbortSignal.timeout(`, `AbortSignal.any(`, and a `setTimeout(` that aborts.
+- M-118 (ERR-002): an error branch named by a lowercase discriminant (`kind`, `reason`, `errorKind`, `failure`) near an
+  error word is read, and a test must name it.
+- M-80 (REPORT-001): a range of dimensions is a grouped cell, and `Overall`, `global`, and `resultado` make a conclusion.
+- M-109 (EVIDENCE-001): `packages`, `dependencies`, `endpoints`, `sites`, `jobs`, `steps`, `branches`, `checks`, `suites`,
+  and their Spanish forms are counted sets.
+- M-92, M-111 (APPROVAL-001): a decision verb with a user noun is an approval claim.
+- M-107 (SRP-001, DEC-001): transport, encoding, decoding, and error classification are responsibility kinds, and a
+  generic one-responsibility claim is contradicted while SRP-001 lists a unit.
+
+The text checks require the canonical wording and the anchors on the surfaces that carry them, the registry and regression
+rows, and the sweep wiring. The behavioral part builds a defective fixture and its compliant twin for each detector in a
+temporary directory outside the repository, verifies each defect is reported with `file:line`, verifies each twin is
+clean, and removes the directory.
+
+Limits, stated by the rules themselves: every detector is lexical. `BOUND-001` reads the bound vocabulary and the presence of
+a never-resolving construct in a test that imports the module; it cannot tell that the construct is the one that holds the
+dependency, which the reviewer confirms. `ERR-002` reads lowercase discriminants next to an error word in a window of
+300 characters, so a branch with no error word nearby is the reviewer's to find. `gate_claim_check` reads the claim within
+two lines and a cited test path; it does not open that path, so it cannot tell that the file exists, is tracked, or really injects the violation. The reviewer confirms all three.
+`REPORT-001` reads the words of its rules, and a matrix that uses other words for the same defect is `NOT VERIFIED`.
+`EVIDENCE-001` compares a count with the non-empty lines of the cited file, and a mismatch stays `NOT VERIFIED`. `SRP-001`
+counts kinds by pattern, so a responsibility that no pattern names is the reviewer's to find. Whether a report ran these
+checks at all is a property of the agent's flow, not of the detectors: the sweep runs them only when the procedure is
+executed.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+oc="workflows/output-compliance.md"
+vs="workflows/system-validation.md"
+rmx="references/system-workflow-regression-matrix.md"
+mr="references/mandatory-rules.md"
+apc="references/audit-pass-criteria.md"
+ag="AGENTS.md"
+sa="workflows/system-audit.md"
+
+need() {
+  grep -qF -- "$2" "$root/$1" || { echo "FAIL V2.96: $1 does not carry $3"; failures=1; }
+}
+
+need "$ag" 'versioned test in the repository that injects that violation' "the M-119 canonical wording"
+need "$apc" 'injects that violation' "the M-119 Dimension 7 anchor"
+need "$oc" 'a claim that a gate, pipeline, or contract was demonstrated' "the M-119 detector wording"
+need "$oc" 'a generic one-responsibility claim' "the M-107 generic-claim wording"
+need "$oc" 'lowercase discriminant' "the M-118 lowercase error-branch wording"
+need "$oc" 'AbortSignal.timeout' "the M-54 bound vocabulary"
+need "$sa" 'gate_claim_check' "the system audit mapping row for M-119"
+
+grep -q '^| M-119 |' "$root/$mr" || { echo "FAIL V2.96: no M-119 row in the registry"; failures=1; }
+grep -q '^| R-192 |' "$root/$rmx" || { echo "FAIL V2.96: no R-192 row in the regression matrix"; failures=1; }
+grep -qF '| `CLAIM-001` |' "$root/$oc" || { echo "FAIL V2.96: the coverage table has no CLAIM-001 row"; failures=1; }
+grep -qF 'gate_claim_check . $mds' "$root/$oc" || { echo "FAIL V2.96: the sweep does not run gate_claim_check"; failures=1; }
+grep -qF 'error_outcome_check' "$root/$oc" || { echo "FAIL V2.96: error_outcome_check is not defined"; failures=1; }
+grep -q '^- V2.96 ' "$root/$vs" || { echo "FAIL V2.96: V2.96 is not in the validation index"; failures=1; }
+grep -q '^## V2.96 ' "$root/$vs" || { echo "FAIL V2.96: V2.96 has no section"; failures=1; }
+
+# Behavioral part: the detectors load from their sections and run on fixtures.
+for cmd in awk grep sed tr cut sort mktemp sh perl; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V2.96: $cmd is not available, the behavioral fixtures were not run"; exit 2; }
+done
+
+extract_sec() {
+  awk -v h="$1" '
+    index($0, "### " h " ") == 1 { on = 1; next }
+    /^##/ { on = 0 }
+    on && /^```sh$/ { inb = 1; next }
+    inb && /^```$/ { inb = 0; next }
+    inb { print }
+  ' "$root/$oc"
+}
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v296.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+{
+  extract_sec "BOUND-001"
+  extract_sec "REPORT-001"
+  extract_sec "EVIDENCE-001"
+  extract_sec "APPROVAL-001"
+  extract_sec "SRP-001"
+  extract_sec "ERR-002"
+  extract_sec "CLAIM-001"
+} > "$fx/detectors.sh"
+. "$fx/detectors.sh" || { echo "FAIL V2.96: the detector blocks do not load"; exit 1; }
+for fn in bound_test_check report_matrix_check evidence_claim_check approval_citation_check srp_claim_check error_outcome_check gate_claim_check; do
+  grep -q "^$fn() {" "$fx/detectors.sh" || { echo "FAIL V2.96: $fn is not loaded from its section"; failures=1; }
+done
+
+bad="$fx/bad"; ok="$fx/ok"
+mkdir -p "$bad/src" "$ok/src" "$bad/tests" "$ok/tests" "$bad/docs/decisions" "$ok/docs/decisions" "$bad/docs" "$ok/docs"
+printf '%s\n' 'a' 'b' 'c' > "$bad/list.txt"; cp "$bad/list.txt" "$ok/list.txt"
+
+# F-3 (M-54, M-76): AbortSignal.timeout declares a bound; the test imports the module and never holds the dependency (violation); the twin holds it.
+printf '%s\n' 'export const fetchOrders = async () => fetch("/o", { signal: AbortSignal.timeout(5000) });' > "$bad/src/client.ts"
+printf '%s\n' 'export const fetchOrders = async () => fetch("/o", { signal: AbortSignal.timeout(5000) });' > "$ok/src/client.ts"
+printf '%s\n' 'import { fetchOrders } from "./client";' 'test("bounded", async () => { await fetchOrders(); });' > "$bad/tests/client.test.ts"
+printf '%s\n' 'import { fetchOrders } from "./client";' 'test("bounded", async () => { new Promise(() => {}); await fetchOrders(); });' > "$ok/tests/client.test.ts"
+b1="$(bound_test_check "$bad" src/client.ts -- tests/client.test.ts)"
+printf '%s\n' "$b1" | grep -qF 'FAIL BOUND-001: src/client.ts:1: no test that imports client holds the dependency' \
+  || { echo "FAIL V2.96: BOUND-001 did not hold the AbortSignal.timeout bound with no held dependency: $b1"; failures=1; }
+b2="$(bound_test_check "$ok" src/client.ts -- tests/client.test.ts)"
+[ -z "$b2" ] || { echo "FAIL V2.96: BOUND-001 reports the twin that holds the dependency: $b2"; failures=1; }
+
+# F-1 and F-8 (M-80): a range of dimensions and an Overall PASS over an open row (violation); the twin has fourteen rows and no open item.
+{
+  echo '# Informe'
+  echo '| Dimensión | Estado | Motivo / evidencia |'
+  echo '|---|---|---|'
+  printf '%s\n' '| 1 | PASS | `tests/contract` ok |'
+  printf '%s\n' '| 2 | NOT VERIFIED | `tool missing` |'
+  printf '%s\n' '| 8–14 | N/A | `none` |'
+  echo ''
+  echo 'Overall: PASS'
+} > "$bad/docs/rep.md"
+{
+  echo '# Informe'
+  echo '| Dimensión | Estado | Motivo / evidencia |'
+  echo '|---|---|---|'
+  for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do printf '| %s | PASS | `ok` |\n' "$i"; done
+  echo ''
+  echo 'Overall: PASS, `ok`'
+} > "$ok/docs/rep.md"
+r1="$(report_matrix_check "$bad" docs/rep.md)"
+printf '%s\n' "$r1" | grep -qF 'grouped dimension "8–14" gets one verdict' \
+  || { echo "FAIL V2.96: REPORT-001 did not hold the range of dimensions as a grouped cell: $r1"; failures=1; }
+printf '%s\n' "$r1" | grep -qF 'claim a closure or a PASS verdict while' \
+  || { echo "FAIL V2.96: REPORT-001 did not hold the Overall PASS over an open row: $r1"; failures=1; }
+r2="$(report_matrix_check "$ok" docs/rep.md)"
+[ -z "$r2" ] || { echo "FAIL V2.96: REPORT-001 reports the fourteen-row twin: $r2"; failures=1; }
+
+# F-2 (M-109): a count of packages that the cited lockfile does not match (violation); the twin matches the cited list.
+printf '%s\n' 'Se listan 4 packages en `list.txt`.' > "$bad/docs/count.md"
+printf '%s\n' 'Se listan 3 packages en `list.txt`.' > "$ok/docs/count.md"
+e1="$(evidence_claim_check "$bad" docs/count.md)"
+printf '%s\n' "$e1" | grep -qF 'the count 4 does not match the 3 non-empty lines of list.txt' \
+  || { echo "FAIL V2.96: EVIDENCE-001 did not hold the package count that the list does not match: $e1"; failures=1; }
+e2="$(evidence_claim_check "$ok" docs/count.md)"
+[ -z "$e2" ] || { echo "FAIL V2.96: EVIDENCE-001 reports the count that the list matches: $e2"; failures=1; }
+
+# F-6 (M-92, M-111): a decision the user made with no quoted message (violation); the twin quotes it and cites its turn.
+printf '%s\n' 'El usuario eligió la opción B para el paquete.' > "$bad/docs/ap.md"
+printf '%s\n' 'El usuario eligió la opción B: "usa la opción B" en el turno 4.' > "$ok/docs/ap.md"
+a1="$(approval_citation_check "$bad" docs/ap.md)"
+printf '%s\n' "$a1" | grep -qF 'NOT VERIFIED APPROVAL-001: docs/ap.md:1: an approval is claimed' \
+  || { echo "FAIL V2.96: APPROVAL-001 did not hold the decision of the user with no quote: $a1"; failures=1; }
+a2="$(approval_citation_check "$ok" docs/ap.md)"
+[ -z "$a2" ] || { echo "FAIL V2.96: APPROVAL-001 holds the decision that cites its quote and turn: $a2"; failures=1; }
+
+# F-8 (M-107): a unit with transport, encoding, and classification, and a generic one-responsibility claim (violation); the twin has one kind.
+printf '%s\n' 'export const fetchOrders = async (id) => {' '  const res = await fetch(`/orders/${encodeURIComponent(id)}`);' "  if (res.kind === 'x') return null;" '  return res;' '};' > "$bad/src/orders.ts"
+printf '%s\n' 'export const fetchOrders = (id) => fetch(`/orders/${id}`);' > "$ok/src/orders.ts"
+printf '%s\n' '# Decisión' 'Un motivo de cambio por unidad.' > "$bad/docs/decisions/d.md"
+printf '%s\n' '# Decisión' 'Un motivo de cambio por unidad.' > "$ok/docs/decisions/d.md"
+s1="$(srp_claim_check "$bad" docs/decisions/d.md src/orders.ts)"
+printf '%s\n' "$s1" | grep -qF 'FAIL DEC-001: docs/decisions/d.md:2: a generic one-responsibility claim is contradicted by SRP-001' \
+  || { echo "FAIL V2.96: DEC-001 did not contradict the generic claim of one responsibility: $s1"; failures=1; }
+s2="$(srp_claim_check "$ok" docs/decisions/d.md src/orders.ts)"
+[ -z "$s2" ] || { echo "FAIL V2.96: DEC-001 contradicts the claim for a unit with one kind: $s2"; failures=1; }
+
+# F-4 (M-118): a lowercase error branch that no test names (violation); the twin's test names it.
+printf '%s\n' 'export const fetchOrders = async () => {' "  return { ok: false, error: { kind: 'timeout' } };" '};' > "$bad/src/errors.ts"
+printf '%s\n' 'export const fetchOrders = async () => {' "  return { ok: false, error: { kind: 'timeout' } };" '};' > "$ok/src/errors.ts"
+printf '%s\n' 'import { fetchOrders } from "../src/errors";' 'test("fails", async () => { await fetchOrders(); });' > "$bad/tests/errors.test.ts"
+printf '%s\n' 'import { fetchOrders } from "../src/errors";' "test(\"fails\", async () => { expect(await fetchOrders()).toEqual({ ok: false, error: { kind: 'timeout' } }); });" > "$ok/tests/errors.test.ts"
+o1="$(error_outcome_check "$bad" src/errors.ts -- tests/errors.test.ts --)"
+printf '%s\n' "$o1" | grep -qF "FAIL ERR-002: src/errors.ts:2: error branch 'timeout' is handled by the source and no test names it" \
+  || { echo "FAIL V2.96: ERR-002 did not hold the lowercase error branch with no test: $o1"; failures=1; }
+o2="$(error_outcome_check "$ok" src/errors.ts -- tests/errors.test.ts --)"
+printf '%s\n' "$o2" | grep -q "error branch 'timeout'" && { echo "FAIL V2.96: ERR-002 holds the branch that a test names: $o2"; failures=1; }
+
+# F-5 (M-119): a gate claim demonstrated by a manual run (violation); the twin cites the versioned test that injects it.
+printf '%s\n' 'La prueba demostró que un mismatch rompe el pipeline; lo ejecuté a mano una vez.' > "$bad/docs/gate.md"
+printf '%s\n' 'La prueba demostró que un mismatch rompe el pipeline en `tests/contract/mismatch.test.ts`.' > "$ok/docs/gate.md"
+g1="$(gate_claim_check "$bad" docs/gate.md)"
+printf '%s\n' "$g1" | grep -qF 'NOT VERIFIED CLAIM-001: docs/gate.md:1: a claim that a gate, pipeline, or contract was demonstrated cites no versioned test' \
+  || { echo "FAIL V2.96: CLAIM-001 did not hold the gate claim backed by a manual run: $g1"; failures=1; }
+g2="$(gate_claim_check "$ok" docs/gate.md)"
+[ -z "$g2" ] || { echo "FAIL V2.96: CLAIM-001 holds the gate claim that cites its versioned test: $g2"; failures=1; }
+
+echo "V2.96 behavioral fixtures: $fx (removed on exit)"
+[ "$failures" -eq 0 ] && echo "V2.96 PASS" || echo "V2.96 FAIL"
+[ "$failures" -eq 0 ]
 ```

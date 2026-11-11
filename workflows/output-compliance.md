@@ -1310,6 +1310,7 @@ project_safety_sweep() {
   decision_record_check . $decisions
   decision_citation_check . $decisions
   claim_check . $mds $src
+  gate_claim_check . $mds
   comment_claim_check . $src
   error_model_check . $src
   error_outcome_check . $src -- $tests -- $contracts
@@ -1641,6 +1642,36 @@ claim_check() {
       sed "s#^#NOT VERIFIED CLAIM-001: $f:#; s#\$#  (technical property claim: cite the query plan or the code that decides it, M-65)#"
   done
 }
+
+# M-119 (external audit F-5): a claim that a gate, pipeline, or contract was demonstrated to reject or detect a
+# violation is kept only with a versioned test that injects that violation. A one-off run, a log, or a manual
+# reproduction is not that test. The claim is read in a window of two lines; the window must cite a path with
+# the shape of a test file. The detector does not open that path: the reviewer confirms that it exists, is
+# tracked, and injects the violation, and a claim without a cited path is NOT VERIFIED.
+# $1 = repository root; $2... = documents, relative to it.
+gate_claim_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.md) ;; *) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    awk -v f="$f" '
+      { n++; L[n] = $0 }
+      END {
+        for (i = 1; i <= n; i++) {
+          # Narrow on purpose: a demonstration verb, a rejection verb, and a gate noun in the same line. Words such as
+          # "workflow" or "contract" alone describe the system and would flag every document about it.
+          lo = tolower(L[i])
+          if (lo !~ /(demostr|demonstrat|prob[oa]d[oa]|proved|proven|muestra que|shows that|evidencia de que|evidence that)/) continue
+          if (lo !~ /(rompe|rompi|rechaz|bloque|falla|fail|reject|block|breaks|detect|catch)/) continue
+          if (lo !~ /(gate|pipeline|pipel|compuerta|mismatch|(^|[^a-z])ci([^a-z]|$))/) continue
+          win = ""
+          for (j = i - 2; j <= i + 2; j++) if (j >= 1 && j <= n) win = win " " L[j]
+          if (win ~ /[A-Za-z0-9_\/.-]+\.(test|spec)\.[A-Za-z]+|tests\/[A-Za-z0-9_\/.-]+/) continue
+          print "NOT VERIFIED CLAIM-001: " f ":" i ": a claim that a gate, pipeline, or contract was demonstrated cites no versioned test that injects the violation; a one-off run is not that test (M-119)"
+        }
+      }' "$root/$f"
+  done
+}
 ```
 
 ### ERR-001 — A module raises its failures through its typed error class
@@ -1753,6 +1784,23 @@ error_outcome_check() {
     c="${d##*:}"
     printf '%s\n' "$tested" | grep -qx "$c" ||
       echo "FAIL ERR-002: ${d%:*}: documented error code $c has no executing test (M-77)"
+  done
+  # F-4 (external audit, M-118): an error branch is named by a lowercase discriminant (kind, reason, errorKind,
+  # failure), not by an upper-snake code, so the code detector above never reads it. Each such literal in a source
+  # file needs a test that names it; a literal no test names is a FAIL of the branch (a candidate: the reviewer
+  # confirms that the literal is an error branch and not a configuration value).
+  kinds="$(printf '%s' "$srcs" | grep -vE '\.(test|spec)\.|/tests/|/test/|__tests__' | while IFS= read -r s; do
+    [ -n "$s" ] && [ -f "$root/$s" ] || continue
+    (cd "$root" && perl -0777 -ne 'while (/\b(?:kind|reason|errorKind|failure)\s*:\s*["\x27]([a-z][a-z_]*)["\x27]/g) { my $k = $1; my $p = $-[0]; my $from = $p > 300 ? $p - 300 : 0; my $ln = 1 + (substr($_, 0, $p) =~ tr/\n//); my $win = substr($_, $from, $p - $from + length($&)); print "$ARGV:$ln:$k\n" if $win =~ /error|fail|reject|throw|ok\s*:\s*false|unauthor|unexpected/i }' "$s")
+  done | sort -u)"
+  printf '%s\n' "$kinds" | while IFS=: read -r kf kl kk; do
+    [ -n "$kk" ] || continue
+    kt=0
+    kt="$(printf '%s' "$tests" | while IFS= read -r t; do
+      [ -n "$t" ] && [ -f "$root/$t" ] && grep -cE "[\"']$kk[\"']" "$root/$t"
+    done | awk '{ s += $1 } END { print s + 0 }')"
+    [ "$kt" -ge 1 ] ||
+      echo "FAIL ERR-002: $kf:$kl: error branch '$kk' is handled by the source and no test names it (M-118; candidate: confirm it is an error branch)"
   done
 }
 ```
@@ -2231,7 +2279,11 @@ approval_citation_check() {
       { n++; L[n] = $0 }
       END {
         for (i = 1; i <= n; i++) {
-          if (tolower(L[i]) !~ /aprob|approv|sign-?off|dueno|dueño|autoriz|authoriz|permis|consent|conformidad|acept|accept|confirm[oó]|confirmed by/) continue
+          # F-6 (external audit): a decision attributed to the user is an approval too ("el usuario eligió",
+          # "decidió el cliente"), so a decision verb with a user noun is read as an approval claim (M-92, M-111).
+          lw = tolower(L[i])
+          if (lw !~ /aprob|approv|sign-?off|dueno|dueño|autoriz|authoriz|permis|consent|conformidad|acept|accept|confirm[oó]|confirmed by/ &&
+              !(lw ~ /decid|decisi|elig|eleg|chose|chosen|go-ahead|adelante|procede|proceed|selecciono|seleccion/ && lw ~ /usuario|user|cliente|client|owner|stakeholder/)) continue
           win = ""
           for (j = i - 2; j <= i + 2; j++) if (j >= 1 && j <= n) win = win " " L[j]
           q = (win ~ /"[^"]{8,}"/ || win ~ /`[^`]{8,}`/)
@@ -2576,7 +2628,9 @@ evidence_claim_check() {
             if (!ev) print "TEMP\t" i
           }
           rest = lo
-          while (match(rest, /[0-9]+ (files|archivos|ficheros|rutas|paths|lines|líneas|entries|items|commits|tests|errors|errores|módulos|modulos|reglas|rules|casos|cases|hallazgos|findings|dimensiones|filas|funciones|elementos)/)) {
+          # F-2 (external audit): "118 packages" was not read because the noun was not listed. Packages, dependencies,
+          # endpoints, sites, jobs, steps, branches, checks, and suites are sets too, and are counted (M-109).
+          while (match(rest, /[0-9]+ (files|archivos|ficheros|rutas|paths|lines|líneas|entries|items|commits|tests|errors|errores|módulos|modulos|reglas|rules|casos|cases|hallazgos|findings|dimensiones|filas|funciones|elementos|packages|paquetes|dependencies|dependencias|endpoints|sites|sitios|jobs|steps|pasos|branches|ramas|checks|suites|scripts|routes|migrations|migraciones|workflows|flujos)/)) {
             cnt = substr(rest, RSTART, RLENGTH); nxt = RSTART + RLENGTH; sub(/ .*/, "", cnt)
             p = "-"
             if (match(L[i], /`[^`]+`/)) tok = substr(L[i], RSTART + 1, RLENGTH - 2)
@@ -3244,7 +3298,9 @@ bound_test_check() {
     [ -n "$f" ] && [ -f "$root/$f" ] || continue
     case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
     case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*|*/testing/*) continue ;; esac
-    grep -qE '(busy_timeout|timeoutMs|timeout[[:space:]]*[:=]|lock_timeout|statement_timeout|deadline[[:space:]]*[:=]|BEGIN IMMEDIATE|maxAttempts|max_attempts|retries[[:space:]]*[:=]|attempts[[:space:]]*[:=]|retryBudget|max_retries)' "$root/$f" || continue
+    # F-3 (external audit): AbortSignal.timeout(ms), AbortSignal.any, and a setTimeout that aborts a
+    # request are declared bounds too; a vocabulary without them reads the bound as absent (M-54, M-76).
+    grep -qE '(busy_timeout|timeoutMs|timeout[[:space:]]*[:=]|AbortSignal\.timeout[[:space:]]*\(|AbortSignal\.any[[:space:]]*\(|setTimeout[[:space:]]*\(|lock_timeout|statement_timeout|deadline[[:space:]]*[:=]|BEGIN IMMEDIATE|maxAttempts|max_attempts|retries[[:space:]]*[:=]|attempts[[:space:]]*[:=]|retryBudget|max_retries)' "$root/$f" || continue
     mod="$(basename "$f")"; mod="${mod%.*}"
     importers="$(printf '%s' "$tests" | while IFS= read -r t; do
       [ -n "$t" ] && [ -f "$root/$t" ] || continue
@@ -3442,6 +3498,12 @@ srp_unit_check() {
         kind("file lifecycle", "rmSync|mkdirSync|renameSync|copyFileSync|writeFileSync|unlinkSync|mkdtemp")
         kind("manifest or contract validation", "JSON\\.parse|\\.parse\\(|validate[A-Z][A-Za-z]*\\(|isRecord|safeParse")
         kind("orchestration", "await [A-Za-z_$.]+\\(|\\.then\\(")
+        # F-8 (external audit): transport, encoding, decoding, and error classification were not kinds, so a client
+        # that joins them in one unit was not listed while its record claimed one responsibility (M-107).
+        kind("transport", "fetch\\(|axios|XMLHttpRequest|https?\\.request|\\.request\\(|got\\(")
+        kind("encoding", "encodeURI|URLSearchParams|btoa\\(|Buffer\\.from\\(")
+        kind("decoding", "decodeURI|atob\\(|\\.json\\(\\)")
+        kind("classification", "instanceof [A-Za-z]*Error|\\.kind ?=== ?|\\.status ?=== ?[0-9]")
       }
       END {
         n = 0; first = 0; list = ""
@@ -3505,6 +3567,13 @@ srp_claim_check() {
         sed "s#^\([0-9]*\):#FAIL DEC-001: $record:\1: $f is claimed to have one responsibility and SRP-001 lists it with several kinds (M-107): #"
     done
   done | sort -u
+  # F-8 (external audit): a generic record claim ("un motivo de cambio por unidad", "one reason to change per unit")
+  # names no file, so the row check above never reads it. While SRP-001 lists any unit, the generic claim is
+  # contradicted by that listing and is a DEC-001 FAIL, whatever unit it names (M-107).
+  if [ -n "$listed" ]; then
+    grep -inE '(un motivo de cambio|one reason to change|single reason to change|un solo motivo|una sola responsabilidad|one responsibility|single responsibility|sola responsabilidad)' "$root/$record" 2>/dev/null |
+      sed "s#^\([0-9]*\):#FAIL DEC-001: $record:\1: a generic one-responsibility claim is contradicted by SRP-001, which lists the units named in the report (M-107): #"
+  fi
 }
 ```
 
@@ -3797,7 +3866,8 @@ report_matrix_check() {
             # M-98: a PASS row carries its evidence: file:line, a detector ID, a command in backticks, or an exit code.
             if (st == "PASS" && $0 !~ /[A-Za-z0-9_.\/-]+:[0-9]+|[A-Z][A-Z0-9]*-[0-9][0-9][0-9]|`[^`]+`|exit [0-9]/)
               print "FAIL REPORT-001: " f ":" NR ": PASS carries no evidence; cite file:line, a detector ID with its output, a command in backticks, or its exit code (M-98)"
-            if (dim ~ /^[0-9]+ *(,|y |and )/) {
+            # The external audit matrix grouped dimensions 8–14 in one row: a range ("8–14", "8-14") is a grouped cell as much as a list is (M-80).
+            if (dim ~ /^[0-9]+ *(,|y |and )/ || dim ~ /^[0-9]+ *(-|–|—) *[0-9]+/) {
               print "FAIL REPORT-001: " f ":" NR ": grouped dimension \"" dim "\" gets one verdict; each dimension needs its own row (M-80)"
             } else if (dim ~ /^[0-9]+/) {
               num = dim; sub(/[^0-9].*$/, "", num)
@@ -3824,7 +3894,8 @@ report_matrix_check() {
           op++; opl = opl NR " "
         }
         if (line ~ /(cierra|cerrad|closes|closed|resolved|resuelto)/) closure = closure NR " "
-        if (line ~ /(verdict|veredicto|conclusi|resumen|summary|recommendation|recomendaci)/ && $0 ~ /(^|[^A-Z_])PASS/) closure = closure NR " "
+        # A conclusion labelled "Overall", "global", or "resultado" is a verdict as much as "Veredicto" (external audit F-1).
+        if (line ~ /(verdict|veredicto|conclusi|resumen|summary|recommendation|recomendaci|overall|global|resultado)/ && $0 ~ /(^|[^A-Z_])PASS/) closure = closure NR " "
         if (line ~ /(npm run|format:check|lint|typecheck|test)/ && line ~ /(falla|fails|failing|rojo)/) {
           if (!red) red = NR
         }
@@ -3892,9 +3963,9 @@ report_matrix_check() {
 | `I18N-001`, `I18N-002`, `I18N-003`, `I18N-004` | changed UI and formatter files | the approved requirement includes locales or RTL |
 | `CONSUME-001` | changed units | a changed unit consumes another unit |
 | `DEC-001` | decision records in the change set | a record or pattern table is in the change set |
-| `CLAIM-001` | documents and source comments in the change set | a changed file contains text |
+| `CLAIM-001` | documents and source comments in the change set; `gate_claim_check` over the documents of the sweep | a changed file contains text, or a document says a gate, pipeline, or contract was demonstrated to reject a violation (M-119) |
 | `ERR-001` | source files in the change set and the sweep; the typed-class search reads the whole project | a source file is created or modified in a project that declares a typed error class |
-| `ERR-002` | contract documents, source and test files in the sweep | a project declares error codes in a contract document |
+| `ERR-002` | contract documents, source and test files in the sweep; the lowercase error branches (`kind`, `reason`, `errorKind`, `failure`) are read by the same function (M-118) | a project declares error codes in a contract document, or a source file names an error branch with a lowercase discriminant |
 | `ERR-003` | source files in the sweep, contract documents | a source file quotes an upper-snake error code |
 | `ENTRY-001` | source files and test files in the change set and the sweep | a source file reads `process.argv`; each exit code it sets is asserted (M-118) |
 | `ERR-002` per site | source files and test files in the change set and the sweep | a code is emitted from several sites (M-118) |
