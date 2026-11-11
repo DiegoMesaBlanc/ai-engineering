@@ -47,6 +47,38 @@ Rules:
 
 ---
 
+## Ledger
+
+The ledger is the index of the store. It lets a task decide what applies and
+whether a lesson is enforced without reading every entry.
+
+- **File:** `${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}/learnings/index.tsv`,
+  tab-separated, one line per entry, with a header line.
+- **Columns:** `id`, `scope`, `status`, `check`, `source`, `date`, `path`. The
+  entry prose stays in its own file under `learnings/<scope>/`; the index holds
+  only the metadata.
+- **ID:** `L-<yyyymmdd>-<slug>`, where the slug is ASCII letters, digits, and
+  hyphens, with a bounded length. The same normalization applies to every path
+  component (Neutral Store rules).
+- **Statuses and transitions:**
+
+| Status | Meaning | Reached by |
+|---|---|---|
+| `observed` | One signal, not yet confirmed | Capture from a finding |
+| `aprendido` | Confirmed by evidence, has an entry, no enforcing check yet | Evidence confirmed |
+| `enforced` | Has a check in the repository, and the check passes | Gap closure merged into the working tree and `system-audit` passes for that check |
+| `repetido` | An enforced entry whose check failed on a task | Task check failed; the check is reopened as a gap |
+| `superseded` | The evidence contradicts the entry | Evidence contradicts it; the replacement ID is recorded |
+
+- **Deduplication:** before a new row is added, the normalized title is compared
+  with the existing rows. A match is merged into the existing row, never added
+  as a duplicate.
+- **Scope:** an entry is `global` only when its evidence is not specific to one
+  project. An entry whose evidence names one project keeps that project's scope.
+- **Writes:** only the learning cycle of `workflows/task-to-code.md` writes the
+  index. Each write replaces the file as a whole after the change is computed,
+  so an interrupted run never leaves a half-written row.
+
 ## Phase 1 — Apply (Consume)
 
 **Read the store before acting.** A lesson that is never consulted cannot
@@ -101,6 +133,23 @@ Do not create a learning for a one-off event with no reusable signal.
 
 ---
 
+## Evaluate Findings (every task)
+
+The learning cycle of `workflows/task-to-code.md` ("Learning Cycle") classifies
+each finding of the independent audit with this table. The class decides the
+action; no class captures a one-off event.
+
+| Class | Test | Action |
+|---|---|---|
+| Task defect | The finding is in code the task creates or changes, and no store entry covers it | Fix it in the task |
+| System gap | An existing rule, check, or workflow of ai-engineering would not have caught it | Record it and close it (Phase 4) |
+| Learned, not enforced | A store entry covers it, but its check did not catch it | Close the check gap (Phase 4) |
+| Repetition | A store entry is enforced and its check failed on this change | Defect of the task, and a check bug to record |
+| No action | Not reusable, or a one-off with no reusable signal | Report only |
+
+A finding is a system gap only when the evidence names the missing rule or
+check. Otherwise it stays a task defect.
+
 ## Phase 3 — Consolidate
 
 Merge, deduplicate, and refine captured entries so the store stays small and
@@ -121,12 +170,15 @@ trustworthy:
 A lesson is promotable when it is stable, general enough to matter beyond
 one context, and supported by evidence.
 
-Promotion means proposing a change to the canonical knowledge layer — a
-Skill, a workflow, `AGENTS.md`, or a reference. Promotion is **always a
-proposal that requires human approval**:
+Promotion means changing the canonical knowledge layer — a Skill, a workflow,
+`AGENTS.md`, or a reference — to close a gap the evaluation found. It is applied
+automatically with these limits:
 
-- never edit the canonical repository automatically
-- present the proposed change, the lesson it encodes, and the evidence
+- the change lands only in the working tree of the ai-engineering repository,
+  on the branch the user prepared; it is never committed, pushed, or merged
+  without explicit approval under the Commit Approval Policy
+- present the change, the lesson it encodes, and the evidence in the report
+- validate it with `workflows/system-audit.md` before it is reported
 - follow the normal branch, dependency, architecture, and validation
   policies for any canonical change
 - record the outcome; when a proposal is rejected, keep or revise the
@@ -181,7 +233,10 @@ The level for a scope rises or falls on evidence:
 
 Store the current level and its evidence at
 `${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}/maturity/<scope>.md`,
-with the date of the assessment. Report the level with its evidence in the
+with the date of the assessment. The learning cycle updates it after every
+task with the counts it already has: tasks run, findings by class, repetitions,
+enforced entries, and superseded entries. The file is created on the first task
+that produces a count, never before. Report the level with its evidence in the
 task report. Never claim a level the evidence does not support, and never
 treat a higher level as permission to skip a check.
 
@@ -194,8 +249,8 @@ treat a higher level as permission to skip a check.
   the learning entry in the neutral store.
 - Never store secrets, credentials, or personal data.
 - Never overwrite or delete unrelated entries or another scope's store.
-- Never edit the canonical repository automatically; promotion is always a
-  proposal with human approval.
+- The canonical repository is edited only by a gap closure of Phase 4: in its
+  working tree, validated, and never committed without approval.
 - Never weaken safety, quality, or cost guardrails in the name of learning.
 - Never present a hypothesis, or an unverified result, as established
   knowledge.

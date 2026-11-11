@@ -3,6 +3,25 @@
 This is the canonical shared instruction entry point for the AI Engineering
 System.
 
+## First Run on This Machine
+
+Before any other action in a session that starts in this repository, run this
+one line from the repository root and read its output:
+
+```sh
+key=$(printf '%s' "$(git rev-parse --show-toplevel)" | cksum | awk '{print $1}'); test -f "${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}/bootstrap/$key.done" && echo ready || echo missing
+```
+
+- `ready`: continue with the user's request.
+- `missing`: read the block in `workflows/bootstrap.md`, run it once from the
+  repository root with one shell call, report its output in one line, and
+  continue. Its links apply to the next session of each client, so say that the
+  client should be restarted once. If the block reports `FAIL`, stop and report
+  the failing checks.
+
+The block writes only the links and state that `workflows/bootstrap.md` lists.
+It never installs software and never edits a shell profile.
+
 ## Component Responsibilities
 
 - AGENTS.md: shared engineering principles and mandatory guardrails.
@@ -364,6 +383,12 @@ Hard rules:
   approval.
 - Preparation commands that never create commits, such as a dry run or a
   commit proposal, remain available without this gate.
+- A commit proposal requires a learning-cycle record (M-122). The task
+  checkpoint records, for this change set, the date of the learning cycle of
+  `workflows/task-to-code.md`, the store entries it applied, and the
+  `external-auditor` run with its findings by class. No hook triggers the
+  cycle; the gate verifies its record. A missing or incomplete record blocks
+  the proposal and the agent reports it and stops.
 
 ## Progress Updates and Phase Gates
 
@@ -757,6 +782,7 @@ Use checkpoints for long-running tasks according to `workflows/session-resilienc
 - A source module performs no effect when it is imported. A column-zero call or a module-scope `process.` assignment runs when a test imports the module, so the effect moves into a function that the entry point calls. `IMPORT-001` in `workflows/output-compliance.md` reports each such call with `file:line` (M-117).
 - Each error branch and each exit code is covered on its own. A code emitted from several sites is checked per site: one test line that names the code does not prove that each condition is tested, so the code stays `NOT VERIFIED` (`ERR-002`) until its test references reach the number of sites or the branch coverage of the emitting file is cited. Every exit code an entry point sets is asserted by a test that invokes it (`ENTRY-001`) (M-118).
 - A claim that a gate, pipeline, or contract was demonstrated to reject or detect a violation is kept only with a versioned test in the repository that injects that violation. A one-off run, a log, or a manual reproduction is not that test: the claim is `NOT VERIFIED` until the test is cited, and `CLAIM-001` in `workflows/output-compliance.md` reports each such claim with `file:line` (M-119).
+- A published package and a workspace are checked for what a consumer and a fresh checkout receive. A published declaration names only files the package ships; a peer dependency is also a regular dependency, because npm does not install peers; a verification command generates the artifacts that CI generates; and a workspace build root is derived from the workspace manifest, not fixed to the package directory (M-121; `PKG-DTS-001`, `PKG-PEER-001`, `VERIFY-GEN-001`, `WS-ROOT-001` in `workflows/output-compliance.md`).
 - Reuse previously completed analysis after alignment when proceeding from architecture/estimation to implementation.
 
 ## Context and Session Resilience
@@ -826,6 +852,15 @@ layer. This is provider-neutral and is not a retrospective of people or
 teams.
 
 - The behavior is defined canonically in `workflows/self-learning.md`.
+- Every implementation task runs the learning cycle of
+  `workflows/self-learning.md` before its commit proposal. The evaluation is
+  mandatory in every task: the applicable learnings are checked, and the
+  independent audit covers only what the store does not already enforce.
+  Capture happens only when the evaluation finds a real gap in the system's
+  own artifacts, in the provider-neutral state root. A gap in this repository
+  is closed in its working tree, on the branch the user prepared, and
+  validated with `workflows/system-audit.md`. The cycle never commits, pushes,
+  or merges; the user approves every commit under the Commit Approval Policy.
 - **Read the applicable learnings before acting.** At the start of a task,
   read the store for the project scope and for the global scope, and apply
   every relevant entry. **Repeating a lesson the store already records is a
@@ -843,8 +878,10 @@ teams.
   target project and the canonical repository. Never store credentials,
   tokens, secrets, or personal data.
 - Promotion to the canonical layer (Skills, workflows, AGENTS.md, or a
-  reference) is always a proposal that requires human approval; the system
-  never edits the canonical repository automatically.
+  reference) is applied automatically in the working tree of the ai-engineering
+  repository, validated by `workflows/system-audit.md`, and never committed,
+  pushed, or merged without the user's explicit approval (Commit Approval
+  Policy).
 - Maturity is descriptive and evidence-based, never self-declared authority,
   and never a reason to weaken safety, quality, or cost guardrails.
 

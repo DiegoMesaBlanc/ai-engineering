@@ -3915,6 +3915,83 @@ report_matrix_check() {
 }
 ```
 
+### PKG-DTS-001, PKG-PEER-001, VERIFY-GEN-001, WS-ROOT-001 — Published packages, verification, and workspace roots
+
+M-121: a published package and a workspace are checked for what a consumer and a fresh checkout receive. A
+published declaration names only files the package ships, so a relative import with a `.ts` specifier and a
+`rewriteRelativeImportExtensions` or `allowImportingTsExtensions` option are findings (`PKG-DTS-001`). A peer
+dependency is also a regular dependency, because npm does not install peers (`PKG-PEER-001`). A verification
+command generates the artifacts that CI generates, so it passes on a fresh checkout (`VERIFY-GEN-001`). A build
+root in a workspace is derived from the workspace manifest, not fixed to the package directory (`WS-ROOT-001`).
+Each detector reports a compliant twin as `PASS`; a publishable package is one whose manifest is not `private` and
+declares `exports` or `types`.
+
+```sh
+# A publishable package manifest, one path per line.
+pub_manifests() {
+  find "$1" -name package.json -not -path '*/node_modules/*' -not -path '*/.git/*' 2>/dev/null | while read -r p; do
+    if ! grep -q '"private"[[:space:]]*:[[:space:]]*true' "$p" && grep -qE '"(exports|types)"[[:space:]]*:' "$p"; then
+      echo "$p"
+    fi
+  done
+}
+
+# $1 = repository root. PKG-DTS-001: no published tsconfig or relative import keeps the .ts specifier.
+pkg_dts_check() {
+  out=$(pub_manifests "$1" | while read -r p; do
+    d=$(dirname "$p")
+    grep -HnE 'rewriteRelativeImportExtensions|allowImportingTsExtensions' "$d"/tsconfig*.json 2>/dev/null \
+      | sed 's#$#  (the emitted declarations keep the .ts specifier, which the package does not ship; M-121)#; s#^#FINDING PKG-DTS-001: #'
+    grep -rnE --include='*.ts' --include='*.tsx' "from ['\"]\.{1,2}/[^'\"]*\.ts['\"]" "$d/src" 2>/dev/null \
+      | sed 's#$#  (relative import with a .ts specifier: write the .js specifier in the source; M-121)#; s#^#FINDING PKG-DTS-001: #'
+  done)
+  if [ -n "$out" ]; then printf '%s\n' "$out"; else echo "PASS PKG-DTS-001: no published package declares a .ts specifier"; fi
+}
+
+# $1 = repository root. PKG-PEER-001: each peer dependency is also a regular dependency.
+pkg_peer_check() {
+  out=$(pub_manifests "$1" | while read -r p; do
+    awk -v f="$p" '
+      /"dependencies"[[:space:]]*:[[:space:]]*\{/ { sec = "d"; next }
+      /"peerDependencies"[[:space:]]*:[[:space:]]*\{/ { sec = "p"; next }
+      /^[[:space:]]*\}/ { sec = "" }
+      sec == "d" && /"[^"]+"[[:space:]]*:/ { split($0, a, "\""); deps[a[2]] = 1 }
+      sec == "p" && /"[^"]+"[[:space:]]*:/ { split($0, a, "\""); peers[a[2]] = NR }
+      END {
+        for (n in peers) if (!(n in deps))
+          print "FINDING PKG-PEER-001: " f ":" peers[n] ": " n " is only a peer dependency; npm does not install peers, so consumers fail with ERR_MODULE_NOT_FOUND (M-121)"
+      }' "$p"
+  done)
+  if [ -n "$out" ]; then printf '%s\n' "$out"; else echo "PASS PKG-PEER-001: every peer dependency is also a regular dependency"; fi
+}
+
+# $1 = repository root. VERIFY-GEN-001: a verify script generates what a CI step generates.
+verify_gen_check() {
+  gen=$(find "$1/.github/workflows" -type f \( -name '*.yml' -o -name '*.yaml' \) -exec grep -Hn -E 'run:.*generate' {} + 2>/dev/null | head -1)
+  if [ -z "$gen" ]; then echo "PASS VERIFY-GEN-001: no CI step generates an artifact"; return 0; fi
+  script=$(awk -F'"' '/^[[:space:]]*"verify"[[:space:]]*:/ { print $4; exit }' "$1/package.json" 2>/dev/null)
+  if [ -z "$script" ]; then
+    echo "NOT VERIFIED VERIFY-GEN-001: CI generates an artifact ($gen) and package.json declares no verify script to compare (M-121)"
+    return 0
+  fi
+  if printf '%s' "$script" | grep -q 'generate'; then
+    echo "PASS VERIFY-GEN-001: the verify script generates the artifact that CI generates"
+  else
+    echo "FINDING VERIFY-GEN-001: $gen: the verify script does not generate that artifact, so it fails on a fresh checkout (M-121)"
+  fi
+}
+
+# $1 = repository root. WS-ROOT-001: a workspace build root is not fixed to the package directory.
+ws_root_check() {
+  if ! grep -q '"workspaces"' "$1/package.json" 2>/dev/null; then echo "PASS WS-ROOT-001: not a workspace"; return 0; fi
+  out=$(find "$1" -path '*/node_modules' -prune -o \( -name 'next.config.*' \) -type f -print 2>/dev/null | while read -r c; do
+    grep -HnE 'root[[:space:]]*:[[:space:]]*(__dirname|process[.]cwd[(][)])' "$c" \
+      | sed 's#$#  (npm hoists dependencies to the workspace root; derive the build root by walking up to the workspace manifest; M-121)#; s#^#FINDING WS-ROOT-001: #'
+  done)
+  if [ -n "$out" ]; then printf '%s\n' "$out"; else echo "PASS WS-ROOT-001: no build root is fixed to the package directory"; fi
+}
+```
+
 ## Procedure
 
 1. Resolve the target project root, the base revision, and the change set
@@ -4010,6 +4087,7 @@ report_matrix_check() {
 | `REPORT-001` | every delivered audit, review, or gate report that carries a verdict matrix | a report with a dimension matrix is delivered (M-80: a verdict matrix is consistent with its own rules) |
 | `CHECK-001`, `CHECK-002` | phase reports | the work reports phases or checklists |
 | `GATE-001` | installation proposals | a dependency or tooling installation is proposed |
+| `PKG-DTS-001`, `PKG-PEER-001`, `VERIFY-GEN-001`, `WS-ROOT-001` | publishable manifests, their tsconfig and `src` files, the CI workflows, and the Next.js configs of a workspace, in the change set and the sweep | a manifest, tsconfig, source, workflow, or build config is created or modified (M-121) |
 | Whole-project sweep | project, health probe | the health probe runs; the sweep is not a change-set check |
 
 ## Reporting

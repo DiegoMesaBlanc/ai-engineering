@@ -500,11 +500,12 @@ Never introduce complexity merely because it is technically possible.
 
 # 18. Learning and Maturity
 
-When a task produces a reusable lesson, follow `workflows/self-learning.md`:
-capture it in the provider-neutral state store
-(`${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}`), consolidate it, and,
-only when it is stable and evidenced, propose a canonical change for human
-approval. Never edit the canonical repository automatically.
+Every implementation task runs the learning cycle of `workflows/self-learning.md`
+before its commit proposal: it applies the enforced checks, starts
+`external-auditor` as a fresh subagent, classifies the findings, and reports
+(`workflows/task-to-code.md`, "Learning Cycle"). Gaps in this repository are
+closed in its working tree, validated by `workflows/system-audit.md`, and never
+committed without the user's approval.
 
 Keep token and context spend proportional to the task as described in
 `workflows/session-resilience.md`; never trade correctness, safety, or

@@ -653,11 +653,8 @@ A passing build alone does not establish completion.
 
 ## Phase 12 — Review
 
-**Capture the lesson.** When the task produced a reusable signal — a
-correction from the user, a pattern that worked or failed, a validation
-surprise, or a workflow friction — record it per
-`workflows/self-learning.md` Phase 2. Do not create a learning for a one-off
-event with no reusable signal.
+**Learning cycle.** Mandatory in every implementation task. It runs after the
+pre-delivery gate below and is defined in "Learning Cycle" after Phase 12.
 
 Load `skills/engineering-review/SKILL.md`.
 
@@ -703,8 +700,8 @@ the task is not reported as complete while any applicable criterion is
 change consumes is fixed in the change set, because the change consumes a pre-existing unit which violates a requirement the change states (M-67). A `NOT VERIFIED` verdict on an applicable dimension blocks delivery, and a dimension whose review was not executed is run before its verdict is written (M-39).
 
 **Independence of the gate.** The gate is the implementer's self-check. It is
-not an independent audit. When the change set is High or Critical, or when the
-user asks for an audit, the independent audit defined in
+not an independent audit. In every implementation task, and always when the
+change set is High or Critical or the user asks for an audit, the independent audit defined in
 `workflows/code-audit.md` (Independent Mode) runs in a fresh session or as the
 `external-auditor` subagent, and it is not run in the session that implemented
 the change.
@@ -721,6 +718,32 @@ by verifying instructions alone.
 ## Verdict Matrix Gate
 
 A verdict matrix is consistent with its own rules (M-80). Before this output is delivered, run `REPORT-001` (`workflows/output-compliance.md`) over every verdict matrix it carries, and correct each `FAIL` first. A `NOT VERIFIED` reason names a tool or environment limit, never an unexecuted review; a `PASS` never carries an open item; and a conclusion never claims a closure or a `PASS` verdict that a row leaves open.
+
+### Learning Cycle
+
+Runs in every implementation task, after the pre-delivery gate and before
+Phase 13. It is mandatory; only the capture of a lesson is conditional, on a
+real gap found in the system's own artifacts.
+
+1. **Apply.** For each store entry of the project and global scopes that is
+   marked enforced, run its check on the change set. A passing check removes
+   that item from the audit scope, so it is not audited again. A failing check
+   is a repetition: a defect of this task, fixed before continuing.
+2. **Audit.** Start `external-auditor` as a fresh subagent with the minimal
+   contract in `agents/external-auditor.md` ("Learning-Cycle Invocation"):
+   requirement, artifact root, scope, and the IDs of the enforced checks to
+   skip. The delegation is mirrored as in `workflows/session-resilience.md`
+   ("Delegated work").
+3. **Classify.** Each returned finding is classified with the table in
+   `workflows/self-learning.md` ("Evaluate Findings").
+4. **Close.** Defects of the task are fixed in the task. System gaps and
+   unenforced learnings go to the gap closure of `workflows/self-learning.md`
+   Phase 4. Nothing is committed here.
+5. **Report.** The applied entries, the auditor run, the findings by class, and
+   the gaps pending closure. Read the store index first, and open an entry only
+   when it applies, to keep token use low. Record this report in the task
+   checkpoint as the learning-cycle record: the commit gate reads it, and a
+   missing record blocks the proposal (M-122).
 
 ## Phase 13 — Git Delivery
 

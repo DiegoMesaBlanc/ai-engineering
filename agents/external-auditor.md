@@ -214,6 +214,31 @@ Manifest, completes the audit from the requirement and the artifact, and caps
 the verdict as the workflow defines (`NOT VERIFIED`, reason: independence not
 established). A fresh subagent or a new session is the only path to a `PASS`.
 
+## Learning-Cycle Invocation
+
+When started by the learning cycle of `workflows/task-to-code.md`, the caller
+sends a minimal prompt and nothing else:
+
+- the original requirement and its acceptance criteria;
+- the artifact root and the change-set scope;
+- the IDs of enforced checks already covered, which are not audited again.
+
+The auditor never reads the learning store and never receives the implementation
+conversation. Every finding is returned with this fixed schema, so the caller can
+classify it without reading the report:
+
+| Field | Content |
+|---|---|
+| `id` | `A-<n>`, unique within the run |
+| `dimension` | One of the 14 dimensions of `workflows/code-audit.md` |
+| `criterion` | The criterion of `references/audit-pass-criteria.md` it violates |
+| `severity` | `P0` to `P3` |
+| `location` | `file:line` |
+| `evidence` | The command with its exit code, or the observed output |
+
+Findings without `location` and `evidence` are not findings; they are open
+questions.
+
 ## Responsibilities
 
 - Evaluate the Phase I0 gate before reading the artifact, and record the

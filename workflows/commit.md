@@ -303,6 +303,12 @@ Rules:
 - If `SCOPE-001`, `TEARDOWN-001`, or `APPROVAL-001` reports a `FAIL` or `NOT VERIFIED`
   (M-90 to M-93), or the approved scope manifest is missing, do not request approval to
   commit either: report the item with its `file:line` and stop.
+- **Learning-cycle record (M-122).** The task checkpoint must hold a
+  learning-cycle record for this change set, written by the learning cycle of
+  `workflows/task-to-code.md`: its date, the store entries applied, and the
+  `external-auditor` run with its findings by class. A missing or incomplete
+  record blocks the proposal: report it and stop, as for `SCOPE-001`. No hook
+  triggers the cycle, so this gate is the check on it.
 
 ## Phase 14 — Create Approved Commits
 

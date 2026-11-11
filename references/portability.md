@@ -49,6 +49,11 @@ The last row is why the canonical wording of every mandatory rule lives in
 
 ## Setup per environment
 
+The setup is performed by `workflows/bootstrap.md`: after a clone, one shell
+block detects the operating system and prepares the machine. On Windows the same
+block runs in Git Bash, which Git for Windows provides. The manual steps below
+are the reference for the same result.
+
 Setting the root:
 
 ```sh

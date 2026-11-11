@@ -1449,9 +1449,9 @@ check:
   tree or the canonical repository's tracked files
 - learnings never store credentials, tokens, secrets, or personal data, and
   identifiers that become path components are normalized against traversal
-- promotion to the canonical layer is always a proposal that requires human
-  approval; no instruction allows the system to edit the canonical
-  repository automatically
+- promotion to the canonical layer is applied in the ai-engineering working
+  tree and validated by the system audit; no instruction allows it to commit,
+  push, or merge without the user's approval
 - `workflows/session-resilience.md` writes checkpoints to the same
   provider-neutral state root and defines the handoff path in exactly one
   place; `AGENTS.md` and the commands reference it without duplicating the
@@ -2094,8 +2094,9 @@ Verify that the system learns from its mistakes and does not repeat them:
   entry is reported as superseded.
 - An empty or missing store is reported and never blocks a task.
 - `AGENTS.md` states the consume rule, and `workflows/task-to-code.md`
-  Phase 1 reads the learnings and Phase 12 captures a lesson when there is
-  a reusable signal.
+  Phase 1 reads the learnings, and the Learning Cycle runs in every
+  implementation task after the pre-delivery gate, applies the enforced
+  checks, starts `external-auditor`, and classifies its findings.
 - `commands/task.md` requires reading the learnings before acting.
 - The maturity ladder is Junior, Semi Senior, Senior, Staff, is derived from
   evidence, is stored with its date, and is reported in the task report.
@@ -8335,5 +8336,166 @@ g2="$(gate_claim_check "$ok" docs/gate.md)"
 
 echo "V2.96 behavioral fixtures: $fx (removed on exit)"
 [ "$failures" -eq 0 ] && echo "V2.96 PASS" || echo "V2.96 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V2.97 Regression — Published Packages, Peer Dependencies, Verification Artifacts, and Workspace Roots
+
+The first learnings of the project (`GF-04`, `shoplite-platform`) were four lessons that the repository did not
+enforce: a published declaration that names a `.ts` path the package does not ship, a peer dependency that npm does not
+install, a verification command that passes only where CI generated an artifact, and a workspace build root fixed to the
+package directory. The rule is M-121; the four detectors are `PKG-DTS-001`, `PKG-PEER-001`, `VERIFY-GEN-001`, and
+`WS-ROOT-001`. Each lesson is now a checked rule in `workflows/output-compliance.md`, so the learning store can move it
+from `aprendido` to `enforced`.
+
+The text checks require the canonical wording, the registry row, the regression row, the section heading, and the
+coverage row, so that the procedure runs the detectors. The behavioral part builds a defective fixture and its compliant
+twin for each detector in a temporary directory outside the repository, verifies each defect with `file:line`, verifies
+each twin is `PASS`, and removes the directory.
+
+The detectors are lexical. `PKG-DTS-001` reads the `.ts` specifier pattern and the two tsconfig options; a specifier built
+at run time is not seen. `PKG-PEER-001` reads the `dependencies` and `peerDependencies` blocks of a manifest that opens them
+on one line each. `VERIFY-GEN-001` compares the word `generate` in the `verify` script with the CI step, not the generator
+actually run. `WS-ROOT-001` reads `next.config.*` for a literal `__dirname` or `process.cwd()` as the root; a root computed
+by a function is the reviewer's to check.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+oc="workflows/output-compliance.md"
+ag="AGENTS.md"
+mr="references/mandatory-rules.md"
+rmx="references/system-workflow-regression-matrix.md"
+
+need() {
+  grep -qF -- "$2" "$root/$1" || { echo "FAIL V2.97: $1 does not carry $3"; failures=1; }
+}
+
+need "$ag" 'published declaration names only files the package ships' "the M-121 canonical wording"
+need "$mr" '| M-121 |' "the M-121 registry row"
+need "$rmx" '| R-194 |' "the R-194 regression row"
+need "$oc" 'PKG-DTS-001, PKG-PEER-001, VERIFY-GEN-001, WS-ROOT-001' "the M-121 section heading"
+need "$oc" '| `PKG-DTS-001`, `PKG-PEER-001`, `VERIFY-GEN-001`, `WS-ROOT-001`' "the M-121 coverage row, so the procedure runs the detectors"
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v297.XXXXXX")"
+awk '/^```sh$/{on=1; n++; f=fx "/blk" n ".sh"; next} /^```$/{ if(on){close(f)}; on=0} on{print > f}' fx="$fx" "$root/$oc"
+for b in "$fx"/blk*.sh; do
+  grep -q 'pkg_dts_check\|pkg_peer_check\|verify_gen_check\|ws_root_check' "$b" && . "$b"
+done
+
+put() { mkdir -p "$(dirname "$1")"; cat > "$1"; }
+
+# PKG-DTS-001: the defective fixture keeps a .ts specifier and the tsconfig option; the twin uses .js.
+put "$fx/dts-bad/package.json" <<'EOF'
+{ "name": "p", "exports": "./dist/index.js", "types": "./dist/index.d.ts" }
+EOF
+put "$fx/dts-bad/tsconfig.json" <<'EOF'
+{ "compilerOptions": { "rewriteRelativeImportExtensions": true } }
+EOF
+put "$fx/dts-bad/src/index.ts" <<'EOF'
+export * from "./currency.schema.ts";
+EOF
+put "$fx/dts-ok/package.json" <<'EOF'
+{ "name": "p", "exports": "./dist/index.js", "types": "./dist/index.d.ts" }
+EOF
+put "$fx/dts-ok/tsconfig.json" <<'EOF'
+{ "compilerOptions": { "module": "NodeNext" } }
+EOF
+put "$fx/dts-ok/src/index.ts" <<'EOF'
+export * from "./currency.schema.js";
+EOF
+d1="$(pkg_dts_check "$fx/dts-bad")"
+printf '%s\n' "$d1" | grep -q 'FINDING PKG-DTS-001:.*src/index.ts:1:' \
+  || { echo "FAIL V2.97: PKG-DTS-001 did not report the .ts specifier with file:line: $d1"; failures=1; }
+printf '%s\n' "$d1" | grep -q 'FINDING PKG-DTS-001:.*tsconfig.json:1:' \
+  || { echo "FAIL V2.97: PKG-DTS-001 did not report rewriteRelativeImportExtensions: $d1"; failures=1; }
+d2="$(pkg_dts_check "$fx/dts-ok")"
+printf '%s\n' "$d2" | grep -q '^PASS PKG-DTS-001' || { echo "FAIL V2.97: PKG-DTS-001 twin is not PASS: $d2"; failures=1; }
+
+# PKG-PEER-001: zod is a peer only in the defective fixture; the twin also declares it as a dependency.
+put "$fx/peer-bad/package.json" <<'EOF'
+{
+  "name": "p",
+  "exports": "./dist/index.js",
+  "peerDependencies": {
+    "zod": "^4.0.0"
+  }
+}
+EOF
+put "$fx/peer-ok/package.json" <<'EOF'
+{
+  "name": "p",
+  "exports": "./dist/index.js",
+  "dependencies": {
+    "zod": "^4.0.0"
+  },
+  "peerDependencies": {
+    "zod": "^4.0.0"
+  }
+}
+EOF
+p1="$(pkg_peer_check "$fx/peer-bad")"
+printf '%s\n' "$p1" | grep -q 'FINDING PKG-PEER-001: .*package.json:5: zod is only a peer dependency' \
+  || { echo "FAIL V2.97: PKG-PEER-001 did not report the peer-only dependency with file:line: $p1"; failures=1; }
+p2="$(pkg_peer_check "$fx/peer-ok")"
+printf '%s\n' "$p2" | grep -q '^PASS PKG-PEER-001' || { echo "FAIL V2.97: PKG-PEER-001 twin is not PASS: $p2"; failures=1; }
+
+# VERIFY-GEN-001: CI generates the client; the defective verify script does not, the twin does.
+put "$fx/ver-bad/.github/workflows/ci.yml" <<'EOF'
+jobs:
+  test:
+    steps:
+      - run: npx prisma generate
+EOF
+put "$fx/ver-bad/package.json" <<'EOF'
+{
+  "name": "p",
+  "scripts": {
+    "verify": "tsc --noEmit"
+  }
+}
+EOF
+put "$fx/ver-ok/.github/workflows/ci.yml" <<'EOF'
+jobs:
+  test:
+    steps:
+      - run: npx prisma generate
+EOF
+put "$fx/ver-ok/package.json" <<'EOF'
+{
+  "name": "p",
+  "scripts": {
+    "verify": "npx prisma generate && tsc --noEmit"
+  }
+}
+EOF
+v1="$(verify_gen_check "$fx/ver-bad")"
+printf '%s\n' "$v1" | grep -q 'FINDING VERIFY-GEN-001: .*ci.yml:4:.*the verify script does not generate' \
+  || { echo "FAIL V2.97: VERIFY-GEN-001 did not report the verify script with file:line: $v1"; failures=1; }
+v2="$(verify_gen_check "$fx/ver-ok")"
+printf '%s\n' "$v2" | grep -q '^PASS VERIFY-GEN-001' || { echo "FAIL V2.97: VERIFY-GEN-001 twin is not PASS: $v2"; failures=1; }
+
+# WS-ROOT-001: a root fixed to __dirname in a workspace member; the twin derives it from a function.
+put "$fx/ws-bad/package.json" <<'EOF'
+{ "name": "root", "workspaces": ["apps/*"] }
+EOF
+put "$fx/ws-bad/apps/web/next.config.mjs" <<'EOF'
+export default { turbopack: { root: __dirname } };
+EOF
+put "$fx/ws-ok/package.json" <<'EOF'
+{ "name": "root", "workspaces": ["apps/*"] }
+EOF
+put "$fx/ws-ok/apps/web/next.config.mjs" <<'EOF'
+export default { turbopack: { root: findWorkspaceRoot(__dirname) } };
+EOF
+w1="$(ws_root_check "$fx/ws-bad")"
+printf '%s\n' "$w1" | grep -q 'FINDING WS-ROOT-001: .*apps/web/next.config.mjs:1:' \
+  || { echo "FAIL V2.97: WS-ROOT-001 did not report the fixed build root with file:line: $w1"; failures=1; }
+w2="$(ws_root_check "$fx/ws-ok")"
+printf '%s\n' "$w2" | grep -q '^PASS WS-ROOT-001' || { echo "FAIL V2.97: WS-ROOT-001 twin is not PASS: $w2"; failures=1; }
+
+rm -rf "$fx"
+echo "V2.97 behavioral fixtures removed"
+[ "$failures" -eq 0 ] && echo "V2.97 PASS" || echo "V2.97 FAIL"
 [ "$failures" -eq 0 ]
 ```

@@ -347,9 +347,10 @@ repository's `commands/` directory.
   `${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}`, outside every target
   project and the canonical repository. The same root is used by OpenCode,
   Claude, Codex, and Aider; no client has a hardcoded path.
-- Promotion to a Skill, workflow, `AGENTS.md`, or a reference is always a
-  proposal that requires human approval; the system never edits the canonical
-  repository automatically. Maturity (L1 Guided to L5 Adaptive) is
+- Promotion to a Skill, workflow, `AGENTS.md`, or a reference is applied
+  automatically in the ai-engineering working tree, validated by the system
+  audit, and never committed, pushed, or merged without the user's approval.
+  Maturity (L1 Guided to L5 Adaptive) is
   evidence-based and descriptive, never self-declared authority.
 
 ### Estimation
@@ -406,98 +407,49 @@ unless an actual CLI run is recorded.
 
 ## Setup (macOS, Linux, and Windows)
 
-The setup is per environment. The **repository is the source of truth**, and
-a client that cannot discover it by link can be pointed at its path. The
-shared procedures assume a **POSIX shell**; on Windows, run them through Git
-Bash or WSL. The portability contract is defined in
+Clone the repository, then open OpenCode, Claude Code, or Codex from inside it.
+The first session prepares the machine on its own: `AGENTS.md` makes the agent
+run the bootstrap block of `workflows/bootstrap.md` once. The block creates the
+global links that make the agents, commands, Skills, and workflows available in
+every project, and it never installs software. Restart each client once after the
+first session, so it picks up the new links.
+
+```sh
+# macOS or Linux
+git clone <repository-url> ai-engineering
+cd ai-engineering
+opencode        # or: claude, or codex
+```
+
+On Windows, install Git for Windows (`winget install --id Git.Git -e`) and clone
+in **Git Bash**. Before cloning, run once `git config --global core.autocrlf
+input`, so shell blocks keep their line endings. Symbolic links need Developer
+Mode; without it the block reports the failure, and the client is pointed at the
+repository path.
+
+Rerunning the block changes nothing that is already in place. A destination that
+exists and is not a link to this repository is reported and kept.
+
+What it creates:
+
+- the local state root, `${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}`,
+  with the learning ledger header and the directories for learnings and
+  handoffs;
+- the OpenCode links to `AGENTS.md`, `commands/`, and `agents/`, and the Skill
+  link `$HOME/.claude/skills`, each one only after your confirmation.
+
+Windows notes: symbolic links need Developer Mode or an elevated shell. When
+they are not available, point the client at the repository path instead; no
+rule depends on the link. The location where OpenCode reads its configuration on
+Windows is not verified by this repository, so confirm it inside the client.
+
+After the bootstrap, start the client and run `/system-check`. The installation
+is complete when `/system-check` reports `PASS` for OpenCode discovery: global
+`AGENTS.md`, commands, agents, and Skills.
+
+The installation must use one canonical repository. Client adapters must not
+duplicate Skills, contracts, or workflows. The portability contract is in
 `references/portability.md`.
-
-Set the path to the canonical repository:
-
-```sh
-# macOS
-export AI_ENGINEERING_HOME="$HOME/Documents/ai-engineering"
-
-# Linux
-export AI_ENGINEERING_HOME="$HOME/ai-engineering"
-```
-
-```powershell
-# Windows PowerShell
-$env:AI_ENGINEERING_HOME = "$HOME\ai-engineering"
-```
-
-Verify the repository:
-
-```sh
-git -C "$AI_ENGINEERING_HOME" status --short --branch
-```
-
-OpenCode's global configuration directory is the expanded value of
-`$HOME/.config/opencode` on macOS and Linux.
-
-Before creating links, inspect every destination:
-
-```sh
-ls -ld "$HOME/.config/opencode/AGENTS.md" \
-  "$HOME/.config/opencode/commands" \
-  "$HOME/.config/opencode/agents" \
-  "$HOME/.claude/skills" 2>/dev/null
-```
-
-If a destination does not exist, link it to the canonical repository:
-
-```sh
-ln -s "$AI_ENGINEERING_HOME/AGENTS.md" \
-  "$HOME/.config/opencode/AGENTS.md"
-
-ln -s "$AI_ENGINEERING_HOME/commands" \
-  "$HOME/.config/opencode/commands"
-
-ln -s "$AI_ENGINEERING_HOME/agents" \
-  "$HOME/.config/opencode/agents"
-```
-
-Never overwrite an existing configuration or symlink without inspecting
-its target.
-
-On Windows a symbolic link requires Developer Mode or an elevated shell. When
-it is unavailable, point the client at the canonical path instead of linking;
-no rule depends on the link existing.
-
-Skills are stored in the canonical repository's `skills/` directory.
-Expose them through the global Skill directory inspected above
-(`$HOME/.claude/skills`):
-
-- If `$HOME/.claude/skills` does not exist, link the canonical directory:
-
-  ```sh
-  ln -s "$AI_ENGINEERING_HOME/skills" "$HOME/.claude/skills"
-  ```
-
-- If it already exists as a symlink to the canonical `skills/` directory,
-  reuse it and do not change it.
-
-- If it exists but points elsewhere, or already contains other Skills, do
-  not overwrite it. Link only the missing canonical Skills individually and
-  skip names that already exist:
-
-  ```sh
-  for dir in "$AI_ENGINEERING_HOME"/skills/*; do
-    target="$HOME/.claude/skills/$(basename "$dir")"
-    [ -e "$target" ] || ln -s "$dir" "$target"
-  done
-  ```
-
-Never overwrite an existing directory, symlink, or Skill.
-
-Restart OpenCode after modifying discovery configuration.
-
-The installation is not complete until `/system-check` reports PASS for
-OpenCode discovery: global AGENTS.md, commands, agents, and Skills.
-
-The installation must use one canonical repository. Client adapters must
-not duplicate Skills, contracts, or workflows.
 
 ## Branch policy
 
