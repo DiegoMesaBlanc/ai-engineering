@@ -525,8 +525,11 @@ changed files.
 **Verdict rule.** Several blocks below report a finding as a line that begins
 with `FAIL` and do not always set a non-zero exit status, so the exit status
 is not evidence on its own. The verdict of a block is read from its output:
-any line beginning with `FAIL` is a `FAIL`; no output with a successful
-status is a `PASS`; a block that cannot run is `NOT VERIFIED` with the reason.
+any line beginning with `FAIL` is a `FAIL`; any line beginning with
+`NOT VERIFIED` makes the block `NOT VERIFIED`, whatever the exit status, so a
+check that could not read its input never reads as `PASS`; no output with a
+successful status is a `PASS`; a block that cannot run is `NOT VERIFIED` with
+the reason.
 
 ### 6.1 Reference integrity
 
@@ -590,7 +593,11 @@ guessing. Check every URL in the changed files, and every URL in
 grep -rhoE 'https?://[^ )[:space:]]+' references/official-documentation.md |
   tr -d '`' | sed 's/[.,]$//' | sort -u | while read -r url; do
     code=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 20 "$url")
-    [ "$code" = "200" ] || echo "FAIL $code $url"
+    case "$code" in
+      200) ;;
+      000|403) echo "NOT VERIFIED $code $url (transient or bot protection)" ;;
+      *) echo "FAIL $code $url" ;;
+    esac
   done
 ```
 

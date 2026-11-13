@@ -48,14 +48,10 @@ caller.
 
 ## Responsibilities
 
-- Verify the canonical repository root.
-- Inspect required files and folder structure.
-- Check command and agent metadata.
-- Validate references to Skills and workflows.
-- Identify contradictions between shared instructions and client adapters.
-- Verify that the current setup matches documented OpenCode paths.
-- Report missing or unverified configuration.
-- Recommend minimal corrective changes.
+Run the checks of `workflows/system-validation.md`, the single procedure for
+the consistency audit. This agent adds no check of its own: its role is the
+read-only boundary defined by the permissions above, and it reports the
+result of that workflow.
 
 ## Verdict Matrix Gate
 

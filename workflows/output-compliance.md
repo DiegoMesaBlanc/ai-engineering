@@ -102,16 +102,42 @@ A contract file must not contain:
 
 **Detection (TypeScript/JavaScript):**
 
-```sh
-# Files that declare types
-grep -rlE '(^|[[:space:]])(export[[:space:]]+)?(declare[[:space:]]+)?(interface|type|enum)[[:space:]]+[A-Za-z_$]' \
-  <changed-paths> --include='*.ts' --include='*.tsx' \
-  --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build
+When run standalone, the blocks of this section scan the whole tree (`.`).
+A caller that runs one block for a known change set may narrow it with
+`changed_paths`, a space-separated list of paths. The blocks run under `sh` or
+`bash`: zsh does not split an unquoted list, so the sweep refuses zsh. The
+change-set narrowing of a full sweep is done by `project_safety_sweep`, which
+takes the change-set file as its argument.
 
-# For each candidate file, check whether it also contains runtime behavior
-grep -nE '(^|[[:space:]])(export[[:space:]]+)?(default[[:space:]]+)?(async[[:space:]]+)?function[[:space:]]+[A-Za-z_$]|(^|[[:space:]])(export[[:space:]]+)?(const|let|var)[[:space:]]+[A-Za-z_$][A-Za-z0-9_$]*[[:space:]]*=|(^|[[:space:]])(export[[:space:]]+)?(abstract[[:space:]]+)?class[[:space:]]+[A-Za-z_$]' \
-  <candidate-file> \
-  | grep -vE 'as[[:space:]]+const|z\.(object|string|number|boolean|array|enum|union|discriminatedUnion|literal|record)\(|Joi\.object|yup\.object'
+```sh
+type001_scan() {
+  for p in ${changed_paths:-.}; do
+    # A path that cannot be read is NOT VERIFIED, never a silent pass.
+    [ -r "$p" ] || { echo "NOT VERIFIED TYPE-001: $p is missing or unreadable"; continue; }
+    # Files that declare types. A grep error (exit 2) is not a clean scan.
+    candidates="$(grep -rlE '(^|[[:space:]])(export[[:space:]]+)?(declare[[:space:]]+)?(interface|type|enum)[[:space:]]+[A-Za-z_$]' \
+      "$p" --include='*.ts' --include='*.tsx' \
+      --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build 2>/dev/null)"
+    [ $? -eq 2 ] && { echo "NOT VERIFIED TYPE-001: $p could not be scanned"; continue; }
+    printf '%s\n' "$candidates" | sed '/^$/d' |
+    while IFS= read -r candidate; do
+      # For each candidate file, check whether it also contains runtime behavior.
+      # Comment lines (JSDoc, line and block comments) are not code and are skipped.
+      # A match is a FAIL (P2), so the verdict line starts with FAIL.
+      grep -nE '(^|[[:space:]])(export[[:space:]]+)?(default[[:space:]]+)?(async[[:space:]]+)?function[[:space:]]+[A-Za-z_$]|(^|[[:space:]])(export[[:space:]]+)?(const|let|var)[[:space:]]+[A-Za-z_$][A-Za-z0-9_$]*[[:space:]]*=|(^|[[:space:]])(export[[:space:]]+)?(abstract[[:space:]]+)?class[[:space:]]+[A-Za-z_$]' \
+        "$candidate" |
+        grep -vE '^[0-9]+:[[:space:]]*(\*|//|/\*)' |
+        grep -vE 'as[[:space:]]+const|z\.(object|string|number|boolean|array|enum|union|discriminatedUnion|literal|record)\(|Joi\.object|yup\.object' |
+        sed "s#^#FAIL TYPE-001: $candidate:#"
+    done
+  done
+}
+report="$(type001_scan)"
+[ -n "$report" ] && printf '%s\n' "$report"
+# The exit status carries the verdict too: a FAIL or NOT VERIFIED line exits 1,
+# so a gate that reads the status never passes an unreadable or violating input.
+if printf '%s\n' "$report" | grep -qE '^(FAIL|NOT VERIFIED) '; then exit 1; fi
+exit 0
 ```
 
 The runtime pattern matches top-level declarations, not callbacks nested
@@ -196,12 +222,12 @@ than one source) is a public API surface and is exempt.
 
 ```sh
 # Re-export candidates: any module specifier, relative or aliased
-grep -rnE "^export (type )?\{[^}]+\} from \"[^\"]+\"" <changed-paths> \
+grep -rnE "^export (type )?\{[^}]+\} from \"[^\"]+\"" ${changed_paths:-.} \
   --include='*.ts' --include='*.tsx' \
   --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build
 
 # Local re-export of a name imported in the same file (no `from` clause)
-grep -rnE "^export (type )?\{[^}]+\};?[[:space:]]*$" <changed-paths> \
+grep -rnE "^export (type )?\{[^}]+\};?[[:space:]]*$" ${changed_paths:-.} \
   --include='*.ts' --include='*.tsx' \
   --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build |
 while IFS=: read -r file line rest; do
@@ -235,25 +261,25 @@ The module specifier may be relative (`./types`) or aliased
 ```sh
 # Go: type alias
 grep -rnE "^type [A-Za-z_][A-Za-z0-9_]* = [A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_]" \
-  <changed-paths> --include='*.go'
+  ${changed_paths:-.} --include='*.go'
 
 # Rust: pub use forwarding a sibling module
-grep -rnE "^pub use (super|crate|self)::" <changed-paths> --include='*.rs'
+grep -rnE "^pub use (super|crate|self)::" ${changed_paths:-.} --include='*.rs'
 
 # Python: sibling import forwarded through __all__
-grep -rnE "^from \.[A-Za-z0-9_.]+ import" <changed-paths> --include='*.py'
+grep -rnE "^from \.[A-Za-z0-9_.]+ import" ${changed_paths:-.} --include='*.py'
 
 # Kotlin: type alias
-grep -rnE "^typealias [A-Za-z_][A-Za-z0-9_]* = " <changed-paths> --include='*.kt'
+grep -rnE "^typealias [A-Za-z_][A-Za-z0-9_]* = " ${changed_paths:-.} --include='*.kt'
 
 # PHP: class alias
-grep -rnE "class_alias\(\s*['\"]" <changed-paths> --include='*.php'
+grep -rnE "class_alias\(\s*['\"]" ${changed_paths:-.} --include='*.php'
 
 # C#/.NET: assembly type forwarding
-grep -rnE "\[assembly:\s*TypeForwardedTo" <changed-paths> --include='*.cs'
+grep -rnE "\[assembly:\s*TypeForwardedTo" ${changed_paths:-.} --include='*.cs'
 
 # Ruby: constant alias
-grep -rnE "^[A-Z][A-Za-z0-9_]* = [A-Z][A-Za-z0-9_:]*" <changed-paths> --include='*.rb'
+grep -rnE "^[A-Z][A-Za-z0-9_]* = [A-Z][A-Za-z0-9_:]*" ${changed_paths:-.} --include='*.rb'
 ```
 
 For Python, Ruby, and Kotlin, confirm the forwarded name is only
@@ -413,11 +439,27 @@ top-level folders of the project against the tree of the agreed style, in
 `references/folder-architectures.md`, translated to the detected ecosystem.
 
 ```sh
-# The agreed top-level folders, for example for a feature-driven web app
-for folder in app shared features; do
-  [ -d "src/$folder" ] ||
-    echo "FAIL src/$folder is missing: it belongs to the agreed tree"
-done
+# The agreed top-level folders, for example for a feature-driven web app.
+# A documentation-only repository has no application manifest and is out of
+# scope: the check reports it as not applicable instead of as a missing tree.
+# The manifest list is the one of the unit definition in
+# workflows/session-resilience.md ("Concern measurement"); keep the two equal.
+has_manifest() {
+  for m in package.json pyproject.toml setup.py setup.cfg go.mod Cargo.toml \
+    pom.xml build.gradle build.gradle.kts settings.gradle.kts composer.json \
+    Gemfile pubspec.yaml Package.swift angular.json; do
+    [ -f "$m" ] && return 0
+  done
+  ls ./*.csproj >/dev/null 2>&1
+}
+if has_manifest; then
+  for folder in app shared features; do
+    [ -d "src/$folder" ] ||
+      echo "FAIL src/$folder is missing: it belongs to the agreed tree"
+  done
+else
+  echo "NOT APPLICABLE STRUCT-004: no application manifest (documentation-only scope)"
+fi
 ```
 
 A missing or an unexpected top-level folder is a `FAIL` (P2). The check
