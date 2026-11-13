@@ -1037,6 +1037,8 @@ Return:
 - V2.98 report matrices without pipes, documented exit statuses and error envelopes, and the SCOPE-002 commit gate (M-77, M-79, M-80, M-118, R-196 to R-198)
 - V2.99 gate steps that fail silently, redaction claims contradicted by their artifact, and numbered PASS rows that cite only file:line (M-98, M-99, M-123, M-124, R-199 to R-201)
 - V3.00 audit memory: a unit that passed is reused only on unchanged content, and cross-unit criteria are never reused (M-125, R-202)
+- V3.02 client identity literals and guarantees that name their entry point (M-130, M-131, R-207, R-208)
+- V3.01 origin of findings, git claims, repeated counts, and comments that name headers: the detectors run on defective and compliant fixtures, and the sweep runs them (M-126 to M-129, R-203 to R-206)
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -8803,5 +8805,182 @@ printf '%s\n' "$inj" | grep -q '^REUSE DEAD-EXPORT-001' \
 rm -rf "$fx"
 echo "V3.00 behavioral fixtures removed"
 [ "$failures" -eq 0 ] && echo "V3.00 PASS" || echo "V3.00 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.01 Regression — Origin of Findings, Git Claims, Repeated Counts, and Comments Naming Headers (M-126 to M-129)
+
+Canonical anchors: Origin of a finding (M-126); Git claims are verified (M-127); One value per quantity in a document (M-128); A comment that names a header matches the code (M-129).
+
+The external audit that produced these rules labelled an `ALTER TABLE` added by its change as pre-existing, cited
+branches and commits that git did not confirm, stated one test count with two values in one report, and kept a
+comment that named a header its code never sent. Each rule is canonical in `AGENTS.md` and its detector is in
+`workflows/output-compliance.md`. This section extracts the four detectors from that file (the functions themselves,
+not copies), builds a git fixture and text fixtures in a temporary directory outside the repository, verifies each
+defective fixture is detected with `file:line` and each compliant twin is not, and removes the fixtures.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+need() {
+  grep -qF -- "$2" "$root/$1" || { echo "FAIL V3.01: $1 does not carry $3"; failures=1; }
+}
+
+need AGENTS.md 'Origin of a finding (M-126)' "the canonical M-126 wording"
+need AGENTS.md 'Git claims are verified (M-127)' "the canonical M-127 wording"
+need AGENTS.md 'One value per quantity in a document (M-128)' "the canonical M-128 wording"
+need AGENTS.md 'A comment that names a header matches the code (M-129)' "the canonical M-129 wording"
+for id in M-126 M-127 M-128 M-129; do
+  need references/mandatory-rules.md "| $id |" "the $id registry row"
+done
+for id in R-203 R-204 R-205 R-206; do
+  need references/system-workflow-regression-matrix.md "| $id |" "the $id regression row"
+done
+need workflows/output-compliance.md '### ORIGIN-001 — A finding is pre-existing only when the base revision holds it' "the ORIGIN-001 section"
+need workflows/output-compliance.md '### GIT-001 — A git-state claim in a document matches git' "the GIT-001 section"
+need workflows/output-compliance.md '### CONSIST-001 — A count repeated in one document has one value' "the CONSIST-001 section"
+need workflows/output-compliance.md 'comment_name_check . $src' "the sweep call of COMMENT-001 names"
+need workflows/output-compliance.md 'git_claim_check . "${BASE:-main}" $mds' "the sweep call of GIT-001"
+need workflows/output-compliance.md 'consistency_check . $mds' "the sweep call of CONSIST-001"
+need workflows/output-compliance.md '| `ORIGIN-001` |' "the ORIGIN-001 coverage row"
+need workflows/output-compliance.md "sed 's#^#  FAIL test under src/main: #'" "the Java test-location message with a delimiter a slash cannot break"
+grep -qF "sed 's/^/  FAIL test under src/main: /'" "$root/workflows/output-compliance.md" && { echo "FAIL V3.01: the Java test-location sed still breaks on the slash of src/main"; failures=1; }
+need workflows/output-compliance.md '| `GIT-001` |' "the GIT-001 coverage row"
+need workflows/output-compliance.md '| `CONSIST-001` |' "the CONSIST-001 coverage row"
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v301.XXXXXX")"
+oc="$root/workflows/output-compliance.md"
+for fn in db_runtime_ddl_check origin_check git_claim_check consistency_check comment_name_check; do
+  sed -n "/^$fn() {/,/^}/p" "$oc" > "$fx/$fn.sh"
+  [ -s "$fx/$fn.sh" ] || { echo "FAIL V3.01: $fn is not extractable from workflows/output-compliance.md"; failures=1; }
+done
+cat "$fx"/*.sh > "$fx/detectors.sh"
+
+# ORIGIN-001: the ALTER is introduced by the change set; the CREATE the base holds is pre-existing.
+o="$fx/origin"; mkdir -p "$o/src/adapters"; git -C "$o" init -q
+git -C "$o" symbolic-ref HEAD refs/heads/main
+printf 'db.exec("CREATE TABLE orders (id TEXT)")\n' > "$o/src/adapters/store.ts"
+git -C "$o" add -A && git -C "$o" -c user.email=t@t.t -c user.name=t commit -qm base
+printf 'db.exec("CREATE TABLE orders (id TEXT)")\ndb.exec("ALTER TABLE orders ADD COLUMN tenant_id TEXT")\n' > "$o/src/adapters/store.ts"
+got="$( . "$fx/detectors.sh"; db_runtime_ddl_check "$o" src/adapters/store.ts | origin_check "$o" main )"
+printf '%s\n' "$got" | grep -qF 'FAIL ORIGIN-001: src/adapters/store.ts:2:' \
+  || { echo "FAIL V3.01: ORIGIN-001 does not fail the ALTER the change introduced: $got"; failures=1; }
+printf '%s\n' "$got" | grep -qF 'PREEXISTING ORIGIN-001: src/adapters/store.ts:1:' \
+  || { echo "FAIL V3.01: ORIGIN-001 does not keep the base CREATE as pre-existing: $got"; failures=1; }
+miss="$( . "$fx/detectors.sh"; echo 'FAIL DB-001: src/adapters/store.ts:2:  x' | origin_check "$fx/no-repo" nosuchrev )"
+printf '%s\n' "$miss" | grep -qF 'NOT VERIFIED ORIGIN-001' \
+  || { echo "FAIL V3.01: an unresolvable base is not NOT VERIFIED: $miss"; failures=1; }
+
+# GIT-001: a commit on the wrong branch, and a "sin commit" claim on a branch with commits.
+g="$fx/git"; mkdir -p "$g/docs"; git -C "$g" init -q; git -C "$g" symbolic-ref HEAD refs/heads/main
+printf 'base\n' > "$g/a.txt"; git -C "$g" add -A && git -C "$g" -c user.email=t@t.t -c user.name=t commit -qm base
+git -C "$g" checkout -q -b fs/A; printf 'a\n' > "$g/b.txt"; git -C "$g" add -A && git -C "$g" -c user.email=t@t.t -c user.name=t commit -qm a
+X="$(git -C "$g" rev-parse HEAD)"
+git -C "$g" checkout -q main; git -C "$g" checkout -q -b fs/B; printf 'b\n' > "$g/c.txt"; git -C "$g" add -A && git -C "$g" -c user.email=t@t.t -c user.name=t commit -qm b
+printf 'Commit `%s` lives on `fs/B`.\n' "$X" > "$g/docs/bad-branch.md"
+printf 'Cambios sin commit en `fs/A`, nada más.\n' > "$g/docs/bad-uncommitted.md"
+printf 'Commit `%s` lives on `fs/A`.\n' "$X" > "$g/docs/good.md"
+gotg="$( . "$fx/detectors.sh"; git_claim_check "$g" main docs/bad-branch.md docs/bad-uncommitted.md docs/good.md )"
+printf '%s\n' "$gotg" | grep -qF 'FAIL GIT-001: docs/bad-branch.md:1: the commit' \
+  || { echo "FAIL V3.01: GIT-001 does not fail a commit cited on the wrong branch: $gotg"; failures=1; }
+printf '%s\n' "$gotg" | grep -qF 'FAIL GIT-001: docs/bad-uncommitted.md:1: the claim says uncommitted work on fs/A' \
+  || { echo "FAIL V3.01: GIT-001 does not fail a sin-commit claim on a branch with commits: $gotg"; failures=1; }
+printf '%s\n' "$gotg" | grep -q 'docs/good.md' \
+  && { echo "FAIL V3.01: GIT-001 reports the compliant twin: $gotg"; failures=1; }
+
+# CONSIST-001: one count with two values fails; a definition line makes it NOT VERIFIED; the consistent twin passes.
+c="$fx/consist"; mkdir -p "$c"
+printf '# Report\n\nFrontend: 440 tests in the final table.\n\nSome text.\n\nGates: 465 tests passed.\n' > "$c/bad.md"
+printf '# Report\n\nFrontend: 440 tests in the final table.\n\nGates: 440 tests passed.\n' > "$c/good.md"
+printf '# Report\n\nGates: 465 tests passed (scope: unit only).\n\nFrontend: 440 tests in the final table.\n' > "$c/definition.md"
+gotc="$( . "$fx/detectors.sh"; consistency_check "$c" bad.md good.md definition.md )"
+printf '%s\n' "$gotc" | grep -qF 'FAIL CONSIST-001: bad.md:7:' \
+  || { echo "FAIL V3.01: CONSIST-001 does not fail 440 against 465: $gotc"; failures=1; }
+printf '%s\n' "$gotc" | grep -q 'good.md' \
+  && { echo "FAIL V3.01: CONSIST-001 reports the consistent twin: $gotc"; failures=1; }
+printf '%s\n' "$gotc" | grep -qF 'NOT VERIFIED CONSIST-001: definition.md:' \
+  || { echo "FAIL V3.01: CONSIST-001 fails a conflict that names its set: $gotc"; failures=1; }
+
+# COMMENT-001 (names): a comment names x-user-id that no code carries; the twin sets the header.
+m="$fx/comment"; mkdir -p "$m/src"
+printf '// The client sends x-user-id on every call.\nexport const call = () => 1\n' > "$m/src/hooks.ts"
+printf '// The client sends x-user-id on every call.\nexport const call = () => ({ headers: { "x-user-id": "u" } })\n' > "$m/src/hooks-twin.ts"
+gotm="$( . "$fx/detectors.sh"; comment_name_check "$m" src/hooks.ts )"
+printf '%s\n' "$gotm" | grep -qF 'FAIL COMMENT-001: src/hooks.ts:1: the comment names x-user-id' \
+  || { echo "FAIL V3.01: COMMENT-001 does not fail a header named and never sent: $gotm"; failures=1; }
+gott="$( . "$fx/detectors.sh"; comment_name_check "$m" src/hooks-twin.ts )"
+printf '%s\n' "$gott" | grep -q 'hooks-twin.ts' \
+  && { echo "FAIL V3.01: COMMENT-001 reports the twin whose code sets the header: $gott"; failures=1; }
+
+rm -rf "$fx"
+echo "V3.01 behavioral fixtures removed"
+[ "$failures" -eq 0 ] && echo "V3.01 PASS" || echo "V3.01 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.02 Regression — Client Identity Literals and Guarantees Naming Their Entry Point (M-130, M-131)
+
+The external audit found a checkout page that passed `userId="user-123"` to its selectors, and an idempotency claim
+whose verification bypassed the backend route. Canonical anchors: Client identity comes from the session (M-130); A
+guarantee names the entry point it exercised (M-131). The detectors are in `workflows/output-compliance.md`; this
+section extracts them, runs the defective and compliant fixtures in a temporary directory outside the repository, and
+removes the fixtures.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+need() {
+  grep -qF -- "$2" "$root/$1" || { echo "FAIL V3.02: $1 does not carry $3"; failures=1; }
+}
+
+need AGENTS.md 'Client identity comes from the session (M-130)' "the canonical M-130 wording"
+need AGENTS.md 'A guarantee names the entry point it exercised (M-131)' "the canonical M-131 wording"
+need references/mandatory-rules.md '| M-130 |' "the M-130 registry row"
+need references/mandatory-rules.md '| M-131 |' "the M-131 registry row"
+need references/system-workflow-regression-matrix.md '| R-207 |' "the R-207 regression row"
+need references/system-workflow-regression-matrix.md '| R-208 |' "the R-208 regression row"
+need workflows/output-compliance.md '### CLIENT-ID-001 — Client code carries no literal identity (M-130)' "the CLIENT-ID-001 section"
+need workflows/output-compliance.md '### GUARANTEE-001 — A guarantee claim names its entry point and its test (M-131)' "the GUARANTEE-001 section"
+need workflows/output-compliance.md 'client_identity_literal_check . $src' "the sweep call of CLIENT-ID-001"
+need workflows/output-compliance.md 'guarantee_entry_check . $mds' "the sweep call of GUARANTEE-001"
+need workflows/output-compliance.md '| `CLIENT-ID-001` |' "the CLIENT-ID-001 coverage row"
+need workflows/output-compliance.md '| `GUARANTEE-001` |' "the GUARANTEE-001 coverage row"
+need agents/external-auditor.md 'GUARANTEE-001' "the auditor run of GUARANTEE-001 before delivery"
+need workflows/code-audit.md 'CLIENT-ID-001' "the code-audit run of CLIENT-ID-001 before delivery"
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v302.XXXXXX")"
+oc="$root/workflows/output-compliance.md"
+for fn in client_identity_literal_check guarantee_entry_check; do
+  sed -n "/^$fn() {/,/^}/p" "$oc" > "$fx/$fn.sh"
+  [ -s "$fx/$fn.sh" ] || { echo "FAIL V3.02: $fn is not extractable from workflows/output-compliance.md"; failures=1; }
+done
+cat "$fx"/*.sh > "$fx/detectors.sh"
+
+# CLIENT-ID-001: a literal identity fails; the session-read twin and a test path do not.
+c="$fx/client"; mkdir -p "$c/src" "$c/src/__tests__"
+printf 'export const Page = () => <Selector userId="user-123" />\n' > "$c/src/checkout.tsx"
+printf 'export const Page = () => { const { userId } = useSession(); return <Selector userId={userId} /> }\n' > "$c/src/checkout-twin.tsx"
+printf 'const fixture = { userId: "user-123" }\n' > "$c/src/__tests__/checkout.tsx"
+gotc="$( . "$fx/detectors.sh"; client_identity_literal_check "$c" src/checkout.tsx src/checkout-twin.tsx src/__tests__/checkout.tsx )"
+printf '%s\n' "$gotc" | grep -qF 'FAIL CLIENT-ID-001: src/checkout.tsx:1:' \
+  || { echo "FAIL V3.02: CLIENT-ID-001 does not fail the literal identity: $gotc"; failures=1; }
+printf '%s\n' "$gotc" | grep -q 'checkout-twin.tsx' \
+  && { echo "FAIL V3.02: CLIENT-ID-001 reports the session-read twin: $gotc"; failures=1; }
+printf '%s\n' "$gotc" | grep -q '__tests__' \
+  && { echo "FAIL V3.02: CLIENT-ID-001 reports a test fixture: $gotc"; failures=1; }
+
+# GUARANTEE-001: an idempotency claim with no entry point fails; the claim that names the route and its test does not.
+g="$fx/guarantee"; mkdir -p "$g"
+printf '# Charges\n\nThe charge is idempotent. Verified in `src/lib/charge.test.ts`.\n' > "$g/bad.md"
+printf '# Charges\n\nThe charge is idempotent. The entry point POST /api/payments/charges is exercised by `src/api/charge.test.ts`, which goes through the real route.\n' > "$g/good.md"
+gotg="$( . "$fx/detectors.sh"; guarantee_entry_check "$g" bad.md good.md )"
+printf '%s\n' "$gotg" | grep -qF 'NOT VERIFIED GUARANTEE-001: bad.md:3:' \
+  || { echo "FAIL V3.02: GUARANTEE-001 does not hold the claim with no entry point: $gotg"; failures=1; }
+printf '%s\n' "$gotg" | grep -q 'good.md' \
+  && { echo "FAIL V3.02: GUARANTEE-001 holds the twin that names its entry point and test: $gotg"; failures=1; }
+
+rm -rf "$fx"
+echo "V3.02 behavioral fixtures removed"
+[ "$failures" -eq 0 ] && echo "V3.02 PASS" || echo "V3.02 FAIL"
 [ "$failures" -eq 0 ]
 ```

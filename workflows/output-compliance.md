@@ -1312,6 +1312,11 @@ project_safety_sweep() {
   claim_check . $mds $src
   gate_claim_check . $mds
   comment_claim_check . $src
+  comment_name_check . $src
+  client_identity_literal_check . $src
+  guarantee_entry_check . $mds
+  git_claim_check . "${BASE:-main}" $mds
+  consistency_check . $mds
   error_model_check . $src
   error_outcome_check . $src -- $tests -- $contracts
   entry_point_check . $src -- $tests
@@ -3271,7 +3276,7 @@ find src -type f \( -name '*_test.rs' -o -name '*_tests.rs' \) |
 # Java, Kotlin: a test under the production source root
 find src/main -type f \
   \( -name '*Test.java' -o -name '*Tests.java' -o -name '*Test.kt' \) |
-  sed 's/^/  FAIL test under src/main: /'
+  sed 's#^#  FAIL test under src/main: #'
 
 # C#/.NET and PHP: a test under the production source root
 find src -type f \( -name '*Tests.cs' -o -name '*Test.php' \) \
@@ -4119,9 +4124,13 @@ ws_root_check() {
    the change set and the project sweep. Every surviving occurrence is a finding
    with its `file:line`, so a correction in a test or a contract is not complete
    while a source comment still states the old claim (M-75, M-68).
-6. Review each match against the allowed reasons before reporting it.
+6. Review each match against the allowed reasons before reporting it. A match
+   labelled pre-existing is passed to `origin_check` with the base revision, and the
+   label stands only when the base revision holds the line (`ORIGIN-001`, M-126).
 7. Report every finding with `file:line`, the rule id, the severity, and the
-   concrete fix.
+   concrete fix. Audit memory (M-125) decides only whether an unchanged unit is
+   reused: the rules of this file still run on every unit that is not reused.
+   The reuse is never applied to a cross-unit criterion.
 
 ### Coverage table
 
@@ -4191,6 +4200,12 @@ ws_root_check() {
 | `COMMIT-001` | each proposed commit group, from `workflows/commit.md` Phase 11 | a commit group is proposed |
 | `BOUND-001` | changed source files that declare a bound, and the test files | a changed source declares a timeout, a busy or lock wait, a deadline, or a retry budget |
 | `COMMENT-001` | changed TypeScript or JavaScript files | a changed file contains a comment |
+| `COMMENT-001` (names) | changed source files; `comment_name_check` | a changed comment names a header such as `x-user-id` (M-129) |
+| `GIT-001` | documents in the change set and the sweep; `git_claim_check` takes the base | a document cites a commit, a branch, or an uncommitted state (M-127) |
+| `CONSIST-001` | documents in the change set and the sweep | a document states the same count more than once (M-128) |
+| `CLIENT-ID-001` | changed client source files; `client_identity_literal_check` | a changed client file carries a literal identity (M-130) |
+| `GUARANTEE-001` | documents in the change set and the sweep; `guarantee_entry_check` | a document states a guarantee (idempotency, a single charge) (M-131) |
+| `ORIGIN-001` | every finding a report labels pre-existing; `origin_check` takes the base | a finding is labelled pre-existing, or the base is needed to prove it (M-126) |
 | `DEC-002` | decision records and contract documents, every line with a citation | a record or contract document is in the change set (R-136, R-145) |
 | `DEL-001` | source files in the change set and the sweep | a source file removes a path recursively or overwrites a supplied path (M-103) |
 | `PARSE-001` | source files in the change set and the sweep | a source file assigns the result of `JSON.parse(` (M-104) |
@@ -4202,6 +4217,247 @@ ws_root_check() {
 | `GATE-001` | installation proposals | a dependency or tooling installation is proposed |
 | `PKG-DTS-001`, `PKG-PEER-001`, `VERIFY-GEN-001`, `WS-ROOT-001` | publishable manifests, their tsconfig and `src` files, the CI workflows, and the Next.js configs of a workspace, in the change set and the sweep | a manifest, tsconfig, source, workflow, or build config is created or modified (M-121) |
 | Whole-project sweep | project, health probe | the health probe runs; the sweep is not a change-set check |
+
+### ORIGIN-001 — A finding is pre-existing only when the base revision holds it (M-126)
+
+Canonical rule: Origin of a finding (M-126).
+
+M-126: a finding is labelled pre-existing only when the base revision already holds the
+same line, and the proof is the base revision itself, never the author's memory or a
+label in a report. The check reads each finding (`FAIL` or `NOT VERIFIED` with
+`file:line`) and counts the trimmed text of that line in the working tree and in the
+base revision. When the working tree holds more copies than the base revision, the line
+is **introduced by the change set**, and it is a `FAIL` that blocks the task; the
+label `pre-existing` is a `FAIL` of this rule. When the base revision holds at least as
+many copies, the finding is pre-existing and does not block an unrelated task. A base
+revision that does not resolve is `NOT VERIFIED`, never pre-existing.
+
+The FS-09 external audit labelled `ALTER TABLE orders ADD COLUMN tenant_id` as a
+pre-existing pattern. `ORIGIN-001` decides it from the base revision, not from the label.
+
+```sh
+# $1 = repository root; $2 = base revision. Reads the detector output on stdin, one
+# "FAIL|NOT VERIFIED <RULE>: <file>:<line>: ..." line per finding.
+origin_check() {
+  root="$1"; base="$2"
+  while IFS= read -r hit; do
+    loc="$(printf '%s\n' "$hit" | sed -n 's/^[^:]*: \([^:]*\):\([0-9][0-9]*\):.*/\1 \2/p')"
+    [ -n "$loc" ] || continue
+    file="${loc% *}"; ln="${loc##* }"
+    if ! git -C "$root" rev-parse --verify --quiet "$base^{commit}" >/dev/null 2>&1; then
+      echo "NOT VERIFIED ORIGIN-001: $file:$ln: base revision $base does not resolve; the origin of the finding is not proven (M-126)"
+      continue
+    fi
+    text="$(sed -n "${ln}p" "$root/$file" 2>/dev/null | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    if [ -z "$text" ]; then
+      echo "NOT VERIFIED ORIGIN-001: $file:$ln: the line is empty or unreadable; the origin is not proven (M-126)"
+      continue
+    fi
+    now="$(grep -cF -- "$text" "$root/$file" 2>/dev/null || true)"
+    before="$(git -C "$root" show "$base:$file" 2>/dev/null | grep -cF -- "$text" || true)"
+    if [ "${before:-0}" -ge "${now:-0}" ]; then
+      echo "PREEXISTING ORIGIN-001: $file:$ln: the base revision holds this line ($before of $now copies); it does not block the task (M-126)"
+    else
+      echo "FAIL ORIGIN-001: $file:$ln: introduced by the change set (absent from $base: $before of $now copies); it blocks the task (M-126)"
+    fi
+  done
+}
+```
+
+### GIT-001 — A git-state claim in a document matches git (M-127)
+
+Canonical rule: Git claims are verified (M-127).
+
+M-127: a document that states a commit, a branch, or an uncommitted state is checked
+against the repository, and the claim is kept only when git confirms it. Three claims
+are read, each within two lines of its context:
+
+- a commit cited in backticks, or after the word `commit`, must resolve
+  (`git cat-file -e`); a commit that does not resolve is a `FAIL`;
+- a branch cited with a `type/name` form (`fs/FS-11-bff`) must exist, and a commit
+  cited with it must be an ancestor of that branch (`git merge-base --is-ancestor`);
+  a commit that is not on the cited branch is a `FAIL`;
+- a claim of uncommitted or "sin commit" work about a branch is a `FAIL` when that
+  branch holds commits beyond the base revision (`git rev-list --count base..branch`).
+
+A claim whose repository or branch cannot be read is `NOT VERIFIED`. A claim about a
+test count at a revision is `NOT VERIFIED` until the run at that revision is cited.
+
+```sh
+# $1 = repository root; $2 = base revision; $3... = documents, relative to the root.
+git_claim_check() {
+  root="$1"; base="$2"; shift 2
+  git -C "$root" rev-parse --git-dir >/dev/null 2>&1 || { echo "NOT VERIFIED GIT-001: $root is not a git repository; the git claims are not verified (M-127)"; return 0; }
+  for f in "$@"; do
+    case "$f" in *.md) ;; *) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    awk '{ n++; L[n] = $0 } END { for (i = 1; i <= n; i++) { w = ""; for (j = i - 2; j <= i + 2; j++) if (j >= 1 && j <= n) w = w " " L[j]; print i "\t" w } }' "$root/$f" |
+    while IFS="$(printf '\t')" read -r ln win; do
+      commits="$(printf '%s\n' "$win" | grep -oE '(`[0-9a-f]{7,40}`|commit [0-9a-f]{7,40})' | grep -oE '[0-9a-f]{7,40}' | grep -E '[0-9]' | grep -E '[a-f]' | sort -u)"
+      branches="$(printf '%s\n' "$win" | grep -oE '(fs|feat|fix|feature|chore|docs|refactor)/[A-Za-z0-9._/-]+' | sed 's/[.,;:)]*$//' | sort -u)"
+      for c in $commits; do
+        git -C "$root" cat-file -e "$c^{commit}" 2>/dev/null || echo "FAIL GIT-001: $f:$ln: the cited commit $c does not resolve in the repository (M-127)"
+      done
+      for b in $branches; do
+        if ! git -C "$root" rev-parse --verify --quiet "refs/heads/$b" >/dev/null 2>&1; then
+          echo "FAIL GIT-001: $f:$ln: the cited branch $b does not exist (M-127)"; continue
+        fi
+        for c in $commits; do
+          git -C "$root" cat-file -e "$c^{commit}" 2>/dev/null || continue
+          git -C "$root" merge-base --is-ancestor "$c" "$b" 2>/dev/null || echo "FAIL GIT-001: $f:$ln: the commit $c is not on the cited branch $b (M-127)"
+        done
+        if printf '%s\n' "$win" | grep -qiE 'sin commit|sin confirmar|uncommitted|without (a )?commit|no commit|not committed'; then
+          ahead="$(git -C "$root" rev-list --count "$base..$b" 2>/dev/null || echo 0)"
+          [ "${ahead:-0}" -gt 0 ] && echo "FAIL GIT-001: $f:$ln: the claim says uncommitted work on $b, but $b holds $ahead commit(s) beyond $base (M-127)"
+        fi
+      done
+    done
+  done
+}
+```
+
+### CONSIST-001 — A count repeated in one document has one value (M-128)
+
+Canonical rule: One value per quantity in a document (M-128).
+
+M-128: a quantity stated more than once in one document, for the same noun, has one
+value. A document that says `440 tests` in one place and `465 tests` in another is a
+`FAIL` of each conflicting line, with the first line that stated the value. A conflict
+is `NOT VERIFIED`, not a `FAIL`, when the document states the definition that separates
+the two counts within three lines (`definición`, `definition`, `alcance`, `scope`,
+`excluye`, `excludes`, `incluye`, `includes`): the author must name the set.
+
+```sh
+# $1 = repository root; $2... = documents, relative to the root.
+consistency_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.md) ;; *) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    awk -v f="$f" '
+      { n++; L[n] = tolower($0) }
+      END {
+        re = "[0-9]+ (tests|test|archivos|files|contextos|contexts|dimensiones|dimensions|commits|casos|cases)"
+        k = 0
+        for (i = 1; i <= n; i++) {
+          rest = L[i]
+          while (match(rest, re)) {
+            tok = substr(rest, RSTART, RLENGTH); rest = substr(rest, RSTART + RLENGTH)
+            split(tok, p, " ")
+            k++; occN[k] = p[1]; occW[k] = p[2]; occL[k] = i
+          }
+        }
+        for (a = 1; a <= k; a++) {
+          if (!(occW[a] in first)) { first[occW[a]] = occN[a]; firstL[occW[a]] = occL[a]; continue }
+          if (first[occW[a]] == occN[a]) continue
+          def = 0
+          for (j = occL[a] - 3; j <= occL[a] + 3; j++)
+            if (j >= 1 && j <= n && L[j] ~ /definici|definition|alcance|scope|excluye|excludes|incluye|includes/) def = 1
+          tag = def ? "NOT VERIFIED" : "FAIL"
+          printf "%s CONSIST-001: %s:%d: \"%s %s\" conflicts with \"%s %s\" stated at line %d; state the set that separates them or correct the value (M-128)\n", tag, f, occL[a], occN[a], occW[a], first[occW[a]], occW[a], firstL[occW[a]]
+        }
+      }' "$root/$f"
+  done
+}
+```
+
+### COMMENT-001 — A comment that names a header or identifier matches the code (M-129)
+
+Canonical rule: A comment that names a header matches the code (M-129).
+
+M-129: a comment that names a header (`x-user-id`) is a claim that the code sends or reads
+that header. The check extracts each header token from every comment line of a changed
+source file and searches the non-test, non-comment code of the change set for it. A token
+that no such code carries is a `FAIL` with the comment's `file:line`, because the comment
+states a behavior the code does not have (the external audit found `x-user-id` stated in a
+tRPC client comment that sent no such header). Test files and comments do not count as
+code for this check.
+
+```sh
+# $1 = repository root; $2... = source files of the change set, relative to the root.
+comment_name_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.py|*.go|*.java|*.kt|*.cs|*.rb|*.php) ;; *) continue ;; esac
+    case "$f" in *test*|*spec*|*__tests__*) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    grep -nE '^[[:space:]]*(\*|//|/\*)' "$root/$f" 2>/dev/null | while IFS= read -r c; do
+      ln="${c%%:*}"; body="${c#*:}"
+      printf '%s\n' "$body" | grep -oiE 'x-[a-z0-9]+(-[a-z0-9]+)+' | tr 'A-Z' 'a-z' | sort -u | while IFS= read -r t; do
+        found=""
+        for g in "$@"; do
+          case "$g" in *test*|*spec*|*__tests__*) continue ;; esac
+          [ -f "$root/$g" ] || continue
+          if grep -iF -- "$t" "$root/$g" | grep -vqE '^[[:space:]]*(\*|//|/\*)'; then found=1; break; fi
+        done
+        [ -n "$found" ] || echo "FAIL COMMENT-001: $f:$ln: the comment names $t, which no non-test code of the change set carries; the comment or the code is wrong (M-129)"
+      done
+    done
+  done
+}
+```
+
+### CLIENT-ID-001 — Client code carries no literal identity (M-130)
+
+Canonical rule: Client identity comes from the session (M-130).
+
+M-130: a user, account, tenant, or owner identifier written as a literal in client code
+(`userId="user-123"`, `userId: 'u-1'`) is a `FAIL` with its line. The identity is read from
+the verified session. Test, mock, fixture, and story files are exempt, because a literal
+there is test data. The external audit found `userId="user-123"` passed to the selectors
+of a checkout page, which rejected every other session.
+
+```sh
+# $1 = repository root; $2... = source files of the change set, relative to the root.
+client_identity_literal_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.vue|*.svelte|*.dart|*.swift|*.kt) ;; *) continue ;; esac
+    case "$f" in *test*|*spec*|*__tests__*|*.stories.*|*mock*|*fixture*) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    grep -niE "(userid|user_id|accountid|tenantid|customerid|ownerid)[\"']?[[:space:]]*[:=][[:space:]]*[\"'][A-Za-z0-9_-]+[\"']" "$root/$f" 2>/dev/null |
+      sed "s#^#FAIL CLIENT-ID-001: $f:#; s#\$#  (identity literal in client code: take it from the verified session, M-130)#"
+  done
+}
+```
+
+### GUARANTEE-001 — A guarantee claim names its entry point and its test (M-131)
+
+Canonical rule: A guarantee names the entry point it exercised (M-131).
+
+M-131: a document that states a guarantee (idempotent, exactly once, a single charge, only
+once) is kept only when the same passage names the real entry point the verification went
+through and cites a test file that traverses it. The check reads three lines around each
+claim. A claim that lacks either part is `NOT VERIFIED` with its `file:line`, never a pass,
+because the detector cannot judge whether the test really crosses the boundary: the reviewer
+does, and the hop the test bypasses is named in the report. The external audit accepted an
+idempotency claim whose verification bypassed the backend route.
+
+```sh
+# $1 = repository root; $2... = documents, relative to the root.
+guarantee_entry_check() {
+  root="$1"; shift
+  for f in "$@"; do
+    case "$f" in *.md) ;; *) continue ;; esac
+    [ -f "$root/$f" ] || continue
+    awk -v f="$f" '
+      { n++; L[n] = tolower($0) }
+      END {
+        for (i = 1; i <= n; i++) {
+          if (L[i] !~ /idempoten|exactly[- ]once|cobro (único|unico)|single charge|only once|solo una vez/) continue
+          ep = 0; tr = 0
+          for (j = i - 3; j <= i + 3; j++) {
+            if (j < 1 || j > n) continue
+            if (L[j] ~ /entry point|punto de entrada|endpoint|route|ruta |invokes|se invoca|llamada a través|travers|atraviesa/) ep = 1
+            if (L[j] ~ /\.test\.|\.spec\.|_test\.|test_|tests\/|__tests__/) tr = 1
+          }
+          if (!(ep && tr))
+            printf "NOT VERIFIED GUARANTEE-001: %s:%d: the guarantee names no entry point or no test that traverses it; the hop the test bypasses is named (M-131)\n", f, i
+        }
+      }' "$root/$f"
+  done
+}
+```
 
 ## Reporting
 

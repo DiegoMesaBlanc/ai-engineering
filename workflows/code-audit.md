@@ -423,6 +423,7 @@ One of:
 ## Verdict Matrix Gate
 
 A verdict matrix is consistent with its own rules (M-80). Before this output is delivered, run `REPORT-001` (`workflows/output-compliance.md`) over every verdict matrix it carries, and correct each `FAIL` first. A `NOT VERIFIED` reason names a tool or environment limit, never an unexecuted review; a `PASS` never carries an open item; and a conclusion never claims a closure or a `PASS` verdict that a row leaves open.
+Before this output is delivered, also run the origin and report detectors on its findings and text: `ORIGIN-001` over every finding labelled pre-existing (M-126), `GIT-001` and `CONSIST-001` over the report text (M-127, M-128), `GUARANTEE-001` over every guarantee the report states (M-131), and `COMMENT-001` (names) and `CLIENT-ID-001` over the changed sources (M-129, M-130). A label of pre-existing, a git claim, a repeated count, or a guarantee stated without its entry point is never delivered on the auditor's word.
 
 ## Evidence Classes
 

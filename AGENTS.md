@@ -862,6 +862,38 @@ teams.
   `NOT VERIFIED`, or a repetition is never reusable, and a repetition invalidates
   every record of its criterion. The memory lives in the neutral store, is read
   and written only by the learning cycle, and never enters the repository.
+- **Origin of a finding (M-126).** A finding is labelled pre-existing only when
+  the base revision holds the same line, in at least as many copies as the
+  working tree. A line the change set introduces blocks the task, whatever its
+  label says. `ORIGIN-001` (`workflows/output-compliance.md`) decides the origin
+  from `git show <base>:<file>`, never from a label or a memory of the author.
+- **Git claims are verified (M-127).** A report that cites a commit, a branch,
+  or an uncommitted state keeps the claim only when git confirms it: the commit
+  resolves, the commit is an ancestor of the cited branch, and a branch that
+  holds commits beyond the base is never described as "sin commit". `GIT-001`
+  (`workflows/output-compliance.md`) reads these claims. A claim about a test
+  count at a revision is `NOT VERIFIED` until the run at that revision is cited.
+- **One value per quantity in a document (M-128).** A count stated more than
+  once in the same document, for the same noun, has one value, unless the
+  document names the set that separates the two counts. `CONSIST-001`
+  (`workflows/output-compliance.md`) reports each conflict with `file:line`.
+- **A comment that names a header matches the code (M-129).** A comment that
+  names a header, such as `x-user-id`, states a behavior of the code. A name
+  that no non-test code of the change set carries is a finding of that comment.
+  `COMMENT-001` (`workflows/output-compliance.md`) checks it.
+- **Client identity comes from the session (M-130).** Client code never carries
+  a literal user, account, tenant, or owner identifier, such as
+  `userId="user-123"`, into a selector, a transport, or a request. The identity
+  is read from the verified session. Test, mock, and fixture files are exempt.
+  `CLIENT-ID-001` (`workflows/output-compliance.md`) reports each literal with
+  `file:line`, and a literal left in a changed unit is a finding of that unit.
+- **A guarantee names the entry point it exercised (M-131).** A report that
+  says a guarantee holds (idempotency, a single charge, exactly-once, an
+  authorization decision) names the real entry point that the verification went
+  through and cites the test that traverses it. A verification that calls a
+  helper, an in-memory store, or an edge replacement instead of the real entry
+  point leaves the guarantee `NOT VERIFIED`, and the hop it bypasses is named.
+  `GUARANTEE-001` (`workflows/output-compliance.md`) reads these claims.
 - Every implementation task runs the learning cycle of
   `workflows/self-learning.md` before its commit proposal. The evaluation is
   mandatory in every task: the applicable learnings are checked, and the

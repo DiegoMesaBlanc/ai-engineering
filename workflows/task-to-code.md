@@ -732,7 +732,8 @@ real gap found in the system's own artifacts.
 2. **Audit.** Start `external-auditor` as a fresh subagent with the minimal
    contract in `agents/external-auditor.md` ("Learning-Cycle Invocation"):
    requirement, artifact root, scope, the IDs of the enforced checks to skip,
-   and the unit-local criteria already passed on unchanged content (M-125). The
+   and the unit-local criteria already passed on unchanged content (Audit memory
+   (M-125), `workflows/self-learning.md`). The
    scope sent to the auditor is the set of criteria that the Phase 12 gate did
    not verify with executable evidence, minus those two skips. A criterion is
    verified by the gate when its row in the "Evidence per criterion" table of
