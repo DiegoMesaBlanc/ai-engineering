@@ -55,6 +55,22 @@ have been verified.
   - avoid unrelated redesigns
   - reuse existing components when appropriate
 
+### replica
+
+- Source: https://github.com/Jakeschincariol/replica-skill (adapted)
+- Source directory: skills/replica/
+- License: MIT, Copyright (c) 2026 Jake Schincariol; attribution in SKILL.md
+- Status: INSTALLED (local adaptation; no upstream files or tools copied)
+- Scope: clean-room replication of a website or mobile app
+- Activation: cloning, replicating or matching an existing app from public
+  references
+- Constraints:
+  - public sources and the user's own account only
+  - no copied code, assets, copy or data from the original
+  - implementation through workflows/task-to-code.md, not a parallel sequence
+  - replica/ artifacts only inside the approved scope
+  - no dependency, deployment or rebrand without the required approval
+
 ### test-driven-development
 
 - Source: https://github.com/obra/superpowers

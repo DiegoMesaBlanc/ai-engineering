@@ -14,9 +14,14 @@ each external Skill used by the AI Engineering System.
 - License: Apache-2.0
 - License file: LICENSE.txt
 - Upstream commit: dbd4588f9e1033efb41dad4bef2f7947c8993d44
-- Revision verification: byte-identical match of SKILL.md and LICENSE.txt
-  against the recorded upstream revision, confirmed 2026-10-09.
-- Local modifications: none planned
+- Revision verification: SKILL.md and LICENSE.txt were recorded as a
+  byte-identical match against the upstream revision on 2026-10-09. That
+  record no longer holds for SKILL.md after the local addition below;
+  LICENSE.txt is unchanged.
+- Local modifications: added a pointer to the adapted reference
+  `references/visual-rhythm.md` in the design-principles section
+  (`skills/frontend-design/SKILL.md:32`, 2026-11-19). No upstream file was
+  copied; the added rules come from unslop under CC BY 4.0 (section 11).
 
 ## 2. Test-Driven Development
 
@@ -204,6 +209,46 @@ asset from them is in this repository, and nothing was installed.
   Evaluated and discarded. Its catalog of predefined styles is the templated
   look that `skills/frontend-design` rejects, and its CLI writes into provider
   folders. Nothing adopted.
+
+## 11. Unslop (adapted into a reference)
+
+- Name: unslop
+- Repository: https://github.com/heydamir/unslop
+- Integration mode: **adapted**. Selected rules are rewritten in
+  `skills/frontend-design/references/visual-rhythm.md`; no upstream file is
+  copied and nothing is installed.
+- License: CC BY 4.0, Damir Sokolovsky ([@heydamir](https://x.com/heydamir)).
+  Attribution, license URL, pinned commit and local changes are recorded in the
+  adapted file.
+- Upstream commit (pin): 620163eedb3529d9cd23a3994ed8d287d06f760d
+- Pin verification: 2026-11-19, `git ls-remote https://github.com/heydamir/unslop refs/heads/main` returned the pinned SHA.
+- Local file: skills/frontend-design/references/visual-rhythm.md
+- Local modifications: symmetry and rhythm redlines rewritten as stack-neutral
+  checks; ordered audit, direction and nine passes retained; scripts, story
+  video, image generation, numeric token tables and RTL rules removed (RTL is
+  owned by `skills/internationalization/SKILL.md`).
+- Update procedure: on request only; compare the pin with upstream head,
+  review changed rules against AGENTS.md, then update the file and this entry.
+
+## 12. Replica Skill (policy and artifact shapes adapted)
+
+- Name: replica-skill (used through `skills/replica/SKILL.md`)
+- Repository: https://github.com/Jakeschincariol/replica-skill
+- Integration mode: **adapted**. Policy and artifact shapes are rewritten in a
+  local Skill; no upstream file, Python tool or template is copied. The
+  upstream pack is optional and is not installed by this system.
+- License: MIT, Copyright (c) 2026 Jake Schincariol (upstream LICENSE at the
+  pinned commit). No license copy is needed here because no upstream file is
+  redistributed; attribution is in SKILL.md.
+- Upstream commit (pin): 77c9436fb3d18c3d58169efb8caf4fe906b0dc51
+- Pin verification: 2026-11-19, `git ls-remote https://github.com/Jakeschincariol/replica-skill refs/heads/main` returned the pinned SHA.
+- Local file: skills/replica/SKILL.md
+- Local modifications: clean-room rules, recon map, feature matrix, per-screen
+  definition of done and parity procedure rewritten to fit the canonical
+  `workflows/task-to-code.md` and this system's approval gates. The upstream
+  business, deployment and Python-tool skills were not adopted.
+- Update procedure: on request only; same comparison and conflict review as
+  the other registered sources.
 
 ## Not Imported from This Repository
 
