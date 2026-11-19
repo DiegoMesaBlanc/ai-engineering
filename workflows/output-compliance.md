@@ -34,21 +34,67 @@ reason to convert it inside this task. A wholesale reformat that makes
 pre-existing lines appear as additions does not change that — the base
 revision decides.
 
-**Detection** — added lines of the change set only:
+**Detection** — every `function` keyword in the changed `.ts`, `.tsx`, `.js`, `.jsx`, `.mts`, `.cts`, `.mjs`, and `.cjs` files, expressions and
+generators included (`function*`, `function (`, `function name`), read from
+the working tree, with comment lines skipped:
 
 ```sh
-git diff -U0 --diff-filter=ACM "$BASE" -- \
-    '*.ts' '*.tsx' '*.js' '*.jsx' '*.mts' '*.cts' |
-  grep -E '^\+' | grep -v '^+++' | sed 's/^+//' |
-  grep -nE '(^|[[:space:]])(export[[:space:]]+)?(default[[:space:]]+)?(async[[:space:]]+)?function[[:space:]]+[A-Za-z_$]'
+# $1 = base revision; each finding is then checked against $1 with ORIGIN-001.
+# Time bound for a git process: perl alarm, GIT_TIMEOUT_SECONDS (default 60 s). V3.05 asserts the bound with a
+# dependency that never resolves: the call ends in a terminal state and the dependency's completion marker is absent.
+bounded() {
+  perl -e 'alarm shift; exec @ARGV or die "exec: $!"' "${GIT_TIMEOUT_SECONDS:-60}" "$@"
+}
+
+func001_scan() {
+  base="$1"
+  # Learning-cycle audit: a base that does not resolve is NOT VERIFIED (A-7 FUNC-001), never an empty pass.
+  bounded git rev-parse --verify -q "$base^{commit}" >/dev/null 2>&1 ||
+    { echo "NOT VERIFIED FUNC-001: base $base does not resolve; pass the base revision of the change (M-132)"; return 0; }
+  # Tracked and untracked files are both in the change set: a new file is untracked until it is staged.
+  { bounded git diff --name-only --diff-filter=ACM "$base" -- \
+        '*.ts' '*.tsx' '*.js' '*.jsx' '*.mts' '*.cts' '*.mjs' '*.cjs';
+    bounded git ls-files --others --exclude-standard -- \
+        '*.ts' '*.tsx' '*.js' '*.jsx' '*.mts' '*.cts' '*.mjs' '*.cjs'; } |
+  sort -u |
+  while IFS= read -r f; do
+    [ -f "$f" ] || continue
+    awk -v file="$f" '
+      # String and template literals are removed before matching, so the word "function" inside a message is
+      # not a keyword. The keyword is searched in the code part of a line only, and the reason is read from a
+      # comment on the same line or on one of the two lines above (learning-cycle audit, FUNC-001).
+      function bare(x) { gsub(/"[^"]*"|\047[^\047]*\047|`[^`]*`/, "", x); return x }
+      {
+        line = bare($0); cmt = ""
+        if (match(line, /\/\/.*$/)) { cmt = substr(line, RSTART + 2); line = substr(line, 1, RSTART - 1) }
+        while (match(line, /\/\*[^*]*\*\//)) {
+          cmt = cmt " " substr(line, RSTART + 2, RLENGTH - 4)
+          line = substr(line, 1, RSTART - 1) substr(line, RSTART + RLENGTH)
+        }
+        if (line ~ /^[[:space:]]*(\/\/|\/\*|\*)/ || line ~ /^[[:space:]]*$/) {
+          if (line ~ /^[[:space:]]*$/ && cmt == "") { c2 = c1; c1 = ""; next }
+          c2 = c1; c1 = cmt; next
+        }
+        if (line ~ /(^|[^A-Za-z0-9_$.])function(\*[[:space:]]*[A-Za-z_$]*[[:space:]]*\(|[[:space:]]*\(|[[:space:]]+[A-Za-z_$])/) {
+          reasonRE = "(generator|generador|recursion|recursive|binds this|this binding|uses arguments|arguments object|new\\.target)"
+          reason = (cmt ~ reasonRE) || (c1 ~ reasonRE) || (c2 ~ reasonRE)
+          if (!reason)
+            printf "FAIL FUNC-001: %s:%d: function keyword with no comment stating its allowed reason (generator, recursion, this, arguments, new.target); ORIGIN-001 decides pre-existing\n", file, NR
+        }
+        c2 = c1; c1 = cmt
+      }' "$f"
+  done
+}
 ```
 
-The pattern does not match `function*`, so generators are not flagged.
-Each added declaration is then reviewed: if an equivalent declaration exists
-in `$BASE`, it is pre-existing and becomes a finding; otherwise it is
-reviewed for the allowed reasons. A new declaration without a legitimate
-reason is `FAIL` (P3). A declaration with a legitimate reason is `PASS` with
-the reason recorded.
+The reason comment may sit on the same line or within the two lines above
+the keyword (the IIFE generator of the external audit A-7 had none, so the
+previous pattern, which did not match `function*` and `function (`, missed
+it). Each added declaration is then reviewed: if an equivalent declaration
+exists in `$BASE`, it is pre-existing and becomes a finding; otherwise it is
+reviewed for the allowed reasons. A new declaration or expression without a
+legitimate reason is `FAIL` (P3). A declaration with a legitimate reason is
+`PASS` with the reason recorded.
 
 ### TYPE-001 — No file mixes type declarations and runtime behavior
 
@@ -124,7 +170,7 @@ type001_scan() {
       # For each candidate file, check whether it also contains runtime behavior.
       # Comment lines (JSDoc, line and block comments) are not code and are skipped.
       # A match is a FAIL (P2), so the verdict line starts with FAIL.
-      grep -nE '(^|[[:space:]])(export[[:space:]]+)?(default[[:space:]]+)?(async[[:space:]]+)?function[[:space:]]+[A-Za-z_$]|(^|[[:space:]])(export[[:space:]]+)?(const|let|var)[[:space:]]+[A-Za-z_$][A-Za-z0-9_$]*[[:space:]]*=|(^|[[:space:]])(export[[:space:]]+)?(abstract[[:space:]]+)?class[[:space:]]+[A-Za-z_$]' \
+      grep -nE '(^|[[:space:]])(export[[:space:]]+)?(default[[:space:]]+)?(async[[:space:]]+)?function[[:space:]]+[A-Za-z_$]|(^|[[:space:]])(export[[:space:]]+)?(const|let|var)[[:space:]]+[A-Za-z_$][A-Za-z0-9_$]*[[:space:]]*(:[^=]*)?=|(^|[[:space:]])(export[[:space:]]+)?(abstract[[:space:]]+)?class[[:space:]]+[A-Za-z_$]' \
         "$candidate" |
         grep -vE '^[0-9]+:[[:space:]]*(\*|//|/\*)' |
         grep -vE 'as[[:space:]]+const|z\.(object|string|number|boolean|array|enum|union|discriminatedUnion|literal|record)\(|Joi\.object|yup\.object' |
@@ -1315,7 +1361,7 @@ project_safety_sweep() {
   mds=$(printf '%s\n' "$files" | grep -E '\.md$')
   decisions=$(printf '%s\n' "$files" | grep -E '(^|/)docs/decisions/.*\.md$')
   catalogs=$(printf '%s\n' "$files" | grep -E '\.md$' | grep -iE '(^|/)catalog[^/]*\.md$')
-  contracts=$(printf '%s\n' "$files" | grep -E '\.md$' | grep -iE 'contract|contrato|api|error|docs/')
+  contracts=$(printf '%s\n' "$files" | grep -E '\.md$' | grep -iE 'contract|contrato|api|error|docs/|readme|usage')
   workflows=$(printf '%s\n' "$files" | grep -E '\.(ya?ml)$')
   migrations=$(printf '%s\n' "$files" | grep -E '(^|/)(migrations?|db/migrate)/')
   tests=$(printf '%s\n' "$files" | grep -E '(\.test\.|\.spec\.|(^|/)(tests?|__tests__)/)')
@@ -1362,6 +1408,21 @@ project_safety_sweep() {
   error_model_check . $src
   error_outcome_check . $src -- $tests -- $contracts
   entry_point_check . $src -- $tests
+  runtime_floor_check . $src
+  decision_deviation_check . $decisions
+  for d in $decisions; do decision_field_check . "$d"; done
+  for d in $decisions; do
+    paths="$(grep -oE '`[^`]+`' "$d" | tr -d '`' |
+        grep -E '^[A-Za-z0-9_./-]+\.(ts|tsx|js|jsx|mjs|cjs|md|sql|ya?ml|sh)$' | sort -u)"
+    if [ -z "$paths" ]; then decision_order_check . "$d" ""; fi
+    for p in $paths; do decision_order_check . "$d" "$p"; done
+  done
+  # FUNC-001 and TYPE-001 are run by the sweep, not only standalone (learning-cycle audit).
+  func001_scan "${BASE:-main}"
+  changed_paths="$src" type001_scan
+  for g in $(if [ -n "$mds" ]; then grep -l '\.\./' $mds 2>/dev/null; fi | grep -E '(^|/)guias/|guide|scenario'); do
+    fixture_deviation_check . "$g" "${REPORT:-}"
+  done
   validation_order_check . $src
   read_transaction_check . $src
   db_runtime_ddl_check . $src
@@ -1856,7 +1917,9 @@ error_outcome_check() {
   # Limit: an exit list written as "Exit codes: 0 …, 1 …, 2 …" is read for its first code only.
   printf '%s' "$docs" | while IFS= read -r d; do
     [ -n "$d" ] && [ -f "$root/$d" ] || continue
-    grep -noE '(exit[a-z]*( code[s]?)?:? *[0-9]+|sale con [0-9]+|salir con [0-9]+|exits? [0-9]+)' "$root/$d" |
+    # A-4 (external audit): the match is case-insensitive and reads the Spanish forms, so "Exit codes: 1"
+    # and "Código de salida 1" are documented outcomes, not silently skipped.
+    grep -noiE '(exit[a-z]*( code[s]?)?:? *[0-9]+|c[^ ]{1,2}digos? de salida:? *[0-9]+|estado de salida:? *[0-9]+|sale con [0-9]+|salir con [0-9]+|exits? [0-9]+)' "$root/$d" |
     while IFS= read -r hit; do
       n="$(printf '%s' "$hit" | grep -oE '[0-9]+$')"
       [ -n "$n" ] || continue
@@ -1909,8 +1972,11 @@ entry_point_check() {
     [ -n "$f" ] && [ -f "$root/$f" ] || continue
     case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
     case "$f" in *.test.*|*.spec.*|*/test/*|*/tests/*|*__tests__*|*/testing/*) continue ;; esac
-    grep -qE 'process\.argv' "$root/$f" || continue
     base="$(basename "$f")"; base="${base%.*}"
+    # A-4 (external audit): an exit-status mapper (a file named for exit) sets codes for the
+    # entry point that calls it, so it is checked even when it does not read process.argv itself.
+    # A-4 (external audit): the name alone is not a signal; the file must be named for exit AND return a code literal.
+    grep -qE 'process\.argv' "$root/$f" || { case "$base" in *[Ee]xit*) ;; *) continue ;; esac; grep -qE 'return [0-9]+' "$root/$f" || continue; }
     invokers="$(printf '%s' "$tests" | while IFS= read -r t; do
       [ -n "$t" ] && [ -f "$root/$t" ] || continue
       grep -qE "['\"/]$base(\.[a-z]+)?['\"]" "$root/$t" && printf '%s\n' "$t"
@@ -1919,7 +1985,9 @@ entry_point_check() {
       echo "FAIL ENTRY-001: $f:1: an entry point that no test invokes through its real invocation (M-82)"
       continue
     fi
-    grep -qE 'process\.exit|exitCode *=' "$root/$f" || continue
+    # A-4 (external audit): a code returned by an exit-status mapper (`return 1` in a file named for
+    # exit or status) is a code the entry point sets, so the file is checked even with no process.exit.
+    grep -qE 'process\.exit|exitCode *=' "$root/$f" || { case "$base" in *[Ee]xit*) ;; *) continue ;; esac; grep -qE 'return [0-9]+' "$root/$f" || continue; }
     asserted="$(printf '%s\n' "$invokers" | while IFS= read -r t; do
       grep -lE 'exitCode|\.status|[Ee]xit' "$root/$t" 2>/dev/null
     done)"
@@ -1929,8 +1997,11 @@ entry_point_check() {
     # declares as EXIT_NAME = N (a returned constant reaches process.exit through a function). A test
     # asserts a code by its literal or by the constant's name, never by a test title.
     decl="$(grep -oE 'EXIT_[A-Z_]+ *= *[0-9]+' "$root/$f" | sed -E 's/ *= */=/')"
+    # A case statement is kept outside the command substitution: its `)` would close the `$(`.
+    retcodes=""
+    case "$base" in *[Ee]xit*) retcodes="$(grep -oE 'return [0-9]+' "$root/$f" | grep -oE '[0-9]+$')" ;; esac
     codes="$( { grep -oE '(process\.exit\(|exitCode *= *)[0-9]+' "$root/$f" | grep -oE '[0-9]+$';
-      printf '%s\n' "$decl" | grep -oE '[0-9]+$'; } | sort -u)"
+      printf '%s\n' "$decl" | grep -oE '[0-9]+$'; printf '%s\n' "$retcodes"; } | sed '/^$/d' | sort -u)"
     for n in $codes; do
       names="$(printf '%s\n' "$decl" | awk -F= -v n="$n" '$2 == n { print $1 }' | tr '\n' '|' | sed 's/|$//')"
       tok="(^|[^0-9])$n([^0-9]|\$)"
@@ -2564,15 +2635,27 @@ dip_concrete_check() {
 M-97: a document that cites an artifact (a benchmark result, a query plan, a log, a
 screenshot) is kept only when the artifact is in the repository. M-110: a cited path stays
 inside the repository and exists. A path that climbs with `../`, starts at `~/`, or is
-absolute (`/Users/`, `/home/`, `/private/`, `/var/`) is a `FAIL` wherever it appears, and a
-cited directory that is not in the repository is `NOT VERIFIED`, because a sibling layout
+absolute (`/Users/`, `/home/`, `/private/`, `/var/`) is a `FAIL` wherever it appears. A bare prefix with no name after it (`../`, `~/`, or an absolute prefix such as
+`/Users/`) names no file; a line that is a shell operand is code of a command, not a citation; a path
+led by a `$` variable is a runtime value, not a repository path; and a fenced code block is
+quoted code. None of them is a citation (learning-cycle audit; V3.05). A line is a shell
+operand when it begins with an assignment, a connector, a redirection, or a word of the
+fixed command vocabulary (`printf`, `grep`, `sed`, `git`, `sh`, and the other commands the
+check names), or when it redirects to a `$` path (stated limit). Prose that merely mentions
+a `$` path or a command is still read, so a climbing, home, or absolute citation in prose
+still fails. A cited directory that is not in the repository is `NOT VERIFIED`, because a sibling layout
 named by a convention is a claim about the layout, not a citation. The check reads each
 Markdown file and finds the paths it cites: a path with a directory and an artifact
 extension, or a file name in backticks with an artifact extension. A cited path that
 points outside the repository (an absolute path, or one that climbs with `..`) is a
 `FAIL`. A cited path that is not in the repository is `NOT VERIFIED`, because the claim
-that cites it cannot be checked, and an unverified claim blocks delivery (M-68). A line
-that holds a URL is not read, so a web address is never mistaken for a path.
+that cites it cannot be checked, and an unverified claim blocks delivery (M-68). A URL
+token is removed from the line before its paths are read, so a web address is never
+mistaken for a path while a citation on the same line still fails (V3.05; audit A-2). A
+relative citation is resolved from the repository root, so a Markdown link that climbs to
+a sibling file from a subfolder is a known false-positive class and a reviewer decision.
+The same applies to a violating path quoted as an example by a rule or a fixture, and to a
+site-root path in web guidance such as the llms.txt proposal at a site root (stated limit).
 
 ```sh
 # $1 = repository root; $2... = documents, relative to it.
@@ -2582,24 +2665,44 @@ artifact_path_check() {
     case "$f" in *.md) ;; *) continue ;; esac
     [ -f "$root/$f" ] || continue
     awk '
-      /https?:\/\// { next }
+      {
+        # A URL is not a repository citation, but a real citation on the same line still is: strip only the URL
+        # token and read the remainder (V3.05; audit A-2).
+        gsub(/https?:\/\/[^[:space:]]+/, " ")
+        # A fenced code block is quoted code, not a claim of the document (V3.05); neither it nor its markers are read.
+        if ($0 ~ /^[ \t]*```/) { incode = !incode; next }
+        if (incode) next
+        # M-110 decision (learning-cycle audit; V3.05): a line that is a shell operand is code, not a claim: it
+        # begins with an assignment, a connector, a redirection, or a command word of the fixed vocabulary below,
+        # or it redirects to a `$` path. Prose that merely mentions a `$` path or a command is still read, so a
+        # citation in prose still fails. The vocabulary is a stated limit.
+        shell_op = ($0 ~ /^[ \t]*[A-Za-z_][A-Za-z0-9_]*=/ || $0 ~ /^[ \t]*(\|\||&&|[<>])/ || $0 ~ /[<>] *"?\$/ ||
+          $0 ~ /^[ \t]*(\[|:|\.|if|then|else|elif|fi|for|while|until|do|done|case|esac|function|return|exit|set|export|unset|local|declare|readonly|trap|source|eval|exec|shift|read|cd|echo|printf|cat|grep|sed|awk|find|xargs|sort|uniq|head|tail|tr|cut|wc|mkdir|cp|mv|rm|ln|chmod|chown|touch|test|curl|wget|tar|unzip|git|sh|bash|zsh|node|npm|npx|pnpm|yarn|bun|go|cargo|make|python|python3|pip|ruff|prettier|eslint|tsc|jest|vitest|pytest|docker|kubectl|terraform|gh|date|sleep|basename|dirname|mktemp|command|which|type|true|false|sudo|env|time)([ \t]|$)/)
+      }
+      shell_op { next }
       {
         s = $0
         while (match(s, /`[A-Za-z0-9_.-]+\.(json|txt|csv|png|jpe?g|pdf|log|svg|html|xml|ya?ml)`|[A-Za-z0-9_.\/-]*\/[A-Za-z0-9_.\/-]+\.(json|txt|csv|png|jpe?g|pdf|log|svg|html|xml|ya?ml)/)) {
           tok = substr(s, RSTART, RLENGTH); gsub(/`/, "", tok)
-          print NR "\tART\t" tok
+          # A path led by a `$` variable is a runtime operand, not a repository citation (M-110).
+          pre = (RSTART > 1) ? substr(s, RSTART - 1, 1) : ""
+          if (!(pre == "$" || (pre == "}" && substr(s, 1, RSTART - 1) ~ /\$\{[A-Za-z_][A-Za-z0-9_]*\}$/))) print NR "\tART\t" tok
           s = substr(s, RSTART + RLENGTH)
         }
         s = $0
-        while (match(s, /\.\.\/[A-Za-z0-9_.\/@-]*|~\/[A-Za-z0-9_.\/@-]*|\/(Users|home|private|var|opt|etc|tmp|Volumes)\/[A-Za-z0-9_.\/@-]*/)) {
+        # A climbing or home prefix is a path only when a name follows it: a bare "../" or "~/" in prose names no file.
+        while (match(s, /(\.\.\/+)+[A-Za-z0-9_][A-Za-z0-9_.\/@-]*|~\/[A-Za-z0-9_][A-Za-z0-9_.\/@-]*|\/(Users|home|private|var|opt|etc|tmp|Volumes)\/[A-Za-z0-9_][A-Za-z0-9_.\/@-]*/)) {
           tok = substr(s, RSTART, RLENGTH)
+          # A sentence period or comma after the path is punctuation, never part of the token.
+          sub(/[.,;:!?]+$/, "", tok)
           if (tok !~ /\.(json|txt|csv|png|jpe?g|pdf|log|svg|html|xml|ya?ml)$/) print NR "\tESC\t" tok
           s = substr(s, RSTART + RLENGTH)
         }
         s = $0
         while (match(s, /`[A-Za-z0-9_.@-]+(\/[A-Za-z0-9_.@-]+)+\/?`/)) {
           tok = substr(s, RSTART, RLENGTH); gsub(/`/, "", tok)
-          if (tok !~ /\.\./ && (tok ~ /\/$/ || tok !~ /\/[^\/]*\./)) print NR "\tDIR\t" tok
+          pre = (RSTART > 1) ? substr(s, RSTART - 1, 1) : ""
+          if (tok !~ /\.\./ && (tok ~ /\/$/ || tok !~ /\/[^\/]*\./) && !(pre == "$" || (pre == "}" && substr(s, 1, RSTART - 1) ~ /\$\{[A-Za-z_][A-Za-z0-9_]*\}$/))) print NR "\tDIR\t" tok
           s = substr(s, RSTART + RLENGTH)
         }
       }' "$root/$f" |
@@ -3616,9 +3719,11 @@ parse_dereference_check() {
 M-107 and M-78. A unit with more than one reason to change violates SRP even when
 its record says `APPLIES`. The detector counts, for each non-test source file, the
 kinds of responsibility the file contains: argument parsing, exit status, output,
-file lifecycle, manifest or contract validation, and orchestration (an `await` or a
-`.then` chain). A file with three or more kinds is listed with its kinds and the
-line of the first one. The threshold is a candidate, not a verdict: the reviewer
+file lifecycle, manifest or contract validation, text parsing (character reads, a
+delimiter split, an index search, or a tokenizer; external audit A-5), row mapping (a map or reduce call),
+transport, encoding, decoding,
+classification, and orchestration (an `await` or a `.then` chain). A file with three or more
+kinds is listed with its kinds and the line of the first one. The threshold is a candidate, not a verdict: the reviewer
 confirms each listed unit, and a unit the reviewer accepts keeps its reason in the
 decision record. `srp_record_check` then requires the decision record to name every
 listed file, so an SRP row that covers only the folder that holds the unit is a
@@ -3640,6 +3745,12 @@ srp_unit_check() {
         kind("file lifecycle", "rmSync|mkdirSync|renameSync|copyFileSync|writeFileSync|unlinkSync|mkdtemp")
         kind("manifest or contract validation", "JSON\\.parse|\\.parse\\(|validate[A-Z][A-Za-z]*\\(|isRecord|safeParse")
         kind("orchestration", "await [A-Za-z_$.]+\\(|\\.then\\(")
+        # A-5 (external audit): a tokenizer that reads text character by character, or splits it by a
+        # delimiter, is a responsibility of its own; without this kind a CSV reader with a tokenizer,
+        # a validation call (validate*), and a row mapping in one file was not listed. A validator that is declared but
+        # never called is not counted (a stated limit).
+        kind("text parsing", "charAt\\(|charCodeAt\\(|tokeni[sz]|delimiter|split\\(|indexOf\\(")
+        kind("row mapping", "\\.map\\(|\\.reduce\\(|Object\\.fromEntries")
         # F-8 (external audit): transport, encoding, decoding, and error classification were not kinds, so a client
         # that joins them in one unit was not listed while its record claimed one responsibility (M-107).
         kind("transport", "fetch\\(|axios|XMLHttpRequest|https?\\.request|\\.request\\(|got\\(")
@@ -4147,6 +4258,177 @@ ws_root_check() {
 }
 ```
 
+### FLOOR-001, DEC-003, DEC-004, DEC-005, DEVIATION-001 — Runtime floor, contract deviations, decision order, and substituted paths (M-132), with contract field coverage
+
+M-132 (external audit A-1, A-2, A-3, A-8). Five checks, decided for this system. FLOOR-001, DEC-004, DEC-005, and
+DEVIATION-001 are mechanical; DEC-003 verifies the presence of the section; its trigger is a word list, so a record that uses a contract word
+without citing a file is a stated limit, and the reasoning of each field is a
+reviewer decision (a stated limit):
+
+- **FLOOR-001 (A-1).** A runtime API that a version of the runtime does not have is a `FAIL` when the
+  project's `engines.node` floor is below the version that adds it. The table lists each API with the
+  `major.minor` that adds it per major line, and its official source. FLOOR-001 checks the APIs the table
+  lists; it cannot enumerate every runtime API a program uses, so an API outside the table is a reviewer check
+  against the official documentation for the floor, stated in the report and never passed silently. A floor below the lowest listed major is a `FAIL`; a floor between listed majors is `NOT VERIFIED`;
+  a floor above the highest listed major is not judged by the table: the table records only the version that adds
+  the API, and the reviewer checks later majors against the official documentation. Entries are added only with an
+  official source. Initial entry: `import.meta.main` (Node documentation, Modules: ECMAScript modules,
+  "Added in: v24.2.0, v22.18.0"; stability 1.0).
+- **DEC-003 (A-2).** A decision record that cites a contract or source document must carry a `Deviations`
+  (or `Desviaciones`) section. The check verifies only that the section exists; the section must then list each
+  field the code does not match, with its file and line, or state that none differs. An empty section passes the
+  check and fails the reviewer, and that is recorded as a limit.
+- **DEC-005 (A-2, field coverage).** When a decision record cites a JSON contract that exists in the target
+  repository, every field name of that contract (the quoted keys that are not JSON Schema keywords) is named in
+  the record's Deviations section. The check covers the field names the document declares; it does not compare
+  values, and a field that exists only in the code is a reviewer decision (a stated limit). A cited contract
+  that is not in the repository is `NOT VERIFIED`, never a pass. A citation is read whether or not it is in backticks.
+  The keyword exclusion also skips a data field named `type`, `title`, `format`, `default`, or `description`; that is a
+  stated limit of the check.
+- **DEC-004 (A-3).** A record that claims its decision precedes the implementation is kept only when the
+  commit that introduces the record is a strict ancestor of the first commit that adds the code it governs.
+  Git order is evidence of introduction, not of authorship. The trigger is a fixed list of phrases, so an order
+  claim worded otherwise is a stated limit, not a verdict.
+- **DEVIATION-001 (A-8).** A guide that cites a path that climbs out of its folder with `../` and does not resolve
+  from its own location is a substitution. A path written without `../` is not read by this check (a stated limit). The sweep selects scenario guides by name (`guias/`, `guide`, `scenario`); a guide with another name is not selected (a stated limit). The report declares each substitution with the word `DEVIATION`, the guide path, and the path
+  used. A substitution the report does not declare is a `FAIL`. The guide is read-only evidence.
+
+```sh
+# FLOOR-001 table: pattern | major.minor that adds the API, per major line (ascending) | official source.
+runtime_api_floor_table() {
+  printf '%s\n' 'import\.meta\.main|22.18 24.2|https://nodejs.org/api/esm.html (import.meta.main: Added in v24.2.0, v22.18.0)'
+}
+
+# $1 = repository root; $2... = source files, relative to it. Reads engines.node from package.json.
+runtime_floor_check() {
+  root="$1"; shift
+  # The value is read whether package.json is written on one line or many (the JSON is joined first).
+  floor=""
+  [ -f "$root/package.json" ] &&
+    floor="$(tr -d '\n' < "$root/package.json" | sed -n 's/.*"engines"[^}]*"node"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+  if [ -z "$floor" ]; then
+    echo "NOT VERIFIED FLOOR-001: package.json declares no engines.node floor, so runtime API use is not verified (M-132)"
+    return 0
+  fi
+  fmaj="$(printf '%s' "$floor" | sed -nE 's/^[^0-9]*([0-9]+).*/\1/p')"
+  fmin="$(printf '%s' "$floor" | sed -nE 's/^[^0-9]*[0-9]+\.([0-9]+).*/\1/p')"
+  if [ -z "$fmaj" ]; then
+    echo "NOT VERIFIED FLOOR-001: engines.node '$floor' is not a version floor (M-132)"
+    return 0
+  fi
+  fver=$(( fmaj * 1000 + ${fmin:-0} ))
+  runtime_api_floor_table | while IFS='|' read -r pat mins src; do
+    for f in "$@"; do
+      [ -f "$root/$f" ] || continue
+      grep -nE "$pat" "$root/$f" 2>/dev/null | grep -vE '^[0-9]+:[[:space:]]*(\*|//|/\*)' |
+      while IFS= read -r hit; do
+        ln="${hit%%:*}"
+        v=""; found=""; lo=""; hi=""
+        for m in $mins; do
+          mj="${m%%.*}"; mn="${m#*.}"
+          [ -n "$lo" ] || lo="$mj"
+          hi="$mj"
+          if [ "$mj" = "$fmaj" ]; then
+            found=1
+            if [ "$fver" -ge $(( mj * 1000 + mn )) ]; then v=PASS; else v=FAIL; fi
+          fi
+        done
+        if [ -z "$found" ]; then
+          if [ "$fmaj" -lt "$lo" ]; then v=FAIL
+          elif [ "$fmaj" -gt "$hi" ]; then v=PASS
+          else v=NOT_VERIFIED; fi
+        fi
+        case "$v" in
+          FAIL) echo "FAIL FLOOR-001: $f:$ln: the engines floor $floor is below the version that adds this API ($mins; $src); raise the floor or use a native equivalent (M-132)" ;;
+          NOT_VERIFIED) echo "NOT VERIFIED FLOOR-001: $f:$ln: the engines floor $floor lies between listed majors ($mins); the reviewer checks the API for that line (M-132)" ;;
+        esac
+      done
+    done
+  done
+}
+
+# DEC-003: $1 = repository root; $2... = decision records, relative to it.
+decision_deviation_check() {
+  root="$1"; shift
+  for r in "$@"; do
+    [ -f "$root/$r" ] || continue
+    grep -qiE 'contract|contrato|source document|documento fuente|documento de origen|fuente' "$root/$r" ||
+      grep -qE '`[^`]+\.(json|ya?ml)`' "$root/$r" || continue
+    grep -qiE '^#+ .*(deviation|desviaci)' "$root/$r" && continue
+    echo "FAIL DEC-003: $r:1: the record cites a contract or source document and has no Deviations section; list each field that differs from the code, or state that none differs (M-132)"
+  done
+}
+
+# DEC-005 (A-2): every field name of a cited JSON contract that exists in the target is named in the record's
+# Deviations section. $1 = repository root; $2 = record, relative to it.
+decision_field_check() {
+  root="$1"; rec="$2"
+  refs="$(grep -oE '[A-Za-z0-9_./-]+\.json' "$root/$rec" 2>/dev/null | sort -u)"
+  [ -n "$refs" ] || return 0
+  section="$(awk 'tolower($0) ~ /^#+ .*(deviation|desviaci)/ { on = 1; next } on && /^#+ / { on = 0 } on' "$root/$rec")"
+  printf '%s\n' "$refs" | while IFS= read -r j; do
+    [ -n "$j" ] || continue
+    if [ ! -f "$root/$j" ]; then
+      echo "NOT VERIFIED DEC-005: $rec:1: the cited contract $j is not in the target repository; its field names are not verified (M-132)"
+      continue
+    fi
+    keys="$(grep -oE '"[A-Za-z_][A-Za-z0-9_.-]*"[[:space:]]*:' "$root/$j" | sed -E 's/"//g; s/[[:space:]]*://' |
+      grep -v '^[$]' | grep -vxE 'type|properties|required|items|description|title|enum|format|additionalProperties|default|examples|minLength|maxLength|minimum|maximum|exclusiveMinimum|exclusiveMaximum|multipleOf|uniqueItems|contains|dependentRequired|dependentSchemas|if|then|else|const|pattern|oneOf|anyOf|allOf|not|definitions|prefixItems|patternProperties' | sort -u)"
+    for k in $keys; do
+      ke="$(printf '%s' "$k" | sed 's/[].[*^$/\\]/\\&/g')"
+      printf '%s\n' "$section" | grep -qE -- "(^|[^A-Za-z0-9_-])$ke([^A-Za-z0-9_-]|\$)" ||
+        echo "FAIL DEC-005: $rec:1: field \"$k\" of $j is not named in the Deviations section (M-132)"
+    done
+  done
+}
+
+# DEC-004: $1 = repository root; $2 = record; $3 = code path the record governs. Relative to the root.
+decision_order_check() {
+  root="$1"; rec="$2"; code="$3"
+  grep -qiE 'antes de implementar|antes de la implementaci|previo a implementar|previa a la implementaci|anterior a la implementaci|precede[sd]? (a la |a |the |la )?implementaci|before implementing|before (any )?implementation|precede[sd]? (the )?implementation|prior to implementation|revisi[oó]n previa' "$root/$rec" 2>/dev/null || return 0
+  if [ -z "$code" ]; then
+    echo "NOT VERIFIED DEC-004: $rec:1: the record claims a decision order and names no governed path in backticks; the order claim is not verified (M-132)"
+    return 0
+  fi
+  if ! bounded git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "NOT VERIFIED DEC-004: $rec:1: the target is not a git repository; the commit order is not verified (M-132)"
+    return 0
+  fi
+  rc="$(bounded git -C "$root" log --reverse --diff-filter=A --format=%H -- "$rec" 2>/dev/null | head -1)"
+  ic="$(bounded git -C "$root" log --reverse --diff-filter=A --format=%H -- "$code" 2>/dev/null | head -1)"
+  if [ -z "$rc" ] || [ -z "$ic" ]; then
+    echo "NOT VERIFIED DEC-004: $rec:1: no introducing commit for the record or for $code; the order claim is not verified (M-132)"
+    return 0
+  fi
+  [ "$rc" != "$ic" ] && bounded git -C "$root" merge-base --is-ancestor "$rc" "$ic" && return 0
+  if [ "$rc" = "$ic" ]; then
+    echo "FAIL DEC-004: $rec:1: the record and $code enter the history in the same commit $(printf %.7s "$rc"); a decision claimed before the code needs an earlier commit (M-132)"
+  else
+    echo "FAIL DEC-004: $rec:1: the record claims it precedes the implementation, but its introducing commit $(printf %.7s "$rc") is not an ancestor of the first commit $(printf %.7s "$ic") that adds $code (M-132)"
+  fi
+}
+
+# DEVIATION-001: $1 = repository root; $2 = scenario guide; $3 = report. Both relative to the root.
+fixture_deviation_check() {
+  root="$1"; guide="$2"; report="${3:-}"
+  # A path ends on a letter, digit, underscore, or hyphen, so a sentence-final period is not read as part of a path.
+  grep -oE '(\.\./)+[A-Za-z0-9_/.-]*[A-Za-z0-9_-]' "$root/$guide" 2>/dev/null | sort -u | while IFS= read -r p; do
+    [ -e "$root/$(dirname "$guide")/$p" ] && continue
+    # No report named: the substitution is not declared anywhere, so the verdict is NOT VERIFIED, never a pass.
+    if [ -z "$report" ]; then
+      echo "NOT VERIFIED DEVIATION-001: $guide: the path $p does not resolve and no report is named for the check (M-132)"
+      continue
+    fi
+    # The DEVIATION line of the report names both the guide and the path it substituted.
+    pe="$(printf '%s' "$p" | sed 's/[].[*^$/\\]/\\&/g')"
+    if grep -F 'DEVIATION' "$root/$report" 2>/dev/null | grep -E -- "$pe([^A-Za-z0-9_/.-]|\\.([^A-Za-z0-9_/-]|\$)|\$)" | grep -qF -- "$guide"; then
+      continue
+    fi
+    echo "FAIL DEVIATION-001: $guide: the path $p does not resolve and the report $report has no DEVIATION line naming $guide and $p (M-132)"
+  done
+}
+```
+
 ## Procedure
 
 1. Resolve the target project root, the base revision, and the change set
@@ -4206,7 +4488,7 @@ ws_root_check() {
 | `ERR-001` | source files in the change set and the sweep; the typed-class search reads the whole project | a source file is created or modified in a project that declares a typed error class |
 | `ERR-002` | contract documents, source and test files in the sweep; the lowercase error branches (`kind`, `reason`, `errorKind`, `failure`) are read by the same function (M-118) | a project declares error codes in a contract document, or a source file names an error branch with a lowercase discriminant |
 | `ERR-003` | source files in the sweep, contract documents | a source file quotes an upper-snake error code |
-| `ENTRY-001` | source files and test files in the change set and the sweep | a source file reads `process.argv`; each exit code it sets is asserted (M-118) |
+| `ENTRY-001` | source files and test files in the change set and the sweep | a source file reads `process.argv`, or is named for exit and returns a code literal; each exit code it sets is asserted (M-118, M-132) |
 | `ERR-002` per site | source files and test files in the change set and the sweep | a code is emitted from several sites (M-118) |
 | `DELIVERY-001` | workflow YAML in the change set and the sweep | a workflow names an approval (M-114) |
 | `DELIVERY-002` | workflow YAML in the change set and the sweep | a workflow checks out a dispatched ref and deploys (M-116) |
@@ -4247,6 +4529,12 @@ ws_root_check() {
 | `CONSIST-001` | documents in the change set and the sweep | a document states the same count more than once (M-128) |
 | `CLIENT-ID-001` | changed client source files; `client_identity_literal_check` | a changed client file carries a literal identity (M-130) |
 | `GUARANTEE-001` | documents in the change set and the sweep; `guarantee_entry_check` | a document states a guarantee (idempotency, a single charge) (M-131) |
+| `CONVERGE-001` | `workflows/system-validation.md` fixture blocks and the sweep of `workflows/output-compliance.md`; `converge_calls_check` and `converge_trap_check` in V3.04 | a sweep call with an underscore name has no definition, or a fixture directory has no trap (M-133) |
+| `FLOOR-001` | source files in the change set and the sweep; `runtime_floor_check` with the target project's `engines.node` declaration | a source file uses an API of the runtime table and the `engines.node` floor is below the version that adds it (M-132) |
+| `DEC-003` | decision records in the change set and the sweep; `decision_deviation_check` | a record cites a contract or source document and has no Deviations section (M-132) |
+| `DEC-005` | decision records in the change set that cite a JSON contract present in the repository; `decision_field_check` | a field name of the cited contract is not named in the record's Deviations section (M-132, A-2) |
+| `DEC-004` | decision records in the change set; `decision_order_check` for each backticked source path the record names | a record claims it precedes the implementation and the commit order does not show it (M-132) |
+| `DEVIATION-001` | scenario guides in the change set that cite a `../` path; `fixture_deviation_check` against the report named by `REPORT` | a guide path does not resolve and the report has no DEVIATION line naming the guide and the path; with no report named the verdict is `NOT VERIFIED` (M-132) |
 | `ORIGIN-001` | every finding a report labels pre-existing; `origin_check` takes the base | a finding is labelled pre-existing, or the base is needed to prove it (M-126) |
 | `DEC-002` | decision records and contract documents, every line with a citation | a record or contract document is in the change set (R-136, R-145) |
 | `DEL-001` | source files in the change set and the sweep | a source file removes a path recursively or overwrites a supplied path (M-103) |
@@ -4311,16 +4599,36 @@ origin_check() {
 Canonical rule: Git claims are verified (M-127).
 
 M-127: a document that states a commit, a branch, or an uncommitted state is checked
-against the repository, and the claim is kept only when git confirms it. Three claims
-are read, each within two lines of its context:
+against the repository, and the claim is kept only when git confirms it. A commit and an
+uncommitted-work claim are read within two lines of their context; a branch is read only
+where one line holds both its context keyword and its token:
 
 - a commit cited in backticks, or after the word `commit`, must resolve
   (`git cat-file -e`); a commit that does not resolve is a `FAIL`;
-- a branch cited with a `type/name` form (`fs/FS-11-bff`) must exist, and a commit
-  cited with it must be an ancestor of that branch (`git merge-base --is-ancestor`);
+- a branch cited with a type/name form must exist, and a commit cited with it
+  must be an ancestor of that branch (`git merge-base --is-ancestor`);
   a commit that is not on the cited branch is a `FAIL`;
 - a claim of uncommitted or "sin commit" work about a branch is a `FAIL` when that
   branch holds commits beyond the base revision (`git rev-list --count base..branch`).
+
+Stated limits (V3.05): a branch is claimed only where the same line holds a branch context keyword (`branch`, `rama`,
+`checkout`, `HEAD`) at a word boundary and the branch token, so a keyword on one line and a
+slash-separated phrase on another claim nothing. The prose keywords are read case-insensitively; `HEAD` is
+the git ref and is read in uppercase only, so the word `head` in prose claims nothing. A refs/heads/ name and a word
+that merely contains `rama` claim nothing; a token that names an existing path or a document file is a path, not a
+branch; a URL token is removed from the line and its window before the claim is extracted, so a path segment inside
+a URL is never read as a branch and a real token on the same line is still read (audit A-3); a line that
+is a shell operand is code, not a claim of the document (it begins with an assignment, a connector, a redirection,
+or a word of the fixed command vocabulary, or it redirects to a `$` path; prose that merely mentions a `$` path or a
+command is still read); a fenced code block is quoted code. Lines of either kind are excluded from
+every window; commit identifiers are read case-insensitively; a flag is reported on the line that holds the token,
+once. The branch type prefixes are a closed list (`fs`, `feat`, `fix`, `feature`, `hotfix`, `release`, `bug`, `test`,
+`task`, `perf`, `revert`, `build`, `ci`, `style`, `chore`, `docs`, `refactor`), and a branch of an unlisted prefix is
+not claimed (stated limit). Every git call in this check runs under the `bounded` alarm (`GIT_TIMEOUT_SECONDS`, 60 s;
+V3.05). Cost limit: the check reads a five-line window for every line of a document and runs a git call for each
+candidate it finds, so its run time grows with document size; a scoped run over a handful of large documents takes
+several minutes, and a full-repository run exceeds eight minutes on the development machine. The sweep therefore
+runs it over the change set; a full-repository count is produced deliberately and is not repeated for every task.
 
 A claim whose repository or branch cannot be read is `NOT VERIFIED`. A claim about a
 test count at a revision is `NOT VERIFIED` until the run at that revision is cited.
@@ -4329,31 +4637,62 @@ test count at a revision is `NOT VERIFIED` until the run at that revision is cit
 # $1 = repository root; $2 = base revision; $3... = documents, relative to the root.
 git_claim_check() {
   root="$1"; base="$2"; shift 2
-  git -C "$root" rev-parse --git-dir >/dev/null 2>&1 || { echo "NOT VERIFIED GIT-001: $root is not a git repository; the git claims are not verified (M-127)"; return 0; }
+  bounded git -C "$root" rev-parse --git-dir >/dev/null 2>&1 || { echo "NOT VERIFIED GIT-001: $root is not a git repository; the git claims are not verified (M-127)"; return 0; }
   for f in "$@"; do
     case "$f" in *.md) ;; *) continue ;; esac
     [ -f "$root/$f" ] || continue
-    awk '{ n++; L[n] = $0 } END { for (i = 1; i <= n; i++) { w = ""; for (j = i - 2; j <= i + 2; j++) if (j >= 1 && j <= n) w = w " " L[j]; print i "\t" w } }' "$root/$f" |
-    while IFS="$(printf '\t')" read -r ln win; do
-      commits="$(printf '%s\n' "$win" | grep -oE '(`[0-9a-f]{7,40}`|commit [0-9a-f]{7,40})' | grep -oE '[0-9a-f]{7,40}' | grep -E '[0-9]' | grep -E '[a-f]' | sort -u)"
-      branches="$(printf '%s\n' "$win" | grep -oE '(fs|feat|fix|feature|chore|docs|refactor)/[A-Za-z0-9._/-]+' | sed 's/[.,;:)]*$//' | sort -u)"
+    # Stated limit (M-110 decision; V3.05): a line that is a shell operand or assertion is code, not a claim of the
+    # document, and is excluded from every window. The command vocabulary is the same fixed list as ARTIFACT-001.
+    awk '
+      {
+        # A URL path segment is not a branch or a commit citation; strip the URL token before it enters a window,
+        # so a real citation on the same line is still read (V3.05; audit A-3).
+        gsub(/https?:\/\/[^[:space:]]+/, " ")
+        n++; L[n] = $0
+        # A fenced code block is quoted code, not a claim of the document; neither it nor its markers enter a window.
+        if ($0 ~ /^[ \t]*```/) { incode = !incode; op[n] = 1; next }
+        op[n] = incode || ($0 ~ /^[ \t]*[A-Za-z_][A-Za-z0-9_]*=/ || $0 ~ /^[ \t]*(\|\||&&|[<>])/ || $0 ~ /[<>] *"?\$/ ||
+          $0 ~ /^[ \t]*(\[|:|\.|if|then|else|elif|fi|for|while|until|do|done|case|esac|function|return|exit|set|export|unset|local|declare|readonly|trap|source|eval|exec|shift|read|cd|echo|printf|cat|grep|sed|awk|find|xargs|sort|uniq|head|tail|tr|cut|wc|mkdir|cp|mv|rm|ln|chmod|chown|touch|test|curl|wget|tar|unzip|git|sh|bash|zsh|node|npm|npx|pnpm|yarn|bun|go|cargo|make|python|python3|pip|ruff|prettier|eslint|tsc|jest|vitest|pytest|docker|kubectl|terraform|gh|date|sleep|basename|dirname|mktemp|command|which|type|true|false|sudo|env|time)([ \t]|$)/)
+      }
+      END { for (i = 1; i <= n; i++) { w = ""; for (j = i - 2; j <= i + 2; j++) if (j >= 1 && j <= n && !op[j]) w = w " " L[j]; printf "%d\034%s\034%s\n", i, w, (op[i] ? "" : L[i]) } }
+    ' "$root/$f" |
+    while IFS="$(printf '\034')" read -r ln win cur; do
+      commits="$(printf '%s\n' "$win" | grep -oiE '(`[0-9a-f]{7,40}`|[Cc]ommit [0-9a-f]{7,40})' | grep -oE '[0-9a-fA-F]{7,40}' | grep -E '[0-9]' | grep -iE '[a-f]' | sort -u)"
+      # A branch is claimed only where one line holds both the context keyword and the token: prose keywords are
+      # case-insensitive and the git ref `HEAD` is uppercase only (a body part named "head" claims nothing). A token
+      # that names an existing path or a document file is a path, not a branch.
+      branches=""
+      if printf '%s\n' "$cur" | grep -qiE '(^|[^A-Za-z0-9_])(branch|rama|checkout)([^A-Za-z0-9_]|$)' ||
+         printf '%s\n' "$cur" | grep -qE '(^|[^A-Za-z0-9_])HEAD([^A-Za-z0-9_]|$)'; then
+        branches="$(printf '%s\n' "$cur" | grep -oE '(^|[^A-Za-z0-9_])(fs|feat|fix|feature|hotfix|release|bug|test|task|perf|revert|build|ci|style|chore|docs|refactor)/[A-Za-z0-9._/-]+' | sed -E 's/^[^A-Za-z]+//; s/[.,;:)]*$//' | sort -u |
+          while IFS= read -r b; do
+            [ -e "$root/$b" ] && continue
+            printf '%s\n' "$b" | grep -qE '\.(md|json|ya?ml|ts|tsx|js|jsx|txt|csv|sh)$' && continue
+            printf '%s\n' "$b"
+          done)"
+      fi
       for c in $commits; do
-        git -C "$root" cat-file -e "$c^{commit}" 2>/dev/null || echo "FAIL GIT-001: $f:$ln: the cited commit $c does not resolve in the repository (M-127)"
+        if ! bounded git -C "$root" cat-file -e "$c^{commit}" 2>/dev/null; then
+          # The window carries the token; the claim is reported on the line that contains it, never on a blank line.
+          rl="$(awk -v t="$c" 'index($0,t){print NR; exit}' "$root/$f")"
+          echo "FAIL GIT-001: $f:${rl:-$ln}: the cited commit $c does not resolve in the repository (M-127)"
+        fi
       done
       for b in $branches; do
-        if ! git -C "$root" rev-parse --verify --quiet "refs/heads/$b" >/dev/null 2>&1; then
-          echo "FAIL GIT-001: $f:$ln: the cited branch $b does not exist (M-127)"; continue
+        if ! bounded git -C "$root" rev-parse --verify --quiet "refs/heads/$b" >/dev/null 2>&1; then
+          rl="$(awk -v t="$b" 'index($0,t){print NR; exit}' "$root/$f")"
+          echo "FAIL GIT-001: $f:${rl:-$ln}: the cited branch $b does not exist (M-127)"; continue
         fi
         for c in $commits; do
-          git -C "$root" cat-file -e "$c^{commit}" 2>/dev/null || continue
-          git -C "$root" merge-base --is-ancestor "$c" "$b" 2>/dev/null || echo "FAIL GIT-001: $f:$ln: the commit $c is not on the cited branch $b (M-127)"
+          bounded git -C "$root" cat-file -e "$c^{commit}" 2>/dev/null || continue
+          bounded git -C "$root" merge-base --is-ancestor "$c" "$b" 2>/dev/null || { rl="$(awk -v t="$c" 'index($0,t){print NR; exit}' "$root/$f")"; echo "FAIL GIT-001: $f:${rl:-$ln}: the commit $c is not on the cited branch $b (M-127)"; }
         done
         if printf '%s\n' "$win" | grep -qiE 'sin commit|sin confirmar|uncommitted|without (a )?commit|no commit|not committed'; then
-          ahead="$(git -C "$root" rev-list --count "$base..$b" 2>/dev/null || echo 0)"
+          ahead="$(bounded git -C "$root" rev-list --count "$base..$b" 2>/dev/null || echo 0)"
           [ "${ahead:-0}" -gt 0 ] && echo "FAIL GIT-001: $f:$ln: the claim says uncommitted work on $b, but $b holds $ahead commit(s) beyond $base (M-127)"
         fi
       done
-    done
+    done | sort -u
   done
 }
 ```

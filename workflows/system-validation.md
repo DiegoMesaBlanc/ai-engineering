@@ -1044,8 +1044,11 @@ Return:
 - V2.98 report matrices without pipes, documented exit statuses and error envelopes, and the SCOPE-002 commit gate (M-77, M-79, M-80, M-118, R-196 to R-198)
 - V2.99 gate steps that fail silently, redaction claims contradicted by their artifact, and numbered PASS rows that cite only file:line (M-98, M-99, M-123, M-124, R-199 to R-201)
 - V3.00 audit memory: a unit that passed is reused only on unchanged content, and cross-unit criteria are never reused (M-125, R-202)
-- V3.02 client identity literals and guarantees that name their entry point (M-130, M-131, R-207, R-208)
 - V3.01 origin of findings, git claims, repeated counts, and comments that name headers: the detectors run on defective and compliant fixtures, and the sweep runs them (M-126 to M-129, R-203 to R-206)
+- V3.02 client identity literals and guarantees that name their entry point (M-130, M-131, R-207, R-208)
+- V3.03 runtime floor, contract deviations, decision order, substituted paths, and the extended FUNC-001, ENTRY-001, and SRP-001 detectors (M-132, R-209)
+- V3.04 learning-cycle convergence: sweep-called detectors are defined and fixture directories are trapped (M-133, R-210)
+- V3.05 path and branch claims read as claims, not prose: bare prefixes, absolute prefixes without a name, shell operands, fenced blocks, runtime `$` paths, table rows, sentence-final periods, word-boundary branch gates (the git ref `HEAD` is uppercase only), split-line branch keywords, the listed branch types, and the alarm bound with an event assertion (M-110, M-127)
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -3006,6 +3009,7 @@ else
   # measured. They use no folder convention: a flat package, a package with
   # several directories, and two units (services) in one repository.
   fx=$(mktemp -d "${TMPDIR:-/tmp}/v262.XXXXXX")
+  trap 'rm -rf "$fx"' EXIT
   git_fx() { git -c user.name=v262 -c user.email=v262@local "$@"; }
   base() { (cd "$1" && git init -q && git add -A && git_fx commit -qm base); }
   one="$fx/one-dir"; multi="$fx/multi-dir"; units="$fx/two-units"
@@ -3135,6 +3139,7 @@ forbid "$so" "### React Native (Expo or bare)" "### Ionic" "CSS Modules|Sass|Sty
 
 # Behavioral proof on temporary copies.
 fx=$(mktemp -d "${TMPDIR:-/tmp}/v263.XXXXXX")
+trap 'rm -rf "$fx"' EXIT
 cp "$so" "$fx/styling-options.md"
 awk '{ print } index($0, "| Tailwind CSS | Utility classes in templates") == 1 { print "| Styled Components | Styles written in JavaScript | injected | NOT VERIFIED |" }' "$so" > "$fx/injected.md"
 forbid "$fx/styling-options.md" "### Angular" "### React (web)" "Styled Components|Emotion|NativeWind" "Angular" >/dev/null || { echo "FAIL V2.63: the compliant copy is rejected"; failures=1; }
@@ -3203,6 +3208,7 @@ criteria_gate "$root" || failures=1
 # Behavioral proof: a copy with the error association criterion removed must be
 # detected, and the unmodified copy must pass.
 fx=$(mktemp -d "${TMPDIR:-/tmp}/v264.XXXXXX")
+trap 'rm -rf "$fx"' EXIT
 mkdir -p "$fx/references" "$fx/workflows"
 cp "$root/$ap" "$fx/$ap"
 cp "$root/$ca" "$fx/$ca"
@@ -3278,6 +3284,7 @@ awk '
 command -v perl >/dev/null 2>&1 || { echo "NOT VERIFIED V2.65: perl is not available, the behavioral proof was not run"; exit 2; }
 
 fx=$(mktemp -d "${TMPDIR:-/tmp}/v265.XXXXXX")
+trap 'rm -rf "$fx"' EXIT
 awk '/^test_api_check\(\) \{/{on=1} on{print} on && /^\}$/{exit}' "$root/$oc" > "$fx/check.sh"
 grep -q "^test_api_check() {" "$fx/check.sh" || { echo "FAIL V2.65: test_api_check is not defined in $oc"; failures=1; }
 
@@ -3352,6 +3359,7 @@ grep -qF "on the lines the change set adds" "$root/$oc" || { echo "FAIL V2.66: $
 command -v perl >/dev/null 2>&1 || { echo "NOT VERIFIED V2.66: perl is not available, the behavioral proof was not run"; exit 2; }
 
 fx=$(mktemp -d "${TMPDIR:-/tmp}/v266.XXXXXX")
+trap 'rm -rf "$fx"' EXIT
 awk '/^imports_name\(\) \{/{on=1} on{print} on && /^\}$/{exit}' "$root/$oc" > "$fx/check.sh"
 awk '/^dead_export_check\(\) \{/{on=1} on{print} on && /^\}$/{exit}' "$root/$oc" >> "$fx/check.sh"
 awk '/^test_api_check\(\) \{/{on=1} on{print} on && /^\}$/{exit}' "$root/$oc" >> "$fx/check.sh"
@@ -3458,6 +3466,7 @@ grep -qF "A negative probe passes only because another rule" "$root/$wgt" || { e
 command -v awk >/dev/null 2>&1 || { echo "NOT VERIFIED V2.67: awk is not available, the TYPE-004 fixture was not run"; exit 2; }
 
 fx=$(mktemp -d "${TMPDIR:-/tmp}/v267.XXXXXX")
+trap 'rm -rf "$fx"' EXIT
 awk '/^duplicate_contract_check\(\) \{/{on=1} on{print} on && /^\}$/{exit}' "$root/$oc" > "$fx/check.sh"
 grep -q "^duplicate_contract_check() {" "$fx/check.sh" || { echo "FAIL V2.67: duplicate_contract_check is not defined in $oc"; failures=1; }
 
@@ -3577,6 +3586,7 @@ cmd="$(grep -m1 'git ls-files | grep -E' "$root/$pv" | sed 's/^[[:space:]]*//')"
 [ -n "$cmd" ] || { echo "FAIL V2.68: $pv has no tracked-artifact command"; exit 1; }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v268.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   git init -q . || exit 1
@@ -3680,6 +3690,7 @@ extract() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v269.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   mkdir -p src scripts
@@ -3845,6 +3856,7 @@ extract() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v270.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   git init -q .
@@ -4069,6 +4081,7 @@ extract() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v271.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   git init -q .
@@ -4247,6 +4260,7 @@ extract() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v272.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   mkdir -p src/features/checkout
@@ -4382,6 +4396,7 @@ extract() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v273.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   mkdir -p src/features/payment/hooks/use-open-settings \
@@ -4572,6 +4587,7 @@ extract() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v274.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   mkdir -p src/adapters migrations src/config src/features
@@ -4735,6 +4751,7 @@ extract() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v275.XXXXXX")"
+trap 'rm -rf "$fx" "$snap"' EXIT
 snap="$(mktemp -d "${TMPDIR:-/tmp}/v275snap.XXXXXX")"
 (
   cd "$fx" || exit 1
@@ -4871,6 +4888,7 @@ extract() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v276.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   mkdir -p src
@@ -4988,6 +5006,7 @@ command -v awk >/dev/null 2>&1 && command -v grep >/dev/null 2>&1 && command -v 
 
 # Removal probe: a copy with the DB-001 row taken out must be reported; the repaired copy must not.
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v277.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cp "$root/$oc" "$fx/removed.md"
   sed '/^| `DB-001` |/d' "$root/$oc" > "$fx/removed.md"
@@ -5091,6 +5110,7 @@ extract_sec() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v278.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   extract_sec TEST-003 > timer.sh
@@ -5248,6 +5268,7 @@ extract_sec() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v279.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   extract_sec COMMIT-001 > commit.sh
@@ -5383,6 +5404,7 @@ extract_sec() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v280.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   extract_sec REPORT-001 > report.sh
@@ -5521,6 +5543,7 @@ extract_sec() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v281.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   extract_sec ERR-001 > err.sh
@@ -5692,6 +5715,7 @@ extract_sec() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v282.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   extract_sec ERR-001 > err1.sh
@@ -5903,6 +5927,7 @@ grep -qF -- "  index_coverage_check . \$src \$migrations" "$root/$oc" \
 
 # Removal probe: a copy of the sweep without the DB-004 call must no longer run it.
 fx0="$(mktemp -d "${TMPDIR:-/tmp}/v283.XXXXXX")"
+trap 'rm -rf "$fx0"' EXIT
 sed '/^  index_coverage_check \. \$src \$migrations$/d' "$root/$oc" > "$fx0/sweep-removed.md"
 grep -qF -- "  index_coverage_check . \$src \$migrations" "$fx0/sweep-removed.md" \
   && { echo "FAIL V2.83: the removal probe did not remove the DB-004 call"; failures=1; }
@@ -5924,6 +5949,7 @@ extract_sec() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v283.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   extract_sec DEC-002 > dec2.sh
@@ -6142,6 +6168,7 @@ extract_sec() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v284.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   extract_sec SCOPE-001 > scope.sh && . ./scope.sh || { echo "FAIL V2.84: the SCOPE-001 block does not load"; exit 1; }
@@ -6308,6 +6335,7 @@ panel_check() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v285.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 printf '%s\n' \
   'completed 1. Detect and analyze the repository' \
   'completed 1.1 Inventory the fixture' \
@@ -6453,6 +6481,7 @@ extract_sec() {
 }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v286.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 (
   cd "$fx" || exit 1
   extract_sec "BEHAVIOR-001" > behavior.sh && . ./behavior.sh || { echo "FAIL V2.86: the BEHAVIOR-001 block does not load"; exit 1; }
@@ -6610,6 +6639,7 @@ fx="$(mktemp -d "${TMPDIR:-/tmp}/v286.XXXXXX")"
 
 echo "V2.86 probe: fixtures in $fx were checked and are removed"
 rm -rf "$fx"
+[ "$failures" -eq 0 ] && echo "V2.86 PASS"
 exit "$failures"
 ```
 
@@ -6676,6 +6706,7 @@ detected. The probe never touches the repository:
 
 ```sh
 fx=$(mktemp -d "${TMPDIR:-/tmp}/v287.XXXXXX")
+trap 'rm -rf "$fx"' EXIT
 mkdir -p "$fx/workflows" "$fx/references"
 cp AGENTS.md "$fx/"
 cp references/mandatory-rules.md references/system-workflow-regression-matrix.md "$fx/references/"
@@ -7217,7 +7248,7 @@ printf '%s\n' '# Notes' 'Module at `src/backend/app`.' > "$ok/docs/notes.md"
 a1="$(artifact_path_check "$bad" docs/notes.md)"
 printf '%s\n' "$a1" | grep -qF 'FAIL ARTIFACT-001: docs/notes.md:2: ../demo-backend points outside the repository' \
   || { echo "FAIL V2.90: ARTIFACT-001 did not report the climbing path with file:line: $a1"; failures=1; }
-printf '%s\n' "$a1" | grep -qF 'FAIL ARTIFACT-001: docs/notes.md:3: /Users/x/demo-backend/src. points outside the repository' \
+printf '%s\n' "$a1" | grep -qF 'FAIL ARTIFACT-001: docs/notes.md:3: /Users/x/demo-backend/src points outside the repository' \
   || { echo "FAIL V2.90: ARTIFACT-001 did not report the absolute path with file:line: $a1"; failures=1; }
 printf '%s\n' "$a1" | grep -qF 'NOT VERIFIED ARTIFACT-001: docs/notes.md:4: directory demos-E2E/backend/demo-backend is not in the repository' \
   || { echo "FAIL V2.90: ARTIFACT-001 did not report the missing directory with file:line: $a1"; failures=1; }
@@ -8115,6 +8146,7 @@ grep -q '^| R-191 |' "$root/$rmx" || { echo "FAIL V2.95: no R-191 row in the reg
 command -v awk >/dev/null 2>&1 && command -v git >/dev/null 2>&1 || { echo "NOT VERIFIED V2.95: awk or git is not available, the behavioral fixtures were not run"; exit 2; }
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v295-XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 awk '/^```sh$/{on=1; n++; f=fx "/blk" n ".sh"; next} /^```$/{ if(on){close(f)}; on=0} on{print > f}' fx="$fx" "$root/$oc"
 : > "$fx/detectors.sh"
 for b in "$fx"/blk*.sh; do sh -n "$b" 2>/dev/null && cat "$b" >> "$fx/detectors.sh"; done
@@ -8398,6 +8430,7 @@ need "$oc" 'PKG-DTS-001, PKG-PEER-001, VERIFY-GEN-001, WS-ROOT-001' "the M-121 s
 need "$oc" '| `PKG-DTS-001`, `PKG-PEER-001`, `VERIFY-GEN-001`, `WS-ROOT-001`' "the M-121 coverage row, so the procedure runs the detectors"
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v297.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 awk '/^```sh$/{on=1; n++; f=fx "/blk" n ".sh"; next} /^```$/{ if(on){close(f)}; on=0} on{print > f}' fx="$fx" "$root/$oc"
 for b in "$fx"/blk*.sh; do
   grep -q 'pkg_dts_check\|pkg_peer_check\|verify_gen_check\|ws_root_check' "$b" && . "$b"
@@ -8555,6 +8588,7 @@ need "$rmx" '| R-197 |' "the R-197 regression row"
 need "$rmx" '| R-198 |' "the R-198 regression row"
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v298.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 awk '/^```sh$/{on=1; n++; f=fx "/blk" n ".sh"; next} /^```$/{ if(on){close(f)}; on=0} on{print > f}' fx="$fx" "$root/$oc"
 for b in "$fx"/blk*.sh; do
   grep -q 'report_matrix_check\|error_outcome_check' "$b" && . "$b"
@@ -8665,6 +8699,7 @@ need "$rmx" '| R-200 |' "the R-200 regression row"
 need "$rmx" '| R-201 |' "the R-201 regression row"
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v299.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 awk '/^```sh$/{on=1; n++; f=fx "/blk" n ".sh"; next} /^```$/{ if(on){close(f)}; on=0} on{print > f}' fx="$fx" "$root/$oc"
 for b in "$fx"/blk*.sh; do
   grep -q 'gate_swallow_check\|redaction_claim_check\|report_matrix_check' "$b" && . "$b"
@@ -8758,6 +8793,7 @@ need references/mandatory-rules.md '| M-125 |' "the M-125 registry row"
 need references/system-workflow-regression-matrix.md '| R-202 |' "the R-202 regression row"
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v300.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 sed -n '/^audit_memory_check() {/,/^}/p' "$root/workflows/self-learning.md" > "$fx/fn.sh"
 [ -s "$fx/fn.sh" ] || { echo "FAIL V3.00: audit_memory_check is not extractable from workflows/self-learning.md"; failures=1; }
 
@@ -8856,7 +8892,9 @@ need workflows/output-compliance.md '| `GIT-001` |' "the GIT-001 coverage row"
 need workflows/output-compliance.md '| `CONSIST-001` |' "the CONSIST-001 coverage row"
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v301.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 oc="$root/workflows/output-compliance.md"
+sed -n '/^bounded() {/,/^}/p' "$oc" > "$fx/bounded.sh"
 for fn in db_runtime_ddl_check origin_check git_claim_check consistency_check comment_name_check; do
   sed -n "/^$fn() {/,/^}/p" "$oc" > "$fx/$fn.sh"
   [ -s "$fx/$fn.sh" ] || { echo "FAIL V3.01: $fn is not extractable from workflows/output-compliance.md"; failures=1; }
@@ -8884,9 +8922,9 @@ printf 'base\n' > "$g/a.txt"; git -C "$g" add -A && git -C "$g" -c user.email=t@
 git -C "$g" checkout -q -b fs/A; printf 'a\n' > "$g/b.txt"; git -C "$g" add -A && git -C "$g" -c user.email=t@t.t -c user.name=t commit -qm a
 X="$(git -C "$g" rev-parse HEAD)"
 git -C "$g" checkout -q main; git -C "$g" checkout -q -b fs/B; printf 'b\n' > "$g/c.txt"; git -C "$g" add -A && git -C "$g" -c user.email=t@t.t -c user.name=t commit -qm b
-printf 'Commit `%s` lives on `fs/B`.\n' "$X" > "$g/docs/bad-branch.md"
-printf 'Cambios sin commit en `fs/A`, nada más.\n' > "$g/docs/bad-uncommitted.md"
-printf 'Commit `%s` lives on `fs/A`.\n' "$X" > "$g/docs/good.md"
+printf 'Commit `%s` lives on branch `fs/B`.\n' "$X" > "$g/docs/bad-branch.md"
+printf 'Cambios sin commit en la rama `fs/A`, nada más.\n' > "$g/docs/bad-uncommitted.md"
+printf 'Commit `%s` lives on branch `fs/A`.\n' "$X" > "$g/docs/good.md"
 gotg="$( . "$fx/detectors.sh"; git_claim_check "$g" main docs/bad-branch.md docs/bad-uncommitted.md docs/good.md )"
 printf '%s\n' "$gotg" | grep -qF 'FAIL GIT-001: docs/bad-branch.md:1: the commit' \
   || { echo "FAIL V3.01: GIT-001 does not fail a commit cited on the wrong branch: $gotg"; failures=1; }
@@ -8956,6 +8994,7 @@ need agents/external-auditor.md 'GUARANTEE-001' "the auditor run of GUARANTEE-00
 need workflows/code-audit.md 'CLIENT-ID-001' "the code-audit run of CLIENT-ID-001 before delivery"
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v302.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
 oc="$root/workflows/output-compliance.md"
 for fn in client_identity_literal_check guarantee_entry_check; do
   sed -n "/^$fn() {/,/^}/p" "$oc" > "$fx/$fn.sh"
@@ -8989,5 +9028,525 @@ printf '%s\n' "$gotg" | grep -q 'good.md' \
 rm -rf "$fx"
 echo "V3.02 behavioral fixtures removed"
 [ "$failures" -eq 0 ] && echo "V3.02 PASS" || echo "V3.02 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.03 Regression — Runtime Floor, Contract Deviations, Decision Order, Substituted Paths, and Detector Extensions (M-132, A-4, A-5, A-7)
+
+The external audit found an entry guard that used `import.meta.main` under an `engines` floor that predates it (A-1),
+a contract document that did not match the code and was not recorded as a deviation (A-2), a decision record that
+claimed to precede the code but was introduced after it (A-3), and a scenario guide path that was replaced without
+disclosure (A-8). Canonical anchor: Runtime floor, contract deviations, decision order, and substituted paths (M-132).
+The detectors are in `workflows/output-compliance.md`; this section extracts them, runs the defective and compliant
+fixtures in a temporary directory outside the repository, and removes the fixtures.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+need() {
+  grep -qF -- "$2" "$root/$1" || { echo "FAIL V3.03: $1 does not carry $3"; failures=1; }
+}
+
+# The anchor is read from the registry, its single source: a copy held here drifted from the registry and this
+# gate failed on a tree that V2.32 accepts (audit A-1).
+m132_anchor="$(grep -E '^\| M-132 \|' "$root/references/mandatory-rules.md" | awk -F'|' '{print $5}' | sed 's/`//g; s/^[[:space:]]*//; s/[[:space:]]*$//')"
+[ -n "$m132_anchor" ] || { echo "FAIL V3.03: references/mandatory-rules.md carries no M-132 anchor"; failures=1; }
+
+need AGENTS.md "$m132_anchor" "the canonical M-132 wording"
+need references/mandatory-rules.md '| M-132 |' "the M-132 registry row"
+need references/system-workflow-regression-matrix.md '| R-209 |' "the R-209 regression row"
+need workflows/output-compliance.md "$m132_anchor" "the M-132 section"
+need workflows/output-compliance.md 'decision_field_check' "the DEC-005 function"
+need workflows/output-compliance.md 'decision_field_check . "$d"' "the sweep call of DEC-005"
+need workflows/output-compliance.md 'runtime_floor_check . $src' "the sweep call of FLOOR-001"
+need workflows/output-compliance.md 'decision_deviation_check . $decisions' "the sweep call of DEC-003"
+need workflows/output-compliance.md '| `FLOOR-001` |' "the FLOOR-001 coverage row"
+need workflows/output-compliance.md 'decision_order_check . "$d" "$p"' "the sweep call of DEC-004 for each governed path"
+need workflows/output-compliance.md 'func001_scan "${BASE:-main}"' "the sweep call of FUNC-001"
+need workflows/output-compliance.md 'changed_paths="$src" type001_scan' "the sweep call of TYPE-001"
+need workflows/output-compliance.md 'fixture_deviation_check . "$g" "${REPORT:-}"' "the sweep call of DEVIATION-001 for each scenario guide"
+need workflows/output-compliance.md '| `DEC-004` |' "the DEC-004 coverage row"
+need workflows/output-compliance.md '| `DEVIATION-001` |' "the DEVIATION-001 coverage row"
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v303.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+oc="$root/workflows/output-compliance.md"
+sed -n '/^### FLOOR-001, DEC-003/,/^## Procedure/p' "$oc" | sed -n '/^```sh/,/^```$/p' | sed '1d;$d' > "$fx/detectors.sh"
+[ -s "$fx/detectors.sh" ] || { echo "FAIL V3.03: the M-132 detectors are not extractable from workflows/output-compliance.md"; failures=1; }
+sed -n "/^bounded() {/,/^}/p" "$oc" >> "$fx/detectors.sh"
+sh -n "$fx/detectors.sh" || { echo "FAIL V3.03: the M-132 detectors do not parse"; failures=1; }
+
+# FLOOR-001: an API newer than the floor fails; a floor that carries it, or a later major, does not.
+for fl in ">=24.0.0:FAIL" ">=24.2.0:OK" ">=20.0.0:FAIL" ">=23.0.0:NOT" ">=26.0.0:OK"; do
+  v="${fl#*:}"; r="$fx/floor-${v}-$(printf '%s' "${fl%%:*}" | tr -cd '0-9')"
+  mkdir -p "$r/src"; printf '{ "engines": { "node": "%s" } }\n' "${fl%%:*}" > "$r/package.json"
+  printf 'const isEntry = import.meta.main;\n' > "$r/src/cli.ts"
+  got="$( . "$fx/detectors.sh"; runtime_floor_check "$r" src/cli.ts )"
+  case "$v" in
+    FAIL) printf '%s\n' "$got" | grep -qF 'FAIL FLOOR-001: src/cli.ts:1:' || { echo "FAIL V3.03: FLOOR-001 does not fail the floor ${fl%%:*}: $got"; failures=1; } ;;
+    NOT)  printf '%s\n' "$got" | grep -qF 'NOT VERIFIED FLOOR-001: src/cli.ts:1:' || { echo "FAIL V3.03: FLOOR-001 does not hold the floor ${fl%%:*}: $got"; failures=1; } ;;
+    OK)   printf '%s\n' "$got" | grep -q 'FLOOR-001' && { echo "FAIL V3.03: FLOOR-001 reports the floor ${fl%%:*} that carries the API: $got"; failures=1; } ;;
+  esac
+done
+
+# DEC-003: a record that cites a contract with no Deviations section fails; the record with the section does not.
+d="$fx/dec"; mkdir -p "$d"
+printf '# ADR\n\nSource: docs/payments-provider-contract.md.\n' > "$d/bad.md"
+printf '# ADR\n\nSource: docs/payments-provider-contract.md.\n\n## Deviations\n\n- orderId: in code, absent in the document.\n' > "$d/good.md"
+gotd="$( . "$fx/detectors.sh"; decision_deviation_check "$d" bad.md good.md )"
+printf '%s\n' "$gotd" | grep -qF 'FAIL DEC-003: bad.md:1:' || { echo "FAIL V3.03: DEC-003 does not fail the undeclared deviation: $gotd"; failures=1; }
+printf '%s\n' "$gotd" | grep -q 'good.md' && { echo "FAIL V3.03: DEC-003 fails the record with a Deviations section: $gotd"; failures=1; }
+
+# DEC-004: a record introduced after the code it governs fails; a record introduced before it does not.
+g="$fx/order"; mkdir -p "$g/docs/decisions" "$g/src"
+git -C "$g" init -q && git -C "$g" config user.email v@v.v && git -C "$g" config user.name v
+echo 'export const a = 1;' > "$g/src/a.ts" && git -C "$g" add . && git -C "$g" commit -qm code
+echo '# ADR: antes de implementar' > "$g/docs/decisions/late.md" && git -C "$g" add . && git -C "$g" commit -qm late
+gotl="$( . "$fx/detectors.sh"; decision_order_check "$g" docs/decisions/late.md src/a.ts )"
+printf '%s\n' "$gotl" | grep -qF 'FAIL DEC-004: docs/decisions/late.md:1:' || { echo "FAIL V3.03: DEC-004 does not fail the late record: $gotl"; failures=1; }
+e="$fx/early"; mkdir -p "$e/docs/decisions" "$e/src"
+git -C "$e" init -q && git -C "$e" config user.email v@v.v && git -C "$e" config user.name v
+echo '# ADR: antes de implementar' > "$e/docs/decisions/early.md" && git -C "$e" add . && git -C "$e" commit -qm record
+echo 'export const a = 1;' > "$e/src/a.ts" && git -C "$e" add . && git -C "$e" commit -qm code
+gote="$( . "$fx/detectors.sh"; decision_order_check "$e" docs/decisions/early.md src/a.ts )"
+printf '%s\n' "$gote" | grep -q 'DEC-004' && { echo "FAIL V3.03: DEC-004 fails the early record: $gote"; failures=1; }
+
+# DEVIATION-001: an undeclared unresolved path fails; the report that declares it with both paths does not.
+s="$fx/subst"; mkdir -p "$s/guias/libreria"
+printf '# LIB-02\nFixture: ../demo-cli\n' > "$s/guias/libreria/LIB-02.md"
+printf '# Report\n\nRan LIB-02.\n' > "$s/report-bad.md"
+printf '# Report\n\nDEVIATION: guias/libreria/LIB-02.md cites ../demo-cli; the implemented fixture is demo-orders-cli.\n' > "$s/report-good.md"
+gotv="$( . "$fx/detectors.sh"; fixture_deviation_check "$s" guias/libreria/LIB-02.md report-bad.md )"
+printf '%s\n' "$gotv" | grep -qF 'FAIL DEVIATION-001:' || { echo "FAIL V3.03: DEVIATION-001 does not fail the undeclared path: $gotv"; failures=1; }
+gotv2="$( . "$fx/detectors.sh"; fixture_deviation_check "$s" guias/libreria/LIB-02.md report-good.md )"
+[ -z "$gotv2" ] || { echo "FAIL V3.03: DEVIATION-001 fails the declared substitution: $gotv2"; failures=1; }
+
+# Detector extensions of this change (external audit A-4, A-5, A-7): FUNC-001 with any function keyword and a
+# reason comment, ENTRY-001 for exit-status mappers and their returned codes, and SRP-001 with the text-parsing kind.
+for fn in bounded func001_scan entry_point_check srp_unit_check; do
+  sed -n "/^$fn() {/,/^}/p" "$oc" >> "$fx/ext.sh"
+  [ -s "$fx/ext.sh" ] || { echo "FAIL V3.03: $fn is not extractable from workflows/output-compliance.md"; failures=1; }
+done
+sh -n "$fx/ext.sh" || { echo "FAIL V3.03: the extended detectors do not parse"; failures=1; }
+
+# FUNC-001 (A-7): an untracked generator with no reason comment fails; the commented twin does not.
+fu="$fx/func"; mkdir -p "$fu" && git -C "$fu" init -q && git -C "$fu" config user.email v@v.v && git -C "$fu" config user.name v
+echo 'export const base = 1;' > "$fu/base.ts" && git -C "$fu" add . && git -C "$fu" commit -qm base
+printf '%s\n' 'export const rows = (function* () {' '  yield 1;' '})();' > "$fu/bad.ts"
+printf '%s\n' '// generator: yields the rows lazily (allowed reason)' 'export const ok = (function* () { yield 2; })();' > "$fu/good.ts"
+gotf="$( . "$fx/ext.sh"; cd "$fu" && func001_scan HEAD )"
+printf '%s\n' "$gotf" | grep -qF 'FAIL FUNC-001: bad.ts:1:' || { echo "FAIL V3.03: FUNC-001 does not fail the uncommented generator: $gotf"; failures=1; }
+printf '%s\n' "$gotf" | grep -q 'good.ts' && { echo "FAIL V3.03: FUNC-001 fails the commented generator: $gotf"; failures=1; }
+
+# ENTRY-001 (A-4): an exit-status mapper that returns 0 and 1 needs a test that asserts both; asserting one is not enough.
+en="$fx/entry"; mkdir -p "$en/src/api/cli" "$en/test"
+printf '%s\n' 'export const exitCodeFor = (e: unknown): number => { if (e instanceof Error) return 1; return 0; };' > "$en/src/api/cli/exit-code-for.ts"
+printf '%s\n' "import { test, expect } from 'vitest';" "test('exit codes', () => {" "  expect(run('/exit-code-for.ts', 'bad').status).toBe(1);" "});" > "$en/test/one.test.ts"
+printf '%s\n' "import { test, expect } from 'vitest';" "test('exit codes', () => {" "  expect(run('/exit-code-for.ts', 'bad').status).toBe(1);" "  expect(run('/exit-code-for.ts', 'ok').status).toBe(0);" "});" > "$en/test/both.test.ts"
+gote1="$( . "$fx/ext.sh"; entry_point_check "$en" src/api/cli/exit-code-for.ts -- test/one.test.ts )"
+printf '%s\n' "$gote1" | grep -qF 'exit code 0 is set by the entry point and no test that invokes it asserts 0' || { echo "FAIL V3.03: ENTRY-001 does not fail the unasserted return 0: $gote1"; failures=1; }
+gote2="$( . "$fx/ext.sh"; entry_point_check "$en" src/api/cli/exit-code-for.ts -- test/both.test.ts )"
+[ -z "$gote2" ] || { echo "FAIL V3.03: ENTRY-001 fails the test that asserts both codes: $gote2"; failures=1; }
+
+# SRP-001 (A-5): a file with a character tokenizer, a header validation, and an awaited load is listed.
+sr="$fx/srp"; mkdir -p "$sr/src"
+printf '%s\n' 'export const readCsvRows = (text: string): string[][] => { const out: string[][] = []; for (let i = 0; i < text.length; i++) { const ch = text.charAt(i); out.push([ch]); } return out; };' 'export const validateHeader = (h: string[]): boolean => h.length > 0;' 'export const load = async (p: string) => { const rows = readCsvRows(p); validateHeader(rows[0]); return await Promise.resolve(rows); };' > "$sr/src/csv-source.ts"
+gots="$( . "$fx/ext.sh"; srp_unit_check "$sr" src/csv-source.ts )"
+printf '%s\n' "$gots" | grep -qF 'FAIL SRP-001: src/csv-source.ts:1:' && printf '%s\n' "$gots" | grep -qF 'text parsing' || { echo "FAIL V3.03: SRP-001 does not list the tokenizer unit with the text-parsing kind: $gots"; failures=1; }
+
+# Learning-cycle audit corrections of this change. Each false positive and each false negative the independent
+# auditor reproduced is a fixture here, so the detectors cannot regress silently.
+sed -n "/^type001_scan() {/,/^}/p" "$oc" >> "$fx/ext.sh"
+sed -n "/^error_outcome_check() {/,/^}/p" "$oc" >> "$fx/ext.sh"
+sh -n "$fx/ext.sh" || { echo "FAIL V3.03: the extended detectors do not parse"; failures=1; }
+cat "$fx/detectors.sh" "$fx/ext.sh" > "$fx/all.sh"
+
+# TYPE-001: a local type in a runtime file fails; a contract-only file does not.
+t="$fx/types"; mkdir -p "$t/src/app"
+printf '%s\n' 'type Candidate = { amount: number };' 'export const validateChargeInput = (input: Candidate): boolean => input.amount > 0;' > "$t/src/app/validate.ts"
+printf '%s\n' 'export type Candidate = { amount: number };' > "$t/src/app/contracts.ts"
+gott="$( . "$fx/all.sh"; cd "$t" && changed_paths="src/app/validate.ts src/app/contracts.ts" && type001_scan )"
+printf '%s\n' "$gott" | grep -q 'FAIL TYPE-001: src/app/validate.ts:' || { echo "FAIL V3.03: TYPE-001 does not fail the local type in a runtime file: $gott"; failures=1; }
+printf '%s\n' "$gott" | grep -q 'contracts.ts' && { echo "FAIL V3.03: TYPE-001 fails the contract-only file: $gott"; failures=1; }
+
+# FUNC-001: a word inside a string is not a keyword; a comment that states no reason does not pass; a reason read
+# from code on the line above does not count; a block comment that precedes a keyword on the same line is read.
+fs2="$fx/func2"; mkdir -p "$fs2" && git -C "$fs2" init -q && git -C "$fs2" config user.email v@v.v && git -C "$fs2" config user.name v
+echo 'export const base = 1;' > "$fs2/base.ts" && git -C "$fs2" add . && git -C "$fs2" commit -qm base
+printf '%s\n' "export const msg = 'the function (name) is documented';" > "$fs2/string.ts"
+printf '%s\n' 'export const f = function () { return 1; }; // see docs' > "$fs2/noreason.ts"
+gotf2="$( . "$fx/all.sh"; cd "$fs2" && func001_scan HEAD )"
+printf '%s\n' "$gotf2" | grep -q 'string.ts' && { echo "FAIL V3.03: FUNC-001 fails the word inside a string: $gotf2"; failures=1; }
+printf '%s\n' "$gotf2" | grep -qF 'FAIL FUNC-001: noreason.ts:1:' || { echo "FAIL V3.03: FUNC-001 passes a comment that states no reason: $gotf2"; failures=1; }
+
+# ENTRY-001: a plain status module that returns no code literal is not an entry point.
+ep2="$fx/entry2"; mkdir -p "$ep2/src/lib"
+printf '%s\n' 'export const status = (x: string): string => x.trim();' > "$ep2/src/lib/status.ts"
+gotep2="$( . "$fx/all.sh"; entry_point_check "$ep2" src/lib/status.ts -- )"
+[ -z "$gotep2" ] || { echo "FAIL V3.03: ENTRY-001 treats a plain status module as an entry point: $gotep2"; failures=1; }
+
+# DEC-003: a record that names resource.md or sources.md is not a contract citation.
+dr="$fx/dec2"; mkdir -p "$dr"; printf '# ADR\n\nSee docs/resource.md for the list.\n' > "$dr/r.md"
+gotdr="$( . "$fx/all.sh"; decision_deviation_check "$dr" r.md )"
+[ -z "$gotdr" ] || { echo "FAIL V3.03: DEC-003 cites resource.md as a contract: $gotdr"; failures=1; }
+
+# DEVIATION-001: trailing punctuation is not part of a path; no report named is NOT VERIFIED, never a pass.
+dv="$fx/dev2"; mkdir -p "$dv/guias"; printf '# LIB-02\nUse ../demo-cli. Done.\n' > "$dv/guias/g.md"; printf '# Report\n\nRan.\n' > "$dv/rep.md"
+gotdv="$( . "$fx/all.sh"; fixture_deviation_check "$dv" guias/g.md )"
+printf '%s\n' "$gotdv" | grep -qF 'NOT VERIFIED DEVIATION-001: guias/g.md: the path ../demo-cli does not resolve' || { echo "FAIL V3.03: DEVIATION-001 does not hold the unnamed report as NOT VERIFIED, or keeps the trailing period: $gotdv"; failures=1; }
+gotdv2="$( . "$fx/all.sh"; fixture_deviation_check "$dv" guias/g.md rep.md )"
+printf '%s\n' "$gotdv2" | grep -qF 'FAIL DEVIATION-001: guias/g.md: the path ../demo-cli' || { echo "FAIL V3.03: DEVIATION-001 passes a report with no DEVIATION line: $gotdv2"; failures=1; }
+
+
+# FUNC-001: a reason read from code on the previous line does not count; a block comment before a keyword is read.
+fc="$fx/func3"; mkdir -p "$fc" && git -C "$fc" init -q && git -C "$fc" config user.email v@v.v && git -C "$fc" config user.name v
+echo 'export const base = 1;' > "$fc/base.ts" && git -C "$fc" add . && git -C "$fc" commit -qm base
+printf '%s\n' 'const x = this.y;' 'export const gen = function* () { yield x; };' > "$fc/prevcode.ts"
+printf '%s\n' '/* note */ export const h = function () { return 1; };' > "$fc/blockc.ts"
+gotfc="$( . "$fx/all.sh"; cd "$fc" && func001_scan HEAD )"
+printf '%s\n' "$gotfc" | grep -qF 'FAIL FUNC-001: prevcode.ts:2:' || { echo "FAIL V3.03: FUNC-001 reads a reason from code on the previous line: $gotfc"; failures=1; }
+printf '%s\n' "$gotfc" | grep -qF 'FAIL FUNC-001: blockc.ts:1:' || { echo "FAIL V3.03: FUNC-001 misses a keyword after a block comment: $gotfc"; failures=1; }
+
+# ERR-002 (documented exit status): the Spanish form and the capitalized form need an executing test that asserts 1.
+ed="$fx/err"; mkdir -p "$ed/src" "$ed/test" "$ed/docs"
+printf '%s\n' '# CLI' '- Código de salida 1: error no controlado.' > "$ed/docs/cli.md"
+printf '%s\n' "import { test } from 'vitest';" "test('help', () => { run('--help'); });" > "$ed/test/help.test.ts"
+printf '%s\n' "import { test, expect } from 'vitest';" "test('unexpected error', () => {" "  expect(run('/cli.ts', 'boom').status).toBe(1);" "});" > "$ed/test/exit.test.ts"
+gote="$( . "$fx/all.sh"; error_outcome_check "$ed" src/x.ts -- test/help.test.ts -- docs/cli.md )"
+printf '%s\n' "$gote" | grep -qF 'FAIL ERR-002: docs/cli.md:2: documented exit status 1 has no executing test that asserts it' || { echo "FAIL V3.03: ERR-002 does not fail the Spanish documented exit status with no test: $gote"; failures=1; }
+gote2="$( . "$fx/all.sh"; error_outcome_check "$ed" src/x.ts -- test/exit.test.ts -- docs/cli.md )"
+printf '%s\n' "$gote2" | grep -q 'documented exit status 1' && { echo "FAIL V3.03: ERR-002 fails the Spanish exit status with a test that asserts it: $gote2"; failures=1; }
+
+# DEC-004: a triggered record with no governed path is NOT VERIFIED, never silent.
+dn="$fx/order2"; mkdir -p "$dn/docs/decisions"; git -C "$dn" init -q && git -C "$dn" config user.email v@v.v && git -C "$dn" config user.name v
+printf '%s\n' '# ADR' 'Decided before implementation.' > "$dn/docs/decisions/nopath.md" && git -C "$dn" add . && git -C "$dn" commit -qm rec
+gotn="$( . "$fx/all.sh"; decision_order_check "$dn" docs/decisions/nopath.md "" )"
+printf '%s\n' "$gotn" | grep -qF 'NOT VERIFIED DEC-004: docs/decisions/nopath.md:1:' || { echo "FAIL V3.03: DEC-004 passes a triggered record with no governed path: $gotn"; failures=1; }
+
+# Third-audit corrections: a named generator, a bare "this" that is not a reason, the Spanish exit status under the C
+# locale, and the DEC-004 message for a record and its code in one commit.
+fn3="$fx/func4"; mkdir -p "$fn3" && git -C "$fn3" init -q && git -C "$fn3" config user.email v@v.v && git -C "$fn3" config user.name v
+echo 'export const base = 1;' > "$fn3/base.ts" && git -C "$fn3" add . && git -C "$fn3" commit -qm base
+printf '%s\n' 'export function* gen() { yield 1; }' > "$fn3/named.ts"
+printf '%s\n' '// this file exports the helper' 'export const h = function () { return 1; };' > "$fn3/bareThis.ts"
+gotfn3="$( . "$fx/all.sh"; cd "$fn3" && func001_scan HEAD )"
+printf '%s\n' "$gotfn3" | grep -qF 'FAIL FUNC-001: named.ts:1:' || { echo "FAIL V3.03: FUNC-001 misses a named generator: $gotfn3"; failures=1; }
+printf '%s\n' "$gotfn3" | grep -qF 'FAIL FUNC-001: bareThis.ts:2:' || { echo "FAIL V3.03: FUNC-001 accepts the word this as a reason: $gotfn3"; failures=1; }
+ec="$fx/errc"; mkdir -p "$ec/docs" "$ec/test"
+printf '%s\n' '# CLI' '- Código de salida 1: error no controlado.' > "$ec/docs/cli.md"
+printf '%s\n' "import { test } from 'vitest';" "test('help', () => { run('--help'); });" > "$ec/test/help.test.ts"
+gotec="$( . "$fx/all.sh"; LC_ALL=C error_outcome_check "$ec" src/x.ts -- test/help.test.ts -- docs/cli.md )"
+printf '%s\n' "$gotec" | grep -qF 'FAIL ERR-002: docs/cli.md:2: documented exit status 1' || { echo "FAIL V3.03: ERR-002 skips the Spanish exit status under LC_ALL=C: $gotec"; failures=1; }
+sc="$fx/same"; mkdir -p "$sc/docs/decisions" "$sc/src"; git -C "$sc" init -q && git -C "$sc" config user.email v@v.v && git -C "$sc" config user.name v
+printf '%s\n' '# ADR: antes de implementar' '`src/a.ts`' > "$sc/docs/decisions/same.md"; echo 'export const a = 1;' > "$sc/src/a.ts"
+git -C "$sc" add . && git -C "$sc" commit -qm together
+gotsc="$( . "$fx/all.sh"; decision_order_check "$sc" docs/decisions/same.md src/a.ts )"
+printf '%s\n' "$gotsc" | grep -qF 'enter the history in the same commit' || { echo "FAIL V3.03: DEC-004 gives no same-commit reason: $gotsc"; failures=1; }
+
+# DEC-005 (field coverage, A-2): a field name of a cited contract that the record does not name fails; a record that
+# names every field passes; a contract that is not in the repository is NOT VERIFIED.
+fd="$fx/field"; mkdir -p "$fd/contracts" "$fd/docs/decisions"
+printf '%s\n' '{' '  "orderId": "string",' '  "amount": 1' '}' > "$fd/contracts/charge.json"
+printf '%s\n' '# ADR' 'Source: `contracts/charge.json`.' '' '## Deviations' '' '- orderId: present in the code.' > "$fd/docs/decisions/bad.md"
+printf '%s\n' '# ADR' 'Source: `contracts/charge.json`.' '' '## Deviations' '' '- orderId: present in the code.' '- amount: matches.' > "$fd/docs/decisions/good.md"
+printf '%s\n' '# ADR' 'Source: `contracts/missing.json`.' '' '## Deviations' '' '- none.' > "$fd/docs/decisions/absent.md"
+gotfd="$( . "$fx/all.sh"; decision_field_check "$fd" docs/decisions/bad.md )"
+printf '%s\n' "$gotfd" | grep -qF 'FAIL DEC-005: docs/decisions/bad.md:1: field "amount"' || { echo "FAIL V3.03: DEC-005 does not fail the unnamed field: $gotfd"; failures=1; }
+gotfd2="$( . "$fx/all.sh"; decision_field_check "$fd" docs/decisions/good.md )"
+[ -z "$gotfd2" ] || { echo "FAIL V3.03: DEC-005 fails the record that names every field: $gotfd2"; failures=1; }
+gotfd3="$( . "$fx/all.sh"; decision_field_check "$fd" docs/decisions/absent.md )"
+printf '%s\n' "$gotfd3" | grep -qF 'NOT VERIFIED DEC-005: docs/decisions/absent.md:1:' || { echo "FAIL V3.03: DEC-005 does not hold the absent contract as NOT VERIFIED: $gotfd3"; failures=1; }
+
+# Wiring guard (repetition of the unwired-control gap): every function that output-compliance defines is called by a
+# workflow or a reference. The functions below have no caller anywhere in the repository; they are a pre-existing
+# finding (PRE-WIRE-001, reported, not blocking any unrelated change) and may not grow without a listed reason.
+PRE_WIRE="check_boundary_report check_phase_plan checklist_not_a_plan checklist_not_phase_names"
+unwired=""
+for fn in $(grep -oE '^[a-z0-9_]+\(\) \{' "$oc" | sed 's/() {//'); do
+  # A call is the name at the start of a command: after a separator, an opening parenthesis, a command substitution,
+  # or a shell keyword (do, then, else, if, while, until). A prose mention is not a call.
+  pat="(^|[;|&(!]|\\\$\\(|do |then |else |if |while |until )[[:space:]]*${fn}([[:space:]]|\\)|;|\$)"
+  n="$(grep -rhE "$pat" "$oc" "$root/workflows" "$root/references" "$root/agents" 2>/dev/null |
+    grep -vE "^[[:space:]]*${fn}\\(\\) \\{" | wc -l | tr -d ' ')"
+  if [ "$n" -eq 0 ]; then
+    case " $PRE_WIRE " in *" $fn "*) ;; *) unwired="$unwired $fn" ;; esac
+  fi
+done
+[ -z "$unwired" ] || { echo "FAIL V3.03: a function defined in output-compliance has no caller and is not a listed pre-existing finding:$unwired"; failures=1; }
+echo "PRE-WIRE-001 (pre-existing, not blocking): defined with no caller: $PRE_WIRE"
+
+# Fourth-audit corrections. Each is a fixture so the detector cannot regress silently.
+f4="$fx/func5"; mkdir -p "$f4" && git -C "$f4" init -q && git -C "$f4" config user.email v@v.v && git -C "$f4" config user.name v
+echo 'export const base = 1;' > "$f4/base.ts" && git -C "$f4" add . && git -C "$f4" commit -qm base
+printf '%s\n' '// IIFE' 'export const gen = (function* () { yield 1; })();' > "$f4/iife.ts"
+got4="$( . "$fx/all.sh"; cd "$f4" && func001_scan HEAD )"
+printf '%s\n' "$got4" | grep -qF 'FAIL FUNC-001: iife.ts:2:' || { echo "FAIL V3.03: FUNC-001 accepts IIFE as a reason, which the rule does not allow: $got4"; failures=1; }
+got4b="$( . "$fx/all.sh"; cd "$f4" && func001_scan nosuchref )"
+printf '%s\n' "$got4b" | grep -qF 'NOT VERIFIED FUNC-001: base nosuchref does not resolve' || { echo "FAIL V3.03: FUNC-001 passes silently when the base does not resolve: $got4b"; failures=1; }
+dp="$fx/dev3"; mkdir -p "$dp/guias"; printf '# LIB-02\nFixture: ../demo-cli\n' > "$dp/guias/g.md"
+printf '# Report\n\nDEVIATION: guias/g.md cites ../demo-cli-old; the path is ../demo-cli-old.\n' > "$dp/rep.md"
+gotdp="$( . "$fx/all.sh"; fixture_deviation_check "$dp" guias/g.md rep.md )"
+printf '%s\n' "$gotdp" | grep -qF 'FAIL DEVIATION-001: guias/g.md: the path ../demo-cli does not resolve' || { echo "FAIL V3.03: DEVIATION-001 accepts ../demo-cli-old as a declaration of ../demo-cli: $gotdp"; failures=1; }
+dr3="$fx/dec3"; mkdir -p "$dr3/docs/decisions"
+printf '%s\n' '# ADR' 'Esta decisión precede a la implementación de `src/a.ts`.' > "$dr3/docs/decisions/es.md"
+gotdr3="$( . "$fx/all.sh"; decision_order_check "$dr3" docs/decisions/es.md src/a.ts )"
+printf '%s\n' "$gotdr3" | grep -q 'DEC-004' || { echo "FAIL V3.03: DEC-004 does not trigger on the Spanish order claim: $gotdr3"; failures=1; }
+fk="$fx/field2"; mkdir -p "$fk/contracts" "$fk/docs/decisions"
+printf '%s\n' '{' '  "order-id": "string",' '  "amount": 1' '}' > "$fk/contracts/charge.json"
+printf '%s\n' '# ADR' 'Source: `contracts/charge.json`.' '' '## Deviations' '' '- amount: matches.' > "$fk/docs/decisions/h.md"
+gotfk="$( . "$fx/all.sh"; decision_field_check "$fk" docs/decisions/h.md )"
+printf '%s\n' "$gotfk" | grep -qF 'FAIL DEC-005: docs/decisions/h.md:1: field "order-id"' || { echo "FAIL V3.03: DEC-005 skips a hyphenated field name: $gotfk"; failures=1; }
+
+
+# Fifth-audit corrections. Each is a fixture; the wiring guard above runs on the real repository.
+sr2="$fx/srp2"; mkdir -p "$sr2/src"
+printf '%s\n' 'export const validateHeader = (h: string[]): boolean => h.length > 0;' 'export const readRows = (t: string): string[] => { const out: string[] = []; for (const ch of t) { out.push(ch.charAt(0)); } if (!validateHeader(out)) { return []; } return out; };' 'export const mapRows = (r: string[]) => r.map((x) => x.trim());' > "$sr2/src/csv-trio.ts"
+gots2="$( . "$fx/all.sh"; srp_unit_check "$sr2" src/csv-trio.ts )"
+printf '%s\n' "$gots2" | grep -qF 'FAIL SRP-001: src/csv-trio.ts:' && printf '%s\n' "$gots2" | grep -qF 'text parsing' && printf '%s\n' "$gots2" | grep -qF 'row mapping' && printf '%s\n' "$gots2" | grep -qF 'manifest or contract validation' || { echo "FAIL V3.03: SRP-001 does not list the tokenizer, validation, and mapping unit without an await: $gots2"; failures=1; }
+tp="$fx/typed"; mkdir -p "$tp/src"; printf '%s\n' 'type Handler = (x: number) => number;' 'export const handler: Handler = (x) => x;' > "$tp/src/handler.ts"
+gottp="$( . "$fx/all.sh"; cd "$tp" && changed_paths="src/handler.ts" type001_scan )"
+printf '%s\n' "$gottp" | grep -qF 'FAIL TYPE-001: src/handler.ts' || { echo "FAIL V3.03: TYPE-001 misses a typed const arrow in a file that declares a type: $gottp"; failures=1; }
+fa="$fx/args"; mkdir -p "$fa" && git -C "$fa" init -q && git -C "$fa" config user.email v@v.v && git -C "$fa" config user.name v
+echo 'export const base = 1;' > "$fa/base.ts" && git -C "$fa" add . && git -C "$fa" commit -qm base
+printf '%s\n' '// the arguments list is documented' 'export const g = function () { return 1; };' > "$fa/loose.ts"
+printf '%s\n' '// uses arguments to read the variadic input' 'export const h = function () { return arguments.length; };' > "$fa/named.ts"
+gotfa="$( . "$fx/all.sh"; cd "$fa" && func001_scan HEAD )"
+printf '%s\n' "$gotfa" | grep -qF 'FAIL FUNC-001: loose.ts:2:' || { echo "FAIL V3.03: FUNC-001 accepts a comment that names arguments without stating the reason: $gotfa"; failures=1; }
+printf '%s\n' "$gotfa" | grep -q 'named.ts' && { echo "FAIL V3.03: FUNC-001 fails the comment that states the arguments reason: $gotfa"; failures=1; }
+dq="$fx/dev4"; mkdir -p "$dq/guias"; printf '# LIB-02\nFixture: ../demo-cli\n' > "$dq/guias/g.md"
+printf '# Report\n\nDEVIATION: guias/g.md cites ../demo-cli.\n' > "$dq/rep.md"
+gotdq="$( . "$fx/all.sh"; fixture_deviation_check "$dq" guias/g.md rep.md )"
+[ -z "$gotdq" ] || { echo "FAIL V3.03: DEVIATION-001 rejects a declaration with a sentence-final period: $gotdq"; failures=1; }
+fj="$fx/field3"; mkdir -p "$fj/contracts" "$fj/docs/decisions"
+printf '%s\n' '{' '  "$schema": "https://json-schema.org/draft/2020-12/schema",' '  "order-id": { "minLength": 1 }' '}' > "$fj/contracts/schema.json"
+printf '%s\n' '# ADR' 'Source: `contracts/schema.json`.' '' '## Deviations' '' '- order-id: matches.' > "$fj/docs/decisions/k.md"
+gotfj="$( . "$fx/all.sh"; decision_field_check "$fj" docs/decisions/k.md )"
+[ -z "$gotfj" ] || { echo "FAIL V3.03: DEC-005 treats a JSON Schema keyword as a field: $gotfj"; failures=1; }
+dp2="$fx/dec5"; mkdir -p "$dp2/docs/decisions" "$dp2/docs/api"
+printf '%s\n' '# ADR' 'The public API is described in `docs/api/spec.json`.' > "$dp2/docs/decisions/nocontract.md"
+gotdp2="$( . "$fx/all.sh"; decision_deviation_check "$dp2" docs/decisions/nocontract.md )"
+printf '%s\n' "$gotdp2" | grep -qF 'FAIL DEC-003: docs/decisions/nocontract.md:1:' || { echo "FAIL V3.03: DEC-003 does not trigger on a cited JSON contract path: $gotdp2"; failures=1; }
+fl2="$fx/floor4"; mkdir -p "$fl2/src"; printf '%s\n' 'const m = import.meta.main;' > "$fl2/src/cli.ts"
+gotfl2="$( . "$fx/all.sh"; runtime_floor_check "$fl2" src/cli.ts 2>&1 )"
+printf '%s\n' "$gotfl2" | grep -qF 'NOT VERIFIED FLOOR-001: package.json declares no engines.node floor' || { echo "FAIL V3.03: FLOOR-001 without package.json: $gotfl2"; failures=1; }
+printf '%s\n' "$gotfl2" | grep -q 'No such file' && { echo "FAIL V3.03: FLOOR-001 leaks a shell error without package.json: $gotfl2"; failures=1; }
+rm -rf "$fx"
+echo "V3.03 behavioral fixtures removed"
+[ "$failures" -eq 0 ] && echo "V3.03 PASS" || echo "V3.03 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.04 Regression — A Learning-Cycle Audit Converges (M-133)
+
+Each class below is reproduced by a fixture: a called detector missing from a fixture extract, a fixture directory left
+behind after a failure, and a finding repeated across runs because one fix did not search its surrounding surfaces. Canonical anchor: A learning-cycle audit converges (M-133). The check is
+`CONVERGE-001`. It runs on the repository and on a defective and a compliant fixture, in a temporary directory
+outside the repository, removed by a trap on exit.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+need() {
+  grep -qF -- "$2" "$root/$1" || { echo "FAIL V3.04: $1 does not carry $3"; failures=1; }
+}
+
+# The anchor is read from the registry, its single source: a copy held here drifted from the registry and this
+# gate failed on a tree that V2.32 accepts (audit A-1).
+m133_anchor="$(grep -E '^\| M-133 \|' "$root/references/mandatory-rules.md" | awk -F'|' '{print $5}' | sed 's/`//g; s/^[[:space:]]*//; s/[[:space:]]*$//')"
+[ -n "$m133_anchor" ] || { echo "FAIL V3.04: references/mandatory-rules.md carries no M-133 anchor"; failures=1; }
+
+need AGENTS.md "$m133_anchor" "the canonical M-133 wording"
+need references/mandatory-rules.md '| M-133 |' "the M-133 registry row"
+need references/system-workflow-regression-matrix.md '| R-210 |' "the R-210 regression row"
+need workflows/task-to-code.md "$m133_anchor" "the convergence step of the learning cycle"
+
+# CONVERGE-001 (a): every function the sweep calls is defined in the unit. $1 = output-compliance file.
+converge_calls_check() {
+  # zsh does not split the unquoted words the checks rely on; the check refuses to run under zsh (as the sweep does).
+  if [ -n "${ZSH_VERSION:-}" ]; then echo "NOT VERIFIED CONVERGE-001: run under POSIX sh, not zsh"; return 0; fi
+  defs="$(grep -oE '^[a-z][a-z0-9_]*\(\) \{' "$1" | sed 's/() {//')"
+  calls="$(sed -n '/^project_safety_sweep() {/,/^}/p' "$1" | grep -v '^[[:space:]]*#' |
+    grep -oE '(^|[ ;|&(]|do |then |else )[a-z][a-z0-9]*(_[a-z0-9]+)+( |$)' |
+    sed -E 's/^(do |then |else )?[ ;|&(]*//; s/ *$//' | sort -u)"
+  for c in $calls; do
+    printf '%s\n' "$defs" | grep -qxF "$c" ||
+      echo "FAIL CONVERGE-001: $1: the sweep calls $c, which is defined nowhere in the unit (M-133)"
+  done
+}
+
+# CONVERGE-001 (b): every fixture directory is removed on exit by a trap. $1 = validation file.
+converge_trap_check() {
+  grep -nE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*="?\$\(mktemp -d' "$1" | while IFS= read -r hit; do
+    ln="${hit%%:*}"
+    var="$(printf '%s' "${hit#*:}" | sed -E 's/^[[:space:]]*//; s/=.*//')"
+    lo=$((ln-2)); [ "$lo" -lt 1 ] && lo=1
+    sed -n "${lo},$((ln+2))p" "$1" | grep -E '^[[:space:]]*trap .*rm -rf.*EXIT' | grep -qF "\$$var" ||
+      echo "FAIL CONVERGE-001: $1:$ln: the directory in $var is created with no trap that removes it on exit (M-133)"
+  done
+}
+
+converge_calls_check "$root/workflows/output-compliance.md"
+converge_trap_check "$root/workflows/system-validation.md"
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v304.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+# Defective fixture: the sweep calls a function nobody defines, and a fixture has no trap.
+printf '%s\n' 'zz_defined_check() {' '  echo x' '}' 'project_safety_sweep() {' '  zz_defined_check .' '  zz_missing_check .' '}' > "$fx/bad.md"
+printf '%s\n' 'zz_defined_check() {' '  echo x' '}' 'project_safety_sweep() {' '  zz_defined_check .' '}' > "$fx/good.md"
+gotc="$(converge_calls_check "$fx/bad.md")"
+printf '%s\n' "$gotc" | grep -qF 'the sweep calls zz_missing_check' || { echo "FAIL V3.04: CONVERGE-001 does not report the undefined call: $gotc"; failures=1; }
+gotg="$(converge_calls_check "$fx/good.md")"
+[ -z "$gotg" ] || { echo "FAIL V3.04: CONVERGE-001 reports the compliant sweep: $gotg"; failures=1; }
+printf '%s\n' 'fx="$(mktemp -d "${TMPDIR:-/tmp}/x.XXXXXX")"' 'echo run' > "$fx/notrap.sh"
+printf '%s\n' 'fx="$(mktemp -d "${TMPDIR:-/tmp}/x.XXXXXX")"' "trap 'rm -rf \"\$fx\"' EXIT" 'echo run' > "$fx/trap.sh"
+printf '%s\n' 'fx="$(mktemp -d "${TMPDIR:-/tmp}/x.XXXXXX")"' '' '' "trap 'rm -rf \"\$fx\"' EXIT" 'echo run' > "$fx/plus3.sh"
+gotp3="$(converge_trap_check "$fx/plus3.sh")"
+printf '%s\n' "$gotp3" | grep -qF 'FAIL CONVERGE-001' || { echo "FAIL V3.04: CONVERGE-001 accepts a trap on line +3: $gotp3"; failures=1; }
+gott="$(converge_trap_check "$fx/notrap.sh")"
+printf '%s\n' "$gott" | grep -qF 'FAIL CONVERGE-001' || { echo "FAIL V3.04: CONVERGE-001 accepts a fixture directory with no trap: $gott"; failures=1; }
+gottp="$(converge_trap_check "$fx/trap.sh")"
+[ -z "$gottp" ] || { echo "FAIL V3.04: CONVERGE-001 rejects a fixture directory with a trap: $gottp"; failures=1; }
+
+# The repository itself: no undefined sweep call, and every fixture directory has a trap.
+rc1="$(converge_calls_check "$root/workflows/output-compliance.md")"
+[ -z "$rc1" ] || { echo "FAIL V3.04: the sweep calls undefined functions: $rc1"; failures=1; }
+rc2="$(converge_trap_check "$root/workflows/system-validation.md")"
+[ -z "$rc2" ] || { echo "FAIL V3.04: fixture directories without a trap: $rc2"; failures=1; }
+
+rm -rf "$fx"
+echo "V3.04 behavioral fixtures removed"
+[ "$failures" -eq 0 ] && echo "V3.04 PASS" || echo "V3.04 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.05 Regression — Path and Branch Claims Read as Claims, Not Prose (M-110, M-127)
+
+The detectors ARTIFACT-001 and GIT-001 flagged prose, quoted code, and shell operands as claims: a bare `../` or
+`~/`, a bare absolute prefix, a `docs/` directory, a `refs/heads/...` name, a URL path segment read as a branch, a
+branch keyword inside another word, a branch keyword on another line than its token, the word `head` in prose, a
+runtime `$` path, a Markdown table row, a sentence-final period, a URL line that hides a real climbing citation,
+fixture code inside a fenced block, and a file a script writes at run time. Each class is
+reproduced below, together with the real claim that must still fail. The detectors are in `workflows/output-compliance.md`; the fixtures are created in a
+temporary directory outside the repository, removed by a trap on exit.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v305.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+oc="$root/workflows/output-compliance.md"
+sed -n '/^bounded() {/,/^}/p' "$oc" > "$fx/bd.sh"
+sed -n '/^artifact_path_check() {/,/^}/p' "$oc" > "$fx/art.sh"
+sed -n '/^git_claim_check() {/,/^}/p' "$oc" > "$fx/git.sh"
+sh -n "$fx/bd.sh" && sh -n "$fx/art.sh" && sh -n "$fx/git.sh" || { echo "FAIL V3.05: the detectors do not parse"; failures=1; }
+
+# ARTIFACT-001: prose with a bare "../", "~/", or "/Users/" is not a claim; a shell operand is not a citation;
+# a fenced code block is quoted code, not a claim.
+a="$fx/prose"; mkdir -p "$a"
+printf '%s\n' 'A path that climbs with `../` or starts at `~/` is checked. A bare `/Users/` prefix names no file.' > "$a/bare.md"
+printf '%s\n' '```sh' 'printf x > "$dir/out.json"' 'grep -qF "FAIL ARTIFACT-001: ../demo-backend" file' '```' > "$a/operand.md"
+printf '%s\n' 'sed -n "s|x|../outside/y|p" notes.md' > "$a/cmdline.md"
+gota="$( . "$fx/art.sh"; artifact_path_check "$a" bare.md operand.md cmdline.md )"
+printf '%s\n' "$gota" | grep -qE 'bare\.md|operand\.md|cmdline\.md' && { echo "FAIL V3.05: ARTIFACT-001 flags bare prefixes, a shell operand, a fenced block, or a command line: $gota"; failures=1; }
+
+# ARTIFACT-001: a URL token is not a path, and a real climbing citation on the same line still fails (audit A-2).
+printf '%s\n' 'See https://example.com/docs and ../secret/notes.txt for the source.' > "$a/urlpath.md"
+printf '%s\n' 'The guide is at https://example.com/docs/guide.md and is public.' > "$a/urlonly.md"
+gotu="$( . "$fx/art.sh"; artifact_path_check "$a" urlpath.md urlonly.md )"
+printf '%s\n' "$gotu" | grep -qF 'FAIL ARTIFACT-001: urlpath.md:1: ../secret/notes.txt' || { echo "FAIL V3.05: ARTIFACT-001 skips a climbing citation on a line that holds a URL: $gotu"; failures=1; }
+printf '%s\n' "$gotu" | grep -qF 'urlonly.md' && { echo "FAIL V3.05: ARTIFACT-001 flags a URL as a path: $gotu"; failures=1; }
+
+# ARTIFACT-001: prose that mentions a runtime `$` path is read, and a runtime path is not a citation; prose that
+# mentions a command mid-sentence is still read, so a climbing citation on that line still fails.
+printf '%s\n' 'The receipt is written to $UPLOAD_DIR/receipts.json and the source is ../reference/source.md.' 'The audit found a grep -q check in ../reference/notes.md before the fix.' > "$a/varprose.md"
+gotv="$( . "$fx/art.sh"; artifact_path_check "$a" varprose.md )"
+printf '%s\n' "$gotv" | grep -qF 'UPLOAD_DIR/receipts.json' && { echo "FAIL V3.05: ARTIFACT-001 flags a runtime \$ path in prose: $gotv"; failures=1; }
+printf '%s\n' "$gotv" | grep -qF 'FAIL ARTIFACT-001: varprose.md:1: ../reference/source.md' || { echo "FAIL V3.05: ARTIFACT-001 skips a climbing citation on a prose line that mentions a \$ path: $gotv"; failures=1; }
+printf '%s\n' "$gotv" | grep -qF 'FAIL ARTIFACT-001: varprose.md:2: ../reference/notes.md' || { echo "FAIL V3.05: ARTIFACT-001 misses a climbing citation on a prose line that mentions a command: $gotv"; failures=1; }
+
+# ARTIFACT-001: a climbing, home, or absolute citation in prose still FAILs.
+c="$fx/claim"; mkdir -p "$c"
+printf '%s\n' 'The result is in ../demo-backend/src/app.ts for review.' 'The notes are at ~/notes.txt for the operator.' 'The build log is /Users/x/build/log.txt.' '| R-160 | a document that cites ../outside/result.json is checked |' > "$c/claim.md"
+gotc="$( . "$fx/art.sh"; artifact_path_check "$c" claim.md )"
+printf '%s\n' "$gotc" | grep -qF 'FAIL ARTIFACT-001: claim.md:1: ../demo-backend' || { echo "FAIL V3.05: ARTIFACT-001 misses a climbing citation in prose: $gotc"; failures=1; }
+printf '%s\n' "$gotc" | grep -qF 'FAIL ARTIFACT-001: claim.md:2:' || { echo "FAIL V3.05: ARTIFACT-001 misses a home citation in prose: $gotc"; failures=1; }
+printf '%s\n' "$gotc" | grep -qF 'FAIL ARTIFACT-001: claim.md:3: /Users/x/build/log.txt' || { echo "FAIL V3.05: ARTIFACT-001 misses an absolute citation in prose: $gotc"; failures=1; }
+printf '%s\n' "$gotc" | grep -qF 'FAIL ARTIFACT-001: claim.md:4: ../outside/result.json' || { echo "FAIL V3.05: ARTIFACT-001 skips a citation in a table row because it starts with a pipe: $gotc"; failures=1; }
+
+# ARTIFACT-001: the sentence period after a path is punctuation, not part of the token, and the path is reported once.
+printf '%s\n' 'The build log is /Users/x/build/log.txt.' > "$c/period.md"
+gotp="$( . "$fx/art.sh"; artifact_path_check "$c" period.md )"
+[ "$(printf '%s\n' "$gotp" | grep -cF 'FAIL ARTIFACT-001: period.md:1:')" -eq 1 ] || { echo "FAIL V3.05: ARTIFACT-001 reports a sentence-final path more than once: $gotp"; failures=1; }
+printf '%s\n' "$gotp" | grep -qF 'log.txt.' && { echo "FAIL V3.05: ARTIFACT-001 keeps the sentence period in the token: $gotp"; failures=1; }
+
+# GIT-001: a missing branch in branch context fails; a directory, refs/heads, a keyword inside another word, the
+# word "head" in prose, and fixture code in a fenced block never claim a branch.
+g="$fx/repo"; mkdir -p "$g/docs/decisions"
+git -C "$g" init -q && git -C "$g" config user.email v@v.v && git -C "$g" config user.name v
+echo x > "$g/docs/decisions/a.md" && git -C "$g" add . && git -C "$g" commit -qm base
+printf '%s\n' '# Note' 'Stored in docs/decisions and refs/heads/main for the record.' > "$g/path.md"
+printf '%s\n' '# Note' 'The work is on branch fix/does-not-exist, which is ready.' > "$g/branch.md"
+printf '%s\n' 'That plan was drama, not delivery.' "| decisions | docs/adr/ | Decisions that only exist in someone's head |" > "$g/word.md"
+printf '%s\n' '```sh' 'printf "on branch fix/nope" > out.md' 'grep -qF "branch fix/nope2" out.md' '```' > "$g/code.md"
+printf '%s\n' '# Note' 'The work is on a branch, and the context is' 'task/design/repo for the record.' > "$g/split.md"
+gote="$( . "$fx/bd.sh"; . "$fx/git.sh"; git_claim_check "$g" main path.md word.md code.md split.md )"
+[ -z "$gote" ] || { echo "FAIL V3.05: GIT-001 flags a directory, refs/heads, a contained keyword, the word head, fenced code, or a split-line slash phrase: $gote"; failures=1; }
+gotb="$( . "$fx/bd.sh"; . "$fx/git.sh"; git_claim_check "$g" main branch.md )"
+printf '%s\n' "$gotb" | grep -qF 'FAIL GIT-001: branch.md:2: the cited branch fix/does-not-exist does not exist' || { echo "FAIL V3.05: GIT-001 misses a missing branch in branch context: $gotb"; failures=1; }
+
+# The branch type list is closed and stated; a type it names is claimed, so a missing branch of that type fails.
+printf '%s\n' '# Note' 'The work is on branch hotfix/urgent-missing, which is ready.' > "$g/hotfix.md"
+goth="$( . "$fx/bd.sh"; . "$fx/git.sh"; git_claim_check "$g" main hotfix.md )"
+printf '%s\n' "$goth" | grep -qF 'FAIL GIT-001: hotfix.md:2: the cited branch hotfix/urgent-missing does not exist' || { echo "FAIL V3.05: GIT-001 misses a missing branch of a listed type: $goth"; failures=1; }
+
+# A token that names an existing path, or a document file, is a path and not a branch.
+printf '%s\n' '# Guide' > "$g/docs/guide.md"
+printf '%s\n' '# Note' 'The docs branch docs/guide.md is ready.' > "$g/pathtok.md"
+printf '%s\n' '# Note' 'The docs branch docs/missing.md is pending.' > "$g/doctok.md"
+gotpt="$( . "$fx/bd.sh"; . "$fx/git.sh"; git_claim_check "$g" main pathtok.md doctok.md )"
+[ -z "$gotpt" ] || { echo "FAIL V3.05: GIT-001 reads an existing path or a document file as a branch: $gotpt"; failures=1; }
+
+# The git ref HEAD claims a branch on its line, and the prose word head does not.
+printf '%s\n' '# Note' 'The commit came from HEAD while fix/head-missing was checked out.' > "$g/headref.md"
+printf '%s\n' '# Note' 'The commit came from head while fix/head-prose-missing was checked out.' > "$g/headprose.md"
+gothd="$( . "$fx/bd.sh"; . "$fx/git.sh"; git_claim_check "$g" main headref.md )"
+printf '%s\n' "$gothd" | grep -qF 'FAIL GIT-001: headref.md:2: the cited branch fix/head-missing does not exist' || { echo "FAIL V3.05: GIT-001 does not read the git ref HEAD as branch context: $gothd"; failures=1; }
+gothp="$( . "$fx/bd.sh"; . "$fx/git.sh"; git_claim_check "$g" main headprose.md )"
+[ -z "$gothp" ] || { echo "FAIL V3.05: GIT-001 reads the prose word head as the git ref HEAD: $gothp"; failures=1; }
+
+# GIT-001: a URL path segment is not a branch, and a real branch token on the same line still fails (audit A-3).
+printf '%s\n' '# Note' 'The branch documentation is at https://example.com/docs/feature/foo for the record.' > "$g/urlbranch.md"
+printf '%s\n' '# Note' 'The branch fix/url-missing is documented at https://example.com/docs/feature/foo.' > "$g/urlreal.md"
+gotub="$( . "$fx/bd.sh"; . "$fx/git.sh"; git_claim_check "$g" main urlbranch.md )"
+[ -z "$gotub" ] || { echo "FAIL V3.05: GIT-001 reads a URL path segment as a branch: $gotub"; failures=1; }
+gotur="$( . "$fx/bd.sh"; . "$fx/git.sh"; git_claim_check "$g" main urlreal.md )"
+printf '%s\n' "$gotur" | grep -qF 'FAIL GIT-001: urlreal.md:2: the cited branch fix/url-missing does not exist' || { echo "FAIL V3.05: GIT-001 skips a real branch token on a line that holds a URL: $gotur"; failures=1; }
+
+# A prose line that mentions a runtime `$` path is read, so the branch claim on it still fails.
+printf '%s\n' '# Note' 'The job writes $UPLOAD_DIR/out.txt and names branch fix/still-missing.' > "$g/varprose.md"
+gotw="$( . "$fx/bd.sh"; . "$fx/git.sh"; git_claim_check "$g" main varprose.md )"
+printf '%s\n' "$gotw" | grep -qF 'FAIL GIT-001: varprose.md:2: the cited branch fix/still-missing does not exist' || { echo "FAIL V3.05: GIT-001 skips a branch claim on a prose line that mentions a \$ path: $gotw"; failures=1; }
+
+# A flag is reported on the line that holds the token, and once (never on a blank line by window overlap).
+printf '%s\n' '' 'The work is on branch fix/blank-gap, which is ready.' '' > "$g/gap.md"
+gotg="$( . "$fx/bd.sh"; . "$fx/git.sh"; git_claim_check "$g" main gap.md )"
+[ "$(printf '%s\n' "$gotg" | grep -cF 'FAIL GIT-001: gap.md:2: the cited branch fix/blank-gap does not exist')" -eq 1 ] || { echo "FAIL V3.05: GIT-001 reports the claim more than once or on the wrong line: $gotg"; failures=1; }
+
+# A capitalized commit and an uppercase hex identifier are read.
+printf '%s\n' 'Mentioned in Commit ABCD1234EF01 yesterday.' > "$g/up.md"
+gotu="$( . "$fx/bd.sh"; . "$fx/git.sh"; git_claim_check "$g" main up.md )"
+printf '%s\n' "$gotu" | grep -qF 'FAIL GIT-001: up.md:1: the cited commit ABCD1234EF01 does not resolve' || { echo "FAIL V3.05: GIT-001 misses an uppercase or capitalized commit: $gotu"; failures=1; }
+
+# M-54: the alarm bound is asserted with a dependency that never resolves: the call ends in a terminal state and
+# the dependency's own completion marker is absent, so the outcome is an event, never a wall-clock measurement.
+mkdir -p "$g/bin"; printf '%s\n' '#!/bin/sh' 'sleep 30' 'touch "$GIT_NEVER_MARKER"' 'exit 0' > "$g/bin/git"; chmod +x "$g/bin/git"
+rm -f "$g/never-done"
+gott="$( export PATH="$g/bin:$PATH" GIT_TIMEOUT_SECONDS=1 GIT_NEVER_MARKER="$g/never-done"; . "$fx/bd.sh"; . "$fx/git.sh"; git_claim_check "$g" main branch.md )"
+printf '%s\n' "$gott" | grep -qF 'NOT VERIFIED GIT-001' || { echo "FAIL V3.05: the bounded git call does not end in a terminal state: $gott"; failures=1; }
+[ ! -e "$g/never-done" ] || { echo "FAIL V3.05: the dependency reached its own completion, so the call was not cut by the bound"; failures=1; }
+
+rm -rf "$fx"
+echo "V3.05 behavioral fixtures removed"
+[ "$failures" -eq 0 ] && echo "V3.05 PASS" || echo "V3.05 FAIL"
 [ "$failures" -eq 0 ]
 ```

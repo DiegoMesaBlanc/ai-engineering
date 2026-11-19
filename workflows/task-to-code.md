@@ -766,6 +766,12 @@ real gap found in the system's own artifacts.
    checkpoint as the learning-cycle record: the commit gate reads it, and a
    missing record blocks the proposal (M-122).
 
+6. **A learning-cycle audit converges (M-133).** When the audit reports findings, the caller does not start the next run until the batch is
+   complete: each finding has a fixture that fails before its fix and passes after it, and the class of each finding is
+   searched across the change set (the same pattern in every surface). The audit subagent is not sent a message while it
+   runs; a follow-up is a new subagent with the full contract. A run that repeats a finding of an earlier run is reported
+   as a defect of the fix procedure, with the surface the first fix missed.
+
 ## Phase 13 — Git Delivery
 
 Inspect:
