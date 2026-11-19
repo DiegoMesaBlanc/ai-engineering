@@ -381,6 +381,30 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 ```
 
+## Deferred network work
+
+`fetchLater()` schedules a request that the browser sends when the page is
+navigated away from or destroyed, or after a supplied `activateAfter` timeout,
+whichever comes first. It fits best-effort telemetry and "send when done"
+beacons that must not compete with the critical path. It is not for work whose
+result the user is waiting for.
+
+- It is **limited availability and experimental**, not Baseline. Feature-detect
+  with `'fetchLater' in window` and keep a `fetch()` or `sendBeacon()` fallback;
+  never make a feature depend on it.
+- Catch `QuotaExceededError`. The browser enforces a quota and a rejected request
+  is a dropped beacon, not a user-visible error; callers embedding third-party
+  scripts should be especially defensive.
+- Validate computed timeouts: a negative `activateAfter` throws `RangeError`.
+- It accepts the `fetch()` parameters plus `activateAfter`, returns a
+  `FetchLaterResult` whose `activated` flag reports whether the request was
+  sent, and is controlled by the `connect-src` CSP directive.
+- Apply the same privacy rules as any telemetry: no credentials or personal data
+  in the body, and an explicit opt-out path.
+
+Source: MDN <https://developer.mozilla.org/en-US/docs/Web/API/Window/fetchLater>
+(consulted 2026-11-18).
+
 ## Measurement
 
 Use [the measurement workflow](references/MEASUREMENT.md) whenever a URL is runnable. It defines Chrome DevTools MCP routing, CrUX and fallback sources, repeatable lab conditions, and a compact evidence format.

@@ -238,6 +238,26 @@ When an element receives keyboard focus, it must not be entirely hidden by other
 
 Provide a skip link so keyboard users can bypass repetitive navigation. See the [skip link pattern](references/A11Y-PATTERNS.md#skip-link) for full markup and styles.
 
+### Popovers and overlays
+
+Use the HTML Popover API for non-modal overlays such as action menus, pickers,
+suggestions, and teaching UI. The top layer, light dismiss, Escape handling,
+and focus return come from the platform, without a positioning or focus-trap
+library. Wire the trigger with `popovertarget` and style the open state with
+`:popover-open`; use `showPopover()` / `togglePopover()` only when script is
+needed. See the [popover pattern](references/A11Y-PATTERNS.md#popovers-and-overlays).
+
+A popover is non-modal: the rest of the page stays interactive. When the page
+must be blocked until a choice is made, use `<dialog>` with `showModal()`
+instead — do not simulate modality by styling a popover. Give the panel an
+accessible name, keep trigger and panel in a sensible DOM order, and verify
+Escape, light dismiss, and focus return with a keyboard. Anchor positioning can
+place the panel next to its trigger; see
+`skills/frontend-design/SKILL.md#modern-css-primitives`. Support is Baseline
+2025 with some variation, so feature-detect and fall back for older browsers;
+see [MDN](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API)
+(consulted 2026-11-18).
+
 ### Target size (2.5.8) — new in 2.2
 
 Interactive targets must be at least **24 × 24 CSS pixels** (AA). Exceptions: inline text links, elements where the browser controls the size, and targets where a 24px circle centered on the bounding box does not overlap another target.
@@ -340,6 +360,8 @@ Every input needs a programmatically associated label. See the [form labels patt
 ### Error handling (3.3.1, 3.3.3)
 
 Announce errors to screen readers with `role="alert"` or `aria-live`, set `aria-invalid="true"` on invalid fields, and focus the first error on submit. See the [error handling pattern](references/A11Y-PATTERNS.md#error-handling) for full markup and JS.
+
+Use `:user-invalid` for the *visual* error state. Unlike `:invalid`, it matches only after the user has edited the field or a submit was attempted, so an untouched empty required field is not flagged on page load. Keep `aria-invalid` as the programmatic signal — the pseudo-class is styling only — and pair the color change with text or an icon so the error is not conveyed by color alone. Widely available since November 2023; see [MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/:user-invalid) (consulted 2026-11-18).
 
 ### Redundant entry (3.3.7) — new in 2.2
 

@@ -431,6 +431,37 @@ findNearbyButton.addEventListener('click', async () => {
 
 ---
 
+## Built-in AI (client-side model APIs)
+
+Chrome exposes on-device models through web APIs — Translator, Language
+Detector, Summarizer, Prompt, Writer, Rewriter, and Proofreader. They run in the
+browser without an API key or a server call, which makes them useful for
+summarizing, classifying, or rewriting user-provided text with no network cost.
+They are progressive enhancement, not a baseline capability.
+
+- Treat support as **Chrome-specific and per-API**, not as one switch. As of
+  the consulted documentation, Translator, Language Detector, and Summarizer are
+  stable from Chrome 138; the Prompt API is stable for Chrome Extensions and in
+  origin trial for web pages; Proofreader is in origin trial. Check the current
+  API status before adopting any of them.
+- Feature-detect the specific global, query `availability()` before use, and
+  handle model download states. A model may be `unavailable`, `downloadable`,
+  `downloading`, or `available`; downloading can be large, so ask before
+  triggering it and show progress.
+- Always provide a server or non-AI fallback. Never gate core functionality on
+  a built-in model being present.
+- Do not send secrets, credentials, or personal data into a prompt without an
+  explicit user action and a clear explanation. Treat every generated string as
+  untrusted input: validate it and never execute or inject it as HTML.
+- Keep privacy messaging accurate. On-device inference means the prompt stays
+  on the device for these APIs, but the surrounding application may still log
+  or transmit it.
+
+Source: Chrome for Developers
+<https://developer.chrome.com/docs/ai/built-in-apis> (consulted 2026-11-18).
+
+---
+
 ## Audit checklist
 
 ### Security (critical)
@@ -448,6 +479,7 @@ findNearbyButton.addEventListener('click', async () => {
 - [ ] Viewport meta tag present
 - [ ] No deprecated APIs used
 - [ ] Passive event listeners for scroll/touch
+- [ ] Built-in AI APIs are feature-detected with a non-AI fallback
 
 ### Code quality
 - [ ] No console errors

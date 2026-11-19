@@ -38,6 +38,8 @@ pre-delivery checks of `skills/ui-ux-design/SKILL.md`. Report each finding as
   indicator while it runs.
 - Show errors inline next to the field and move focus to the first error on
   submit.
+- Use `:user-invalid` for the visual error state and keep `aria-invalid` plus
+  error text as the programmatic signal (see `skills/accessibility/SKILL.md`).
 - Placeholders end with an ellipsis and show the expected pattern.
 - Warn before leaving a page with unsaved changes.
 
@@ -87,6 +89,8 @@ pre-delivery checks of `skills/ui-ux-design/SKILL.md`. Report each finding as
 - Navigation uses real links, so cmd/ctrl-click and middle-click work.
 - Destructive actions require a confirmation or an undo window; they are never
   immediate.
+- Use the native Popover API for non-modal overlays and `<dialog>` with
+  `showModal()` for modal choices (see `skills/accessibility/SKILL.md`).
 
 ## Touch and layout
 
@@ -100,6 +104,8 @@ pre-delivery checks of `skills/ui-ux-design/SKILL.md`. Report each finding as
 ## Theming and locale
 
 - Dark themes set `color-scheme: dark` on the root element.
+- When customizing scrollbars, set `scrollbar-color` with a thumb and track
+  color of sufficient contrast. Baseline 2025, so verify older browsers.
 - Native `<select>` elements set an explicit background and text color.
 - Dates, times, numbers, and currency use the locale formatters
   (`Intl.DateTimeFormat`, `Intl.NumberFormat`), not hardcoded formats.
@@ -122,6 +128,26 @@ pre-delivery checks of `skills/ui-ux-design/SKILL.md`. Report each finding as
 - Error messages say what to do next, not only what failed.
 - Address the user in the second person; avoid first person.
 - Use "&" instead of "and" where space is tight.
+
+## Modern platform primitives
+
+- Prefer container queries for component-level responsiveness and `subgrid` for
+  tracks aligned across sibling items (see
+  `skills/frontend-design/SKILL.md#modern-css-primitives`).
+- Use `oklch()` for perceptual color ramps, but verify contrast instead of
+  inferring it from the lightness value (same reference).
+- Use anchor positioning only with a fallback where support is uneven (same
+  reference).
+- `fetchLater()` is experimental: feature-detect it, catch `QuotaExceededError`,
+  and keep a `fetch()` fallback (see
+  `skills/performance/SKILL.md#deferred-network-work`).
+- Built-in AI APIs are Chrome-specific progressive enhancement: feature-detect
+  and provide a non-AI fallback (see
+  `skills/best-practices/SKILL.md#built-in-ai-client-side-model-apis`).
+
+Sources consulted 2026-11-18: MDN (`scrollbar-color`, `:user-invalid`, Popover
+API, container queries, Subgrid, `oklch()`, anchor positioning, `fetchLater()`)
+and Chrome for Developers (Built-in AI APIs).
 
 ## Anti-patterns to flag
 

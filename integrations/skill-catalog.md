@@ -165,6 +165,8 @@ commit; they are evaluated for consistency and policy alignment through
 - `stack-detection`
 - `pull-request`
 - `review-memory`
+- `context-compression`
+- `knowledge-graph`
 
 The technology families below describe external Skills and official
 documentation; they do not replace the internal Skills above.

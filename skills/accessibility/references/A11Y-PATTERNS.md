@@ -4,6 +4,41 @@ Practical, copy-paste-ready patterns for common accessibility requirements. Each
 
 ---
 
+## Popovers and overlays
+
+A non-modal popover needs no focus trap: the platform puts it in the top layer,
+closes it on Escape or light dismiss, and returns focus to the invoker.
+
+```html
+<button type="button" popovertarget="more-actions" aria-expanded="false">
+  More actions
+</button>
+<div id="more-actions" popover aria-labelledby="more-actions-title">
+  <h2 id="more-actions-title">More actions</h2>
+  <button type="button">Duplicate</button>
+  <button type="button">Archive</button>
+</div>
+```
+
+```css
+#more-actions:popover-open {
+  /* styles for the showing state only */
+}
+#more-actions::backdrop {
+  /* optional effect behind the popover */
+}
+```
+
+Keep `aria-expanded` in sync when the trigger is a button, and do not add
+`role="dialog"` to a non-modal popover. For a genuinely modal choice use
+`<dialog>` with `showModal()` and the modal focus trap above instead. Check
+support with `'popover' in HTMLElement.prototype` and provide a disclosure or
+`<dialog>` fallback where it is missing. See
+[MDN](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API) (consulted
+2026-11-18).
+
+---
+
 ## Modal focus trap
 
 Trap keyboard focus inside a modal dialog so Tab/Shift+Tab cycle through its focusable elements and Escape closes it.
@@ -103,6 +138,20 @@ form.addEventListener('submit', (e) => {
   }
 });
 ```
+
+For the visual state, prefer `:user-invalid` over `:invalid`: it does not flag
+an untouched required field on page load. It is styling only — keep
+`aria-invalid` and the error text as the programmatic and human-readable signal.
+
+```css
+.field input:user-invalid {
+  outline: 2px solid var(--color-error);
+  outline-offset: 2px;
+}
+```
+
+See [MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/:user-invalid)
+(consulted 2026-11-18).
 
 ---
 

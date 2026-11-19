@@ -54,6 +54,45 @@ Then review that plan against the brief before building: if any part of it reads
 
 When writing the code, be careful of structuring your CSS selector specificities. It's easy to generate CSS classes that cancel each other out (especially with a type-based selector like .section and an element-based selector like .cta). This can happen often with padding/margin between sections.
 
+## Modern CSS primitives
+
+When the target browsers support them, prefer platform primitives over custom
+JavaScript or duplicated markup for layout and color. Check current support
+against the project's browser matrix before relying on any of them, and keep a
+fallback where support is partial.
+
+- **Container queries** let a component respond to the inline size of its own
+  container instead of the viewport. Put `container-type: inline-size` on the
+  wrapper and use `@container (min-width: …)` on the component. This is the right
+  tool for a reusable card, sidebar, or widget that appears at several widths on
+  the same page; viewport media queries remain correct for page-level layout.
+  Widely available since 2023.
+- **Subgrid** (`grid-template-columns: subgrid` or `grid-template-rows: subgrid`)
+  lets a nested grid align its tracks with the parent grid. Use it when the
+  children of sibling cards must share baselines — aligned titles, metadata,
+  and actions across a row — instead of guessing equal heights or repeating the
+  track definition. Widely available since September 2023.
+- **`oklch()`** describes a color in a perceptual space: `oklch(L C H)`, where
+  `L` is lightness, `C` is chroma, and `H` is hue. It makes tonal ramps
+  predictable, so a palette can vary lightness while holding hue constant; use
+  `color-mix()` for transparent variants. Still verify contrast against
+  `skills/accessibility/SKILL.md` — a perceptual lightness value is not a
+  contrast ratio. Widely available since May 2023, with varying support for
+  some advanced color features.
+- **Anchor positioning** ties an element to another element's position using
+  `anchor-name` on the anchor and `position-anchor` plus `position-area` (or
+  `anchor()` inside an inset property) on the positioned element. Use it for
+  tooltips and menus that must follow their trigger without a positioning
+  library. Support is uneven, so provide a non-anchored fallback and verify it
+  in the target browsers. The companion overlay primitive is covered in
+  `skills/accessibility/SKILL.md`.
+
+Sources (consulted 2026-11-18): MDN
+<https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_container_queries>,
+<https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_grid_layout/Subgrid>,
+<https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/oklch>,
+<https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_anchor_positioning>.
+
 ## Variety across designs in the same project
 
 When a project produces several pages or several designs over time, the choices
