@@ -719,6 +719,8 @@ by verifying instructions alone.
 
 A verdict matrix is consistent with its own rules (M-80). Before this output is delivered, run `REPORT-001` (`workflows/output-compliance.md`) over every verdict matrix it carries, and correct each `FAIL` first. A `NOT VERIFIED` reason names a tool or environment limit, never an unexecuted review; a `PASS` never carries an open item; and a conclusion never claims a closure or a `PASS` verdict that a row leaves open.
 
+**Git claims gate.** Git claims are verified (M-127). Before the task is reported as complete, `GIT-001` (`git_claim_check` in `workflows/output-compliance.md`) runs over the whole delivery report text, not only over the verdict matrix, with the task's base revision. A commit that does not resolve, a commit that is not on its cited branch, and a claim of uncommitted work on a branch that holds commits beyond the base are `FAIL`; every `FAIL` is corrected in the report before it is delivered. A claim whose repository or branch cannot be read is `NOT VERIFIED` and blocks delivery. The gate runs after the report text is written and before the completion report, so a header or status line that contradicts the recorded commit history cannot be delivered. Running the detector only in the audit does not satisfy this gate: the producer of the report runs it first.
+
 ### Learning Cycle
 
 Runs in every implementation task, after the pre-delivery gate and before

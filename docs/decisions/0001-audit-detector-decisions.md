@@ -62,7 +62,10 @@ drifted from the registry and failed the tree that V2.32 accepts. The probes now
    line and runs a git call for each candidate, so its run time grows with document size; a scoped run over a handful
    of large documents takes several minutes, and a full-repository run exceeded eight minutes on the development
    machine. The sweep runs it over the change set; a full-repository count is produced deliberately and is not
-   repeated for every task.
+   repeated for every task. A later audit (A-1) found a `SIN COMMIT` header on a branch that held commits: the
+   detector was correct but ran only in the audit, not in the producer of the delivery report. The delivery gate in
+   `workflows/task-to-code.md` now runs GIT-001 over the whole report text before delivery. This adds a scope, not a
+   detector change; the cost limit above still applies to sweep runs.
 8. **ARTIFACT-001 reads a prefix only with a name after it, and a shell operand, a fenced block, a runtime `$` path,
    and a sed expression are not citations** (`> "$dir/x"`, `< "$root/x"`, a command line, code between fences). The
    operand rule is a fixed command vocabulary, so prose that mentions a `$` path or a command is still read

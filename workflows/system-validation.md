@@ -8860,7 +8860,10 @@ branches and commits that git did not confirm, stated one test count with two va
 comment that named a header its code never sent. Each rule is canonical in `AGENTS.md` and its detector is in
 `workflows/output-compliance.md`. This section extracts the four detectors from that file (the functions themselves,
 not copies), builds a git fixture and text fixtures in a temporary directory outside the repository, verifies each
-defective fixture is detected with `file:line` and each compliant twin is not, and removes the fixtures.
+defective fixture is detected with `file:line` and each compliant twin is not, and removes the fixtures. It also
+checks that the delivery workflow runs `GIT-001` over the whole report text before delivery: an external audit found
+a `SIN COMMIT` header on a branch that held commits because the check ran only in the audit, not in the producer of
+the report (A-1).
 
 ```sh
 root="$(cd "${1:-.}" && pwd)"
@@ -8889,6 +8892,9 @@ need workflows/output-compliance.md '| `ORIGIN-001` |' "the ORIGIN-001 coverage 
 need workflows/output-compliance.md "sed 's#^#  FAIL test under src/main: #'" "the Java test-location message with a delimiter a slash cannot break"
 grep -qF "sed 's/^/  FAIL test under src/main: /'" "$root/workflows/output-compliance.md" && { echo "FAIL V3.01: the Java test-location sed still breaks on the slash of src/main"; failures=1; }
 need workflows/output-compliance.md '| `GIT-001` |' "the GIT-001 coverage row"
+need workflows/task-to-code.md 'Git claims are verified (M-127)' "the delivery gate's M-127 anchor"
+need workflows/task-to-code.md '`GIT-001` (`git_claim_check` in `workflows/output-compliance.md`) runs over the whole delivery report text' "the delivery gate's GIT-001 report-text scope"
+need workflows/output-compliance.md 'the whole delivery report text at the pre-delivery gate' "the GIT-001 coverage row's delivery-report scope"
 need workflows/output-compliance.md '| `CONSIST-001` |' "the CONSIST-001 coverage row"
 
 fx="$(mktemp -d "${TMPDIR:-/tmp}/v301.XXXXXX")"

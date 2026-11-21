@@ -4525,7 +4525,7 @@ fixture_deviation_check() {
 | `BOUND-001` | changed source files that declare a bound, and the test files | a changed source declares a timeout, a busy or lock wait, a deadline, or a retry budget |
 | `COMMENT-001` | changed TypeScript or JavaScript files | a changed file contains a comment |
 | `COMMENT-001` (names) | changed source files; `comment_name_check` | a changed comment names a header such as `x-user-id` (M-129) |
-| `GIT-001` | documents in the change set and the sweep; `git_claim_check` takes the base | a document cites a commit, a branch, or an uncommitted state (M-127) |
+| `GIT-001` | documents in the change set and the sweep, and the whole delivery report text at the pre-delivery gate; `git_claim_check` takes the base | a document cites a commit, a branch, or an uncommitted state (M-127) |
 | `CONSIST-001` | documents in the change set and the sweep | a document states the same count more than once (M-128) |
 | `CLIENT-ID-001` | changed client source files; `client_identity_literal_check` | a changed client file carries a literal identity (M-130) |
 | `GUARANTEE-001` | documents in the change set and the sweep; `guarantee_entry_check` | a document states a guarantee (idempotency, a single charge) (M-131) |
