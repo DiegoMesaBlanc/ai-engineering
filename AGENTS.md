@@ -9,7 +9,7 @@ Before any other action in a session that starts in this repository, run this
 one line from the repository root and read its output:
 
 ```sh
-key=$(printf '%s' "$(git rev-parse --show-toplevel)" | cksum | awk '{print $1}'); test -f "${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}/bootstrap/$key.done" && echo ready || echo missing
+key=$(printf '%s' "$(git rev-parse --show-toplevel)" | cksum | awk '{print $1}'); test -f "${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}/bootstrap/$key.v2.done" && echo ready || echo missing
 ```
 
 - `ready`: continue with the user's request.

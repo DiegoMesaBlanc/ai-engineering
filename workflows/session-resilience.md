@@ -277,6 +277,84 @@ If a session appears stalled during compaction or a long operation:
   when possible, then recovering in a new session with `/resume-work`.
 - Do not claim that closing and reopening the terminal is required.
 
+For a silent subagent the same procedure applies to the delegated step: report
+the symptoms, timestamps, and affected step; record boundedness as `NOT VERIFIED`
+when the client exposes no enforced timeout; close the activity entry as
+`DETENIDO` with the observed reason; checkpoint and recover. The bar is the
+lifecycle authority, so no terminal state is claimed in the message prose.
+
+---
+
+## Activity status file
+
+The activity indicator is a client status bar, not a line in message prose and
+not a lifecycle label in the task panel. The Orchestrator writes runtime state
+to `${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}/activity/<repo-slug>.json`,
+where `<repo-slug>` is `basename` of `git rev-parse --show-toplevel`, resolved at
+write and read time. The file is system state under the neutral root; it is
+never added to the repository or to the change set.
+
+### Schema
+
+| Field | Meaning |
+|---|---|
+| `schema` | constant `ai-engineering.activity.v1` |
+| `repo` | repository slug resolved at runtime |
+| `status` | aggregate `running`, `done`, or `stopped` |
+| `updatedAt` | timestamp of the last write |
+| `sessions` | map keyed by session id; when the client gives no id, by agent name plus a note |
+| `sessions.<id>.status` | `EN_CURSO`, `TERMINADO`, or `DETENIDO` |
+| `sessions.<id>.phase` / `.step` | the work the entry represents |
+| `sessions.<id>.heartbeat` | timestamp refreshed at every step transition |
+| `sessions.<id>.timeout` | the enforced client timeout value, or `NOT VERIFIED` |
+
+The aggregate is `running` while any non-stale session is `EN_CURSO`; otherwise
+`stopped` if any session is `DETENIDO`; otherwise `done`. A stale entry — no
+heartbeat beyond the declared observation window — is closed by the next
+orchestrator write or recovery and cannot keep the bar at `running` once that
+write happens. The bar itself does not compute staleness, so a session that
+ends without a write leaves its last value: this limit is `NOT VERIFIED` for a
+client that cannot evaluate it. The mapping of contract states to bar values is
+in `references/subagent-projection.md` ("Activity-state map").
+
+### Lifecycle
+
+1. **Dispatch.** Mirror the delegated phase and its steps into the native panel,
+   then add the `EN_CURSO` entry with the session id, phase, step, and heartbeat
+   before the subagent tool is called.
+2. **Step transition.** Refresh the heartbeat and the step name. A panel rewrite
+   alone does not replace this write.
+3. **Return.** Set the entry to `TERMINADO`, or `DETENIDO` with the reason, then
+   rewrite the panel from the returned checklist before joining the findings.
+4. **Anomalous termination.** Apply Phase 7, close the entry as `DETENIDO` with
+   the observed reason, and checkpoint. No unverified root cause is asserted.
+
+Writes are atomic: a temporary file in the same directory is `mv`-ed over the
+status file. Keying by session prevents two sessions acting on the same
+repository from overwriting each other's state. No write is made inside the
+target project.
+
+### Observation scenario (versioned)
+
+| Event | `status` | Panel | Message |
+|---|---|---|---|
+| before dispatch | previous value | delegated steps pending | phase plan shown |
+| dispatch | `running` | delegated steps `in_progress` | no lifecycle word |
+| step transition | `running`, heartbeat refreshed | step states updated | checklist leads |
+| return with checklist | `done` or `stopped` | rewritten from returned checklist | findings joined |
+| silent subagent | `running`, then `stopped` with reason | blocked step reason | Phase 7 report |
+
+Claude Code reads the aggregate with a `statusLine` command; its spacing-
+tolerant form and single-line rendered output were verified on 2026-11-22
+(decision 0002, "Visibility follow-up"). Codex has no configurable bar: lifecycle
+hooks mirror activity and emit a notification, but the bar itself is `NOT
+VERIFIED` and the hooks require one-time trust via `/hooks`. OpenCode V2 has
+native running-subagent indicators (`down` opens the subagent picker; `right`/
+`left` move between child sessions and the TUI footer shows `<n> subagent(s)`),
+but no configurable bar that reads this activity file; the in-session rendering
+is `NOT VERIFIED` from a headless check. Clients without a configurable bar are
+`NOT VERIFIED` for the bar. The panel and the workflow gates do not depend on it.
+
 ---
 
 ## Phase Plan
@@ -718,6 +796,10 @@ agent mirrors the checklist of delegated work into its own panel:
    The delegating agent mirrors it the same way.
 5. **A result without a checklist** is incomplete. The delegating agent asks
    for the checklist before it reports the phase as done.
+6. **No terminal language while a subagent is open.** Do not write "listo",
+   "terminé", or "ya acabó", or any equivalent claim that the work has ended,
+   in any position of the message. The client status bar is the lifecycle
+   authority; the panel carries progress only.
 
 The delegating agent's panel is the authority for the user. A subagent's own
 panel is a supporting view, and it never replaces step 3.

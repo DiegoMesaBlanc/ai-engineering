@@ -19,6 +19,41 @@ unfinished, and an unfinished previous task is reported in the conversation and
 preserved by its checkpoint. The full procedure is in
 `workflows/session-resilience.md` ("Task boundary and reset").
 
+## Delegation map
+
+Knowledge-heavy and review work in this workflow may be delegated to the
+subagents registered in `manifests/skill-registry@1.md`. Delegation changes
+where a skill is loaded, not whether it is applied: the mandatory rules and
+gates of this workflow stay in force, and the Orchestrator joins every result
+before the phase is reported.
+
+| Phase | Delegate | Mode | Result joined here |
+|---|---|---|---|
+| 1 Detect, 2 Understand | `analyst-task-context` | underneath | task context, design requirements, evidence |
+| 1 Detect, 4 Repository | `analyst-project` | underneath | stack, architecture, conventions, evidence |
+| 8 Complexity | `advisor-complexity` | underneath | classification rationale |
+| 8 Architecture | `advisor-architecture` | underneath | architecture and design-pattern selection |
+| 8 Contracts | `designer-contracts` | underneath | the contract, before a boundary changes |
+| 9 Pre-code design review | `auditor-design` | parallel | review verdict and dispositions |
+| 11 Validate | `compliance-runner` | parallel | structural compliance of the change set |
+| 12 Review | `reviewer-engineering`, `reviewer-security`, `reviewer-testing` | parallel | findings by dimension, with evidence |
+| 14 PR preparation | `writer-pr` | underneath | copy-ready content in the neutral state root |
+| Learning Cycle | `external-auditor` | fresh | independent audit findings |
+
+The optional web audits (`audit-a11y`, `audit-performance`, `audit-seo`,
+`audit-cwv`) run in parallel only when the approved requirement names those
+dimensions. Implementation stays in the root with `implementation-recipes`,
+because it writes the target project.
+
+Per-mode contexts, retrieval profiles, the IR-lite contract, the tool map, and
+the completion contract are defined in `references/subagent-projection.md` and
+`schemas/subagent-contract.md`. The dispatch protocol and the activity file are
+in `agents/orchestrator.md` ("7a. Delegation and Activity State") and
+`workflows/session-resilience.md` ("Activity status file"). A delegated result
+without its checklist is incomplete. Where a projection cannot express a
+capability, the limitation is reported `NOT VERIFIED`; it is never silently
+replaced by a different one.
+
 ## Phase 1 — Detect
 
 **Read the applicable learnings first.** Before any analysis or

@@ -659,10 +659,24 @@ done
 # Non-portable constructs in shared procedures.
 # The patterns live in references/portability.md, so they are defined once.
 # The character classes keep this pattern from matching itself.
-grep -rnE '/[t]mp/|/var/[f]olders/|~?/\.[c]onfig/opencode|~?/\.[c]laude|~?/\.[c]odex' \
+# OS temp paths are a FAIL in any shared procedure, setup instructions included.
+# references/portability.md is excluded: it defines these patterns, so it names
+# them by design and is the single source this check derives them from.
+grep -rnE '/[t]mp/|/var/[f]olders/' \
   workflows/ references/ skills/ commands/ 2>/dev/null |
   grep -vE 'references/+portability\.md:' |
-  grep -vE 'workflows/+bootstrap\.md:[0-9]+:([[:space:]]*link_one "\$root/[A-Za-z./]+" "\$HOME/(\.config/opencode/(AGENTS\.md|commands|agents)|\.claude/(AGENTS\.md|CLAUDE\.md|skills)|\.codex/AGENTS\.md)"|\| `\$HOME/(\.config/opencode/(AGENTS\.md|commands|agents)|\.claude/(AGENTS\.md|CLAUDE\.md|skills)|\.codex/AGENTS\.md)` \| )' |
+  grep -v 'README.md' |
+  sed 's/^/  /'
+
+# Client configuration directories are a PASS in setup instructions
+# (workflows/bootstrap.md and references/portability.md), which are per
+# environment by nature as stated above, and a FAIL in any other shared
+# procedure. The pattern is checked by rule, not by an enumerating whitelist,
+# so a new legitimate client directory cannot silently turn into a finding.
+grep -rnE '~?/\.[c]onfig/opencode|~?/\.[c]laude|~?/\.[c]odex' \
+  workflows/ references/ skills/ commands/ 2>/dev/null |
+  grep -vE 'references/+portability\.md:' |
+  grep -vE 'workflows/+bootstrap\.md:' |
   grep -v 'README.md' |
   sed 's/^/  /'
 ```

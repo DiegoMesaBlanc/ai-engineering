@@ -249,6 +249,51 @@ source code without it loaded is not aligned with this system.
 
 ---
 
+# 7a. Delegation and Activity State
+
+The skill registry (`manifests/skill-registry@1.md`) routes each skill either to
+`root` or to a `subagent:<id>`. A skill routed to a subagent is loaded by
+dispatching that agent with the per-mode context (`contexts/<mode>.md`) and its
+retrieval profile; the root does not read that skill's `SKILL.md` into its own
+context. Only `implementation-recipes` stays eager in the root for a task that
+writes code, as section 7 requires.
+
+Each subagent is defined once in `agents/<id>.md` against
+`schemas/subagent-contract.md` and reaches a client as a thin projection
+(`references/subagent-projection.md`). Its `mode` is the delegation mode:
+`underneath` means the orchestrator waits for the result, `parallel` means it
+may continue and join the result later. The Orchestrator is the composition
+root: it alone binds concrete client tools and selects the dispatch.
+
+## Dispatch protocol
+
+1. Before dispatching, write the delegated phase and its steps into the native
+   task panel, then add an `EN_CURSO` entry for this session to the activity
+   file (`workflows/session-resilience.md`, "Activity status file"). A panel
+   item records progress, not lifecycle; only the status bar carries lifecycle
+   state.
+2. Dispatch with the client's subagent tool and the projection for that client.
+   When the client exposes an enforced timeout, cite its value; when it does
+   not, record boundedness as `NOT VERIFIED`. An observation window is not a
+   bound.
+3. On return, rewrite the panel in full from the returned checklist, set the
+   session entry to `TERMINADO` or `DETENIDO` with its reason, and join the
+   findings. A result without its checklist is incomplete: ask for it before
+   reporting the phase as done.
+4. A silent subagent follows `workflows/session-resilience.md` ("Phase 7 —
+   Suspected Hangs"): report observed symptoms, timestamps, and the affected
+   step, then checkpoint and recover. Never assert an unverified root cause or
+   require the user to restart the terminal.
+
+While any subagent is open, do not close a message with "listo", "terminé", or
+"ya acabó", and do not put lifecycle labels in the task panel. The client
+status bar is the lifecycle authority; where a client has no configurable bar
+it is `NOT VERIFIED`, and the panel still carries progress. The Orchestrator
+writes the activity file only in the neutral state root, never in the target
+project, as `workflows/session-resilience.md` defines.
+
+---
+
 # 8. Provider Selection
 
 Determine which providers are relevant.
@@ -459,6 +504,13 @@ A completed change may end with:
 - task branch verification
 - validated implementation
 
+PR preparation is delegated to the `writer-pr` subagent (`agents/writer-pr.md`)
+when the projection can express its state-root write; otherwise the Orchestrator
+drafts the same copy-ready content and reports the projection limitation as
+`NOT VERIFIED` (`references/subagent-projection.md`). The subagent never
+commits, publishes, approves, merges, pushes, or updates a remote task; the
+user creates the PR.
+
 Write actions require explicit authorization. Invoking `/commit`, `/task`,
 or any other command authorizes preparing and validating a proposal, not
 creating commits. Never run `git commit` or `git commit --amend` without
@@ -503,7 +555,10 @@ Never introduce complexity merely because it is technically possible.
 Every implementation task runs the learning cycle of `workflows/self-learning.md`
 before its commit proposal: it applies the enforced checks, starts
 `external-auditor` as a fresh subagent, classifies the findings, and reports
-(`workflows/task-to-code.md`, "Learning Cycle"). Gaps in this repository are
+(`workflows/task-to-code.md`, "Learning Cycle"). The mechanical checks and the
+code review may be delegated to `compliance-runner` and the reviewer subagents;
+delegation does not remove a gate and every delegated result carries its
+checklist. Gaps in this repository are
 closed in its working tree, validated by `workflows/system-audit.md`, and never
 committed without the user's approval.
 

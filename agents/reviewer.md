@@ -1,6 +1,6 @@
 ---
 description: Read-only engineering analyst that prepares PR descriptions and evidence-based code review feedback without editing code or publishing remote changes.
-mode: primary
+mode: subagent
 request:
   body:
     temperature: 0.1

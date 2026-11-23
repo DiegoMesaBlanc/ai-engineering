@@ -42,6 +42,7 @@ repository root it is working in.
 | OpenCode | Global configuration directory, with `AGENTS.md`, `commands/`, and `agents/` linked to the canonical repository |
 | Claude Code | `CLAUDE.md` with `@AGENTS.md`, and the canonical `skills/` directory exposed as the global Skill directory |
 | Codex CLI | `AGENTS.md` from the repository root, read directly |
+| Codex agent catalogue | `.toml` projections generated at bootstrap into `${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}/projections/codex/agents/`, outside the repository |
 | Any client without Skills support | The canonical wording in `AGENTS.md` is enough; the Skills add operational detail |
 
 The last row is why the canonical wording of every mandatory rule lives in
@@ -82,12 +83,27 @@ existing file or link.
 # macOS and Linux
 ln -s "$AI_ENGINEERING_HOME/AGENTS.md" "$HOME/.config/opencode/AGENTS.md"
 ln -s "$AI_ENGINEERING_HOME/commands" "$HOME/.config/opencode/commands"
-ln -s "$AI_ENGINEERING_HOME/agents"   "$AI_ENGINEERING_HOME/agents"
+ln -s "$AI_ENGINEERING_HOME/agents"   "$HOME/.config/opencode/agents"
 ```
 
 On Windows, a symbolic link needs Developer Mode or an elevated shell. When
 it is unavailable, point the client at the canonical path instead of
 linking; the rules do not depend on the link.
+
+### Codex agent projections
+
+Codex reads `.toml` agent files, not the canonical Markdown definitions. The
+single POSIX bootstrap block in `workflows/bootstrap.md` generates one thin
+`.toml` per canonical `agents/<id>.md` carrying
+`schema: ai-engineering.subagent.v1`. The output directory is
+`${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}/projections/codex/agents/`:
+outside the repository, created at first run, and the target of the
+`$HOME/.codex/agents` link. No `.toml` is stored in the repository, so a fresh
+checkout carries no generated artifact. Legacy canonical files without that
+schema are skipped. The generator uses only POSIX tools (`awk`, `grep`, `sed`,
+`mv`, `mktemp`) and never installs a TOML parser; its self-test temp directory
+is removed on exit, including on failure. `mktemp` on Windows Git Bash is
+`NOT VERIFIED`.
 
 ### Skill directory
 
