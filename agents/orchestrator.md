@@ -263,7 +263,10 @@ Each subagent is defined once in `agents/<id>.md` against
 (`references/subagent-projection.md`). Its `mode` is the delegation mode:
 `underneath` means the orchestrator waits for the result, `parallel` means it
 may continue and join the result later. The Orchestrator is the composition
-root: it alone binds concrete client tools and selects the dispatch.
+root: it alone binds concrete client tools and selects the dispatch. The
+catalog is `orchestrator`, `external-auditor`, six domain subagents,
+`writer-pr` (the sole writable subagent, neutral state root only) and
+`reviewer-pr` (PR review only).
 
 ## Dispatch protocol
 
@@ -504,12 +507,13 @@ A completed change may end with:
 - task branch verification
 - validated implementation
 
-PR preparation is delegated to the `writer-pr` subagent (`agents/writer-pr.md`)
-when the projection can express its state-root write; otherwise the Orchestrator
-drafts the same copy-ready content and reports the projection limitation as
-`NOT VERIFIED` (`references/subagent-projection.md`). The subagent never
-commits, publishes, approves, merges, pushes, or updates a remote task; the
-user creates the PR.
+The Orchestrator delegates copy-ready PR or MR content to `writer-pr`
+(`agents/writer-pr.md`), which writes it to a unique file under the neutral
+state root and cites the exact path. It delegates PR review to `reviewer-pr`
+(`agents/reviewer-pr.md`) with cold inputs. It never creates, publishes,
+approves, merges, pushes, or modifies a PR, and it never updates a remote task;
+the user creates the PR. PR preparation and PR review remain separate
+workflows and separate subagents, as defined in the PR policy below.
 
 Write actions require explicit authorization. Invoking `/commit`, `/task`,
 or any other command authorizes preparing and validating a proposal, not
@@ -555,10 +559,11 @@ Never introduce complexity merely because it is technically possible.
 Every implementation task runs the learning cycle of `workflows/self-learning.md`
 before its commit proposal: it applies the enforced checks, starts
 `external-auditor` as a fresh subagent, classifies the findings, and reports
-(`workflows/task-to-code.md`, "Learning Cycle"). The mechanical checks and the
-code review may be delegated to `compliance-runner` and the reviewer subagents;
-delegation does not remove a gate and every delegated result carries its
-checklist. Gaps in this repository are
+(`workflows/task-to-code.md`, "Learning Cycle"). The mechanical structural
+check (`workflows/output-compliance.md`) stays with the Orchestrator; the
+engineering review of a PR is delegated to `reviewer-pr`, and the independent
+whole-cycle audit to `external-auditor`. Any delegated result still carries its
+checklist and never removes a gate. Gaps in this repository are
 closed in its working tree, validated by `workflows/system-audit.md`, and never
 committed without the user's approval.
 

@@ -1,6 +1,12 @@
 # 0002. Agent teams for token efficiency
 
-**Status:** proposed, pending the user's approval of the commit.
+**Status:** superseded by `docs/decisions/0003-domain-subagents.md`.
+**Superseded:** this record describes the fifteen role-agent catalog first
+proposed on `feat/agent-teams`. The catalog was later consolidated into six
+domain subagents plus the two retained agents; `0003` is the authoritative
+catalog and holds the verbatim direction and its turn-attribution limit. Agent
+ids and `file:line` citations below refer to that earlier, no-longer-present
+state and are kept only as historical evidence.
 **Scope:** the subagent definitions, projections, manifests, context profiles, and orchestration wiring introduced on branch `feat/agent-teams`.
 **Base:** `13c3812` on `main`; all changes on `feat/agent-teams`; `main` unchanged.
 

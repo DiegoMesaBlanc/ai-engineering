@@ -66,7 +66,7 @@ never lists `edit`, `write`, or `delegate`. The PR writer lists `read` and
 | `readOnly` | boolean | `true` = no repository writes. |
 | `scope` | enum | `target-project` or `evidence-only`. |
 | `noCommit` | boolean | const `true`; a subagent never creates a commit. |
-| `noHomeWrite` | boolean | const `true`; a subagent never writes to home or client-config directories. |
+| `noHomeWrite` | boolean | const `true`; a subagent never writes to home or client-config directories. The single exception is `writer-pr`, which writes generated PR content to the neutral state root and nowhere else. |
 | `timeout` | object | `{ source: client-enforced \| unavailable, seconds?: integer >= 1 }`. `seconds` is required when `source` is `client-enforced`. A declared value with no enforcing timer is `NOT VERIFIED`. |
 
 ## `completion`

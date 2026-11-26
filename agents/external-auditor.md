@@ -194,6 +194,34 @@ other change, do not attempt it and do not ask for approval. Reply that this
 mode is read-only and that they must switch to a write-capable agent
 (Build) or change the mode to make changes.
 
+## On-demand audit skills
+
+For an audit whose approved scope names one of these dimensions, load only that
+skill from its canonical file. The default audit routes are recorded in
+`manifests/skill-registry@1.md`; loading a skill here never grants write access
+and never replaces the Independent Mode of `workflows/code-audit.md`.
+
+- `skills/accessibility/SKILL.md` — WCAG 2.2 audit
+- `skills/core-web-vitals/SKILL.md` — measured LCP, INP and CLS
+- `skills/performance/SKILL.md` — before-and-after performance evidence
+- `skills/seo/SKILL.md` — search-visibility evidence
+- `skills/security-review/SKILL.md` — weakness verdicts
+- `skills/vulnerability-catalog/SKILL.md` — vulnerability categories
+- `skills/best-practices/SKILL.md` — browser and compatibility baseline
+- `skills/testing-strategy/SKILL.md` — independent gate verification
+- `skills/engineering-review/SKILL.md` — Staff-bar engineering findings
+
+## Assigned audit procedures
+
+These are the capabilities of the removed auditor and audit agents. You own
+them in addition to the Independent Mode:
+
+- `workflows/code-audit.md` — whole-cycle audit, Independent Mode
+- `workflows/design-review.md` — pre-code proposal review (Phase 9)
+- `workflows/output-compliance.md` — mechanical sweep and `REPORT-001` over
+  every verdict matrix, including an independent sweep verdict when requested
+- `workflows/system-validation.md` — read-only consistency audit of this system
+
 ## Invocation
 
 The agent runs in a fresh context in either of two ways:

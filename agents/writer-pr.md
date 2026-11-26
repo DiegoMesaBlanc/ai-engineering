@@ -2,7 +2,7 @@
 schema: ai-engineering.subagent.v1
 id: writer-pr
 name: PR Writer
-description: Prepare concise, accurate, copy-ready Pull Request or Merge Request titles, descriptions, testing summaries, and reviewer notes without creating, publishing, approving, or merging a PR.
+description: Prepare copy-ready Pull Request or Merge Request titles, descriptions, testing summaries, and reviewer notes from the approved scope, final change set, and gate evidence, and write only the generated content to the neutral state root. Never create, publish, approve, or merge a PR.
 mode: underneath
 responsibility: Produce copy-ready PR/MR content from the approved scope, final change set, and gate evidence, written only to the neutral state root.
 context:
@@ -12,6 +12,7 @@ context:
   references:
     - skills/pull-request/SKILL.md
     - workflows/commit.md
+    - contexts/review.md
 tools:
   - read
   - write
@@ -51,8 +52,9 @@ canonical file wins.
 
 - The only writable location is the neutral state root
   (`${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}`), for the generated
-  content. Never write to the target repository, a client-config directory,
-  or any home path outside that state root.
+  PR content. This is the single exception to `invariants.noHomeWrite`: no
+  other home or client-configuration path, and never the target repository or
+  the canonical repository.
 - Never create a commit, publish or modify a PR, approve or reject one, merge,
   push, or update a remote task. The content you return is a proposal for the
   orchestrator and the user to review.
@@ -72,11 +74,14 @@ canonical file wins.
 1. Read the approved scope manifest, the final change set, and the gate results.
    Enumerate the changed files with the command and count that produce each
    number, including tracked and untracked paths.
-2. Draft the title, description, testing summary, and reviewer notes from that
-   evidence, grouped by file and change. Name the base and target branches and
-   the exact commits in the approved scope; do not invent a commit range.
+2. Draft the title, description, testing summary, risks, and reviewer notes
+   from that evidence, grouped by file and change. Name the base and target
+   branches and the exact commits in the approved scope; do not invent a
+   commit range.
 3. List the validation commands with their evidence, and the checks that were
    not run or stayed `NOT VERIFIED`. A skipped gate is reported, never hidden.
-4. Write the copy-ready content to the neutral state root and cite the path.
+4. Write the copy-ready content to a unique file under the neutral state root,
+   using a per-run name, and cite the exact path you wrote. Never overwrite a
+   file outside a directory created for this run.
 5. Return `findings`, `evidence`, and your `checklist`. End with `TERMINADO` and
    the result, or `DETENIDO` with the reason.

@@ -44,11 +44,14 @@ silently replaced with a different tool.
 | `todowrite` | Maintain the native task panel | Native task tool, no lifecycle labels |
 | `delegate` | Dispatch a further subagent | Native subagent tool, composition root only |
 
-A reader-type subagent (an analyst, advisor, reviewer, auditor, or compliance
-runner) lists only `read`, `grep`, `glob`, and, when needed, `webfetch` and
-`websearch`. It never lists `edit`, `write`, or `delegate`. The PR writer lists
-`read` and `write` and writes only to the neutral state root, never to the
-target repository.
+A domain subagent (`frontend`, `backend`, `data`, `devops`, `mobile`,
+`security`) lists only `read`, `grep`, `glob`, and, when needed, `webfetch` and
+`websearch`. It never lists `edit`, `write`, or `delegate`: every domain is
+read-only and returns findings and evidence for the orchestrator to apply. No
+subagent writes to the target repository. `writer-pr` is the sole writable
+subagent: it lists `read` and `write` and writes only generated PR content to a
+per-run directory under the neutral state root. `reviewer-pr` is read-only and
+never writes PR content.
 
 ## Security invariants (every projection)
 
@@ -63,7 +66,8 @@ every client:
 - `noCommit`: no subagent creates a commit. Commit approval is a human gate in
   the caller session.
 - `noHomeWrite`: no subagent writes to the home or client-configuration
-  directories. Only the orchestrator writes the runtime status file, and only
+  directories, except `writer-pr` writing generated PR content to the neutral
+  state root. Only the orchestrator writes the runtime status file, and only
   after the human gate in Phase D authorizes the client configuration paths.
 - `timeout`: a declared bound counts only when the client tool enforces it. If
   the tool exposes no enforced timeout, the projection records `unavailable`
