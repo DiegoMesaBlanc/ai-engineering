@@ -1,6 +1,6 @@
 ---
 description: Prepare copy-ready Pull Request or Merge Request title, description, testing summary, risks, and reviewer notes without publishing anything.
-agent: reviewer
+agent: orchestrator
 ---
 
 Prepare a Pull Request / Merge Request proposal for manual creation.

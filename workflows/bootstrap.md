@@ -244,13 +244,6 @@ restart the client once after the first run.
         if [ "$mode" = parallel ]; then tail='may continue in parallel'; else tail='waits for your result'; fi
         printf 'Delegation mode: %s — the orchestrator %s. If this instruction conflicts with\n' "$mode" "$tail"
         printf 'agents/%s.md, that canonical file wins.\n\n' "$id"
-        if [ "$id" = writer-pr ]; then
-          printf '%s\n' 'Tool-map limitation: no Codex sandbox mode scopes a write to the neutral'
-          printf '%s\n' 'state root alone. The write capability is omitted, not replaced. Return the'
-          printf '%s\n' 'copy-ready content to the orchestrator, which materializes the file.'
-          printf '\n'
-          body=$(printf '%s\n' "$body" | awk '/^4\. Write the copy-ready/{exit} {print}')
-        fi
         # Inject the two invariant lines immediately before "## Steps".
         printf '%s\n' "$body" | awk '
           /^## Steps$/ && !done {
@@ -413,7 +406,7 @@ write
     # gate_opencode verifies the deny-first order, per-id skill grants with no
     # wildcard, reader/writer separation, absolute /* boundaries, and verbatim
     # body (including TERMINADO and the intro). "## Result" is asserted only
-    # when the canonical source has it (2 of 15), never as a universal rule.
+    # when the canonical source has it, never as a universal rule.
     gate_opencode() {
       f="$1"
       fr=$(fm_region "$f")
@@ -651,7 +644,7 @@ write
         fail "$client staged catalog is incomplete ($count expected)"; return 1; }
       # The user requires exactly four agents: built-in Plan and Build, plus
       # orchestrator (primary) and external-auditor (all). Every other custom
-      # agent, including the legacy auditor and reviewer, must be a subagent.
+      # agent must be a subagent.
       # Only the OpenCode projection carries a client `mode:` frontmatter field;
       # Claude projections express the same split through native tool grants.
       if [ "$client" = opencode ]; then
@@ -667,7 +660,7 @@ write
               [ "$m" = subagent ] || { fail "$id must be a subagent (got $m)"; return 1; } ;;
           esac
         done
-        pass "$client agent/subagent split verified (2 custom agents, 17 subagents)"
+        pass "$client agent/subagent split verified (2 custom agents, 8 subagents)"
       fi
       rm -rf "$gen" || { fail "cannot clear $gen"; return 1; }
       mv "$staged" "$gen" || { fail "cannot promote $client staged catalog"; return 1; }
@@ -797,8 +790,9 @@ key=$(printf '%s' "$(git rev-parse --show-toplevel)" | cksum | awk '{print $1}')
    emitter writes `<id>.toml`, the OpenCode emitter writes native Markdown with
    `mode: subagent` and deny-first permissions, and the Claude emitter writes
    native frontmatter. Only `Plan`, `Build`, `orchestrator` and
-   `external-auditor` are agents; the other 17 custom definitions are subagents
-   visible through the client's native subagent surface. A publish-time allowlist
+   `external-auditor` are agents; the other 8 custom definitions are subagents
+   (six domains, `writer-pr` and `reviewer-pr`) visible through the client's
+   native subagent surface. A publish-time allowlist
    enforces that split. The canonical delegation mode (including read-only) still
    wins from the canonical file. Legacy agents without the schema are copied
    verbatim to both Markdown clients. All files are staged in a private temp directory under
@@ -887,14 +881,18 @@ repository, and its directory is the root.
 
 ## Limits
 
-- **macOS:** the current block ran natively in a sandbox HOME twice and against
-  the real HOME, always with `EXIT=0` and no `FAIL`: 15 canonical projections
-  plus 4 legacy pass-throughs per Markdown client, 15 byte-identical Codex TOMLs,
-  one versioned catalog per client after rerun, all 19 custom ids visible in
-  `/api/agent`, with exactly `orchestrator` and `external-auditor` as custom agents and the other 17 as subagents, and the `.v2` record check reporting
-  `ready`. The staged-catalog gate and the fail-closed relink guard were
-  exercised in the self-test; a real discovery destination pointing elsewhere is
-  `NOT VERIFIED`.
+- **macOS:** a prior revision of this block, before the eight-agent domain
+  catalog, ran natively in a sandbox HOME twice and against the real HOME with
+  `EXIT=0` and no `FAIL`: 15 canonical projections plus 4 legacy pass-throughs
+  per Markdown client, 15 byte-identical Codex TOMLs, one versioned catalog per
+  client after rerun, all 19 custom ids visible in `/api/agent`, with exactly
+  `orchestrator` and `external-auditor` as custom agents and the other 17 as
+  subagents, and the `.v2` record check reporting `ready`. That result is
+  historical: it does not cover the current revision, which removed the writer
+  emitter branch and reduced the catalog to eight agents. The current revision
+  is `NOT VERIFIED` on macOS until it is run. The staged-catalog gate and the
+  fail-closed relink guard were exercised in that self-test; a real discovery
+  destination pointing elsewhere remains `NOT VERIFIED`.
 - **Linux:** the earlier Alpine container run covered the previous block. The
   current block is `NOT VERIFIED` on Linux and other distributions.
 - **Windows:** simulated with command shims. A real run in Git Bash is `NOT

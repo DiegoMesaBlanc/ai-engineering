@@ -26,7 +26,10 @@ feature are both held to professional standards:
 - handle errors explicitly; never swallow them silently
 - validate input at boundaries
 - never log or commit secrets
-- write or update tests for changed behavior
+- write or update tests for changed behavior (enforced mechanically by
+  `TEST-004`; a behavioral source file the change set adds or modifies needs a
+  test in the same change set, or an explicit `TEST-004-WAIVER:` entry in the
+  approved scope manifest)
 - keep type safety where the language supports it
 - leave no debug code, dead code, or temporary hacks behind
 

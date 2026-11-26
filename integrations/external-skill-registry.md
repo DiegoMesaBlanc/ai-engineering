@@ -55,7 +55,7 @@ each external Skill used by the AI Engineering System.
 - Revision verification: references/WCAG.md
   (SHA-256 16683e025e3833d931c9d880645d98a448827f97e10189b6c8f12c832e7a2361)
   and references/A11Y-PATTERNS.md
-  (SHA-256 f10e238dd4dd3c4f51134c2056bc02d3dd4f8fb6ccc9145c2c1ba7aab4d58140)
+  (SHA-256 3f09b53cf8b79cdae0f5349b08e02f0527bfd9384e0b2a435b6942bf58489f7c)
   are byte-identical to the recorded upstream revision, confirmed 2026-10-17.
   LICENSE.txt matches the upstream MIT LICENSE at the repository root.
   SKILL.md was locally adapted, so it differs from the upstream revision.
@@ -119,7 +119,7 @@ each external Skill used by the AI Engineering System.
   references/INP.md
   (SHA-256 7d40cf6053e9bb8a8a77e02da7c6b25aa8e6c1c092b48d8f9c8f30e9b25cf3a7),
   and references/CLS.md
-  (SHA-256 c4fa0cd6311720b413018471a6ac9240e87db52af3b6e306ffb6684491f15898)
+  (SHA-256 80443fd588371b322a157b026811a3666677e70bb8568ca050b6b848e544a9eb)
   are byte-identical to the recorded upstream revision, confirmed 2026-10-17.
   LICENSE.txt matches the upstream MIT LICENSE at the repository root.
   SKILL.md was locally adapted, so it differs from the upstream revision.
@@ -137,7 +137,7 @@ each external Skill used by the AI Engineering System.
 - Required supporting file: references/SECURITY.md
 - Upstream commit: afa8da942115f2961fdbfa80807ea0b232ff6c00
 - Revision verification: references/SECURITY.md
-  (SHA-256 af021e5db37e921c79b8807d63e1cfc02dcf63614d2806cfba04ba44a1366178)
+  (SHA-256 163af4a73070f21fa901938d246ca75e235c5221b114ce9149cbde9394303592)
   is byte-identical to the recorded upstream revision, confirmed 2026-10-17.
   LICENSE.txt matches the upstream MIT LICENSE at the repository root.
   SKILL.md was locally adapted, so it differs from the upstream revision.

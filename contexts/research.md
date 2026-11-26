@@ -3,7 +3,9 @@
 Load this bundle for subagents performing technical investigation, estimation,
 or source analysis — tasks whose outcome is a decision, a report, or a durable
 document rather than application code. A research outcome authorizes no file
-change in any project (M-91).
+change in any project (M-91); an estimate is the single M-91 exception, permitted
+to write the estimation document required by `workflows/estimation.md` as the only
+path in the approved manifest, with any other changed file a `SCOPE-001` `FAIL`.
 
 ## Always active (kernel pointers)
 

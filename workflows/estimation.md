@@ -31,6 +31,9 @@ an implementation task does not implicitly require an estimation.
   branch, commit, push, or remote action.
 - The only file written is the estimation document itself, in the current
   working directory, and its location is reported when the command finishes.
+  An analysis or decision request authorizes no file change in any project; an
+  estimate is the single M-91 exception: the approved manifest names exactly
+  this document, and no other file change is authorized (M-90, M-91).
 - Estimation never fabricates effort, rates, or precision. It states ranges,
   assumptions, confidence, and what it could not determine.
 - Estimation reuses existing analysis (complexity, architecture) when it is

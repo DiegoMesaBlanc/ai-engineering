@@ -1,6 +1,6 @@
 ---
 description: Read-only assessment of the CI/CD, security, and delivery readiness of the current project, with evidence-based statuses, without modifying the project or performing remote writes.
-agent: auditor
+agent: orchestrator
 ---
 
 # /delivery-check

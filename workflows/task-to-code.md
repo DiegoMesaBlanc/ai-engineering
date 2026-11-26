@@ -29,21 +29,27 @@ before the phase is reported.
 
 | Phase | Delegate | Mode | Result joined here |
 |---|---|---|---|
-| 1 Detect, 2 Understand | `analyst-task-context` | underneath | task context, design requirements, evidence |
-| 1 Detect, 4 Repository | `analyst-project` | underneath | stack, architecture, conventions, evidence |
-| 8 Complexity | `advisor-complexity` | underneath | classification rationale |
-| 8 Architecture | `advisor-architecture` | underneath | architecture and design-pattern selection |
-| 8 Contracts | `designer-contracts` | underneath | the contract, before a boundary changes |
-| 9 Pre-code design review | `auditor-design` | parallel | review verdict and dispositions |
-| 11 Validate | `compliance-runner` | parallel | structural compliance of the change set |
-| 12 Review | `reviewer-engineering`, `reviewer-security`, `reviewer-testing` | parallel | findings by dimension, with evidence |
-| 14 PR preparation | `writer-pr` | underneath | copy-ready content in the neutral state root |
+| 1 Detect, 2 Understand | `root` | underneath | task context, design requirements, evidence |
+| 1 Detect, 4 Repository | `root` | underneath | stack, architecture, conventions, evidence |
+| 8 Complexity | `root` | underneath | classification rationale |
+| 8 Architecture | the matching domain subagent | underneath | structure decision, pattern selection with forces |
+| 8 Contracts | `backend` | underneath | the contract, before a boundary changes |
+| 9 Pre-code design review | `external-auditor` | parallel | fresh-context review verdict and dispositions |
+| 11 Validate | `root` | parallel | structural compliance of the change set |
+| 12 Review | `reviewer-pr` | underneath | PR-focused findings by file and line, with evidence |
+| 14 PR preparation | `writer-pr` | underneath | copy-ready content written to the neutral state root |
 | Learning Cycle | `external-auditor` | fresh | independent audit findings |
 
-The optional web audits (`audit-a11y`, `audit-performance`, `audit-seo`,
-`audit-cwv`) run in parallel only when the approved requirement names those
-dimensions. Implementation stays in the root with `implementation-recipes`,
-because it writes the target project.
+"the matching domain subagent" means the one of `frontend`, `backend`, `data`,
+`devops`, `mobile` or `security` whose responsibility covers the task. The
+orchestrator selects it; a subagent never dispatches another. A domain loads
+`architecture-advisor` from its own allowlist, so `mobile` uses the same folder
+architecture skill as `frontend`.
+
+The optional web audits (`accessibility`, `core-web-vitals`, `performance`,
+`seo`) are skills in the `frontend` and `mobile` allowlists. They run only when
+the approved requirement names those dimensions. Implementation stays in the
+root with `implementation-recipes`, because it writes the target project.
 
 Per-mode contexts, retrieval profiles, the IR-lite contract, the tool map, and
 the completion contract are defined in `references/subagent-projection.md` and
@@ -243,11 +249,14 @@ changed value of existing behavior it names (`<path> <old value> => <new value>`
 change set with no recorded manifest is `BLOCKED`.
 
 **An analysis or decision request writes no file (M-91).** When the outcome the user
-asked for is an analysis, a decision, or an estimate, the approved manifest is empty
-and the request authorizes no file change in any project, including a scratch, demo, or throwaway project.
-Only an implementation request authorizes writing files; a request to "analyze and
-decide" that then needs code is a new alignment, not a continuation. Any file changed
-by an analysis-only task is a `SCOPE-001` `FAIL`.
+asked for is an analysis or a decision, the approved manifest is empty and the request
+authorizes no file change in any project, including a scratch, demo, or throwaway project.
+An estimate is the single M-91 exception: `workflows/estimation.md` requires one durable
+estimation document, so the approved manifest names exactly that document and any other
+changed file is a `SCOPE-001` `FAIL`. Only an implementation request authorizes writing
+application source; a request to "analyze and decide" that then needs code is a new
+alignment, not a continuation. Any file changed by an analysis-only task is a
+`SCOPE-001` `FAIL`.
 
 **Quote every approval (M-92).** An approval that the task, a decision record, or the
 checkpoint attributes to the user quotes the verbatim user message and its turn. An
@@ -623,7 +632,10 @@ Do not expand the scope silently. Any new component, module, or abstraction must
 
 ## Phase 11 — Validate
 
-Load `skills/testing-strategy/SKILL.md`.
+Load `skills/testing-strategy/SKILL.md`. The mechanical sweep stays with the
+orchestrator; when an independent compliance verdict is required, dispatch
+`external-auditor` with the sweep result and `REPORT-001` from
+`workflows/output-compliance.md`.
 
 1. Inspect the current changes and project tooling.
 2. Determine validation risk.
@@ -687,6 +699,12 @@ Preserve unrelated and uncommitted user changes.
 A passing build alone does not establish completion.
 
 ## Phase 12 — Review
+
+For PR-focused review, delegate to `reviewer-pr` (`agents/reviewer-pr.md`) with
+cold inputs and join its findings before the phase is reported. Security,
+accessibility, Core Web Vitals, performance, SEO and independent gate audits go
+to `external-auditor` when the approved requirement names them; `reviewer-pr`
+does not absorb those dimensions.
 
 **Learning cycle.** Mandatory in every implementation task. It runs after the
 pre-delivery gate below and is defined in "Learning Cycle" after Phase 12.
@@ -842,6 +860,10 @@ is not completion: the step's own evidence verifies it, or the user accepts the
 equivalence in the current conversation.
 
 ## Phase 14 — PR Preparation
+
+Delegate this phase to `writer-pr` (`agents/writer-pr.md`). It writes the
+copy-ready content to a unique file under the neutral state root and cites the
+exact path; the orchestrator does not write PR content itself.
 
 When requested, generate:
 

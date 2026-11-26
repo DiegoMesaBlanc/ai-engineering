@@ -31,8 +31,14 @@ Check for the existence of:
 - CLAUDE.md
 - README.md
 - agents/orchestrator.md
-- agents/reviewer.md
-- agents/auditor.md
+- agents/frontend.md
+- agents/backend.md
+- agents/data.md
+- agents/devops.md
+- agents/mobile.md
+- agents/security.md
+- agents/writer-pr.md
+- agents/reviewer-pr.md
 - agents/external-auditor.md
 - commands/task.md
 - commands/generate-pr.md
@@ -299,8 +305,10 @@ text, that external-directory access remains narrowly scoped:
 - more-specific rules follow the wildcard so the intended rule wins
 - no broad allowance is granted for the entire home directory, all projects,
   or the whole filesystem
-- reviewer and auditor agent permission restrictions remain in effect and
-  are not widened by an inherited wildcard
+- the read-only restrictions of the six domain subagents, `reviewer-pr` and
+  `external-auditor` remain in effect and are not widened by an inherited
+  wildcard; `writer-pr` is the sole writable subagent and its projection grants
+  `write` only for generated PR content under the neutral state root
 
 Report the actual configured values. Do not infer them from policy text, and
 do not modify the client configuration during validation.
@@ -1063,6 +1071,28 @@ Return:
 - V3.03 runtime floor, contract deviations, decision order, substituted paths, and the extended FUNC-001, ENTRY-001, and SRP-001 detectors (M-132, R-209)
 - V3.04 learning-cycle convergence: sweep-called detectors are defined and fixture directories are trapped (M-133, R-210)
 - V3.05 path and branch claims read as claims, not prose: bare prefixes, absolute prefixes without a name, shell operands, fenced blocks, runtime `$` paths, table rows, sentence-final periods, word-boundary branch gates (the git ref `HEAD` is uppercase only), split-line branch keywords, the listed branch types, and the alarm bound with an event assertion (M-110, M-127)
+- V3.06 TYPE-001 candidate selection anchored to the start of the line: a comment containing `type <Identifier>` is not a contract candidate, while a real declaration with runtime behavior is still reported with `file:line`
+- V3.07 TEST-004 requires a change-set test for a changed behavioral source, accepts a co-located/importing test or a manifest waiver, and stays silent for type-only and barrel files
+- V3.08 rtl_project recognizes both `supportsRTL` and the Android manifest spelling `android:supportsRtl`, so an Android-only RTL project is not silently skipped
+- V3.09 GATE-001 strips the `path:line:` prefix before the dependency approval-token check, so a real instruction is not suppressed by its own path
+- V3.10 DEC-001 accepts the canonical `Design patterns: 0 selected` empty selection while keeping every SOLID row check
+- V3.11 the frontend checklist orders C0 (styling approach) before C1 (scaffold), matching its own table
+- V3.12 SAFE-001 matches an actual `signal`/`timeout` option after removing strings and comments, so a URL query, comment, or `x-signaling` header is not a timeout (M-54)
+- V3.13 APPROVAL-001 no longer treats generic `permission`, `Acceptance`, `accept`, or `authorization` wording as an approval claim, while quoted user claims still pass (M-92, M-111)
+- V3.14 GUARANTEE-001 skips Markdown headings, so a section title is not a guarantee claim (M-131)
+- V3.15 BOUND-001 cites the line that declares the bound instead of a fixed `:1`, with a fixture whose bound is on line 4 (M-54, M-76)
+- V3.16 SAFE-005 reads cache keys on continuation lines and CACHE-001 matches whole decision verbs, not `pay` inside `payment` (M-56, M-101)
+- V3.17 I18N-001 and CONSUME-001 see a default locale on a continuation line with an accurate `file:line` (M-66, M-67)
+- V3.18 DB-003 rejects a per-page transaction and a comment-only `transaction` marker, while keeping the enclosing-twin clean (M-84)
+- V3.19 estimation document exception to M-91: the named estimation document passes, an unnamed document and other writes fail
+- V3.20 SAFE-005 rejects an unpartitioned key beside a partitioned key and still passes a partitioned-only call (M-56)
+- V3.21 DB-004 flags a WHERE column on an application table without a leading index, with no file:line when the scan returns nothing (M-85)
+- V3.22 GATE-001 matches `npm install`/`yarn add`/`pnpm add`/`pip install`/`cargo add` and allows a quoted approval sentence (M-91)
+- V3.23 BOUND-001 considers the whole change-set importer set and deduplicates per bound, with a mid-block comment false positive checked (M-54)
+- V3.24 I18N-003 detects direction-literal layout when the RTL test uses a locale name instead of `rtl`/`i18nmanager` (M-66)
+- V3.25 BOUND-001 cites the declaration line, not a comment that names the bound (M-54)
+- V3.26 DB-005 derives the visibility column from non-comment migration text, not a comment keyword (M-100)
+- V3.27 the commit-gate secrets scan redacts matched secret values from output (M-123, AGENTS.md:712)
 - External Skill readiness:
 
 The numbering skips V2.9 to V2.11: those identifiers were never used, and
@@ -1602,8 +1632,8 @@ Verify that unsolicited refactoring and unnecessary fragmentation are prohibited
 Verify that the code-creation audit is a standalone, read-only, non-duplicative workflow:
 
 - `commands/code-audit.md` exists and delegates to `workflows/code-audit.md`
-  without restating the procedure; it specifies the agent (`reviewer`) and
-  read-only behavior
+  without restating the procedure; it binds to `orchestrator` (the only primary
+  agent) and read-only behavior
 - `workflows/code-audit.md` defines the 14 applicability-gated dimensions,
   the senior/staff bar, the dimension matrix (PASS/WARN/FAIL/N/A), findings
   format (P0–P3, evidence, severity, confidence), and the verdict
@@ -1617,8 +1647,8 @@ Verify that the code-creation audit is a standalone, read-only, non-duplicative 
 - it audits code only (no process compliance: branch policy, dependency
   gate, evidence honesty, git hygiene are out of scope)
 - it is read-only: no edits, commits, pushes, or remote writes
-- `agents/reviewer.md` and `agents/orchestrator.md` reference the code-audit
-  workflow and intent
+- `agents/orchestrator.md` and `agents/external-auditor.md` reference the
+  code-audit workflow and intent
 - `README.md` distinguishes `/code-audit` from `/system-check`, `/validate`,
   and `/review-pr`
 - `references/system-workflow-regression-matrix.md` includes the scenario
@@ -2513,8 +2543,8 @@ the single code-audit flow, not a second flow:
 - the Independent Mode is distinct from `pull-request-review` (a colleague's
   PR), `project-validation` (gate execution), and `system-audit` (the system
   itself)
-- `agents/reviewer.md` is unchanged in behavior and `code-audit` keeps its
-  scope and agent
+- `agents/orchestrator.md` keeps the code-audit scope and dispatches
+  `external-auditor` for the Independent Mode
 - `README.md` describes the Independent Mode of `/code-audit` and does not list
   `/external-audit`
 - `references/system-workflow-regression-matrix.md` includes R-72
@@ -6103,9 +6133,10 @@ each detector reports its defect with `file:line` and passes its compliant twin:
 - M-90: the approved scope manifest is recorded at alignment before the first file write,
   and `SCOPE-001` reads tracked and untracked files and fails a change set with no
   recorded manifest (R-151).
-- M-91: an analysis, decision, or estimate request authorizes no file change in any
-  project, including a scratch project; its empty manifest makes any changed file a
-  `FAIL` (R-152).
+- M-91: an analysis or decision request authorizes no file change in any project,
+  including a scratch project; an empty manifest makes any changed file a `FAIL`;
+  an estimate is the single exception and names the estimation document required by
+  `workflows/estimation.md` as its only manifest path (R-152).
 - M-92: a claimed human approval quotes the verbatim user message and its turn;
   `APPROVAL-001` reports an uncited claim as `NOT VERIFIED` (R-153).
 - M-93: a teardown recorded `NOT DONE` in the checkpoint blocks the commit proposal;
@@ -9568,5 +9599,1533 @@ printf '%s\n' "$gott" | grep -qF 'NOT VERIFIED GIT-001' || { echo "FAIL V3.05: t
 rm -rf "$fx"
 echo "V3.05 behavioral fixtures removed"
 [ "$failures" -eq 0 ] && echo "V3.05 PASS" || echo "V3.05 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.06 Regression — TYPE-001 Candidate Selection Anchored to the Declaration
+
+`TYPE-001` selects candidate files with a regex that previously accepted a
+leading alternation `(^|[[:space:]])`. That also matches after `//` or `*`, so
+a comment containing `type <Identifier>` marked a pure runtime file as a
+contract file: the candidate check claimed a contract where none existed and a
+runtime `export const` was reported as a mixed declaration. The candidate regex
+is now anchored with `^[[:space:]]*`. This regression runs the canonical
+`type001_scan` on a temporary fixture and verifies both directions: the
+comment-only file is silent, and a real type declaration mixed with runtime
+behavior is still reported with `file:line`.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+oc="$root/workflows/output-compliance.md"
+
+command -v grep >/dev/null 2>&1 || { echo "NOT VERIFIED V3.06: grep is not available, the fixture was not run"; exit 2; }
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v306.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+sed -n '/^type001_scan() {/,/^}/p' "$oc" > "$fx/check.sh"
+grep -q '^type001_scan() {' "$fx/check.sh" || { echo "FAIL V3.06: type001_scan is not defined in $oc"; failures=1; }
+grep -qF "^[[:space:]]*(export[[:space:]]+)?(declare[[:space:]]+)?(interface|type|enum)" "$fx/check.sh" \
+  || { echo "FAIL V3.06: the candidate regex is not anchored to the start of the line"; failures=1; }
+
+(
+  cd "$fx" || exit 1
+  mkdir -p probe-comment real-contract
+
+  # 1. A comment-only file is not a contract candidate, so it must be silent.
+  printf '// The type Widget describes the widget payload\nexport const buildWidget = () => 1;\n' > probe-comment/runtime.ts
+  out="$(cd "$fx" && changed_paths=probe-comment sh -c '. ./check.sh; type001_scan')"
+  [ -z "$out" ] || { echo "FAIL V3.06: a comment containing 'type <Identifier>' was reported: $out"; exit 1; }
+
+  # 2. A real declaration mixed with runtime behavior must still be reported with file:line.
+  printf 'export interface FormatPriceOptions { locale: string; }\nexport const buildWidget = () => 1;\n' > real-contract/mixed.ts
+  out="$(cd "$fx" && changed_paths=real-contract sh -c '. ./check.sh; type001_scan')"
+  printf '%s\n' "$out" | grep -qF 'FAIL TYPE-001: real-contract/mixed.ts:2:export const buildWidget = () => 1;' \
+    || { echo "FAIL V3.06: a real declaration with runtime behavior was not reported with file:line: $out"; exit 1; }
+  exit 0
+) || failures=1
+
+rm -rf "$fx"
+trap - EXIT
+echo "V3.06 probe: fixtures in $fx were checked and are removed"
+[ "$failures" -eq 0 ] && echo "V3.06 PASS" || echo "V3.06 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.07 Regression — TEST-004 Requires a Test for a Changed Behavioral Source
+
+`TEST-001`/`TEST-002` iterate only over test files the change set creates or
+modifies, so a behavioral fix with no test passed vacuously even though
+`skills/implementation-recipes/SKILL.md` and `references/audit-pass-criteria.md`
+require one. `TEST-004` closes that gap. This regression extracts the canonical
+`test_presence_check` and verifies four cases on temporary fixtures: (1) a
+changed behavioral source with no test is `FAIL` with `file:line`; (2) a
+co-located test makes it clean; (3) a test that imports the module makes it
+clean; (4) a manifest waiver exempts a named file. Type-only and barrel files
+are never flagged.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+oc="$root/workflows/output-compliance.md"
+
+command -v grep >/dev/null 2>&1 || { echo "NOT VERIFIED V3.07: grep is not available, the fixture was not run"; exit 2; }
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v307.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+sed -n '/^test_presence_check() {/,/^}/p' "$oc" > "$fx/check.sh"
+grep -q '^test_presence_check() {' "$fx/check.sh" || { echo "FAIL V3.07: test_presence_check is not defined in $oc"; failures=1; }
+
+(
+  cd "$fx" || exit 1
+  mkdir -p src/components
+  printf 'export const formatPrice = (n: number) => String(n);\n' > src/components/format-price.ts
+  . "$fx/check.sh" || exit 1
+
+  # 1. No test in the change set -> FAIL with file:line.
+  out=$(test_presence_check . src/components/format-price.ts --)
+  printf '%s\n' "$out" | grep -qF 'FAIL TEST-004: src/components/format-price.ts:1:' \
+    || { echo "FAIL V3.07: a behavioral source with no test was not reported: $out"; exit 1; }
+
+  # 2. A co-located test in the change set -> clean.
+  printf "import { test } from 'vitest';\n" > src/components/format-price.test.ts
+  out=$(test_presence_check . src/components/format-price.ts -- src/components/format-price.test.ts)
+  [ -z "$out" ] || { echo "FAIL V3.07: a co-located test did not clear the finding: $out"; exit 1; }
+  rm -f src/components/format-price.test.ts
+
+  # 3. A test in another folder that imports the module -> clean.
+  printf "import { formatPrice } from './format-price';\n" > src/other.test.ts
+  out=$(test_presence_check . src/components/format-price.ts -- src/other.test.ts)
+  [ -z "$out" ] || { echo "FAIL V3.07: an importing test did not clear the finding: $out"; exit 1; }
+  rm -f src/other.test.ts
+
+  # 4. An explicit manifest waiver -> clean.
+  printf 'TEST-004-WAIVER: src/components/format-price.ts\n' > scope.txt
+  out=$(SCOPE_MANIFEST=scope.txt test_presence_check . src/components/format-price.ts --)
+  [ -z "$out" ] || { echo "FAIL V3.07: the manifest waiver did not clear the finding: $out"; exit 1; }
+
+  # 5. A type-only file and a barrel file are never flagged.
+  printf 'export interface Price { value: number }\n' > src/components/price.types.ts
+  printf "export { formatPrice } from './format-price';\n" > src/components/index.ts
+  out=$(test_presence_check . src/components/price.types.ts src/components/index.ts --)
+  [ -z "$out" ] || { echo "FAIL V3.07: a type-only or barrel file was reported: $out"; exit 1; }
+  exit 0
+) || failures=1
+
+rm -rf "$fx"
+trap - EXIT
+echo "V3.07 probe: fixtures in $fx were checked and are removed"
+[ "$failures" -eq 0 ] && echo "V3.07 PASS" || echo "V3.07 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.08 Regression — rtl_project Recognizes the Android Manifest Spelling
+
+Android declares RTL support as `android:supportsRtl` (lower-case `l`). The
+`rtl_project` gate previously matched only `supportsRTL`, so an Android-only RTL
+project was classified as non-RTL and `i18n_direction_check` /
+`i18n_rtl_test_check` silently skipped files the I18N scope says are read. This
+regression extracts the canonical `rtl_project` and verifies that both an
+Android-only manifest and a TypeScript `I18nManager` marker are recognized.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+oc="$root/workflows/output-compliance.md"
+
+command -v grep >/dev/null 2>&1 || { echo "NOT VERIFIED V3.08: grep is not available, the fixture was not run"; exit 2; }
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v308.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+sed -n '/^rtl_project() {/,/^}/p' "$oc" > "$fx/check.sh"
+grep -q '^rtl_project() {' "$fx/check.sh" || { echo "FAIL V3.08: rtl_project is not defined in $oc"; failures=1; }
+grep -qF 'supportsRtl' "$fx/check.sh" || { echo "FAIL V3.08: the Android supportsRtl spelling is absent from rtl_project"; failures=1; }
+. "$fx/check.sh" || exit 1
+
+mkdir -p "$fx/android-only" "$fx/ts-only" "$fx/no-rtl"
+printf '<manifest>\n  <application android:supportsRtl="true" />\n</manifest>\n' > "$fx/android-only/AndroidManifest.xml"
+printf "import { I18nManager } from 'react-native';\nexport const rtl = I18nManager.isRTL;\n" > "$fx/ts-only/direction.ts"
+printf 'export const rtl = false;\n' > "$fx/no-rtl/plain.ts"
+
+r1=$(rtl_project "$fx/android-only")
+[ -n "$r1" ] || { echo "FAIL V3.08: an Android-only supportsRtl project was not recognized"; failures=1; }
+r2=$(rtl_project "$fx/ts-only")
+[ -n "$r2" ] || { echo "FAIL V3.08: a TypeScript I18nManager project was not recognized"; failures=1; }
+r3=$(rtl_project "$fx/no-rtl")
+[ -z "$r3" ] || { echo "FAIL V3.08: a non-RTL project was classified as RTL: $r3"; failures=1; }
+
+rm -rf "$fx"
+trap - EXIT
+echo "V3.08 probe: fixtures in $fx were checked and are removed"
+[ "$failures" -eq 0 ] && echo "V3.08 PASS" || echo "V3.08 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.09 Regression — GATE-001 Filters the Install Line, Not Its Path
+
+GATE-001 previously piped grep output through
+`grep -viE '...gate|package|approval...'`, which matched the file path as well as
+the content. An `npm install` instruction in a file whose *path* contained `gate`
+or `package` was suppressed, so a real bypass in `workflows/dependency-gate.md`
+went unreported. The filter now lowercases only the content after the
+`path:line:` prefix. This regression asserts both directions.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+oc="$root/workflows/output-compliance.md"
+
+command -v grep >/dev/null 2>&1 || { echo "NOT VERIFIED V3.09: grep is not available, the fixture was not run"; exit 2; }
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v309.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+sed -n '/^### GATE-001 /,/^```$/p' "$oc" | sed -n '/^```sh$/,/^```$/p' | sed '1d;$d' > "$fx/gate.sh"
+grep -qF 'sub(/^[^:]*:[0-9]+:/' "$fx/gate.sh" \
+  || { echo "FAIL V3.09: GATE-001 does not strip the path:line: prefix before filtering"; failures=1; }
+
+(
+  cd "$fx" || exit 1
+  mkdir -p workflows
+  printf '# Gate\n\n`npm install date-fns`\n' > workflows/dependency-gate.md
+  printf '# Approved\n\nRun `npm install date-fns` only after approval\n' > workflows/approved.md
+
+  out=$(sh gate.sh)
+  printf '%s\n' "$out" | grep -qF 'dependency-gate.md' \
+    || { echo "FAIL V3.09: an install line in a path containing 'gate' was suppressed: $out"; exit 1; }
+  printf '%s\n' "$out" | grep -qF 'approved.md' \
+    && { echo "FAIL V3.09: an approved install line was reported: $out"; exit 1; }
+  exit 0
+) || failures=1
+
+rm -rf "$fx"
+trap - EXIT
+echo "V3.09 probe: fixtures in $fx were checked and are removed"
+[ "$failures" -eq 0 ] && echo "V3.09 PASS" || echo "V3.09 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.10 Regression — DEC-001 Accepts the Canonical Zero-Selection Record
+
+DEC-001 previously required a `| Pattern |` table for any record containing the
+word "pattern". A canonical empty selection (`Design patterns: 0 selected`,
+required by `references/design-patterns.md`) always contains that word and was
+falsely failed. The check now exempts the exact empty-selection phrase from the
+table requirement while keeping the SOLID checks. This regression asserts both
+directions.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+oc="$root/workflows/output-compliance.md"
+
+command -v grep >/dev/null 2>&1 || { echo "NOT VERIFIED V3.10: grep is not available, the fixture was not run"; exit 2; }
+
+fx="$(mktemp -d "${TMPDIR:-/tmp}/v310.XXXXXX")"
+trap 'rm -rf "$fx"' EXIT
+sed -n '/^decision_record_check() {/,/^}/p' "$oc" > "$fx/check.sh"
+grep -qF 'Design patterns: *0 selected' "$fx/check.sh" \
+  || { echo "FAIL V3.10: the empty-selection exemption is absent from decision_record_check"; failures=1; }
+. "$fx/check.sh" || { failures=1; }
+dip_concrete_check() { :; }
+
+mkdir -p "$fx/records"
+printf '# Decision\n\nDesign patterns: 0 selected\n\nForces inspected: none.\n\n| Principle | Status | Note |\n|---|---|---|\n| SRP | NOT APPLICABLE | src/a.ts:1 keeps one responsibility |\n| OCP | NOT APPLICABLE | none |\n| LSP | NOT APPLICABLE | none |\n| ISP | NOT APPLICABLE | none |\n| DIP | NOT APPLICABLE | none |\n' > "$fx/records/empty.md"
+printf '# Decision\n\nWe considered a pattern but did not record it.\n' > "$fx/records/invalid.md"
+
+out=$(decision_record_check "$fx" records/empty.md)
+[ -z "$out" ] || { echo "FAIL V3.10: the canonical zero-selection record was reported: $out"; failures=1; }
+out=$(decision_record_check "$fx" records/invalid.md)
+printf '%s\n' "$out" | grep -qF 'no pattern table names the selected patterns' \
+  || { echo "FAIL V3.10: a record with no table and no empty-selection form was not reported: $out"; failures=1; }
+
+rm -rf "$fx"
+trap - EXIT
+echo "V3.10 probe: fixtures in $fx were checked and are removed"
+[ "$failures" -eq 0 ] && echo "V3.10 PASS" || echo "V3.10 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.11 Regression — Frontend Checklist Orders C0 Before C1
+
+The frontend checklist in `references/project-creation-order.md` listed C1
+(scaffold) before C0 (styling approach), contradicting the table in the same
+reference and `workflows/project-initialization.md` ("step C0 ... is the first
+step"). This regression asserts the checklist order and keeps mobile E0/E1 in
+their correct order.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+p="$root/references/project-creation-order.md"
+
+command -v grep >/dev/null 2>&1 || { echo "NOT VERIFIED V3.11: grep is not available, the fixture was not run"; exit 2; }
+
+c0=$(grep -n '^- \[ \] C0 Styling approach' "$p" | head -n 1 | cut -d: -f1)
+c1=$(grep -n '^- \[ \] C1 Repository' "$p" | head -n 1 | cut -d: -f1)
+e0=$(grep -n '^- \[ \] E0 Styling approach' "$p" | head -n 1 | cut -d: -f1)
+e1=$(grep -n '^- \[ \] E1 Project' "$p" | head -n 1 | cut -d: -f1)
+[ -n "$c0" ] && [ -n "$c1" ] || { echo "FAIL V3.11: could not locate C0/C1 checklist lines"; failures=1; }
+[ "$c0" -lt "$c1" ] 2>/dev/null || { echo "FAIL V3.11: C1 precedes C0 in the frontend checklist"; failures=1; }
+[ -n "$e0" ] && [ -n "$e1" ] && [ "$e0" -lt "$e1" ] \
+  || { echo "FAIL V3.11: mobile E0/E1 order is wrong"; failures=1; }
+
+echo "V3.11 probe: C0 at line $c0, C1 at line $c1, E0 at line $e0, E1 at line $e1"
+[ "$failures" -eq 0 ] && echo "V3.11 PASS" || echo "V3.11 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.12 Regression — SAFE-001 Recognizes Timeout Options, Not Substrings
+
+SAFE-001 matched `signal|timeout|Timeout` anywhere in the call text, so a URL
+query (`?timeout=never`), a comment (`/* timeout added later */`), or a header
+name (`x-signaling`) was mistaken for an explicit timeout. This regression runs
+the verbatim detector from `workflows/output-compliance.md` against those three
+false-negative fixtures and against bounded, multiline, unclosed, and decoy
+controls.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+p="$root/workflows/output-compliance.md"
+
+command -v sh >/dev/null 2>&1 || { echo "NOT VERIFIED V3.12: sh is not available, no fixture was run"; exit 2; }
+command -v mktemp >/dev/null 2>&1 || { echo "NOT VERIFIED V3.12: mktemp is not available, no fixture was run"; exit 2; }
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v312.XXXXXX") || { echo "NOT VERIFIED V3.12: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+mkdir -p "$fx/root"
+
+sed -n '/^safe_timeout_check() {/,/^}/p' "$p" > "$fx/detector.sh"
+printf 'safe_timeout_check "$@"\n' >> "$fx/detector.sh"
+sh -n "$fx/detector.sh" || { echo "FAIL V3.12: extracted detector has a syntax error"; exit 1; }
+
+printf 'const ac = new AbortController();\nfetch(url, { signal: ac.signal });\n' > "$fx/root/bounded.ts"
+printf 'fetch(url);\n' > "$fx/root/plain.ts"
+printf 'fetch("https://api.example.test/charges?timeout=never");\n' > "$fx/root/query.ts"
+printf 'fetch(url /* timeout added later */);\n' > "$fx/root/comment.ts"
+printf 'fetch(url, { headers: { "x-signaling": "1" } });\n' > "$fx/root/header.ts"
+{
+  printf 'fetch(url, {\n'
+  i=1
+  while [ "$i" -le 8 ]; do printf '  "x-%s": "v",\n' "$i"; i=$((i + 1)); done
+  printf '  signal: ac.signal\n});\n'
+} > "$fx/root/multiline.ts"
+printf 'fetch(url, {\n  headers: { a: 1 }\n' > "$fx/root/unclosed.ts"
+printf 'fetch(url, { headers: { "signal: ac.signal": "v" } });\n' > "$fx/root/decoy.ts"
+printf 'fetch(url, {\n  /*\n   signal: fake\n  */\n  headers: { a: 1 }\n});\n' > "$fx/root/blockcomment.ts"
+
+check() {
+  name="$1"; want="$2"
+  out=$(sh "$fx/detector.sh" "$fx/root" "$name.ts")
+  case "$want:$out" in
+    none:) ;;
+    fail:FAIL\ SAFE-001:*) ;;
+    nv:NOT\ VERIFIED\ SAFE-001:*) ;;
+    *) printf 'FAIL V3.12: %s expected %s, got: %s\n' "$name" "$want" "${out:-<no finding>}"; failures=1 ;;
+  esac
+  printf 'V3.12 probe: %-12s %s\n' "$name" "${out:-<no finding>}"
+}
+
+check bounded none
+check plain fail
+check query fail
+check comment fail
+check header fail
+check multiline none
+check unclosed nv
+check decoy fail
+check blockcomment fail
+
+[ "$failures" -eq 0 ] && echo "V3.12 PASS" || echo "V3.12 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.13 Regression — APPROVAL-001 Does Not Treat Technical Words as Approvals
+
+`approval_citation_check` matched `permis`, `accept`, and `autoriz` as bare
+substrings, so "requires permission", "Acceptance criteria", "must accept a
+token", and "authorization header" were reported as unquoted approval claims.
+This regression runs the verbatim detector from `workflows/output-compliance.md`
+and keeps genuine claims (an unmistakable approval phrase, or a decision verb
+with a human actor) detectable.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+p="$root/workflows/output-compliance.md"
+
+command -v sh >/dev/null 2>&1 || { echo "NOT VERIFIED V3.13: sh is not available, no fixture was run"; exit 2; }
+command -v mktemp >/dev/null 2>&1 || { echo "NOT VERIFIED V3.13: mktemp is not available, no fixture was run"; exit 2; }
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v313.XXXXXX") || { echo "NOT VERIFIED V3.13: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+mkdir -p "$fx/root"
+
+sed -n '/^approval_citation_check() {/,/^}/p' "$p" > "$fx/detector.sh"
+printf 'approval_citation_check "$@"\n' >> "$fx/detector.sh"
+sh -n "$fx/detector.sh" || { echo "FAIL V3.13: extracted detector has a syntax error"; exit 1; }
+
+cat > "$fx/root/technical.md" <<'DOC'
+# Verification report
+
+The endpoint requires permission to read the payment record.
+Acceptance criteria were derived from the task card.
+The service must accept a valid bearer token.
+The OAuth authorization header is forwarded to the provider.
+DOC
+printf 'Aprobado por el revisor sin cita.\n' > "$fx/root/claim.md"
+printf 'El usuario decidió la arquitectura sin cita.\n' > "$fx/root/actor.md"
+printf 'El usuario aprobó "usar el adaptador existente" en turno 4.\n' > "$fx/root/quoted.md"
+
+check() {
+  name="$1"; want="$2"
+  out=$(sh "$fx/detector.sh" "$fx/root" "$name.md")
+  case "$want:$out" in
+    none:) ;;
+    line1:NOT\ VERIFIED\ APPROVAL-001:\ $name.md:1:*) ;;
+    *) printf 'FAIL V3.13: %s expected %s, got: %s\n' "$name" "$want" "${out:-<no finding>}"; failures=1 ;;
+  esac
+  printf 'V3.13 probe: %-10s %s\n' "$name" "${out:-<no finding>}"
+}
+
+check technical none
+check claim line1
+check actor line1
+check quoted none
+
+[ "$failures" -eq 0 ] && echo "V3.13 PASS" || echo "V3.13 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.14 Regression — GUARANTEE-001 Skips Markdown Headings
+
+`guarantee_entry_check` matched the guarantee keyword on any line, so a
+section title such as `## Idempotency and replay safety` was reported as a
+`NOT VERIFIED` guarantee claim even though a heading states no guarantee. This
+regression runs the verbatim detector and asserts that only claim lines are
+reported.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+p="$root/workflows/output-compliance.md"
+
+command -v sh >/dev/null 2>&1 || { echo "NOT VERIFIED V3.14: sh is not available, no fixture was run"; exit 2; }
+command -v mktemp >/dev/null 2>&1 || { echo "NOT VERIFIED V3.14: mktemp is not available, no fixture was run"; exit 2; }
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v314.XXXXXX") || { echo "NOT VERIFIED V3.14: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+mkdir -p "$fx/root"
+
+sed -n '/^guarantee_entry_check() {/,/^}/p' "$p" > "$fx/detector.sh"
+printf 'guarantee_entry_check "$@"\n' >> "$fx/detector.sh"
+sh -n "$fx/detector.sh" || { echo "FAIL V3.14: extracted detector has a syntax error"; exit 1; }
+
+cat > "$fx/root/heading.md" <<'DOC'
+## Idempotency and replay safety
+
+This section documents the retry policy.
+DOC
+cat > "$fx/root/mixed.md" <<'DOC'
+## Idempotency and replay safety
+
+The webhook guarantees a single charge.
+DOC
+printf 'The webhook guarantees a single charge through the POST /webhooks entry point, verified by webhook.test.ts.\n' > "$fx/root/compliant.md"
+
+check() {
+  name="$1"; want="$2"
+  out=$(sh "$fx/detector.sh" "$fx/root" "$name.md")
+  case "$want:$out" in
+    none:) ;;
+    line3:NOT\ VERIFIED\ GUARANTEE-001:\ $name.md:3:*) ;;
+    *) printf 'FAIL V3.14: %s expected %s, got: %s\n' "$name" "$want" "${out:-<no finding>}"; failures=1 ;;
+  esac
+  printf 'V3.14 probe: %-10s %s\n' "$name" "${out:-<no finding>}"
+}
+
+check heading none
+check mixed line3
+check compliant none
+
+[ "$failures" -eq 0 ] && echo "V3.14 PASS" || echo "V3.14 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.15 Regression — BOUND-001 Reports the Declared Bound's Line
+
+`bound_test_check` emitted `$f:1:` for both findings, whatever line declared
+the bound, so a project with the bound at line 17 received a misleading
+`file:line`. The existing V2.79/V2.82/V2.96 fixtures all put the bound on line
+1 and could not expose it. This regression runs the verbatim detector with the
+bound deliberately off line 1.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+p="$root/workflows/output-compliance.md"
+
+command -v sh >/dev/null 2>&1 || { echo "NOT VERIFIED V3.15: sh is not available, no fixture was run"; exit 2; }
+command -v mktemp >/dev/null 2>&1 || { echo "NOT VERIFIED V3.15: mktemp is not available, no fixture was run"; exit 2; }
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v315.XXXXXX") || { echo "NOT VERIFIED V3.15: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+mkdir -p "$fx/src/db" "$fx/tests"
+
+sed -n '/^bound_test_check() {/,/^}/p' "$p" > "$fx/detector.sh"
+printf 'bound_test_check "$@"\n' >> "$fx/detector.sh"
+sh -n "$fx/detector.sh" || { echo "FAIL V3.15: extracted detector has a syntax error"; exit 1; }
+
+printf '%s\n' '// configuration module' 'import { open } from "./driver";' '' 'export const cfg = { busy_timeout: 5000 };' > "$fx/src/db/timed.ts"
+printf '%s\n' 'import { cfg } from "../src/db/timed";' 'test("bounded", () => cfg);' > "$fx/tests/other.test.ts"
+printf '%s\n' 'import { cfg } from "../src/db/timed";' 'test("hold", () => { new Promise(() => {}); cfg; });' > "$fx/tests/hold.test.ts"
+
+d1=$(sh "$fx/detector.sh" "$fx" src/db/timed.ts -- tests/other.test.ts)
+printf '%s\n' "$d1" | grep -qF 'FAIL BOUND-001: src/db/timed.ts:4: no test that imports timed holds the dependency' \
+  || { printf 'FAIL V3.15: expected the bound line 4 for the no-hold case, got: %s\n' "${d1:-<none>}"; failures=1; }
+d2=$(sh "$fx/detector.sh" "$fx" src/db/timed.ts -- tests/absent.test.ts)
+printf '%s\n' "$d2" | grep -qF 'FAIL BOUND-001: src/db/timed.ts:4: a bound is declared, and no test imports timed' \
+  || { printf 'FAIL V3.15: expected the bound line 4 for the no-importer case, got: %s\n' "${d2:-<none>}"; failures=1; }
+d3=$(sh "$fx/detector.sh" "$fx" src/db/timed.ts -- tests/hold.test.ts)
+[ -z "$d3" ] || { printf 'FAIL V3.15: holding twin reported: %s\n' "$d3"; failures=1; }
+
+printf 'V3.15 probe: no-hold %s\n' "${d1:-<none>}"
+printf 'V3.15 probe: no-import %s\n' "${d2:-<none>}"
+printf 'V3.15 probe: holding %s\n' "${d3:-<no finding>}"
+[ "$failures" -eq 0 ] && echo "V3.15 PASS" || echo "V3.15 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.16 Regression — SAFE-005 Reads Continuation Keys and CACHE-001 Matches Whole Decision Verbs
+
+Two detector defects were confirmed by independent audit. `cache_partition_check`
+used line-oriented `perl -ne`, so an unpartitioned cache key on a continuation
+line escaped SAFE-005. `CACHE_DECISION_RE` used a `[A-Za-z]*` suffix, so `pay`
+matched `payment`/`payable` in a display-only cache-key string and produced a
+spurious CACHE-001 candidate. This regression exercises both corrected blocks
+verbatim.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+p="$root/workflows/output-compliance.md"
+
+command -v sh >/dev/null 2>&1 || { echo "NOT VERIFIED V3.16: sh is not available, no fixture was run"; exit 2; }
+command -v mktemp >/dev/null 2>&1 || { echo "NOT VERIFIED V3.16: mktemp is not available, no fixture was run"; exit 2; }
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v316.XXXXXX") || { echo "NOT VERIFIED V3.16: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+mkdir -p "$fx/probes"
+
+sed -n '/^cache_partition_check() {/,/^}/p' "$p" > "$fx/safe005.sh"
+printf 'cache_partition_check "$@"\n' >> "$fx/safe005.sh"
+sed -n '/^CACHE_READ_RE=/,/^}/p' "$p" > "$fx/cache001.sh"
+printf 'cache_decision_check "$@"\n' >> "$fx/cache001.sh"
+sh -n "$fx/safe005.sh" || { echo "FAIL V3.16: extracted SAFE-005 detector has a syntax error"; exit 1; }
+sh -n "$fx/cache001.sh" || { echo "FAIL V3.16: extracted CACHE-001 detector has a syntax error"; exit 1; }
+
+# --- SAFE-005: unpartitioned key on a continuation line must be found ---
+printf '%s\n' 'const cache = {};' 'export function save() {' '  writeCache(' '    "settings-blob"' '  );' '}' > "$fx/probes/multiline-unpartitioned.js"
+printf '%s\n' 'const cache = {};' 'export function save() {' '  writeCache(' '    "user-42-settings"' '  );' '}' > "$fx/probes/multiline-partitioned.js"
+printf '%s\n' 'const cache = {};' 'export function save() {' '  writeCache("settings-blob");' '}' > "$fx/probes/singleline-unpartitioned.js"
+
+s_multi=$(sh "$fx/safe005.sh" "$fx" probes/multiline-unpartitioned.js)
+printf '%s\n' "$s_multi" | grep -q 'FAIL SAFE-005: probes/multiline-unpartitioned.js:[0-9]*: cache key "settings-blob" has no identity partition' \
+  || { printf 'FAIL V3.16: SAFE-005 missed the continuation-line key, got: %s\n' "${s_multi:-<none>}"; failures=1; }
+s_part=$(sh "$fx/safe005.sh" "$fx" probes/multiline-partitioned.js)
+[ -z "$s_part" ] || { printf 'FAIL V3.16: SAFE-005 flagged a partitioned continuation key: %s\n' "$s_part"; failures=1; }
+s_single=$(sh "$fx/safe005.sh" "$fx" probes/singleline-unpartitioned.js)
+printf '%s\n' "$s_single" | grep -q 'FAIL SAFE-005:' \
+  || { printf 'FAIL V3.16: SAFE-005 no longer detects the single-line key: %s\n' "${s_single:-<none>}"; failures=1; }
+
+# --- CACHE-001: display-only noun key must be silent; a decision verb must emit ---
+printf '%s\n' 'const cache = new Map();' 'export function render() {' '  return cache.get("saved-payment-methods");' '}' > "$fx/probes/display-only.js"
+printf '%s\n' 'const cache = new Map();' 'export async function run() {' '  await charge(100);' '  return cache.get("cart");' '}' > "$fx/probes/decision.js"
+
+c_disp=$(sh "$fx/cache001.sh" "$fx" probes/display-only.js)
+[ -z "$c_disp" ] || { printf 'FAIL V3.16: CACHE-001 flagged a display-only payment key: %s\n' "$c_disp"; failures=1; }
+c_dec=$(sh "$fx/cache001.sh" "$fx" probes/decision.js)
+printf '%s\n' "$c_dec" | grep -q 'NOT VERIFIED CACHE-001: probes/decision.js:[0-9]*:' \
+  || { printf 'FAIL V3.16: CACHE-001 missed the real decision verb, got: %s\n' "${c_dec:-<none>}"; failures=1; }
+
+printf 'V3.16 probe: SAFE-005 multiline %s\n' "${s_multi:-<none>}"
+printf 'V3.16 probe: SAFE-005 partitioned %s\n' "${s_part:-<none>}"
+printf 'V3.16 probe: CACHE-001 display %s\n' "${c_disp:-<none>}"
+printf 'V3.16 probe: CACHE-001 decision %s\n' "${c_dec:-<none>}"
+[ "$failures" -eq 0 ] && echo "V3.16 PASS" || echo "V3.16 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.17 Regression — I18N-001 and CONSUME-001 See Multi-line Default Locales
+
+Independent audit confirmed both detectors used a line-bound `grep -nE`, so a
+default locale on a continuation line (`,\n  locale: string = 'en-US'`) escaped
+detection. This regression asserts a one-line signature and a multi-line
+signature with the same default locale both produce a finding with the correct
+`file:line`, for I18N-001 and for the CONSUME-001 consumed-file scan.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+p="$root/workflows/output-compliance.md"
+
+command -v sh >/dev/null 2>&1 || { echo "NOT VERIFIED V3.17: sh is not available, no fixture was run"; exit 2; }
+command -v perl >/dev/null 2>&1 || { echo "NOT VERIFIED V3.17: perl is not available, no fixture was run"; exit 2; }
+command -v mktemp >/dev/null 2>&1 || { echo "NOT VERIFIED V3.17: mktemp is not available, no fixture was run"; exit 2; }
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v317.XXXXXX") || { echo "NOT VERIFIED V3.17: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+mkdir -p "$fx/src/shared" "$fx/src/features"
+
+sed -n '/^i18n_default_locale_check() {/,/^}/p' "$p" > "$fx/i18n.sh"
+printf 'i18n_default_locale_check "$@"\n' >> "$fx/i18n.sh"
+sed -n '/^consumed_defect_check() {/,/^}/p' "$p" > "$fx/consume.sh"
+printf 'consumed_defect_check "$@"\n' >> "$fx/consume.sh"
+# rtl_project is referenced by consumed_defect_check; stub a non-RTL answer.
+printf 'rtl_project() { :; }\n' | cat - "$fx/consume.sh" > "$fx/consume.tmp" && mv "$fx/consume.tmp" "$fx/consume.sh"
+sh -n "$fx/i18n.sh" || { echo "FAIL V3.17: extracted I18N-001 detector has a syntax error"; exit 1; }
+sh -n "$fx/consume.sh" || { echo "FAIL V3.17: extracted CONSUME-001 detector has a syntax error"; exit 1; }
+
+printf '%s\n' "export const fmt = (value: number, locale = 'en-US') => value;" > "$fx/src/shared/oneline.ts"
+printf '%s\n' 'export const fmt = (' '  value: number,' "  locale: string = 'en-US'" ') => value;' > "$fx/src/shared/multiline.ts"
+printf '%s\n' "export const use = () => fmt(1);" "import { fmt } from '../shared/multiline';" > "$fx/src/features/consumer.ts"
+
+i1=$(sh "$fx/i18n.sh" "$fx" src/shared/oneline.ts)
+printf '%s\n' "$i1" | grep -q 'FAIL I18N-001: src/shared/oneline.ts:1:' \
+  || { printf 'FAIL V3.17: I18N-001 one-line default locale not reported at line 1, got: %s\n' "${i1:-<none>}"; failures=1; }
+i2=$(sh "$fx/i18n.sh" "$fx" src/shared/multiline.ts)
+printf '%s\n' "$i2" | grep -q 'FAIL I18N-001: src/shared/multiline.ts:3:' \
+  || { printf 'FAIL V3.17: I18N-001 multi-line default locale not reported at line 3, got: %s\n' "${i2:-<none>}"; failures=1; }
+c1=$(sh "$fx/consume.sh" "$fx" src/features/consumer.ts)
+printf '%s\n' "$c1" | grep -q 'FAIL CONSUME-001: src/features/consumer.ts:2: imports ../shared/multiline, which carries a default locale literal at src/shared/multiline.ts:3' \
+  || { printf 'FAIL V3.17: CONSUME-001 multi-line default locale in consumed file not reported, got: %s\n' "${c1:-<none>}"; failures=1; }
+
+printf 'V3.17 probe: I18N-001 one-line %s\n' "${i1:-<none>}"
+printf 'V3.17 probe: I18N-001 multi-line %s\n' "${i2:-<none>}"
+printf 'V3.17 probe: CONSUME-001 consumed %s\n' "${c1:-<none>}"
+[ "$failures" -eq 0 ] && echo "V3.17 PASS" || echo "V3.17 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.18 Regression — DB-003 Rejects Per-page Transactions and Comment-only "transaction"
+
+Independent audit confirmed a whole-file `grep -q transaction && continue`
+silenced DB-003 when the transaction marker was inside the page loop (one
+transaction per page, not one snapshot) or in a prose comment. This regression
+asserts the detector reports both, while keeping the enclosing-transaction twin
+and the no-transaction baseline correct.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+p="$root/workflows/output-compliance.md"
+
+command -v sh >/dev/null 2>&1 || { echo "NOT VERIFIED V3.18: sh is not available, no fixture was run"; exit 2; }
+command -v awk >/dev/null 2>&1 || { echo "NOT VERIFIED V3.18: awk is not available, no fixture was run"; exit 2; }
+command -v mktemp >/dev/null 2>&1 || { echo "NOT VERIFIED V3.18: mktemp is not available, no fixture was run"; exit 2; }
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v318.XXXXXX") || { echo "NOT VERIFIED V3.18: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+mkdir -p "$fx/src/repo"
+
+sed -n '/^read_transaction_check() {/,/^}/p' "$p" > "$fx/db3.sh"
+printf 'read_transaction_check "$@"\n' >> "$fx/db3.sh"
+sh -n "$fx/db3.sh" || { echo "FAIL V3.18: extracted DB-003 detector has a syntax error"; exit 1; }
+
+# baseline: page loop with no transaction (V2.82 fixture, line 4)
+printf '%s\n' 'export const readAll = (db) => {' '  let page = 0; const out = [];' '  while (true) {' '    const rows = db.prepare("SELECT id FROM charges LIMIT ? OFFSET ?").all(50, page * 50);' '    if (rows.length === 0) break; out.push(...rows); page++;' '  }' '  return out;' '};' > "$fx/src/repo/page.ts"
+# enclosing transaction twin (V2.82 fixture)
+printf '%s\n' 'export const readAll = (db) => db.transaction(() => {' '  let page = 0; const out = [];' '  while (true) {' '    const rows = db.prepare("SELECT id FROM charges LIMIT ? OFFSET ?").all(50, page * 50);' '    if (rows.length === 0) break; out.push(...rows); page++;' '  }' '  return out;' '})();' > "$fx/src/repo/page-tx.ts"
+# A-1: a transaction inside the loop (one per page) is not one snapshot
+printf '%s\n' 'export const readAll = (db) => {' '  let page = 0; const out = [];' '  while (true) {' '    const rows = db.transaction(() => db.prepare("SELECT id FROM charges LIMIT ? OFFSET ?").all(50, page * 50));' '    if (rows.length === 0) break; out.push(...rows); page++;' '  }' '  return out;' '};' > "$fx/src/repo/page-perpage.ts"
+# A-2: a prose comment mentioning transaction does not enclose the loop
+printf '%s\n' '// This paginated read needs a transaction review before it ships.' 'export const readAll = (db) => {' '  let page = 0; const out = [];' '  while (true) {' '    const rows = db.prepare("SELECT id FROM charges LIMIT ? OFFSET ?").all(50, page * 50);' '    if (rows.length === 0) break; out.push(...rows); page++;' '  }' '  return out;' '};' > "$fx/src/repo/page-prose.ts"
+
+b=$(sh "$fx/db3.sh" "$fx" src/repo/page.ts)
+printf '%s\n' "$b" | grep -q 'FAIL DB-003: src/repo/page.ts:4:' \
+  || { printf 'FAIL V3.18: baseline page loop not reported at line 4, got: %s\n' "${b:-<none>}"; failures=1; }
+t=$(sh "$fx/db3.sh" "$fx" src/repo/page-tx.ts)
+[ -z "$t" ] || { printf 'FAIL V3.18: enclosing-transaction twin falsely reported, got: %s\n' "$t"; failures=1; }
+pp=$(sh "$fx/db3.sh" "$fx" src/repo/page-perpage.ts)
+printf '%s\n' "$pp" | grep -q 'FAIL DB-003: src/repo/page-perpage.ts:4:' \
+  || { printf 'FAIL V3.18: per-page transaction not reported, got: %s\n' "${pp:-<none>}"; failures=1; }
+pc=$(sh "$fx/db3.sh" "$fx" src/repo/page-prose.ts)
+printf '%s\n' "$pc" | grep -q 'FAIL DB-003: src/repo/page-prose.ts:5:' \
+  || { printf 'FAIL V3.18: comment-only transaction not reported, got: %s\n' "${pc:-<none>}"; failures=1; }
+
+printf 'V3.18 probe: baseline %s\n' "${b:-<none>}"
+printf 'V3.18 probe: twin %s\n' "${t:-<clean>}"
+printf 'V3.18 probe: per-page %s\n' "${pp:-<none>}"
+printf 'V3.18 probe: prose %s\n' "${pc:-<none>}"
+[ "$failures" -eq 0 ] && echo "V3.18 PASS" || echo "V3.18 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.19 Regression — Estimation Document Exception to M-91
+
+Independent audits (EST-01, EST-02) confirmed a canonical contradiction: M-91
+classifies an estimate under the empty-manifest rule, making every written file a
+`SCOPE-001` `FAIL`, while `workflows/estimation.md` requires writing exactly the
+estimation document. This regression asserts every M-91 surface states the single
+exception, keeps the analysis/decision wording, and that `SCOPE-001` accepts only
+the manifest-named document.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+
+for cmd in git grep sed mkdir dirname mktemp; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V3.19: $cmd is not available, no fixture was run"; exit 2; }
+done
+git -C "$root" rev-parse HEAD >/dev/null 2>&1 \
+  || { echo "NOT VERIFIED V3.19: $root is not a git repository, the pre-fix control was not run"; exit 2; }
+
+surfaces='AGENTS.md references/mandatory-rules.md workflows/task-to-code.md contexts/research.md workflows/output-compliance.md workflows/commit.md references/system-workflow-regression-matrix.md workflows/estimation.md'
+
+static_check() {
+  base="$1"; missing=0
+  for rel in $surfaces; do
+    grep -qF 'M-91 exception' "$base/$rel" || { echo "FAIL V3.19: $rel does not state the M-91 exception"; missing=1; }
+  done
+  grep -qF 'authorizes no file change in any project' "$base/AGENTS.md" \
+    || { echo "FAIL V3.19: AGENTS.md lost the analysis/decision wording"; missing=1; }
+  grep -qF 'authorizes no file change in any project' "$base/workflows/task-to-code.md" \
+    || { echo "FAIL V3.19: task-to-code.md lost the analysis/decision wording"; missing=1; }
+  return "$missing"
+}
+
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v319.XXXXXX") || { echo "NOT VERIFIED V3.19: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+
+# Pre-fix negative control: reconstruct HEAD surfaces outside the working tree.
+mkdir -p "$fx/head"
+for rel in $surfaces; do
+  mkdir -p "$fx/head/$(dirname "$rel")"
+  git -C "$root" show "HEAD:$rel" > "$fx/head/$rel" \
+    || { echo "NOT VERIFIED V3.19: HEAD:$rel is unreadable"; exit 2; }
+done
+if static_check "$fx/head" >/dev/null 2>&1; then
+  echo "FAIL V3.19: pre-fix HEAD already stated the exception; the negative control is void"
+  failures=1
+else
+  echo "V3.19 pre-fix control: HEAD fails the exception check as expected"
+fi
+
+# The working tree must state the exception on every surface.
+static_check "$root" || failures=1
+
+# Behavioral part: SCOPE-001 accepts only the manifest-named estimation document.
+sed -n '/^scope_file_check() {/,/^}/p' "$root/workflows/output-compliance.md" > "$fx/scope.sh"
+. "$fx/scope.sh"
+mkdir -p "$fx/repo" && cd "$fx/repo" || exit 1
+git init -q . && git config user.email v@v && git config user.name v
+printf '%s\n' 'base' > tracked.txt && git add -A && git commit -qm base
+printf '%s\n' '# project estimation' > estimation.md
+: > "$fx/m-empty.txt"
+printf '%s\n' 'estimation.md' > "$fx/m-doc.txt"
+printf '%s\n' 'notes.md' > "$fx/m-other.txt"
+a="$(scope_file_check . "$fx/m-empty.txt")"
+printf '%s\n' "$a" | grep -qF 'FAIL SCOPE-001: estimation.md:1:' \
+  || { printf 'FAIL V3.19: empty manifest did not fail the estimation document, got: %s\n' "${a:-<none>}"; failures=1; }
+b="$(scope_file_check . "$fx/m-doc.txt")"
+[ -z "$b" ] || { printf 'FAIL V3.19: the named estimation document was reported, got: %s\n' "$b"; failures=1; }
+c="$(scope_file_check . "$fx/m-other.txt")"
+printf '%s\n' "$c" | grep -qF 'FAIL SCOPE-001: estimation.md:1:' \
+  || { printf 'FAIL V3.19: an unnamed estimation document passed, got: %s\n' "${c:-<none>}"; failures=1; }
+
+printf 'V3.19 probe: empty=%s\n' "${a:-<none>}"
+printf 'V3.19 probe: named=%s\n' "${b:-<clean>}"
+printf 'V3.19 probe: other=%s\n' "${c:-<none>}"
+[ "$failures" -eq 0 ] && echo "V3.19 PASS" || echo "V3.19 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.20 Regression — SAFE-005 Rejects an Unpartitioned Key Beside a Partitioned Key
+
+FE-16 independently confirmed that SAFE-005 tested the slurped file (`$_`) for
+`${...user...}` instead of testing the extracted `$key`. One partitioned key
+anywhere in a file therefore suppressed the finding for every unpartitioned key
+in that file. The targetless predicate predates the slurp, but it became an active
+false negative only when V3.16 changed SAFE-005 from line-oriented `perl -ne` to
+`perl -0777`; HEAD's line-oriented form cannot mask a key on another line. This
+regression reconstructs the exact pre-fix control from the working-tree shard by
+restoring the targetless predicate, proves the negative control, then proves the
+fixed detector reports the masked key without creating a false positive on a
+fully partitioned twin.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+
+for cmd in sed sh mktemp mkdir printf grep; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V3.20: $cmd is not available, no fixture was run"; exit 2; }
+done
+
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v320.XXXXXX") || { echo "NOT VERIFIED V3.20: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+
+# Both shards come from the working tree. The pre-fix control is the fixed shard
+# with the target restored to the targetless predicate, i.e. the exact state
+# before this fix (slurp mode plus targetless check).
+sed -n '/^cache_partition_check() {/,/^}/p' "$root/workflows/output-compliance.md" \
+  > "$fx/safe005-fixed.sh"
+sed 's|&& \$key !~ /|\&\& !/|' "$fx/safe005-fixed.sh" > "$fx/safe005-prefix.sh"
+sh -n "$fx/safe005-prefix.sh" || { echo "FAIL V3.20: pre-fix SAFE-005 shard has a syntax error"; exit 1; }
+sh -n "$fx/safe005-fixed.sh" || { echo "FAIL V3.20: fixed SAFE-005 shard has a syntax error"; exit 1; }
+
+grep -qF '&& $key !~ /\$\{[^}]*(?:user|account|tenant|identity|owner|session|subject)/i' "$fx/safe005-fixed.sh" \
+  || { echo "FAIL V3.20: fixed SAFE-005 lost the \$key-targeted identity check"; failures=1; }
+grep -qF '&& !/\$\{[^}]*(?:user|account|tenant|identity|owner|session|subject)/i' "$fx/safe005-prefix.sh" \
+  || { echo "NOT VERIFIED V3.20: reconstructed control lost the targetless check; negative control is void"; failures=1; }
+grep -qF 'perl -0777' "$fx/safe005-prefix.sh" \
+  || { echo "NOT VERIFIED V3.20: reconstructed control lost slurp mode; negative control is void"; failures=1; }
+
+mkdir -p "$fx/case"
+cat > "$fx/case/masked.ts" <<'FIXTURE'
+const cache = {};
+readCache('savedMethods', cache);
+readCache(`savedMethods:${userId}`, cache);
+FIXTURE
+cat > "$fx/case/unmasked.ts" <<'FIXTURE'
+const cache = {};
+readCache('savedMethods', cache);
+FIXTURE
+cat > "$fx/case/partitioned.ts" <<'FIXTURE'
+const cache = {};
+readCache(`savedMethods:${userId}`, cache);
+writeCache(`savedMethods:${sessionId}`, cache, []);
+FIXTURE
+
+run_detector() {
+  script="$1"; file="$2"
+  ( . "$script"; cache_partition_check "$fx/case" "$file" )
+}
+
+pre_masked="$(run_detector "$fx/safe005-prefix.sh" masked.ts)"
+pre_unmasked="$(run_detector "$fx/safe005-prefix.sh" unmasked.ts)"
+[ -z "$pre_masked" ] \
+  || { printf 'FAIL V3.20: pre-fix control did not miss the masked key, got: %s\n' "${pre_masked:-<none>}"; failures=1; }
+printf '%s\n' "$pre_unmasked" | grep -qF 'FAIL SAFE-005: unmasked.ts:2: cache key "savedMethods" has no identity partition (M-56)' \
+  || { printf 'FAIL V3.20: pre-fix detector missed the sole unpartitioned key, got: %s\n' "${pre_unmasked:-<none>}"; failures=1; }
+
+fixed_masked="$(run_detector "$fx/safe005-fixed.sh" masked.ts)"
+fixed_unmasked="$(run_detector "$fx/safe005-fixed.sh" unmasked.ts)"
+fixed_partitioned="$(run_detector "$fx/safe005-fixed.sh" partitioned.ts)"
+printf '%s\n' "$fixed_masked" | grep -qF 'FAIL SAFE-005: masked.ts:2: cache key "savedMethods" has no identity partition (M-56)' \
+  || { printf 'FAIL V3.20: fixed detector still misses the masked key, got: %s\n' "${fixed_masked:-<none>}"; failures=1; }
+printf '%s\n' "$fixed_unmasked" | grep -qF 'FAIL SAFE-005: unmasked.ts:2: cache key "savedMethods" has no identity partition (M-56)' \
+  || { printf 'FAIL V3.20: fixed detector lost the sole-key finding, got: %s\n' "${fixed_unmasked:-<none>}"; failures=1; }
+[ -z "$fixed_partitioned" ] \
+  || { printf 'FAIL V3.20: fixed detector produced a false positive, got: %s\n' "$fixed_partitioned"; failures=1; }
+
+printf 'V3.20 probe: pre-fix masked=%s\n' "${pre_masked:-<none>}"
+printf 'V3.20 probe: pre-fix unmasked=%s\n' "${pre_unmasked:-<none>}"
+printf 'V3.20 probe: fixed masked=%s\n' "${fixed_masked:-<none>}"
+printf 'V3.20 probe: fixed partitioned=%s\n' "${fixed_partitioned:-<clean>}"
+[ "$failures" -eq 0 ] && echo "V3.20 PASS" || echo "V3.20 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.21 Regression — STRUCT-005 Rejects a Negated Benefit Record
+
+GF-04 independently confirmed that STRUCT-005 matched a negated benefit phrase
+("no shared code") as if it were a recorded benefit, suppressing the `FAIL` for
+a monorepo whose decision record explicitly denies every concrete benefit. The
+pre-fix shard is reconstructed from HEAD (where STRUCT-005 still holds the bare
+`grep -rqiE ... || echo FAIL`); the fixed shard is read from the working tree.
+The regression proves the control misses the negated form, then proves the fix
+reports it, preserves affirmative-benefit and no-benefit cases, and keeps a
+single-package repository clean.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+
+for cmd in sed sh mktemp mkdir printf grep cat find tr git; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V3.21: $cmd is not available, no fixture was run"; exit 2; }
+done
+
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v321.XXXXXX") || { echo "NOT VERIFIED V3.21: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+
+anchor='/^packages=\$(find \. -maxdepth 3/,/^fi$/p'
+
+git -C "$root" show HEAD:workflows/output-compliance.md | sed -n "$anchor" > "$fx/struct005-prefix.sh"
+sed -n "$anchor" "$root/workflows/output-compliance.md" > "$fx/struct005-fixed.sh"
+sh -n "$fx/struct005-prefix.sh" || { echo "FAIL V3.21: pre-fix STRUCT-005 shard has a syntax error"; exit 1; }
+sh -n "$fx/struct005-fixed.sh" || { echo "FAIL V3.21: fixed STRUCT-005 shard has a syntax error"; exit 1; }
+
+grep -qF 'grep -rqiE' "$fx/struct005-prefix.sh" \
+  || { echo "NOT VERIFIED V3.21: reconstructed control lost the bare grep; negative control is void"; failures=1; }
+grep -qF 'no|not|without|never|neither' "$fx/struct005-fixed.sh" \
+  || { echo "FAIL V3.21: fixed STRUCT-005 lost the negation filter"; failures=1; }
+grep -qF 'echo "FAIL monorepo without a recorded concrete benefit"' "$fx/struct005-fixed.sh" \
+  || { echo "FAIL V3.21: fixed STRUCT-005 lost the FAIL message"; failures=1; }
+
+mkcase() {
+  d="$fx/$1"; mkdir -p "$d/apps/a" "$d/apps/b"
+  printf '{}\n' > "$d/apps/a/package.json"; printf '{}\n' > "$d/apps/b/package.json"
+}
+mkcase negated; mkcase affirmative; mkcase none; mkcase mixed
+mkdir -p "$fx/single/apps/only"; printf '{}\n' > "$fx/single/apps/only/package.json"
+
+printf 'We adopted a monorepo by default.\nThere is no shared code between the apps and one team.\n' > "$fx/negated/decision.md"
+printf 'We chose a monorepo because we share code and types across the apps.\n' > "$fx/affirmative/decision.md"
+printf 'We chose a monorepo by default. One team, one release train.\n' > "$fx/none/decision.md"
+printf 'There is no shared code between these two apps.\nWe still chose it for common tooling and consistent validation.\n' > "$fx/mixed/decision.md"
+printf 'One team.\n' > "$fx/single/decision.md"
+
+run_detector() {
+  script="$1"; case_dir="$2"
+  ( cd "$case_dir" && . "$script" )
+}
+
+pre_negated="$(run_detector "$fx/struct005-prefix.sh" "$fx/negated")"
+pre_none="$(run_detector "$fx/struct005-prefix.sh" "$fx/none")"
+[ -z "$pre_negated" ] \
+  || { printf 'FAIL V3.21: pre-fix control did not miss the negated benefit, got: %s\n' "${pre_negated:-<none>}"; failures=1; }
+printf '%s\n' "$pre_none" | grep -qF 'FAIL monorepo without a recorded concrete benefit' \
+  || { printf 'NOT VERIFIED V3.21: pre-fix control cannot report the no-benefit case; control is void, got: %s\n' "${pre_none:-<none>}"; failures=1; }
+
+fixed_negated="$(run_detector "$fx/struct005-fixed.sh" "$fx/negated")"
+fixed_affirmative="$(run_detector "$fx/struct005-fixed.sh" "$fx/affirmative")"
+fixed_none="$(run_detector "$fx/struct005-fixed.sh" "$fx/none")"
+fixed_mixed="$(run_detector "$fx/struct005-fixed.sh" "$fx/mixed")"
+fixed_single="$(run_detector "$fx/struct005-fixed.sh" "$fx/single")"
+printf '%s\n' "$fixed_negated" | grep -qF 'FAIL monorepo without a recorded concrete benefit' \
+  || { printf 'FAIL V3.21: fixed detector still misses the negated benefit, got: %s\n' "${fixed_negated:-<none>}"; failures=1; }
+[ -z "$fixed_affirmative" ] \
+  || { printf 'FAIL V3.21: fixed detector produced a false positive on an affirmative benefit, got: %s\n' "$fixed_affirmative"; failures=1; }
+printf '%s\n' "$fixed_none" | grep -qF 'FAIL monorepo without a recorded concrete benefit' \
+  || { printf 'FAIL V3.21: fixed detector lost the no-benefit finding, got: %s\n' "${fixed_none:-<none>}"; failures=1; }
+[ -z "$fixed_mixed" ] \
+  || { printf 'FAIL V3.21: fixed detector produced a false positive when a real benefit follows a negation, got: %s\n' "$fixed_mixed"; failures=1; }
+[ -z "$fixed_single" ] \
+  || { printf 'FAIL V3.21: fixed detector flagged a single-package repository, got: %s\n' "$fixed_single"; failures=1; }
+
+printf 'V3.21 probe: pre-fix negated=%s\n' "${pre_negated:-<none>}"
+printf 'V3.21 probe: pre-fix none=%s\n' "${pre_none:-<none>}"
+printf 'V3.21 probe: fixed negated=%s\n' "${fixed_negated:-<none>}"
+printf 'V3.21 probe: fixed affirmative=%s\n' "${fixed_affirmative:-<clean>}"
+printf 'V3.21 probe: fixed mixed=%s\n' "${fixed_mixed:-<clean>}"
+printf 'V3.21 probe: fixed single=%s\n' "${fixed_single:-<clean>}"
+[ "$failures" -eq 0 ] && echo "V3.21 PASS" || echo "V3.21 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.22 Regression — STRUCT-004 Uses the Agreed Tree, Not a Hardcoded Style
+
+META-08 independently confirmed that STRUCT-004 hardcoded the feature-driven
+example (`for folder in app shared features;`) and reported `FAIL src/app is
+missing` for a legitimately chosen layered tree whose decision record named
+`src/domain`, `src/application` and `src/interfaces`. The pre-fix shard is
+reconstructed from HEAD; the fixed shard is read from the working tree. The
+regression proves the control false-fails the agreed layered tree, then proves
+the fix accepts it, accepts the feature-driven tree, still fails a genuinely
+missing agreed folder, honours an explicit agreed-tree declaration, and reports
+NOT VERIFIED instead of FAIL when no agreed tree is available.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+
+for cmd in sed sh mktemp mkdir printf grep cat find tr sort cp git; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V3.22: $cmd is not available, no fixture was run"; exit 2; }
+done
+
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v322.XXXXXX") || { echo "NOT VERIFIED V3.22: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+
+anchor='/^has_manifest() {/,/^fi$/p'
+
+git -C "$root" show HEAD:workflows/output-compliance.md | sed -n "$anchor" > "$fx/struct004-prefix.sh"
+sed -n "$anchor" "$root/workflows/output-compliance.md" > "$fx/struct004-fixed.sh"
+sh -n "$fx/struct004-prefix.sh" || { echo "FAIL V3.22: pre-fix STRUCT-004 shard has a syntax error"; exit 1; }
+sh -n "$fx/struct004-fixed.sh" || { echo "FAIL V3.22: fixed STRUCT-004 shard has a syntax error"; exit 1; }
+
+grep -qF 'for folder in app shared features' "$fx/struct004-prefix.sh" \
+  || { echo "NOT VERIFIED V3.22: reconstructed control lost the hardcoded style; negative control is void"; failures=1; }
+grep -qF 'STRUCT004_EXPECTED_FOLDERS' "$fx/struct004-fixed.sh" \
+  || { echo "FAIL V3.22: fixed STRUCT-004 lost the agreed-tree declaration"; failures=1; }
+grep -qF 'NOT VERIFIED STRUCT-004' "$fx/struct004-fixed.sh" \
+  || { echo "FAIL V3.22: fixed STRUCT-004 lost the undeterminable-tree branch"; failures=1; }
+
+mkcase() {
+  d="$fx/$1"; shift
+  mkdir -p "$d"
+  printf '{}\n' > "$d/package.json"
+  for folder in "$@"; do mkdir -p "$d/src/$folder"; done
+}
+mkcase feature app shared features
+mkcase layered domain application interfaces
+mkcase missing domain application
+mkdir -p "$fx/undeclared/src/api" "$fx/undeclared/src/services" "$fx/undeclared/src/domain" "$fx/undeclared/src/infrastructure"
+printf '{}\n' > "$fx/undeclared/package.json"
+mkdir -p "$fx/doconly"; printf '# Notes\n' > "$fx/doconly/README.md"
+
+printf 'User decision (turn 7, verbatim): "Use the feature-driven tree: src/app, src/shared, src/features."\nAgreed tree: src/app src/shared src/features\n' > "$fx/feature/docs-decision.md"
+printf 'User decision (turn 7, verbatim): "Use the layered tree: src/domain, src/application, src/interfaces."\nAgreed tree: src/domain src/application src/interfaces\n' > "$fx/layered/docs-decision.md"
+printf 'User decision (turn 7, verbatim): "Use the layered tree: src/domain, src/application, src/interfaces."\nAgreed tree: src/domain src/application src/interfaces\n' > "$fx/missing/docs-decision.md"
+for c in feature layered missing; do
+  mkdir -p "$fx/$c/docs/decisions"; cp "$fx/$c/docs-decision.md" "$fx/$c/docs/decisions/architecture.md"
+done
+
+run_detector() { ( cd "$2" && . "$1" ); }
+
+pre_feature="$(run_detector "$fx/struct004-prefix.sh" "$fx/feature")"
+pre_layered="$(run_detector "$fx/struct004-prefix.sh" "$fx/layered")"
+[ -z "$pre_feature" ] \
+  || { printf 'FAIL V3.22: pre-fix control false-failed the feature-driven tree, got: %s\n' "$pre_feature"; failures=1; }
+printf '%s\n' "$pre_layered" | grep -qF 'FAIL src/app is missing: it belongs to the agreed tree' \
+  || { printf 'NOT VERIFIED V3.22: pre-fix control cannot reproduce the hardcoded-style finding; control is void, got: %s\n' "${pre_layered:-<none>}"; failures=1; }
+
+fixed_feature="$(run_detector "$fx/struct004-fixed.sh" "$fx/feature")"
+fixed_layered="$(run_detector "$fx/struct004-fixed.sh" "$fx/layered")"
+fixed_missing="$(run_detector "$fx/struct004-fixed.sh" "$fx/missing")"
+fixed_undeclared="$(run_detector "$fx/struct004-fixed.sh" "$fx/undeclared")"
+fixed_doconly="$(run_detector "$fx/struct004-fixed.sh" "$fx/doconly")"
+fixed_explicit="$(cd "$fx/undeclared" && STRUCT004_EXPECTED_FOLDERS='api services domain infrastructure'; export STRUCT004_EXPECTED_FOLDERS; . "$fx/struct004-fixed.sh")"
+
+[ -z "$fixed_feature" ] \
+  || { printf 'FAIL V3.22: fixed detector false-failed the feature-driven tree, got: %s\n' "$fixed_feature"; failures=1; }
+[ -z "$fixed_layered" ] \
+  || { printf 'FAIL V3.22: fixed detector false-failed the agreed layered tree, got: %s\n' "$fixed_layered"; failures=1; }
+printf '%s\n' "$fixed_missing" | grep -qF 'FAIL src/interfaces is missing: it belongs to the agreed tree' \
+  || { printf 'FAIL V3.22: fixed detector lost the genuinely missing agreed folder, got: %s\n' "${fixed_missing:-<none>}"; failures=1; }
+printf '%s\n' "$fixed_undeclared" | grep -qF 'NOT VERIFIED STRUCT-004' \
+  || { printf 'FAIL V3.22: fixed detector did not report NOT VERIFIED without an agreed tree, got: %s\n' "${fixed_undeclared:-<none>}"; failures=1; }
+if printf '%s\n' "$fixed_undeclared" | grep -q '^FAIL'; then
+  printf 'FAIL V3.22: fixed detector false-failed when no agreed tree is available, got: %s\n' "$fixed_undeclared"; failures=1
+fi
+printf '%s\n' "$fixed_doconly" | grep -qF 'NOT APPLICABLE STRUCT-004' \
+  || { printf 'FAIL V3.22: fixed detector lost the documentation-only branch, got: %s\n' "${fixed_doconly:-<none>}"; failures=1; }
+[ -z "$fixed_explicit" ] \
+  || { printf 'FAIL V3.22: fixed detector ignored the explicit agreed-tree declaration, got: %s\n' "$fixed_explicit"; failures=1; }
+
+printf 'V3.22 probe: pre-fix feature=%s\n' "${pre_feature:-<clean>}"
+printf 'V3.22 probe: pre-fix layered=%s\n' "${pre_layered:-<none>}"
+printf 'V3.22 probe: fixed feature=%s\n' "${fixed_feature:-<clean>}"
+printf 'V3.22 probe: fixed layered=%s\n' "${fixed_layered:-<clean>}"
+printf 'V3.22 probe: fixed missing=%s\n' "${fixed_missing:-<none>}"
+printf 'V3.22 probe: fixed undeclared=%s\n' "${fixed_undeclared:-<none>}"
+printf 'V3.22 probe: fixed doconly=%s\n' "${fixed_doconly:-<none>}"
+printf 'V3.22 probe: fixed explicit=%s\n' "${fixed_explicit:-<clean>}"
+[ "$failures" -eq 0 ] && echo "V3.22 PASS" || echo "V3.22 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.23 Regression — STRUCT-004 Ignores Rejected Alternatives and Is zsh-Safe
+
+META-15 independently confirmed that the V3.22 fix mined every `src/...` token
+from decision-record prose, including alternatives a record explicitly
+rejected, and used an unquoted `for folder in $expected` loop. A legitimate
+hexagonal tree whose ADR named rejected `src/api`, `src/features`,
+`src/services` produced three false FAILs under POSIX sh and one malformed FAIL
+under zsh. The control is the V3.22 `struct004_expected_folders` shard, embedded
+as a literal because HEAD holds the pre-V3.22 hardcoded form; the regression
+proves the control false-fails, then proves the fix reads only an explicit
+agreed-tree declaration, is clean under sh and zsh, still fails a genuinely
+missing declared folder, and preserves every V3.22 branch.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+
+for cmd in sed sh mktemp mkdir printf grep cat find tr sort git; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V3.23: $cmd is not available, no fixture was run"; exit 2; }
+done
+command -v zsh >/dev/null 2>&1 || [ -x /bin/zsh ] || { echo "NOT VERIFIED V3.23: zsh is not available, zsh case not run"; exit 2; }
+ZSH_BIN=$(command -v zsh 2>/dev/null || printf '/bin/zsh')
+
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v323.XXXXXX") || { echo "NOT VERIFIED V3.23: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+
+# Negative control: the V3.22 shard (prose-mining + unquoted loop), embedded
+# literally because V3.22 is uncommitted and HEAD holds the pre-V3.22 form.
+cat > "$fx/struct004-prefix.sh" <<'CONTROL'
+struct004_expected_folders() {
+  if [ -n "${STRUCT004_EXPECTED_FOLDERS:-}" ]; then
+    printf '%s\n' "$STRUCT004_EXPECTED_FOLDERS" | tr ' ,' '\n\n' | sed '/^$/d'
+    return
+  fi
+  for d in docs/decisions/*.md; do
+    [ -f "$d" ] || continue
+    grep -hoE 'src/[A-Za-z0-9_.-]+' "$d" 2>/dev/null
+  done | sed 's#^src/##' | sed 's/[.,;:]$//' |
+    grep -vE '\.(ts|tsx|js|jsx|mjs|cjs|py|go|java|rb|php|cs|rs|kt|swift)$' |
+    sed '/^$/d' | sort -u
+}
+if has_manifest; then
+  expected="$(struct004_expected_folders)"
+  if [ -z "$expected" ]; then
+    echo "NOT VERIFIED STRUCT-004: no agreed tree declared and no decision record names the top-level folders; cannot compare"
+  else
+    for folder in $expected; do
+      [ -d "src/$folder" ] ||
+        echo "FAIL src/$folder is missing: it belongs to the agreed tree"
+    done
+  fi
+else
+  echo "NOT APPLICABLE STRUCT-004: no application manifest (documentation-only scope)"
+fi
+CONTROL
+# The shared has_manifest() prefix keeps the control self-contained.
+sed -n '/^has_manifest() {/,/^}/p' "$root/workflows/output-compliance.md" > "$fx/has_manifest.sh"
+cat "$fx/has_manifest.sh" "$fx/struct004-prefix.sh" > "$fx/control.sh"
+sed -n '/^has_manifest() {/,/^fi$/p' "$root/workflows/output-compliance.md" > "$fx/fixed.sh"
+sh -n "$fx/control.sh" || { echo "FAIL V3.23: control shard has a syntax error"; exit 1; }
+sh -n "$fx/fixed.sh" || { echo "FAIL V3.23: fixed shard has a syntax error"; exit 1; }
+grep -qF "grep -hoE 'src/" "$fx/control.sh" \
+  || { echo "NOT VERIFIED V3.23: control lost prose mining; negative control is void"; failures=1; }
+grep -qF 'Agreed tree:' "$fx/fixed.sh" \
+  || { echo "FAIL V3.23: fixed detector lost the structured agreed-tree declaration"; failures=1; }
+grep -qF 'IFS= read -r folder' "$fx/fixed.sh" \
+  || { echo "FAIL V3.23: fixed detector lost the quoted per-folder loop"; failures=1; }
+grep -qF 'NOT VERIFIED STRUCT-004' "$fx/fixed.sh" \
+  || { echo "FAIL V3.23: fixed detector lost the undeterminable-tree branch"; failures=1; }
+
+mkcase() {
+  d="$fx/$1"; shift
+  mkdir -p "$d"
+  printf '{}\n' > "$d/package.json"
+  for folder in "$@"; do mkdir -p "$d/src/$folder"; done
+}
+mkcase rejected domain application interfaces
+mkdir -p "$fx/rejected/docs/decisions"
+cat > "$fx/rejected/docs/decisions/0001.md" <<'ADR'
+# ADR 0001 - hexagonal architecture
+We considered `src/api`, `src/services` and `src/features` but rejected them.
+We agreed on the hexagonal tree: `src/domain`, `src/application`, `src/interfaces`.
+ADR
+mkcase agreed domain application interfaces
+mkdir -p "$fx/agreed/docs/decisions"
+printf 'Agreed tree: src/domain src/application src/interfaces\n' > "$fx/agreed/docs/decisions/0001.md"
+mkcase missing domain application
+mkdir -p "$fx/missing/docs/decisions"
+printf 'Agreed tree: src/domain src/application src/interfaces\n' > "$fx/missing/docs/decisions/0001.md"
+mkcase undeclared api services domain infrastructure
+mkdir -p "$fx/doconly"; printf '# Notes\n' > "$fx/doconly/README.md"
+
+run_detector() { ( cd "$2" && "$1" "$3" ); }
+
+pre_sh="$(run_detector /bin/sh "$fx/rejected" "$fx/control.sh")"
+pre_zsh="$(run_detector "$ZSH_BIN" "$fx/rejected" "$fx/control.sh")"
+printf '%s\n' "$pre_sh" | grep -qF 'FAIL src/api is missing' \
+  || { printf 'NOT VERIFIED V3.23: control did not reproduce the false FAIL under sh; control is void, got: %s\n' "${pre_sh:-<none>}"; failures=1; }
+printf '%s\n' "$pre_zsh" | grep -qF 'FAIL src/api' \
+  || { printf 'NOT VERIFIED V3.23: control did not reproduce the malformed FAIL under zsh; control is void, got: %s\n' "${pre_zsh:-<none>}"; failures=1; }
+
+fixed_rejected_sh="$(run_detector /bin/sh "$fx/rejected" "$fx/fixed.sh")"
+fixed_rejected_zsh="$(run_detector "$ZSH_BIN" "$fx/rejected" "$fx/fixed.sh")"
+fixed_agreed_sh="$(run_detector /bin/sh "$fx/agreed" "$fx/fixed.sh")"
+fixed_agreed_zsh="$(run_detector "$ZSH_BIN" "$fx/agreed" "$fx/fixed.sh")"
+fixed_missing="$(run_detector /bin/sh "$fx/missing" "$fx/fixed.sh")"
+fixed_undeclared="$(run_detector /bin/sh "$fx/undeclared" "$fx/fixed.sh")"
+fixed_doconly="$(run_detector /bin/sh "$fx/doconly" "$fx/fixed.sh")"
+
+for probe in "$fixed_rejected_sh" "$fixed_rejected_zsh"; do
+  printf '%s\n' "$probe" | grep -qF 'NOT VERIFIED STRUCT-004' \
+    || { printf 'FAIL V3.23: rejected alternatives were not ignored, got: %s\n' "${probe:-<clean>}"; failures=1; }
+  if printf '%s\n' "$probe" | grep -q '^FAIL'; then
+    printf 'FAIL V3.23: false FAIL on a tree that names rejected alternatives, got: %s\n' "$probe"; failures=1
+  fi
+done
+for probe in "$fixed_agreed_sh" "$fixed_agreed_zsh"; do
+  [ -z "$probe" ] \
+    || { printf 'FAIL V3.23: agreed tree false-failed under a supported shell, got: %s\n' "$probe"; failures=1; }
+done
+printf '%s\n' "$fixed_missing" | grep -qF 'FAIL src/interfaces is missing: it belongs to the agreed tree' \
+  || { printf 'FAIL V3.23: genuinely missing declared folder not reported, got: %s\n' "${fixed_missing:-<none>}"; failures=1; }
+printf '%s\n' "$fixed_undeclared" | grep -qF 'NOT VERIFIED STRUCT-004' \
+  || { printf 'FAIL V3.23: undeclared tree did not report NOT VERIFIED, got: %s\n' "${fixed_undeclared:-<none>}"; failures=1; }
+if printf '%s\n' "$fixed_undeclared" | grep -q '^FAIL'; then
+  printf 'FAIL V3.23: undeclared tree false-failed, got: %s\n' "$fixed_undeclared"; failures=1
+fi
+printf '%s\n' "$fixed_doconly" | grep -qF 'NOT APPLICABLE STRUCT-004' \
+  || { printf 'FAIL V3.23: documentation-only branch lost, got: %s\n' "${fixed_doconly:-<none>}"; failures=1; }
+
+printf 'V3.23 probe: control sh=%s\n' "${pre_sh:-<clean>}"
+printf 'V3.23 probe: control zsh=%s\n' "${pre_zsh:-<clean>}"
+printf 'V3.23 probe: fixed rejected sh=%s\n' "${fixed_rejected_sh:-<clean>}"
+printf 'V3.23 probe: fixed rejected zsh=%s\n' "${fixed_rejected_zsh:-<clean>}"
+printf 'V3.23 probe: fixed missing=%s\n' "${fixed_missing:-<none>}"
+[ "$failures" -eq 0 ] && echo "V3.23 PASS" || echo "V3.23 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.24 Regression — I18N-003 Emits the Literal-Direction FAIL Even When the Test Names RTL
+
+MB-09 independently reproduced that `i18n_rtl_test_check` computes
+`verdict="FAIL"` for a unit with a literal direction but emits nothing when the
+co-located test names an RTL locale: the `grep … || echo` short-circuits on the
+RTL-named branch. The mandate at `output-compliance.md:1664-1665` classifies a
+literal-direction unit as FAIL regardless of its test, so the computed FAIL must
+not be silently dropped. The negative control is the pre-fix function at HEAD;
+the regression proves it is silent on a literal-direction unit with an RTL-named
+test, then proves the fixed function emits that FAIL, still emits the gap finding
+when the test names no RTL locale, still emits NOT VERIFIED for a non-literal
+unit with no test, stays silent for a non-literal unit that has an RTL assertion,
+and preserves the non-RTL-project early return.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+
+for cmd in git sed sh mktemp mkdir printf grep cat find dirname basename; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V3.24: $cmd is not available, no fixture was run"; exit 2; }
+done
+
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v324.XXXXXX") || { echo "NOT VERIFIED V3.24: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+
+# Shared helper (unchanged by the fix), extracted from the canonical source.
+sed -n '/^rtl_project() {/,/^}/p' "$root/workflows/output-compliance.md" > "$fx/helpers.sh"
+# Negative control: the pre-fix function at HEAD, whose RTL-named branch
+# short-circuits with `||` and drops the computed FAIL.
+git -C "$root" show HEAD:workflows/output-compliance.md |
+  sed -n '/^i18n_rtl_test_check() {/,/^}/p' > "$fx/control-fn.sh"
+sed -n '/^i18n_rtl_test_check() {/,/^}/p' "$root/workflows/output-compliance.md" > "$fx/fixed-fn.sh"
+
+for fn in control fixed; do
+  [ -s "$fx/$fn-fn.sh" ] || { echo "NOT VERIFIED V3.24: $fn function extraction empty"; exit 2; }
+  sh -n "$fx/$fn-fn.sh" || { echo "FAIL V3.24: $fn function has a syntax error"; exit 1; }
+  cat "$fx/helpers.sh" "$fx/$fn-fn.sh" > "$fx/$fn.sh"
+  cat >> "$fx/$fn.sh" <<'RUN'
+root="$1"; shift
+i18n_rtl_test_check "$root" "$@"
+RUN
+done
+
+grep -qF 'rtl|RTL" "$t" 2>/dev/null ||' "$fx/control-fn.sh" \
+  || { echo "NOT VERIFIED V3.24: control lost the short-circuit; negative control is void"; failures=1; }
+grep -qF 'even though its test' "$fx/fixed-fn.sh" \
+  || { echo "FAIL V3.24: fixed function lost the literal-direction emission"; failures=1; }
+
+mkbase() {
+  d="$fx/$1"; mkdir -p "$d/src"
+  printf '{"supportsRtl": true}\n' > "$d/project.json"
+}
+literal_src() {
+  printf "import React from 'react';\nexport const App = () => <View style={{ flexDirection: 'row' }} />;\n" > "$1/src/App.tsx"
+}
+plain_src() {
+  printf "import React from 'react';\nexport const App = () => <View />;\n" > "$1/src/App.tsx"
+}
+
+mkbase literal_rtl; literal_src "$fx/literal_rtl"
+printf "// RTL locale 'ar' assertion\n" > "$fx/literal_rtl/src/App.test.tsx"
+mkbase literal_nortl; literal_src "$fx/literal_nortl"
+printf "// renders the default screen\n" > "$fx/literal_nortl/src/App.test.tsx"
+mkbase plain_rtl; plain_src "$fx/plain_rtl"
+printf "// RTL locale 'ar' assertion\n" > "$fx/plain_rtl/src/App.test.tsx"
+mkbase plain_notest; plain_src "$fx/plain_notest"
+mkdir -p "$fx/no_rtl/src"; literal_src "$fx/no_rtl"
+printf "// renders the default screen\n" > "$fx/no_rtl/src/App.test.tsx"
+
+run_case() { ( cd "$fx/$1" && sh "$fx/$2.sh" . src/App.tsx ); }
+
+pre_a="$(run_case literal_rtl control)"
+pre_b="$(run_case literal_nortl control)"
+pre_c="$(run_case plain_rtl control)"
+pre_d="$(run_case plain_notest control)"
+pre_e="$(run_case no_rtl control)"
+fixed_a="$(run_case literal_rtl fixed)"
+fixed_b="$(run_case literal_nortl fixed)"
+fixed_c="$(run_case plain_rtl fixed)"
+fixed_d="$(run_case plain_notest fixed)"
+fixed_e="$(run_case no_rtl fixed)"
+
+# The control must be silent on the RTL-named literal case or it proves nothing.
+[ -z "$pre_a" ] \
+  || { printf 'NOT VERIFIED V3.24: control did not reproduce the silent FAIL, got: %s\n' "${pre_a:-<none>}"; failures=1; }
+printf '%s\n' "$pre_b" | grep -qF 'FAIL I18N-003: src/App.tsx:1: its test src/App.test.tsx names no RTL locale' \
+  || { printf 'NOT VERIFIED V3.24: control gap branch did not fire, got: %s\n' "${pre_b:-<none>}"; failures=1; }
+
+# The fix emits the computed FAIL in the RTL-named literal case.
+printf '%s\n' "$fixed_a" | grep -qF 'FAIL I18N-003: src/App.tsx:1: a literal direction in this unit, so it is direction-dependent even though its test src/App.test.tsx names an RTL locale (M-66)' \
+  || { printf 'FAIL V3.24: literal-direction FAIL still dropped under an RTL-named test, got: %s\n' "${fixed_a:-<none>}"; failures=1; }
+# All pre-existing branches are preserved.
+for pair in 'pre_b fixed_b' 'pre_c fixed_c' 'pre_d fixed_d' 'pre_e fixed_e'; do
+  set -- $pair
+  eval "pa=\${$1:-<clean>}; pb=\${$2:-<clean>}"
+  [ "$pa" = "$pb" ] \
+    || { printf 'FAIL V3.24: %s changed: control=%s fixed=%s\n' "$2" "$pa" "$pb"; failures=1; }
+done
+printf '%s\n' "$fixed_d" | grep -qF 'NOT VERIFIED I18N-003: src/App.tsx:1: no test' \
+  || { printf 'FAIL V3.24: no-test NOT VERIFIED branch lost, got: %s\n' "${fixed_d:-<none>}"; failures=1; }
+[ -z "$fixed_c" ] \
+  || { printf 'FAIL V3.24: non-literal unit with an RTL assertion false-failed, got: %s\n' "$fixed_c"; failures=1; }
+[ -z "$fixed_e" ] \
+  || { printf 'FAIL V3.24: non-RTL project false-failed, got: %s\n' "$fixed_e"; failures=1; }
+
+printf 'V3.24 probe: control literal+RTL=%s\n' "${pre_a:-<clean>}"
+printf 'V3.24 probe: fixed literal+RTL=%s\n' "${fixed_a:-<none>}"
+printf 'V3.24 probe: fixed literal+noRTL=%s\n' "${fixed_b:-<none>}"
+[ "$failures" -eq 0 ] && echo "V3.24 PASS" || echo "V3.24 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+## V3.25 Regression — BOUND-001 Cites the Declaration Line, Not a Comment That Names the Bound
+
+BE-27 independently reproduced that `bound_test_check` computed
+`bound_line=$(grep -nE "$bound_re" "$root/$f" | head -n 1 | cut -d: -f1)` with no
+comment stripping, so a comment naming a bound at line 2 made the finding cite
+`:2` while the real declaration was at line 5. The contract at
+`output-compliance.md:3705-3706` requires the declaring line. HEAD predates V3.15
+and still hardcodes `$f:1`, so it cannot serve as this control; the negative
+control is reconstructed from the fixed function by restoring the pre-fix
+`grep -nE` assignment. The regression proves the control cites the comment line,
+the fix cites the declaration line in both the no-importer and no-holder
+branches, and the held, no-bound, and line-1 cases are unchanged.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+
+for cmd in sed sh mktemp mkdir printf grep cat awk basename cp; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V3.25: $cmd is not available, no fixture was run"; exit 2; }
+done
+
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v325.XXXXXX") || { echo "NOT VERIFIED V3.25: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+
+sed -n '/^bound_test_check() {/,/^}/p' "$root/workflows/output-compliance.md" > "$fx/fixed-fn.sh"
+[ -s "$fx/fixed-fn.sh" ] || { echo "NOT VERIFIED V3.25: fixed function extraction empty"; exit 2; }
+sh -n "$fx/fixed-fn.sh" || { echo "FAIL V3.25: fixed function has a syntax error"; exit 1; }
+
+awk '
+  /bound_line=\$\(awk/ {
+    print "    bound_line=$(grep -nE \"$bound_re\" \"$root/$f\" | head -n 1 | cut -d: -f1)"
+    next
+  }
+  { print }
+' "$fx/fixed-fn.sh" > "$fx/control-fn.sh"
+[ -s "$fx/control-fn.sh" ] || { echo "NOT VERIFIED V3.25: control reconstruction empty"; exit 2; }
+sh -n "$fx/control-fn.sh" || { echo "FAIL V3.25: control function has a syntax error"; exit 1; }
+
+grep -qF 'bound_line=$(grep -nE "$bound_re"' "$fx/control-fn.sh" \
+  || { echo "NOT VERIFIED V3.25: control lost the pre-fix grep assignment; negative control is void"; failures=1; }
+grep -qF 'bound_line=$(awk' "$fx/fixed-fn.sh" \
+  || { echo "FAIL V3.25: fixed function lost the comment-stripping assignment"; failures=1; }
+
+for fn in control fixed; do
+  cat "$fx/$fn-fn.sh" > "$fx/$fn.sh"
+  cat >> "$fx/$fn.sh" <<'RUN'
+root="$1"; shift
+bound_test_check "$root" "$@"
+RUN
+done
+
+mk_named() {
+  d="$fx/$1"; mkdir -p "$d/src"
+  cat > "$d/src/payment.js" <<'SRC'
+// payment method service
+// BEGIN IMMEDIATE and busy_timeout are used for the update -- detector probe
+import { open } from 'node:sqlite';
+const db = await open(':memory:');
+const busy_timeout = 5_000;
+export const setDefaultPaymentMethod = async (id) => {
+  await db.exec('BEGIN IMMEDIATE');
+  await db.exec('UPDATE payment_methods SET is_default = 1 WHERE id = ?', [id]);
+  await db.exec('COMMIT');
+};
+SRC
+  cat > "$d/src/payment.test.js" <<'TST'
+import { test } from 'node:test';
+import { setDefaultPaymentMethod } from './payment.js';
+test('default method', () => { typeof setDefaultPaymentMethod; });
+TST
+}
+mk_named no_hold
+mk_named no_import
+cat > "$fx/no_import/src/payment.test.js" <<'TST'
+import { test } from 'node:test';
+test('unrelated', () => {});
+TST
+mk_named held
+cat > "$fx/held/src/payment.test.js" <<'TST'
+import { test } from 'node:test';
+import { setDefaultPaymentMethod } from './payment.js';
+test('default method', () => { const never = new Promise(() => {}); typeof setDefaultPaymentMethod; typeof never; });
+TST
+
+d="$fx/clean"; mkdir -p "$d/src"
+printf "import { open } from 'node:sqlite';\nexport const load = async () => await open(':memory:');\n" > "$d/src/payment.js"
+printf "import { test } from 'node:test';\nimport { load } from './payment.js';\ntest('load', () => { typeof load; });\n" > "$d/src/payment.test.js"
+
+d="$fx/line1"; mkdir -p "$d/src"
+printf "const busy_timeout = 5_000;\nexport const read = () => busy_timeout;\n" > "$d/src/payment.js"
+cp "$fx/no_hold/src/payment.test.js" "$d/src/payment.test.js"
+
+run_case() { ( cd "$fx/$1" && sh "$fx/$2.sh" . src/payment.js -- src/payment.test.js ); }
+
+pre_nh="$(run_case no_hold control)"; fixed_nh="$(run_case no_hold fixed)"
+pre_ni="$(run_case no_import control)"; fixed_ni="$(run_case no_import fixed)"
+pre_h="$(run_case held control)"; fixed_h="$(run_case held fixed)"
+pre_c="$(run_case clean control)"; fixed_c="$(run_case clean fixed)"
+pre_l="$(run_case line1 control)"; fixed_l="$(run_case line1 fixed)"
+
+printf '%s\n' "$pre_nh" | grep -qF 'src/payment.js:2: no test that imports payment holds the dependency' \
+  || { printf 'NOT VERIFIED V3.25: control did not cite the comment line, got: %s\n' "${pre_nh:-<none>}"; failures=1; }
+printf '%s\n' "$fixed_nh" | grep -qF 'src/payment.js:5: no test that imports payment holds the dependency' \
+  || { printf 'FAIL V3.25: fix still cites the comment line, got: %s\n' "${fixed_nh:-<none>}"; failures=1; }
+printf '%s\n' "$pre_ni" | grep -qF 'src/payment.js:2: a bound is declared, and no test imports payment' \
+  || { printf 'NOT VERIFIED V3.25: control no-importer branch did not cite the comment line, got: %s\n' "${pre_ni:-<none>}"; failures=1; }
+printf '%s\n' "$fixed_ni" | grep -qF 'src/payment.js:5: a bound is declared, and no test imports payment' \
+  || { printf 'FAIL V3.25: fix no-importer branch still cites the comment line, got: %s\n' "${fixed_ni:-<none>}"; failures=1; }
+[ -z "$pre_h" ] && [ -z "$fixed_h" ] \
+  || { printf 'FAIL V3.25: held dependency false-failed, control=%s fixed=%s\n' "${pre_h:-<clean>}" "${fixed_h:-<clean>}"; failures=1; }
+[ -z "$pre_c" ] && [ -z "$fixed_c" ] \
+  || { printf 'FAIL V3.25: no-bound unit false-failed, control=%s fixed=%s\n' "${pre_c:-<clean>}" "${fixed_c:-<clean>}"; failures=1; }
+printf '%s\n' "$pre_l" | grep -qF 'src/payment.js:1:' \
+  || { printf 'NOT VERIFIED V3.25: control line-1 case changed, got: %s\n' "${pre_l:-<none>}"; failures=1; }
+printf '%s\n' "$fixed_l" | grep -qF 'src/payment.js:1:' \
+  || { printf 'FAIL V3.25: line-1 declaration case changed, got: %s\n' "${fixed_l:-<none>}"; failures=1; }
+
+printf 'V3.25 probe: control named-bound=%s\n' "${pre_nh:-<clean>}"
+printf 'V3.25 probe: fixed named-bound=%s\n' "${fixed_nh:-<none>}"
+[ "$failures" -eq 0 ] && echo "V3.25 PASS" || echo "V3.25 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+- V3.26 DB-005 derives the visibility column from non-comment migration text, so a
+  comment that names a visibility keyword does not misidentify the actual column
+  (M-100). The control is reconstructed from the fixed function by restoring the
+  pre-fix whole-file grep assignment. The regression proves a comment-only keyword
+  causes a false FAIL on the control and a clean NOT VERIFIED on the fix, while a
+  comment-only migration does not trigger the fixed detector.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+
+for cmd in sed sh mktemp mkdir printf grep cat awk; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V3.26: $cmd is not available, no fixture was run"; exit 2; }
+done
+
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v326.XXXXXX") || { echo "NOT VERIFIED V3.26: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+
+sed -n '/^db_visibility_check() {/,/^}/p' "$root/workflows/output-compliance.md" > "$fx/fixed-fn.sh"
+[ -s "$fx/fixed-fn.sh" ] || { echo "NOT VERIFIED V3.26: fixed function extraction empty"; exit 2; }
+sh -n "$fx/fixed-fn.sh" || { echo "FAIL V3.26: fixed function has a syntax error"; exit 1; }
+
+awk '
+  /col="\$\(sed -E/ {
+    print "    col=\"$(grep -oiE \"$VISIBILITY_COL_RE\" \"$root/$m\" | sed -n '\''1p'\'')\""
+    next
+  }
+  /\[ -n "\$col" \] \|\| continue/ { next }
+  { print }
+' "$fx/fixed-fn.sh" > "$fx/control-fn.sh"
+[ -s "$fx/control-fn.sh" ] || { echo "NOT VERIFIED V3.26: control reconstruction empty"; exit 2; }
+sh -n "$fx/control-fn.sh" || { echo "FAIL V3.26: control function has a syntax error"; exit 1; }
+
+grep -qF 'col="$(grep -oiE "$VISIBILITY_COL_RE" "$root/$m"' "$fx/control-fn.sh" \
+  || { echo "NOT VERIFIED V3.26: control lost the pre-fix grep assignment; negative control is void"; failures=1; }
+grep -qF "sed -E 's/--.*\$//; s#/\\*.*\\*/##g'" "$fx/fixed-fn.sh" \
+  || { echo "FAIL V3.26: fixed function lost the comment-stripping assignment"; failures=1; }
+
+for fn in control fixed; do
+  cat > "$fx/$fn.sh" <<HDR
+DEPLOY_ORDER_TEST_RE='legacy|previous (release|schema|version)|unmigrated|not yet migrated|pre-?migration|old schema|before (the )?migration|sin migrar|esquema anterior'
+VISIBILITY_COL_RE='deleted_at|archived_at|revoked_at|is_deleted|hidden_at|tombstone'
+HDR
+  cat "$fx/$fn-fn.sh" >> "$fx/$fn.sh"
+  cat >> "$fx/$fn.sh" <<'RUN'
+root="$1"; shift
+db_visibility_check "$root" "$@"
+RUN
+done
+
+mkdir -p "$fx/case/migrations" "$fx/case/tests"
+cat > "$fx/case/migrations/001_add_deleted_at.sql" <<'SQL'
+-- tombstone migration: mark rows as deleted
+ALTER TABLE orders ADD COLUMN deleted_at TIMESTAMPTZ;
+SQL
+cat > "$fx/case/tests/orders.deploy.test.ts" <<'TS'
+it('previous release reads a row with deleted_at set', () => {});
+TS
+
+mkdir -p "$fx/comment_only/migrations" "$fx/comment_only/tests"
+cat > "$fx/comment_only/migrations/001_note.sql" <<'SQL'
+-- tombstone note only, no column added
+ALTER TABLE orders ADD COLUMN note TEXT;
+SQL
+cat > "$fx/comment_only/tests/orders.test.ts" <<'TS'
+it('previous release reads orders', () => {});
+TS
+
+run_case() { ( cd "$fx/$1" && sh "$fx/$2.sh" . migrations/"$3" -- tests/"$4" ); }
+
+pre="$(run_case case control 001_add_deleted_at.sql orders.deploy.test.ts)"
+fixed="$(run_case case fixed 001_add_deleted_at.sql orders.deploy.test.ts)"
+pre_c="$(run_case comment_only control 001_note.sql orders.test.ts)"
+fixed_c="$(run_case comment_only fixed 001_note.sql orders.test.ts)"
+
+printf '%s\n' "$pre" | grep -qF 'FAIL DB-005: migrations/001_add_deleted_at.sql:1: visibility column tombstone' \
+  || { printf 'NOT VERIFIED V3.26: control did not reproduce comment-misattribution, got: %s\n' "${pre:-<none>}"; failures=1; }
+printf '%s\n' "$fixed" | grep -qF 'NOT VERIFIED DB-005: migrations/001_add_deleted_at.sql:1: visibility column deleted_at' \
+  || { printf 'FAIL V3.26: fixed detector did not cite deleted_at, got: %s\n' "${fixed:-<none>}"; failures=1; }
+printf '%s\n' "$pre_c" | grep -qF 'visibility column tombstone' \
+  || { printf 'NOT VERIFIED V3.26: control comment-only case changed, got: %s\n' "${pre_c:-<none>}"; failures=1; }
+[ -z "$fixed_c" ] \
+  || { printf 'FAIL V3.26: comment-only migration should not trigger, got: %s\n' "${fixed_c:-<none>}"; failures=1; }
+
+printf 'V3.26 probe: control=%s\n' "${pre:-<clean>}"
+printf 'V3.26 probe: fixed=%s\n' "${fixed:-<clean>}"
+[ "$failures" -eq 0 ] && echo "V3.26 PASS" || echo "V3.26 FAIL"
+[ "$failures" -eq 0 ]
+```
+
+- V3.27 the commit-gate secrets scan redacts the matched secret value from its
+  output (M-123/AGENTS.md:712/skills/security-review/SKILL.md). The control is
+  reconstructed by removing the redacting sed stage from the canonical command in
+  `workflows/commit.md`. The regression proves the control echoes a synthetic
+  non-real marker and the fixed command reports only the location with a redacted
+  placeholder.
+
+```sh
+root="$(cd "${1:-.}" && pwd)"
+failures=0
+
+for cmd in sed sh mktemp mkdir printf grep cat awk; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "NOT VERIFIED V3.27: $cmd is not available, no fixture was run"; exit 2; }
+done
+
+fx=$(mktemp -d "${TMPDIR:-/tmp}/v327.XXXXXX") || { echo "NOT VERIFIED V3.27: mktemp failed"; exit 2; }
+trap 'rm -rf "$fx"' EXIT
+
+# Extract the canonical grep+sed pipeline from commit.md (Phase 3).
+cmd_fixed="$(awk '/grep -rnE "\(/,/sed -E '\''s\/\(:\[0-9\]\+:\)\.\*\//' "$root/workflows/commit.md" \
+  | sed 's/\\$//; s/<scoped-paths>/src/; s/^[[:space:]]*//' \
+  | tr '\n' ' ' \
+  | sed 's/  */ /g')"
+[ -n "$cmd_fixed" ] || { echo "NOT VERIFIED V3.27: could not extract fixed command from commit.md"; exit 2; }
+printf '%s\n' "$cmd_fixed" | grep -qF "REDACTED - secret candidate" \
+  || { echo "FAIL V3.27: fixed command missing redaction placeholder"; failures=1; }
+
+cmd_control="$(printf '%s\n' "$cmd_fixed" | sed 's/| sed -E.*REDACTED - secret candidate.*$//')"
+[ -n "$cmd_control" ] || { echo "NOT VERIFIED V3.27: control reconstruction empty"; exit 2; }
+printf '%s\n' "$cmd_control" | grep -qF "REDACTED - secret candidate" \
+  && { echo "NOT VERIFIED V3.27: control still contains redaction; negative control is void"; failures=1; }
+
+mkdir -p "$fx/repo/src"
+marker='sk_test_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef1234'
+printf 'export const key = "%s";\n' "$marker" > "$fx/repo/src/config.ts"
+
+run_scan() {
+  cmd="$1"
+  ( cd "$fx/repo" && sh -c "$cmd" )
+}
+
+pre="$(run_scan "$cmd_control" || true)"
+fixed="$(run_scan "$cmd_fixed" || true)"
+
+printf '%s\n' "$pre" | grep -qF "$marker" \
+  || { printf 'NOT VERIFIED V3.27: control did not echo synthetic marker, got: %s\n' "${pre:-<none>}"; failures=1; }
+printf '%s\n' "$fixed" | grep -qF "$marker" \
+  && { printf 'FAIL V3.27: fixed command echoed secret value, got: %s\n' "${fixed:-<none>}"; failures=1; }
+printf '%s\n' "$fixed" | grep -qF '[REDACTED - secret candidate]' \
+  || { printf 'FAIL V3.27: fixed command missing redacted placeholder, got: %s\n' "${fixed:-<none>}"; failures=1; }
+printf '%s\n' "$fixed" | grep -qF 'src/config.ts:1:' \
+  || { printf 'FAIL V3.27: fixed command lost location, got: %s\n' "${fixed:-<none>}"; failures=1; }
+
+printf 'V3.27 probe: control contains marker=%s\n' "$(printf '%s\n' "$pre" | grep -qF "$marker" && echo yes || echo no)"
+printf 'V3.27 probe: fixed contains marker=%s\n' "$(printf '%s\n' "$fixed" | grep -qF "$marker" && echo yes || echo no)"
+[ "$failures" -eq 0 ] && echo "V3.27 PASS" || echo "V3.27 FAIL"
 [ "$failures" -eq 0 ]
 ```

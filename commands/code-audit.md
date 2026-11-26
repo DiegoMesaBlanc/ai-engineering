@@ -1,6 +1,6 @@
 ---
 description: Read-only senior/staff audit of the last commit by default, or of the whole project with --all, reporting improvement suggestions for architecture, patterns, quality, security, data, tests, performance, a11y, i18n, SEO, UI, and mobile.
-agent: reviewer
+agent: orchestrator
 ---
 
 # /code-audit

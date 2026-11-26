@@ -294,8 +294,8 @@ the user ends the session at that point.
 
 ### Frontend steps
 
-- [ ] C1 Repository, tooling, and scripts, all checks passing
 - [ ] C0 Styling approach recorded before the scaffold
+- [ ] C1 Repository, tooling, and scripts, all checks passing
 - [ ] C2 Design tokens for the recorded styling approach documented
 - [ ] C3 Application shell with the navigation, the providers, and the error and loading boundaries
 - [ ] C4 Data layer with the typed endpoints, the error mapping, and the cache policy

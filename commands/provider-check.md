@@ -1,6 +1,6 @@
 ---
 description: Verify actual task, design, and Git provider capabilities with evidence-based statuses, read-only, without exposing credentials or simulating proof.
-agent: auditor
+agent: orchestrator
 ---
 
 # /provider-check

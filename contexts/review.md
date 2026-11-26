@@ -21,15 +21,25 @@ findings; it does not edit code, publish comments, approve, or merge.
   `skills/vulnerability-catalog/SKILL.md`.
 - Testing: `skills/testing-strategy/SKILL.md`,
   `skills/test-driven-development/SKILL.md`.
-- Compliance sweep: `workflows/output-compliance.md` via `compliance-runner`.
-- PR content: `skills/pull-request/SKILL.md` via `writer-pr`.
+- Compliance sweep: `workflows/output-compliance.md` executed by the
+  orchestrator; an independent verdict comes from `external-auditor`.
+- PR content: `skills/pull-request/SKILL.md` loaded by `writer-pr`, which writes
+  the copy-ready content to the neutral state root and cites the exact path.
+- PR review: `workflows/pull-request-review.md` executed by `reviewer-pr` with
+  cold inputs; findings are copy-ready and are never published.
+- Domain review: `references/domain-execution-protocol.md` via the `frontend`,
+  `backend`, `data`, `devops`, `mobile` or `security` subagent at the
+  `staff-reviewer` step.
 
 ## Independence
 
 A review in Independent Mode must have a fresh context that does not contain
 the author's conversation; otherwise independence is `NOT ESTABLISHED` and the
-reviewer stops. Reusing a reviewer's own session to request its full report is
-allowed; reusing it to re-review after a design change is not.
+reviewer stops. `reviewer-pr` receives the requirement, the approved scope, the
+change set and the gate evidence, never the implementation reasoning;
+`external-auditor` is dispatched fresh for whole-cycle, design, web, security,
+gate and compliance audits. Reusing a reviewer's own session to request its
+full report is allowed; reusing it to re-review after a design change is not.
 
 ## Boundaries
 

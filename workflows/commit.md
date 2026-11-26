@@ -50,7 +50,9 @@ patterns, or over-engineering.
   from the task checkpoint.
   A task with a change set and no recorded manifest is `BLOCKED`: the proposal stops
   and the gap is reported, never inferred from the diff. An analysis-only task has an
-  empty manifest, so any changed file is a `SCOPE-001` `FAIL` (M-91).
+  empty manifest, so any changed file is a `SCOPE-001` `FAIL` (M-91). An estimate is the
+  single M-91 exception: the estimation document required by `workflows/estimation.md`
+  is the only manifest path, and any other changed file is a `SCOPE-001` `FAIL`.
 - Run `scope_file_check` (`SCOPE-001`, tracked and untracked files) against the
   manifest, and `out_of_scope_commit_check` over `base..HEAD` (`COMMIT-002` in
   `workflows/output-compliance.md`). A proposed commit or pull request carries only the
@@ -119,7 +121,8 @@ patterns: API keys, tokens, passwords, private keys, connection strings.
 grep -rnE "(sk_live_|sk_test_|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----|(password|passwd|secret|token|api[_-]?key)[[:space:]]*[:=][[:space:]]*[\"'][^\"']{8,})" \
   <scoped-paths> \
   --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
-  --exclude-dir=coverage --exclude-dir=.git
+  --exclude-dir=coverage --exclude-dir=.git \
+  | sed -E 's/(:[0-9]+:).*/\1 [REDACTED - secret candidate]/'
 ```
 
 Each match is a candidate: confirm it is not a placeholder, an example, or a

@@ -1,6 +1,6 @@
 ---
 description: Read-only audit of ai-engineering structure, OpenCode discovery, client configuration, policy consistency, and provider status.
-agent: auditor
+agent: orchestrator
 ---
 
 Run the System Validation Workflow:

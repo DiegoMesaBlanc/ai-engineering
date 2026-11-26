@@ -161,7 +161,10 @@ type001_scan() {
     # A path that cannot be read is NOT VERIFIED, never a silent pass.
     [ -r "$p" ] || { echo "NOT VERIFIED TYPE-001: $p is missing or unreadable"; continue; }
     # Files that declare types. A grep error (exit 2) is not a clean scan.
-    candidates="$(grep -rlE '(^|[[:space:]])(export[[:space:]]+)?(declare[[:space:]]+)?(interface|type|enum)[[:space:]]+[A-Za-z_$]' \
+    # Anchor the declaration at the start of the line (after optional whitespace).
+    # A leading `(^|[[:space:]])` alternation also matches after `//` or `*`, so a
+    # comment containing `type <Identifier>` wrongly selects a runtime file.
+    candidates="$(grep -rlE '^[[:space:]]*(export[[:space:]]+)?(declare[[:space:]]+)?(interface|type|enum)[[:space:]]+[A-Za-z_$]' \
       "$p" --include='*.ts' --include='*.tsx' \
       --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build 2>/dev/null)"
     [ $? -eq 2 ] && { echo "NOT VERIFIED TYPE-001: $p could not be scanned"; continue; }
@@ -485,11 +488,24 @@ top-level folders of the project against the tree of the agreed style, in
 `references/folder-architectures.md`, translated to the detected ecosystem.
 
 ```sh
-# The agreed top-level folders, for example for a feature-driven web app.
+# The folder structure is a decision of its own, asked with the architectural
+# style and recorded before any file is created (folder-architectures.md,
+# "The folder structure is a decision"; R-63). Never hardcode one style: a
+# legitimately chosen layered, hexagonal, DDD, modular or event-driven tree
+# must not be reported as missing the feature-driven example. The expected
+# folders come ONLY from an explicit agreed-tree declaration: either the
+# STRUCT004_EXPECTED_FOLDERS startup-decision variable, or a structured
+# "Agreed tree:" line in a recorded decision. Free prose in an ADR is never
+# mined for src/... tokens: a decision record names rejected alternatives next
+# to the agreed tree, and treating every token as expected produced false
+# FAILs on a legitimate tree (V3.23). When no declaration is available the
+# check reports NOT VERIFIED instead of failing a tree it cannot compare.
 # A documentation-only repository has no application manifest and is out of
 # scope: the check reports it as not applicable instead of as a missing tree.
 # The manifest list is the one of the unit definition in
 # workflows/session-resilience.md ("Concern measurement"); keep the two equal.
+# The check runs under POSIX sh and zsh: word splitting is never used to build
+# a folder path, so the loop is safe under either shell.
 has_manifest() {
   for m in package.json pyproject.toml setup.py setup.cfg go.mod Cargo.toml \
     pom.xml build.gradle build.gradle.kts settings.gradle.kts composer.json \
@@ -498,19 +514,41 @@ has_manifest() {
   done
   ls ./*.csproj >/dev/null 2>&1
 }
+struct004_expected_folders() {
+  # Explicit declaration from the startup decision set takes precedence.
+  if [ -n "${STRUCT004_EXPECTED_FOLDERS:-}" ]; then
+    printf '%s\n' "$STRUCT004_EXPECTED_FOLDERS" | tr ' ,' '\n\n' | sed '/^$/d' | sort -u
+    return
+  fi
+  # Otherwise read only the structured "Agreed tree:" declaration line from a
+  # decision record. Never grep arbitrary src/... prose: rejected alternatives
+  # would be reported as missing (V3.23).
+  for d in docs/decisions/*.md; do
+    [ -f "$d" ] || continue
+    grep -h '^[[:space:]]*Agreed tree:' "$d" 2>/dev/null
+  done | sed 's/^[[:space:]]*Agreed tree:[[:space:]]*//' |
+    tr ' ,' '\n\n' | sed 's#^src/##' | sed '/^$/d' | sort -u
+}
 if has_manifest; then
-  for folder in app shared features; do
-    [ -d "src/$folder" ] ||
-      echo "FAIL src/$folder is missing: it belongs to the agreed tree"
-  done
+  expected="$(struct004_expected_folders)"
+  if [ -z "$expected" ]; then
+    echo "NOT VERIFIED STRUCT-004: no agreed tree declared and no decision record declares an 'Agreed tree:' line; cannot compare"
+  else
+    printf '%s\n' "$expected" | while IFS= read -r folder; do
+      [ -n "$folder" ] || continue
+      [ -d "src/$folder" ] ||
+        printf 'FAIL src/%s is missing: it belongs to the agreed tree\n' "$folder"
+    done
+  fi
 else
   echo "NOT APPLICABLE STRUCT-004: no application manifest (documentation-only scope)"
 fi
 ```
 
-A missing or an unexpected top-level folder is a `FAIL` (P2). The check
-does not judge whether the tree is a good one; it verifies that the tree is
-the one that was agreed.
+A missing top-level folder of the agreed tree is a `FAIL` (P2). The check
+does not judge whether the tree is a good one; it verifies that the folders
+the decision declared are present. Extra folders are not a `FAIL`: a legitimate
+tree may add folders the declaration does not enumerate.
 
 ### STRUCT-005 — A monorepo requires a recorded concrete benefit
 
@@ -523,12 +561,16 @@ the benefit. A repository with several packages and no such record is a
 `FAIL` (P2): the topology was adopted by default.
 
 ```sh
-# A monorepo with more than one package and no recorded benefit
+# A monorepo with more than one package and no recorded benefit.
+# A negated benefit ("no shared code", "not sharing types") is not a benefit:
+# strip negated benefit phrases per line before testing for a recorded one.
 packages=$(find . -maxdepth 3 -name package.json -not -path "*/node_modules/*" | wc -l)
 if [ "$packages" -gt 1 ]; then
-  grep -rqiE "shar(e|es|ed|ing)[^.]*(code|type|librar)|atomic|atomically|common tooling|consistent validation|single commit" \
-    --include='*.md' . --exclude-dir=node_modules ||
-    echo "FAIL monorepo without a recorded concrete benefit"
+  benefit=$(find . -name '*.md' -not -path "*/node_modules/*" -type f -exec cat {} + 2>/dev/null \
+    | tr '[:upper:]' '[:lower:]' \
+    | sed -E 's/(^|[^[:alpha:]])(no|not|without|never|neither)[[:space:]]+(shar(e|es|ed|ing)|atomic(ally)?|common tooling|consistent validation|single commit)([[:space:]]+[^[:space:];,.]+){0,3}//g' \
+    | grep -oiE 'shar(e|es|ed|ing)[^.]*(code|type|librar)|atomic|atomically|common tooling|consistent validation|single commit')
+  [ -n "$benefit" ] || echo "FAIL monorepo without a recorded concrete benefit"
 fi
 ```
 
@@ -814,6 +856,66 @@ timer_hold_check() {
 }
 ```
 
+### TEST-004 — A changed behavioral source has a test in the change set
+
+`skills/implementation-recipes/SKILL.md` requires a test for changed behavior,
+and `references/audit-pass-criteria.md` (Dimension 7) requires every behavior a
+change adds or modifies to be tested through its real entry point. Before this
+detector, `TEST-001`/`TEST-002` iterated only over test files the change set
+creates or modifies, so a behavioral fix with **no** test passed every
+applicable detector vacuously. `TEST-004` closes that gap: for each created or
+modified non-test source file it requires a change-set test file that is
+co-located (`<basename>.test|spec.*`) or that imports the module. It reads a
+scope manifest when one is supplied; a line `TEST-004-WAIVER: <path>` exempts a
+specific file (for type-only, configuration, or generated sources) and preserves
+an explicit, reviewed decision. A missing or unreadable manifest is `NOT VERIFIED`,
+never a pass, when the sweep is given one.
+
+```sh
+# $1 = repository root; $2... = created/modified source files; a `--` separates
+# them from change-set test files. $SCOPE_MANIFEST optionally names a manifest.
+test_presence_check() {
+  root="$1"; shift
+  sources=""; tests=""; mode=1
+  for a in "$@"; do
+    if [ "$a" = "--" ]; then mode=2; continue; fi
+    if [ "$mode" = 1 ]; then sources="$sources $a"; else tests="$tests $a"; fi
+  done
+  waived=""
+  if [ -n "${SCOPE_MANIFEST:-}" ]; then
+    if [ -r "$SCOPE_MANIFEST" ]; then
+      waived=$(grep '^TEST-004-WAIVER:' "$SCOPE_MANIFEST" 2>/dev/null | sed 's/^TEST-004-WAIVER:[[:space:]]*//')
+    else
+      echo "NOT VERIFIED TEST-004: scope manifest $SCOPE_MANIFEST is missing or unreadable"
+      return 0
+    fi
+  fi
+  for f in $sources; do
+    case "$f" in
+      *.ts|*.tsx|*.mts|*.cts|*.js|*.jsx|*.mjs|*.cjs) ;;
+      *) continue ;;
+    esac
+    case "$f" in
+      *.d.ts|*.config.*|index.ts|index.tsx|index.js|index.jsx|*/index.ts|*/index.tsx|*/index.js|*/index.jsx) continue ;;
+    esac
+    printf '%s\n' "$waived" | grep -qxF -- "$f" && continue
+    [ -f "$root/$f" ] || continue
+    # A source unit is behavioral when it declares a function, a class, or an
+    # exported const/let. Pure type files and re-export-only files are not.
+    grep -qE '(function[[:space:]]+[A-Za-z_$]|[[:space:]]class[[:space:]]+[A-Za-z_$]|export[[:space:]]+(const|let|var)[[:space:]]+[A-Za-z_$])' "$root/$f" || continue
+    base=$(basename "$f"); stem=${base%.*}
+    cov=0
+    for t in $tests; do
+      case "$(basename "$t")" in
+        "$stem".test.*|"$stem".spec.*|"$stem".test) cov=1; break ;;
+      esac
+      if [ -f "$root/$t" ] && grep -qF -- "$stem" "$root/$t" 2>/dev/null; then cov=1; break; fi
+    done
+    [ "$cov" = 1 ] || echo "FAIL TEST-004: $f:1: changed behavioral source has no test in the change set (audit-pass-criteria.md:441)"
+  done
+}
+```
+
 ### DEAD-EXPORT-001 — Every export the change set adds has a consumer
 
 A TypeScript or JavaScript file the change set creates or modifies declares
@@ -888,8 +990,11 @@ These detections enforce the delivery-safety rules of `AGENTS.md`:
   to its closing parenthesis, up to 40 lines, so an options object of any length
   is inspected: a fixed window of a few lines misses an option that follows a long
   header block and passes an unrelated `timeout` that belongs to another statement.
-  A call that is not closed within 40 lines is `NOT VERIFIED`, never clean. The
-  retry loop is judged by the same test on each attempt.
+  String literals and comments inside the call are removed before the option is
+  matched, and the name must be an option key or a `signal` shorthand, so a `timeout`
+  in a URL query, a comment, or a header such as `x-signaling` is not mistaken for a
+  timeout (M-54, V3.12). A call that is not closed within 40 lines is `NOT VERIFIED`,
+  never clean. The retry loop is judged by the same test on each attempt.
 - **SAFE-002 (M-55).** `http://` is rejected for every non-local build. Every
   `http://` and `https://` URL in a changed file, of any type (source, shell,
   workflow YAML, configuration), is **parsed**, not substring-matched: the
@@ -929,17 +1034,43 @@ safe_timeout_check() {
   for f in "$@"; do
     case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
     awk -v file="$f" '
+      BEGIN { sq = sprintf("%c", 39); dq = sprintf("%c", 34); bt = sprintf("%c", 96) }
+      # Remove string literals and comments (including block comments spanning
+      # lines within the call window); bl carries block state across lines.
+      function scrub(s,   out, i, c) {
+        out = ""; instr = 0
+        for (i = 1; i <= length(s); i++) {
+          c = substr(s, i, 1)
+          if (bl) {
+            if (c == "*" && substr(s, i + 1, 1) == "/") { bl = 0; i++ }
+            continue
+          }
+          if (instr) {
+            if (c == "\\") { i++; continue }
+            if (c == q) instr = 0
+            continue
+          }
+          if (c == "/" && substr(s, i + 1, 1) == "*") { bl = 1; i++; continue }
+          if (c == "/" && substr(s, i + 1, 1) == "/") break
+          if (c == dq || c == sq || c == bt) { instr = 1; q = c; continue }
+          out = out c
+        }
+        return out
+      }
       { lines[NR] = $0 }
       /(^|[^A-Za-z0-9_.])(fetch|axios|axios\.(get|post|put|patch|delete|request)|got|https?\.request)[[:space:]]*\(/ {
         call[++n] = NR
       }
       END {
         for (i = 1; i <= n; i++) {
-          s = call[i]; depth = 0; ok = 0; closed = 0
+          s = call[i]; depth = 0; ok = 0; closed = 0; bl = 0
           for (k = s; k <= NR && k <= s + 40 && !closed; k++) {
             text = lines[k]
             if (k == s) text = substr(text, index(text, "("))
-            if (text ~ /signal|timeout|Timeout/) ok = 1
+            opt = scrub(text)
+            if (opt ~ /(^|[[:space:],{])signal[[:space:]]*:/ ||
+                opt ~ /(^|[[:space:],{])signal[[:space:]]*[,}]/ ||
+                opt ~ /(^|[[:space:],{])timeout[[:space:]]*:/) ok = 1
             for (c = 1; c <= length(text) && !closed; c++) {
               ch = substr(text, c, 1)
               if (ch == "(") depth++
@@ -1118,14 +1249,18 @@ cache_partition_check() {
   root="$1"; shift
   for f in "$@"; do
     case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
-    (cd "$root" && perl -ne '
-      next unless /(?:cacheKey\s*:|(?:readCache|writeCache|clearCache|setItem|getItem|removeItem|multiSet)\s*\()\s*[`"\x27]([^`"\x27]*)/;
-      my $key = $1;
-      if ($key !~ /user|account|tenant|identity|owner|session|subject/i && !/\$\{[^}]*(?:user|account|tenant|identity|owner|session|subject)/i) {
-        print "FAIL SAFE-005: $ARGV:$.: cache key \"$key\" has no identity partition (M-56)\n";
-      }
-      if ($key =~ /payment|card|iban|cvv/i) {
-        print "FAIL SAFE-005: $ARGV:$.: payment data written to plain storage under \"$key\" (M-56)\n";
+    # V3.16: slurp the file so a key on a continuation line is read; report the
+    # line of the match, never a fixed or line-oriented `$.` number.
+    (cd "$root" && perl -0777 -ne '
+      while (/(?:cacheKey\s*:|(?:readCache|writeCache|clearCache|setItem|getItem|removeItem|multiSet)\s*\()\s*[`"\x27]([^`"\x27]*)/g) {
+        my $key = $1;
+        my $line = 1 + (substr($_, 0, pos($_)) =~ tr/\n//);
+        if ($key !~ /user|account|tenant|identity|owner|session|subject/i && $key !~ /\$\{[^}]*(?:user|account|tenant|identity|owner|session|subject)/i) {
+          print "FAIL SAFE-005: $ARGV:$line: cache key \"$key\" has no identity partition (M-56)\n";
+        }
+        if ($key =~ /payment|card|iban|cvv/i) {
+          print "FAIL SAFE-005: $ARGV:$line: payment data written to plain storage under \"$key\" (M-56)\n";
+        }
       }
     ' "$f")
   done
@@ -1432,6 +1567,7 @@ project_safety_sweep() {
   db_schema_state_check . $src
   index_coverage_check . $src $migrations
   timer_hold_check . $tests
+  test_presence_check . $src -- $tests
   bound_test_check . $src -- $tests
   destructive_path_check . $src
   parse_dereference_check . $src
@@ -1479,7 +1615,9 @@ i18n_default_locale_check() {
   for f in "$@"; do
     case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
     case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*|*/testing/*) continue ;; esac
-    grep -nE "[(,][[:space:]]*locale[A-Za-z]*[[:space:]]*(:[^=,)]*)?=[[:space:]]*[\"'][a-z]{2}(-[A-Za-z]{2,4})?[\"']" "$root/$f" 2>/dev/null |
+    # V3.17: slurp the file so a default locale on a continuation line is seen;
+    # report the line that carries the locale token (a line-bound grep cannot).
+    perl -0777 -ne 'while (/(?:[(,][\s]*)(locale[A-Za-z]*[\s]*(:[^=,)]*)?=[\s]*["\x27][a-z]{2}(?:-[A-Za-z]{2,4})?["\x27])/g) { my $lp=$-[1]; my $line=1+(substr($_,0,$lp)=~tr/\n//); my $ls=rindex($_,"\n",$lp-1)+1; my $le=index($_,"\n",$lp); $le=length($_) if $le<0; print "$line:".substr($_,$ls,$le-$ls)."\n"; }' "$root/$f" 2>/dev/null |
       sed "s#^#FAIL I18N-001: $f:#; s#\$#  (formatter parameter with a default locale literal, M-66)#"
     grep -nE "toLocale(Date|Time)?String\(\)|Intl\.(NumberFormat|DateTimeFormat|PluralRules|RelativeTimeFormat)\(\)" "$root/$f" 2>/dev/null |
       sed "s#^#FAIL I18N-001: $f:#; s#\$#  (locale-aware call with no locale argument, M-66)#"
@@ -1499,7 +1637,9 @@ reviewer confirms each candidate and reads the resolver the unit uses.
 ```sh
 # $1 = repository root; $2... = changed or tracked source files, relative to it.
 rtl_project() {
-  (cd "$1" && grep -rlE "allowRTL|forceRTL|I18nManager|supportsRTL|dir=\"rtl\"" \
+  # Android declares the manifest attribute as `android:supportsRtl` (lower-case l).
+  # Include both spellings so an Android-only RTL project is not silently skipped.
+  (cd "$1" && grep -rlE "allowRTL|forceRTL|I18nManager|supportsRTL|supportsRtl|dir=\"rtl\"" \
     --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' \
     --include='*.xml' --include='*.html' --include='*.json' \
     --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build . 2>/dev/null | head -n 1)
@@ -1525,9 +1665,10 @@ that names an RTL locale (`'ar'`, `rtl`, or `RTL`). A unit with a literal direct
 is `FAIL`: it is direction-dependent by its own code. Any other changed UI unit is
 `NOT VERIFIED`, because a screen can render a direction-dependent child without a
 literal of its own; the reviewer either adds the assertion or records why the unit
-renders no direction. A unit with no test is reported too, so the gap is never silent.
-The check reads the presence of the locale in the test; the reviewer confirms that
-the assertion renders the unit.
+renders no direction. A unit with no test is reported too, so the gap is never silent. A literal direction
+stays `FAIL` even when the test names an RTL locale: the assertion does not cancel a
+literal direction written in the unit's own code (V3.24). The check reads the presence
+of the locale in the test; the reviewer confirms that the assertion renders the unit.
 
 ```sh
 # $1 = repository root; $2... = changed or tracked source files, relative to it.
@@ -1552,8 +1693,15 @@ i18n_rtl_test_check() {
       continue
     fi
     printf '%s\n' "$tests" | while IFS= read -r t; do
-      grep -qE "'ar'|\"ar\"|rtl|RTL" "$t" 2>/dev/null ||
+      if grep -qE "'ar'|\"ar\"|rtl|RTL" "$t" 2>/dev/null; then
+        # V3.24: a literal direction is FAIL by its own code (see the mandate
+        # above); an RTL assertion in the test does not cancel that literal.
+        # Emit the computed FAIL instead of silently dropping it.
+        [ "$verdict" = "FAIL" ] &&
+          echo "$verdict I18N-003: $f:1: $reason even though its test ${t#"$root"/} names an RTL locale (M-66)"
+      else
         echo "$verdict I18N-003: $f:1: its test ${t#"$root"/} names no RTL locale: $reason (M-66)"
+      fi
     done
   done
 }
@@ -1623,7 +1771,9 @@ consumed_defect_check() {
         rel="${target#"$rootabs"/}"
         printf '%s\n' "$changed" | grep -qxF "$rel" && continue
         defect=""
-        hit="$(grep -nE "[(,][[:space:]]*locale[A-Za-z]*[[:space:]]*(:[^=,)]*)?=[[:space:]]*[\"'][a-z]{2}" "$target" 2>/dev/null | head -n 1)"
+        # V3.17: slurp so a continuation-line default locale is seen; keep the
+        # first hit's line number in the report.
+        hit="$(perl -0777 -ne 'while (/(?:[(,][\s]*)(locale[A-Za-z]*[\s]*(:[^=,)]*)?=[\s]*["\x27][a-z]{2})/g) { my $lp=$-[1]; my $line=1+(substr($_,0,$lp)=~tr/\n//); my $ls=rindex($_,"\n",$lp-1)+1; my $le=index($_,"\n",$lp); $le=length($_) if $le<0; print "$line:".substr($_,$ls,$le-$ls)."\n"; }' "$target" 2>/dev/null | head -n 1)"
         [ -n "$hit" ] && defect="a default locale literal at $rel:${hit%%:*}"
         if [ -z "$defect" ] && [ -n "$rtl" ]; then
           hit="$(grep -nE "flexDirection:[[:space:]]*[\"']row(-reverse)?[\"']" "$target" 2>/dev/null | head -n 1)"
@@ -1657,8 +1807,10 @@ decision_record_check() {
   for f in "$@"; do
     case "$f" in *.md) ;; *) continue ;; esac
     grep -qiE "pattern|patr" "$root/$f" 2>/dev/null || continue
-    grep -qE "^\| *Pattern *\|" "$root/$f" 2>/dev/null ||
+    if ! grep -qE "^\| *Pattern *\|" "$root/$f" 2>/dev/null &&
+       ! grep -qiE "Design patterns: *0 selected" "$root/$f" 2>/dev/null; then
       echo "FAIL DEC-001: $f:1: no pattern table names the selected patterns (M-50, M-45)"
+    fi
     for p in SRP OCP LSP ISP DIP; do
       row="$(grep -E "^\| *$p *\|" "$root/$f" 2>/dev/null | head -n 1)"
       if [ -z "$row" ]; then
@@ -2067,7 +2219,18 @@ read_transaction_check() {
     case "$f" in *.test.*|*.spec.*|*/test/*|*/tests/*|*__tests__*|*/testing/*) continue ;; esac
     grep -qiE 'limit|offset|cursor|keyset|after_?id' "$root/$f" || continue
     grep -qE 'while[[:space:]]*\(|for[[:space:]]*\(|\bloop\b' "$root/$f" || continue
-    grep -qiE 'BEGIN( DEFERRED| IMMEDIATE| EXCLUSIVE)?|transaction|snapshot|REPEATABLE READ|START TRANSACTION' "$root/$f" && continue
+    # V3.18: a transaction marker must be on a non-comment line BEFORE the loop
+    # to enclose all pages in one snapshot. A per-page transaction inside the
+    # loop, or the word "transaction" in a comment, does not enclose it.
+    has_tx="$(awk '
+      {
+        txt=$0; sub(/\/\/.*/, "", txt); sub(/\/\*.*/, "", txt)
+        if (!tx && txt ~ /BEGIN( DEFERRED| IMMEDIATE| EXCLUSIVE)?|transaction|snapshot|REPEATABLE READ|START TRANSACTION/) tx=NR
+        if (!loop && $0 ~ /while[[:space:]]*\(|for[[:space:]]*\(|(^|[^A-Za-z0-9_])loop([^A-Za-z0-9_]|$)/) loop=NR
+      }
+      END { if (tx && (!loop || tx < loop)) print "yes" }
+    ' "$root/$f")"
+    [ "$has_tx" = "yes" ] && continue
     line="$(grep -niE 'limit|offset|cursor|keyset' "$root/$f" | head -n 1)"
     echo "FAIL DB-003: $f:${line%%:*}: a paginated read in a loop with no read transaction or snapshot; a row changed between pages can be counted twice or skipped (M-84)"
   done
@@ -2145,7 +2308,10 @@ previous or legacy read path, so that the previous release's result on a row wit
 the flag set is asserted. The detector is textual: it proves the test names both,
 and the test must still be executed before the claim is kept. The sequencing of the
 hiding write (expand-contract) is a plan requirement reviewed under Dimension 5; this
-detector does not decide it. It reuses `DEPLOY_ORDER_TEST_RE` from `DB-002`.
+detector does not decide it. It reuses `DEPLOY_ORDER_TEST_RE` from `DB-002`. The
+visibility column is derived from non-comment migration text (`--` line comments
+and `/* */` block comments stripped) before matching, so a comment that names a
+visibility keyword does not misidentify the actual column (V3.26).
 
 ```sh
 # $1 = repository root; $2... = migration files, then `--`, then test files, relative to it.
@@ -2157,7 +2323,8 @@ db_visibility_check() {
   [ "$#" -gt 0 ] && shift
   for m in $migs; do
     grep -qiE "$VISIBILITY_COL_RE" "$root/$m" 2>/dev/null || continue
-    col="$(grep -oiE "$VISIBILITY_COL_RE" "$root/$m" | sed -n '1p')"
+    col="$(sed -E 's/--.*$//; s#/\*.*\*/##g' "$root/$m" | grep -oiE "$VISIBILITY_COL_RE" | sed -n '1p')"
+    [ -n "$col" ] || continue
     ok=""
     for t in "$@"; do
       if grep -qiE "$col" "$root/$t" 2>/dev/null && grep -qiE "$DEPLOY_ORDER_TEST_RE" "$root/$t" 2>/dev/null; then ok="$t"; fi
@@ -2183,7 +2350,11 @@ excluded.
 
 ```sh
 CACHE_READ_RE='(cache|Cache)\.(get|has)\(|readCache\(|getCached|lruCache\.get|memo\.get\('
-CACHE_DECISION_RE='(^|[^A-Za-z])(charge|authori[sz]e|checkout|pay|revoke|refund|debit)[A-Za-z]*'
+# V3.16: match whole decision verbs only. The old `[A-Za-z]*` suffix made `pay`
+# match `payment`/`payable`/`payee` in display-only cache-key strings, so a
+# non-decision file was reported. Enumerate verb inflections with word
+# boundaries instead; a display-only noun key is not a decision (M-101).
+CACHE_DECISION_RE='(^|[^A-Za-z])(charge|charges|charged|charging|authori[sz]e|authori[sz]es|authori[sz]ed|authori[sz]ing|checkout|checkouts|pay|pays|paying|paid|revoke|revokes|revoked|revoking|refund|refunds|refunded|refunding|debit|debits|debited|debiting)([^A-Za-z]|$)'
 cache_decision_check() {
   root="$1"; shift
   for f in "$@"; do
@@ -2343,7 +2514,10 @@ includes **untracked** files, so a new migration, script, or source file that th
 manifest does not name is a `FAIL`; `git diff --name-only HEAD` alone misses it. And
 a change set with **no recorded manifest** is a `FAIL`, never a silent pass: the
 manifest is recorded at alignment before the first file write. An analysis-only
-request records an empty manifest, so any changed file is a `FAIL` (M-91).
+request records an empty manifest, so any changed file is a `FAIL` (M-91). An estimate
+is the single M-91 exception: the estimation document required by
+`workflows/estimation.md` is the only manifest path, and any other changed file is a
+`FAIL`.
 
 ```sh
 # $1 = repository root; $2 = scope manifest file, one approved path per line.
@@ -2426,9 +2600,14 @@ approval_citation_check() {
         for (i = 1; i <= n; i++) {
           # F-6 (external audit): a decision attributed to the user is an approval too ("el usuario eligió",
           # "decidió el cliente"), so a decision verb with a user noun is read as an approval claim (M-92, M-111).
+          # Precision (V3.13): an unmistakable approval phrase stands alone, but a generic technical word
+          # ("requires permission", "Acceptance criteria", "authorization header", "accept a token") is a
+          # claim only when the same line names the human actor. A quoted message with its turn still wins.
           lw = tolower(L[i])
-          if (lw !~ /aprob|approv|sign-?off|dueno|dueño|autoriz|authoriz|permis|consent|conformidad|acept|accept|confirm[oó]|confirmed by/ &&
-              !(lw ~ /decid|decisi|elig|eleg|chose|chosen|go-ahead|adelante|procede|proceed|selecciono|seleccion/ && lw ~ /usuario|user|cliente|client|owner|stakeholder/)) continue
+          strong = (lw ~ /aprob|approv|sign-?off|dueno|dueño|conformidad|go-ahead|adelante|acept[oó]|autoriz[oó]|confirm[oó]|dio permiso|di[oó] permiso|permission granted|granted permission/)
+          actor = (lw ~ /usuario|user|cliente|client|owner|stakeholder/)
+          weak = (lw ~ /decid|decisi|elig|eleg|chose|chosen|seleccion|permis|consent|accept|acept|authoriz|autoriz|confirm|proceed|procede/)
+          if (!strong && !(actor && weak)) continue
           win = ""
           for (j = i - 2; j <= i + 2; j++) if (j >= 1 && j <= n) win = win " " L[j]
           q = (win ~ /"[^"]{8,}"/ || win ~ /`[^`]{8,}`/)
@@ -3327,7 +3506,8 @@ instruction that installs a package without the package evaluation is a
 # Instrucciones que instalan paquetes sin pasar por la puerta
 grep -rnE '\b(npm|pnpm|yarn|bun|pip|pip3|poetry|uv|cargo|gem|composer|dotnet|mvn|gradle)\s+(install|add|i|get)\s+[@<a-zA-Z0-9_./-]+' \
   --include='*.md' AGENTS.md workflows/ commands/ skills/ references/ 2>/dev/null |
-  grep -viE 'approval|approve|authorized|gate|installation package|installation list|package|never|without|only after|npx ' |
+  awk '{ c=tolower($0); sub(/^[^:]*:[0-9]+:/, "", c);
+         if (c !~ /approval|approve|authorized|gate|installation package|installation list|package|never|without|only after|npx /) print }' |
   sed 's/^/  /'
 ```
 
@@ -3526,7 +3706,8 @@ For each changed source file that declares a bound, a test that imports
 the module must hold the dependency so that it never settles, by a never-resolving
 promise, a second connection that holds the lock, or an equivalent construct. The
 detector identifies candidates; the reviewer confirms that the test asserts the
-terminal state the user sees.
+terminal state the user sees. A finding cites the line that declares the bound,
+not a fixed line 1 (V3.15) and not a comment that names it (V3.25).
 
 ```sh
 # $1 = repository root; $2... = changed or tracked source files; then `--`; then the test files, relative to root.
@@ -3545,20 +3726,26 @@ bound_test_check() {
     case "$f" in *.test.*|*.spec.*|*/__tests__/*|*/tests/*|*/test/*|*/testing/*) continue ;; esac
     # F-3 (external audit): AbortSignal.timeout(ms), AbortSignal.any, and a setTimeout that aborts a
     # request are declared bounds too; a vocabulary without them reads the bound as absent (M-54, M-76).
-    grep -qE '(busy_timeout|timeoutMs|timeout[[:space:]]*[:=]|AbortSignal\.timeout[[:space:]]*\(|AbortSignal\.any[[:space:]]*\(|setTimeout[[:space:]]*\(|lock_timeout|statement_timeout|deadline[[:space:]]*[:=]|BEGIN IMMEDIATE|maxAttempts|max_attempts|retries[[:space:]]*[:=]|attempts[[:space:]]*[:=]|retryBudget|max_retries)' "$root/$f" || continue
+    bound_re='(busy_timeout|timeoutMs|timeout[[:space:]]*[:=]|AbortSignal\.timeout[[:space:]]*\(|AbortSignal\.any[[:space:]]*\(|setTimeout[[:space:]]*\(|lock_timeout|statement_timeout|deadline[[:space:]]*[:=]|BEGIN IMMEDIATE|maxAttempts|max_attempts|retries[[:space:]]*[:=]|attempts[[:space:]]*[:=]|retryBudget|max_retries)'
+    grep -qE "$bound_re" "$root/$f" || continue
+    # V3.25: cite the line that declares the bound, not a comment that names it.
+    # awk emits NR for every line after dropping // and /* comment text, so the
+    # first surviving match is the declaration line (contract at line 3705).
+    bound_line=$(awk '{ t=$0; sub(/\/\/.*/, "", t); sub(/\/\*.*/, "", t); print NR ":" t }' "$root/$f" | grep -E "$bound_re" | head -n 1 | cut -d: -f1)
+    [ -n "$bound_line" ] || bound_line=1
     mod="$(basename "$f")"; mod="${mod%.*}"
     importers="$(printf '%s' "$tests" | while IFS= read -r t; do
       [ -n "$t" ] && [ -f "$root/$t" ] || continue
       grep -qE "^import .*from ['\"][^'\"]*$mod(\.[a-z]+)?['\"]" "$root/$t" && printf '%s\n' "$t"
     done)"
     if [ -z "$importers" ]; then
-      echo "FAIL BOUND-001: $f:1: a bound is declared, and no test imports $mod to hold its dependency (M-54, M-76)"
+      echo "FAIL BOUND-001: $f:$bound_line: a bound is declared, and no test imports $mod to hold its dependency (M-54, M-76)"
       continue
     fi
     held="$(printf '%s\n' "$importers" | while IFS= read -r t; do
       grep -lE 'new Promise(<[^>]*>)?\(\( *\) *=>|never (resolves|settles)|BEGIN IMMEDIATE|holds? the (lock|connection)' "$root/$t" 2>/dev/null
     done)"
-    [ -n "$held" ] || echo "FAIL BOUND-001: $f:1: no test that imports $mod holds the dependency so that it never resolves; the bound is not proven (M-54, M-76)"
+    [ -n "$held" ] || echo "FAIL BOUND-001: $f:$bound_line: no test that imports $mod holds the dependency so that it never resolves; the bound is not proven (M-54, M-76)"
   done
 }
 ```
@@ -4475,6 +4662,7 @@ fixture_deviation_check() {
 | `LAYER-001` | source tree | the architecture declares layers |
 | `TEST-001`, `TEST-002` | created and modified test files | a test file is created or modified |
 | `TEST-003` | test and test-support files, change set and sweep | a test or test-support file is created or modified |
+| `TEST-004` | created/modified source and test files, optional scope manifest | a behavioral source file is created or modified |
 | `DEAD-EXPORT-001` | modules that add an export | an export is added |
 | `SAFE-001`, `SAFE-002`, `SAFE-003` | changed files of any type, including shell scripts and workflow YAML (`safe_cleartext_check`, `safe_bound_check`) | outbound calls, URLs, endpoints, or temporary paths change in any file type (M-54, M-55, M-58) |
 | `GUARD-001` | changed shell and workflow YAML files, against the tracked test files | a changed shell or workflow file contains a guard (M-113) |
@@ -4825,6 +5013,8 @@ guarantee_entry_check() {
       { n++; L[n] = tolower($0) }
       END {
         for (i = 1; i <= n; i++) {
+          # V3.14: a Markdown heading is a section title, not a guarantee claim.
+          if (L[i] ~ /^[[:space:]]*#/) continue
           if (L[i] !~ /idempoten|exactly[- ]once|cobro (único|unico)|single charge|only once|solo una vez/) continue
           ep = 0; tr = 0
           for (j = i - 3; j <= i + 3; j++) {
