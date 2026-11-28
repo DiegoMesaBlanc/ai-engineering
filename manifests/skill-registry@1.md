@@ -9,14 +9,15 @@ skillCount: 34
 # Skill registry: skill-registry@1
 
 Inventory of the 34 skills in `skills/` and their routing targets. A target is
-either a subagent that loads the skill on demand or `root` when the orchestrator
-keeps it. A target is the orchestrator's default route, not an ownership lock:
+either a subagent that loads the skill on demand, the `coder` primary
+implementation surface, or `root` when the orchestrator keeps it. A target is
+the orchestrator's default route, not an ownership lock:
 `references/domain-execution-protocol.md` lets any domain subagent load a skill
 named in its own `context.skills` allowlist. Audit defaults point to
-`external-auditor`; PR content defaults to `writer-pr`, and PR review defaults
-to `reviewer-pr`. This registry is data, not executable behavior: the
-orchestrator reads it to decide delegation and never loads the whole catalog
-eagerly.
+`external-auditor`; implementation defaults to `coder`; PR content defaults to
+`writer-pr`, and PR review defaults to `reviewer-pr`. This registry is data,
+not executable behavior: the orchestrator reads it to decide delegation and
+never loads the whole catalog eagerly.
 
 The path of every row is `skills/<id>/SKILL.md`.
 
@@ -40,7 +41,7 @@ The path of every row is `skills/<id>/SKILL.md`.
 | engineering-review | subagent:reviewer-pr | PR review default |
 | frontend-design | subagent:frontend | |
 | git-workflow | subagent:devops | |
-| implementation-recipes | root | required for code changes |
+| implementation-recipes | coder | required for code changes |
 | internationalization | subagent:frontend | |
 | knowledge-graph | root | |
 | mobile-engineering | subagent:mobile | |

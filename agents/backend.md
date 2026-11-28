@@ -91,8 +91,9 @@ runtime domain and no other domain.
    dependencies and alternatives. Propose the branch plan. Do not install.
 4. `build` · `senior-engineer` — load `test-driven-development` where behavior
    changes. Return the implementation plan with validation commands and the
-   typed-error and boundary-validation decisions. The orchestrator loads
-   `implementation-recipes` in the root when code is written.
+   typed-error and boundary-validation decisions. The `coder` implementation
+   surface loads `implementation-recipes` when code is written; this read-only
+   domain returns the plan without loading it.
 5. `validate` · `staff-reviewer` — load `testing-strategy` and
    `engineering-review`; return gate results with command output and findings
    by severity against SRP, OCP, LSP, ISP and DIP. An applicable `NOT VERIFIED`

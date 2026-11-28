@@ -95,8 +95,9 @@ domain and no other domain.
 4. `build` · `senior-engineer` — load `frontend-design` and `ui-ux-design` for
    the agreed visual direction, `internationalization` when the requirement
    names locales or RTL, and `replica` when the task is a clean-room rebuild.
-   Return the implementation plan with validation commands. The orchestrator
-   loads `implementation-recipes` in the root when code is written.
+   Return the implementation plan with validation commands. The `coder`
+   implementation surface loads `implementation-recipes` when code is written;
+   this read-only domain returns the plan without loading it.
 5. `validate` · `staff-reviewer` — load `accessibility`, `core-web-vitals`,
    `seo` and `performance` as applicable. Return gate results with measured
    before-and-after evidence and findings by severity; an applicable

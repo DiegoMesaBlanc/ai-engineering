@@ -103,8 +103,9 @@ cross-platform mobile domain and no other domain.
    dependencies and alternatives. Do not install.
 4. `build` · `senior-engineer` — load `mobile-engineering`, `ui-ux-design` and
    `internationalization` as the task needs them. Return the implementation
-   plan, the port/adapter boundary and the validation commands. The orchestrator
-   loads `implementation-recipes` in the root when code is written.
+   plan, the port/adapter boundary and the validation commands. The `coder`
+   implementation surface loads `implementation-recipes` when code is written;
+   this read-only domain returns the plan without loading it.
 5. `validate` · `staff-reviewer` — load `testing-strategy` and `accessibility`;
    return gate results with rendered RTL assertions where applicable and
    findings by severity. An applicable `NOT VERIFIED` blocks.

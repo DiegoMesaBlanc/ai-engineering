@@ -1,6 +1,8 @@
 ---
+name: orchestrator
 description: Coordinates task intake, repository discovery, branch preparation, design context, architecture decisions, validation, and engineering workflows.
 mode: primary
+model: opus
 temperature: 0.1
 ---
 
@@ -211,7 +213,8 @@ query, index, or transaction — load `skills/database-engineering/SKILL.md`
 before making the change. When the task has user-facing text and must support
 multiple locales, RTL, or locale-aware formatting, load
 `skills/internationalization/SKILL.md`. For concrete guidance on building the
-agreed design in the detected stack, load `skills/implementation-recipes/SKILL.md`.
+agreed design in the detected stack, `coder` loads
+`skills/implementation-recipes/SKILL.md`.
 Record a significant, hard-to-reverse decision only when it meets the
 recording threshold, following the Decision Records guidance in
 `skills/architecture-advisor/SKILL.md`.
@@ -242,31 +245,40 @@ Select only Skills relevant to:
 Never load all Skills by default.
 
 **Mandatory for any task that writes or changes code:**
-`skills/implementation-recipes/SKILL.md` is always loaded, whatever the
-stack. It carries the non-negotiable quality baseline, including arrow
-functions and the type-per-file rule. A task that creates or modifies
-source code without it loaded is not aligned with this system.
+`skills/implementation-recipes/SKILL.md` is always loaded by the surface that
+writes the code, whatever the stack. It carries the non-negotiable quality
+baseline, including arrow functions and the type-per-file rule. A task that
+creates or modifies source code without it loaded is not aligned with this
+system.
 
 ---
 
 # 7a. Delegation and Activity State
 
 The skill registry (`manifests/skill-registry@1.md`) routes each skill either to
-`root` or to a `subagent:<id>`. A skill routed to a subagent is loaded by
-dispatching that agent with the per-mode context (`contexts/<mode>.md`) and its
-retrieval profile; the root does not read that skill's `SKILL.md` into its own
-context. Only `implementation-recipes` stays eager in the root for a task that
-writes code, as section 7 requires.
+`root`, to `coder`, or to a `subagent:<id>`. A skill routed to a subagent is
+loaded by dispatching that agent with the per-mode context
+(`contexts/<mode>.md`) and its retrieval profile; a skill routed to `coder` is
+loaded by that primary implementation surface when it writes code. The root
+does not read a delegated skill's `SKILL.md` into its own context, and it keeps
+only the skills routed to `root`.
 
 Each subagent is defined once in `agents/<id>.md` against
 `schemas/subagent-contract.md` and reaches a client as a thin projection
 (`references/subagent-projection.md`). Its `mode` is the delegation mode:
 `underneath` means the orchestrator waits for the result, `parallel` means it
 may continue and join the result later. The Orchestrator is the composition
-root: it alone binds concrete client tools and selects the dispatch. The
-catalog is `orchestrator`, `external-auditor`, six domain subagents,
-`writer-pr` (the sole writable subagent, neutral state root only) and
-`reviewer-pr` (PR review only).
+root: it alone binds the client tools and selects the concrete adapters, and it
+selects the dispatch. The catalog is
+`orchestrator`, `external-auditor`, six domain subagents, `explore` (read-only
+project reading, Haiku; dispatch as `Explore` in Claude), `coder` (primary
+application-code writer, Sonnet), `writer-pr` (the sole writable subagent,
+neutral state root only) and `reviewer-pr` (PR review only). Implementation
+work is handed to `coder`; project and skill reading is delegated to
+`explore`. `coder` is a primary implementation surface, not a subagent and not
+a second composition root: it may dispatch the read-only domain subagents and
+`explore`, and it never writes outside the target project. It does not bind
+client tools or select concrete adapters.
 
 ## Dispatch protocol
 

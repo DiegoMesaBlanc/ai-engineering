@@ -28,7 +28,11 @@ small, explicit context — the root session sends this, not the whole catalog.
 
 - Read-only subagents do not edit repository files or write to the home
   directory; they return findings.
-- The composition root is `agents/orchestrator.md`; a subagent does not
-  dispatch another subagent unless its contract lists `delegate`.
+- The composition root is `agents/orchestrator.md`; it alone binds the client
+  tools and selects the concrete adapters. `coder` is the primary implementation
+  surface and may dispatch the read-only domain subagents; it is a primary
+  agent outside the v1 subagent contract and is not a second composition root.
+  A subagent does not dispatch another subagent unless its contract lists
+  `delegate`.
 - Budgets are report-only. Exceeding a budget reports and refines retrieval;
   it never stops the task.

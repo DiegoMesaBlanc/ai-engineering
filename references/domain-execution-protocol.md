@@ -3,15 +3,20 @@
 ## Purpose
 
 Define how a domain subagent executes work so that seniority follows the skill
-being used, not the agent that was dispatched. One orchestrator dispatches six
-domain subagents; each subagent loads skills on demand and changes seniority at
-every step. This reference is the shared behavior of all six definitions, so
-the rule is authored once.
+being used, not the agent that was dispatched. The orchestrator and the primary
+`coder` surface dispatch six domain subagents; each subagent loads skills on
+demand and changes seniority at every step. This reference is the shared
+behavior of all six definitions, so the rule is authored once.
 
 ## Model
 
-- `agents/orchestrator.md` is the composition root. It alone selects and
-  dispatches subagents. A task leader may request a dispatch through it.
+- `agents/orchestrator.md` is the composition root. It alone binds the client
+  tools and selects the concrete adapters, and it selects and dispatches
+  subagents. `agents/coder.md` is the primary implementation surface: it writes
+  the target project and dispatches the read-only domain subagents and
+  `explore` for findings. It is not a second composition root and does not bind
+  client tools. A task leader may request a dispatch through the composition
+  root. The canonical id is `explore`; dispatch it as `Explore` in Claude.
 - A domain subagent is a thin retrieval and execution unit. It owns a domain,
   an allowlist of skills, and this protocol. It does not own a persona.
 - Skills are **shared capabilities**, not domain-owned assets. The `target`
@@ -28,10 +33,9 @@ A `mobile` task needs a folder architecture. Its allowlist names
 React Native tree there (the file defines React Native feature folders and the
 `android/` and `ios/` root projects). It then loads `dependency-management` at
 seniority `tech-lead` and `testing-strategy` at seniority `staff-reviewer`.
-`implementation-recipes` is the one mandatory skill kept in `root` (decision 5
-of `docs/decisions/0003-domain-subagents.md`): the orchestrator loads it at
-seniority `senior-engineer` when code is written; a read-only domain returns
-the plan without loading it. No other domain definition changes. The same
+`implementation-recipes` is the one mandatory skill for code changes: `coder`
+loads it at seniority `senior-engineer` when it writes code; a read-only domain
+returns the plan without loading it. No other domain definition changes. The same
 sequence applies to `devops`, `frontend`, `backend`, `data`, or `security` with
 their own skill allowlists.
 

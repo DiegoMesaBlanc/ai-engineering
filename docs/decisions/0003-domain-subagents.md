@@ -1,6 +1,12 @@
 # 0003. Domain subagents over role agents
 
 **Status:** proposed, pending the user's approval of the commit.
+**Superseded in part:** `docs/decisions/0004-coder-explore-agents.md` adds
+`coder` and `explore`, supersedes decision 3 (the catalog count of ten
+definitions) and decision 5 (`implementation-recipes` routing), and leaves
+every other decision in this record authoritative. The earlier four-agent rule
+is decision 3 of `docs/decisions/0002-agent-teams.md`, which this record had
+already superseded; `0004` supersedes the remaining two-agent count.
 **Scope:** the agent catalog, the two PR subagents, the external auditor's audit
 allowlist, the domain subagent definitions, the orchestrator dispatch section,
 the bootstrap agent catalog, the routing manifests, and every procedure

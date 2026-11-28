@@ -10,7 +10,7 @@ reviewing, or validating a projection.
 This is provider-neutral. It does not assume a client exposes a given tool or
 surface; where a capability is absent, the projection reports it and the check
 is `NOT VERIFIED` with the capability named
-(`references/portability.md:116-119`).
+(`references/portability.md:134-136`).
 
 ## Model
 
@@ -20,9 +20,15 @@ they name the same `id`, `description`, retrieval profile, and tool
 capabilities, and translate them to the client's native format. A change to
 behavior is made once, in the canonical file.
 
-The composition root is `agents/orchestrator.md`. It is the only module that
-selects and dispatches subagents. A subagent never dispatches another subagent
-unless its contract explicitly lists the `delegate` capability.
+The composition root is `agents/orchestrator.md`. It alone binds the client
+tools and selects the concrete adapters, and it selects and dispatches the
+subagents. A subagent never dispatches another subagent unless its contract
+explicitly lists the `delegate` capability. `coder` is a primary implementation
+surface, not a subagent and not a second composition root: it may dispatch the
+read-only domain subagents and `explore`, and it writes only inside the target
+project. It is outside the v1 subagent contract, so the `delegate` field does
+not apply to it; the client's agent-dispatch tool is its mechanism. It does not
+bind client tools or select concrete adapters.
 
 ## Canonical tool map
 
@@ -39,19 +45,24 @@ silently replaced with a different tool.
 | `shell` | Run a bounded shell command | Native shell tool, with an explicit timeout |
 | `webfetch` | Read a public URL | Native fetch tool |
 | `websearch` | Search the public web | Native web-search tool |
+| `skill` | Load a skill's content on demand | Native skill tool; `explore` uses it to load the skills a domain needs |
 | `edit` | Modify an existing file | Native edit tool (writable agents only) |
 | `write` | Create a file | Native write tool (writable agents only) |
 | `todowrite` | Maintain the native task panel | Native task tool, no lifecycle labels |
-| `delegate` | Dispatch a further subagent | Native subagent tool, composition root only |
+| `delegate` | Dispatch a further subagent | Native subagent tool; the composition root or a primary implementation surface only |
 
 A domain subagent (`frontend`, `backend`, `data`, `devops`, `mobile`,
 `security`) lists only `read`, `grep`, `glob`, and, when needed, `webfetch` and
-`websearch`. It never lists `edit`, `write`, or `delegate`: every domain is
-read-only and returns findings and evidence for the orchestrator to apply. No
+`websearch`. `explore` additionally lists `skill`, because its role is to load
+the skills a domain needs. A domain never lists `edit`, `write`, or `delegate`:
+every domain is read-only and returns findings and evidence for the orchestrator
+to apply. No
 subagent writes to the target repository. `writer-pr` is the sole writable
 subagent: it lists `read` and `write` and writes only generated PR content to a
 per-run directory under the neutral state root. `reviewer-pr` is read-only and
-never writes PR content.
+never writes PR content. `coder` is a primary implementation surface, not a
+subagent: it writes application code inside the target project and is outside
+this reader-only rule. `explore` is a read-only subagent.
 
 ## Security invariants (every projection)
 
@@ -89,6 +100,11 @@ receives. Overriding a budget reports and refines retrieval; it never becomes
 a hard token gate (`workflows/session-resilience.md`, "Token and Context
 Efficiency").
 
+The optional `model` field is a client hint. The Claude projection emits it and
+binds `opus`, `sonnet` and `haiku`; `explore` is projected as `Explore` so it
+overrides the built-in Explore and keeps `model: haiku`. A client that cannot
+bind it omits it and reports `NOT VERIFIED`, and never claims the model.
+
 ## Activity-state map
 
 The status file is `${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}/activity/<repo-slug>.json`,
@@ -120,17 +136,31 @@ The canonical `agents/<id>.md` is the source of truth and validates against
 mode (`underneath` / `parallel`), not the client's agent-type flag; the
 projection records that value in a note and the canonical file still wins on
 conflict. OpenCode projections emit `mode: subagent` for every canonical agent:
-only `Plan`, `Build`, `orchestrator` and `external-auditor` are agents, and every
-other definition is a subagent visible through the native subagent picker, not
-the interactive agent list. Read-only is enforced by the deny-first permission
-block, not by the client mode. At bootstrap, OpenCode and Claude
+on OpenCode only `Plan`, `Build`, `orchestrator`, `coder` and
+`external-auditor` are agents, and every other definition is a subagent visible
+through the native subagent picker, not the interactive agent list. Claude has
+no client-level agent/subagent flag: it ignores `mode`, discovers every
+definition as a subagent, and `claude --agent <id>` can run any of them as the
+main session agent. The five-agent restriction is therefore enforced by the
+canonical catalog and the OpenCode gate; Claude enforcement is `NOT VERIFIED`.
+The canonical id is `explore`; the Claude projection's `name` is `Explore` so
+it overrides the built-in. Callers dispatch `explore` in OpenCode and `Explore`
+in Claude; the dispatch protocol resolves the client projection. Read-only is
+enforced by the deny-first permission block on OpenCode and by the native tool
+grants on Claude, not by the client mode. At bootstrap, OpenCode and Claude
 receive generated native Markdown projections and Codex receives generated TOML
 projections under
 `${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}/projections/<client>/agents/`;
 that path is a stable symlink to a versioned catalog. The client discovery links
 point at the stable path. Legacy canonical files without the v1 schema are
-copied verbatim to both Markdown clients so the full catalogue stays
-discoverable. No projection is stored in the repository.
+passed through to both Markdown clients so the full catalogue stays
+discoverable; the OpenCode copy drops the semantic model hint because OpenCode
+binds a provider-qualified id, and the Claude copy of `external-auditor` denies
+the writing and dispatch tools because Claude does not read the OpenCode
+permission block. `Bash` remains available on Claude because the auditor
+executes read-only evidence commands; a shell write is a prompt-level
+violation, not a mechanically denied one, so Claude mechanical read-only for
+`Bash` is `NOT VERIFIED`. No projection is stored in the repository.
 
 | Client | Native projection | Status-bar support |
 |---|---|---|
@@ -143,9 +173,10 @@ All three generators live in the single POSIX bootstrap block of
 `workflows/bootstrap.md`: one awk parse feeds the Codex, OpenCode and Claude
 writers, each output has a structural gate, and an executing self-test covers
 rejection, capability mapping, catalog completeness and idempotency. Legacy
-canonical files without the v1 schema are copied verbatim to both Markdown
-clients. A run stages the complete catalog in a private temp directory, checks
-the exact id set and count, then swaps the stable symlink with `rename(2)`. A
+canonical files without the v1 schema use the client-aware pass-through
+described above. A run stages the complete catalog in a private temp directory,
+checks the exact id set and count, then swaps the stable symlink with
+`rename(2)`. A
 client therefore sees either the previous complete catalog or the next complete
 one, never a partial list — the failure that originally cached a broken agent
 catalog. Superseded versioned directories are pruned only after a successful
@@ -180,5 +211,6 @@ the executing self-test are the projection checks (`workflows/bootstrap.md`,
 "The block"); the generated files are outside the change set and are never
 checked in. The live catalog is checked with `opencode api get /api/agent`: all
 canonical and legacy ids must be present; the only non-`subagent` custom ids are
-`orchestrator` and `external-auditor`, and `Plan` and `Build` are the built-in
-agents. Every other custom id must report `mode: subagent`.
+`orchestrator`, `coder` and `external-auditor`; `Plan` and `Build` are the
+built-in agents on OpenCode. Claude has `Plan` but no `Build`. Every other
+custom id must report `mode: subagent`.

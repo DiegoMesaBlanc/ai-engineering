@@ -37,6 +37,8 @@ Check for the existence of:
 - agents/devops.md
 - agents/mobile.md
 - agents/security.md
+- agents/explore.md
+- agents/coder.md
 - agents/writer-pr.md
 - agents/reviewer-pr.md
 - agents/external-auditor.md
@@ -305,10 +307,33 @@ text, that external-directory access remains narrowly scoped:
 - more-specific rules follow the wildcard so the intended rule wins
 - no broad allowance is granted for the entire home directory, all projects,
   or the whole filesystem
-- the read-only restrictions of the six domain subagents, `reviewer-pr` and
-  `external-auditor` remain in effect and are not widened by an inherited
-  wildcard; `writer-pr` is the sole writable subagent and its projection grants
-  `write` only for generated PR content under the neutral state root
+- the read-only restrictions of the six domain subagents, `explore`,
+  `reviewer-pr` and `external-auditor` remain in effect and are not widened by
+  an inherited wildcard; `writer-pr` is the sole writable subagent and its
+  projection grants `write` only for generated PR content under the neutral
+  state root; `coder` is a primary agent, not a subagent, and writes only
+  inside the target project
+
+### Projection Identity
+
+Verify that every projected Claude definition carries a non-empty `name`.
+Claude Code treats a subagent file without `name` as documentation and skips
+it, so a legacy definition that reaches the client without `name` is invisible
+to it. `orchestrator`, `external-auditor` and `coder` carry `name` for this
+reason; `explore` is projected as `Explore` so it overrides the built-in
+Explore and keeps `model: haiku`. The bootstrap `gate_claude` asserts the
+projected name, and its self-test covers the single-token rule.
+
+Verify the model binding and the auditor's tool restriction in the Claude
+projection: `orchestrator` carries `model: opus`, `coder` carries
+`model: sonnet`, `Explore` carries `model: haiku`, and `external-auditor`
+carries `disallowedTools: Write, Edit, NotebookEdit, Agent`. `Bash` remains
+available because the auditor executes read-only evidence commands, so
+mechanical read-only for `Bash` is `NOT VERIFIED`. The OpenCode projection
+omits the model hint, so model binding there is `NOT VERIFIED` and is never
+reported as bound. Claude ignores `mode` and can run any definition as the main
+session agent, so the client-level five-agent split is enforced on OpenCode
+only and is `NOT VERIFIED` on Claude.
 
 Report the actual configured values. Do not infer them from policy text, and
 do not modify the client configuration during validation.
@@ -1632,8 +1657,9 @@ Verify that unsolicited refactoring and unnecessary fragmentation are prohibited
 Verify that the code-creation audit is a standalone, read-only, non-duplicative workflow:
 
 - `commands/code-audit.md` exists and delegates to `workflows/code-audit.md`
-  without restating the procedure; it binds to `orchestrator` (the only primary
-  agent) and read-only behavior
+  without restating the procedure; it binds to `orchestrator` (a primary agent;
+  `coder` is the other primary agent and this command does not bind it) and
+  read-only behavior
 - `workflows/code-audit.md` defines the 14 applicability-gated dimensions,
   the senior/staff bar, the dimension matrix (PASS/WARN/FAIL/N/A), findings
   format (P0–P3, evidence, severity, confidence), and the verdict
@@ -1653,8 +1679,8 @@ Verify that the code-creation audit is a standalone, read-only, non-duplicative 
   and `/review-pr`
 - `references/system-workflow-regression-matrix.md` includes the scenario
   (R-43)
-- no new Skill, agent, package.json, dependency, or competing orchestrator
-  was introduced
+- the `/code-audit` change introduced no new Skill, agent, package.json,
+  dependency, or competing orchestrator
 - **exactly two modes**: the last commit (`HEAD`) by default and the whole
   project with `--all`; no `--commit`, `--range`, paths, or fallback between
   modes

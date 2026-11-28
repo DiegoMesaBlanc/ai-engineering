@@ -21,7 +21,7 @@ Skills in `load` are ids from `manifests/skill-registry@1.md`.
 | id | match (any substring) | profile | load | delegate | mode | flags |
 |---|---|---|---|---|---|---|
 | task-analysis | requisito, tarea, issue, acceptance, task context, ticket | lean@1 | task-context | root | underneath | |
-| project-discovery | repositorio, stack, arquitectura actual, descubrir, inventory, project analysis | lean@1 | discovery, project-analysis, stack-detection | root | underneath | |
+| project-discovery | repositorio, stack, arquitectura actual, descubrir, inventory, project analysis | lean@1 | discovery, project-analysis, stack-detection | explore | underneath | |
 | complexity | complejidad, trivial, low, medium, high, critical, estimar esfuerzo | lean@1 | complexity-advisor | root | parallel | |
 | architecture | arquitectura, patrón, diseño de código, estructura de carpetas, solid, contract | full@1 | architecture-advisor, api-contract-design, repository-strategy | root | parallel | |
 | design-review | revisión de diseño, pre-code, design review, propuesta | full@1 | design-analysis | external-auditor | parallel | |
@@ -38,14 +38,16 @@ Skills in `load` are ids from `manifests/skill-registry@1.md`.
 
 ## Notes
 
-- `implementation-recipes` is in no `load` list: the orchestrator adds it only
-  for tasks that write code (`manifests/skill-registry@1.md`,
-  `docs/decisions/0003-domain-subagents.md`, decision 5). This replaces the old
-  citation of the superseded `docs/decisions/0002-agent-teams.md`.
+- `implementation-recipes` is in no `load` list: the `coder` implementation
+  surface loads it only for tasks that write code
+  (`manifests/skill-registry@1.md`,
+  `docs/decisions/0004-coder-explore-agents.md`, decision 10).
 - A `root` delegate means the orchestrator keeps the work. A named delegate is
-  one of the eight subagents (the six domains, `writer-pr` and `reviewer-pr`),
-  or `external-auditor` for an independent fresh-context audit
-  (`docs/decisions/0003-domain-subagents.md`).
+  one of the nine subagents (the six domains, `explore`, `writer-pr` and
+  `reviewer-pr`), or `external-auditor` for an independent fresh-context audit
+  (`docs/decisions/0004-coder-explore-agents.md`; the domain model is
+  `docs/decisions/0003-domain-subagents.md`). The canonical id is `explore`;
+  dispatch it as `Explore` in Claude, whose projection overrides the built-in.
 - PR preparation and PR review are separate surfaces: `/generate-pr` loads
   `writer-pr`, which writes copy-ready content to the neutral state root;
   `/review-pr` loads `reviewer-pr`, which returns copy-ready findings and never
@@ -55,4 +57,4 @@ Skills in `load` are ids from `manifests/skill-registry@1.md`.
   that dimension. A missing tool or an unexposed capability is reported
   `NOT VERIFIED`, never silently skipped.
 - No trigger stops a task. A profile budget overrun reports and refines
-  retrieval (`docs/decisions/0002-agent-teams.md`, decision 3).
+  retrieval (`docs/decisions/0003-domain-subagents.md`, decision 4).

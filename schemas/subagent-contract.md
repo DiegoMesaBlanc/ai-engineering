@@ -35,9 +35,10 @@ Conformance is verified by structural review over the change set, following
 | `invariants` | object | see below | Security and boundary rules that survive every projection. |
 | `completion` | object | see below | What the result contains and how its end is observed. |
 | `activity` | object | see below | Visibility contract for the client status bar. |
+| `model` | string | optional; `inherit`, `opus`, `sonnet`, `haiku`, `fable`, or a provider-qualified id | Client model hint. A projection that cannot bind it reports `NOT VERIFIED` and never claims it. |
 | `body` | string | non-empty | The Markdown body after the frontmatter: system prompt and steps, in English. |
 
-No additional fields are allowed at the top level.
+No additional fields are allowed at the top level beyond the optional `model`.
 
 ## `context`
 
@@ -52,12 +53,14 @@ Skills are loaded on demand, never eagerly beyond the profile.
 ## `tools`
 
 Allowed values: `read`, `grep`, `glob`, `shell`, `webfetch`, `websearch`,
-`edit`, `write`, `todowrite`, `delegate`.
+`skill`, `edit`, `write`, `todowrite`, `delegate`.
 
 A reader-type subagent (analyst, advisor, reviewer, auditor, compliance runner)
 lists only `read`, `grep`, `glob`, and when needed `webfetch` or `websearch`. It
-never lists `edit`, `write`, or `delegate`. The PR writer lists `read` and
-`write` and writes only to the neutral state root.
+never lists `edit`, `write`, or `delegate`. `explore` additionally lists
+`skill`, which loads a skill's content on demand for the domain subagent it is
+preparing. The PR writer lists `read` and `write` and writes only to the
+neutral state root.
 
 ## `invariants`
 

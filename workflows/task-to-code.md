@@ -22,10 +22,10 @@ preserved by its checkpoint. The full procedure is in
 ## Delegation map
 
 Knowledge-heavy and review work in this workflow may be delegated to the
-subagents registered in `manifests/skill-registry@1.md`. Delegation changes
-where a skill is loaded, not whether it is applied: the mandatory rules and
-gates of this workflow stay in force, and the Orchestrator joins every result
-before the phase is reported.
+subagents registered in `manifests/skill-registry@1.md`, and implementation to
+the `coder` primary surface. Delegation changes where a skill is loaded, not
+whether it is applied: the mandatory rules and gates of this workflow stay in
+force, and the Orchestrator joins every result before the phase is reported.
 
 | Phase | Delegate | Mode | Result joined here |
 |---|---|---|---|
@@ -35,6 +35,7 @@ before the phase is reported.
 | 8 Architecture | the matching domain subagent | underneath | structure decision, pattern selection with forces |
 | 8 Contracts | `backend` | underneath | the contract, before a boundary changes |
 | 9 Pre-code design review | `external-auditor` | parallel | fresh-context review verdict and dispositions |
+| 10 Implement | `coder` (primary surface) | underneath | the change set and gate evidence |
 | 11 Validate | `root` | parallel | structural compliance of the change set |
 | 12 Review | `reviewer-pr` | underneath | PR-focused findings by file and line, with evidence |
 | 14 PR preparation | `writer-pr` | underneath | copy-ready content written to the neutral state root |
@@ -42,14 +43,21 @@ before the phase is reported.
 
 "the matching domain subagent" means the one of `frontend`, `backend`, `data`,
 `devops`, `mobile` or `security` whose responsibility covers the task. The
-orchestrator selects it; a subagent never dispatches another. A domain loads
+orchestrator selects it; a read-only subagent never dispatches another. `coder`
+is a primary implementation surface, not a subagent and not a second
+composition root, and may dispatch them. The orchestrator alone binds the client
+tools and selects the concrete adapters. Project and skill reading is dispatched
+as `explore` on OpenCode and as `Explore` in Claude. A domain loads
 `architecture-advisor` from its own allowlist, so `mobile` uses the same folder
 architecture skill as `frontend`.
 
 The optional web audits (`accessibility`, `core-web-vitals`, `performance`,
 `seo`) are skills in the `frontend` and `mobile` allowlists. They run only when
-the approved requirement names those dimensions. Implementation stays in the
-root with `implementation-recipes`, because it writes the target project.
+the approved requirement names those dimensions. Implementation is the `coder`
+primary surface: the user selects `coder` (Sonnet) to write the target project
+with `implementation-recipes`, and `coder` dispatches the domain subagents for
+findings. The orchestrator prepares and validates the plan and remains the
+composition root.
 
 Per-mode contexts, retrieval profiles, the IR-lite contract, the tool map, and
 the completion contract are defined in `references/subagent-projection.md` and

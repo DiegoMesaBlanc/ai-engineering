@@ -1,4 +1,5 @@
 ---
+name: external-auditor
 description: Independent read-only auditor for deliverables we produced. Selectable as the Auditor mode (Shift+Tab to cycle agents, or Ctrl+X then A for the list) and invocable as a subagent; it receives the requirement and the artifact but not the implementation reasoning, re-executes every claim, and judges the acceptance criteria.
 mode: all
 request:

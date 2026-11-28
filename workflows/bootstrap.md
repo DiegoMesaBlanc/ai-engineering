@@ -185,6 +185,7 @@ restart the client once after the first run.
           else if ($0 ~ /^name:[ \t]*/)        { sub(/^name:[ \t]*/, ""); print "F\tname\t" $0 }
           else if ($0 ~ /^description:[ \t]*/) { sub(/^description:[ \t]*/, ""); print "F\tdescription\t" $0 }
           else if ($0 ~ /^mode:[ \t]*/)        { sub(/^mode:[ \t]*/, ""); print "F\tmode\t" $0 }
+          else if ($0 ~ /^model:[ \t]*/)       { sub(/^model:[ \t]*/, ""); print "F\tmodel\t" $0 }
           else if ($0 ~ /^  profile:[ \t]*/)   { sub(/^  profile:[ \t]*/, ""); print "F\tprofile\t" $0 }
           else if ($0 ~ /^  readOnly:[ \t]*/)  { sub(/^  readOnly:[ \t]*/, ""); print "F\treadOnly\t" $0 }
           else if ($0 ~ /^  skills:[ \t]*/)    { sk=1 }
@@ -201,6 +202,7 @@ restart the client once after the first run.
       PC_NAME=$(awk -F '\t' '$1=="F" && $2=="name"{print $3;exit}' "$_rec")
       PC_DESCRIPTION=$(awk -F '\t' '$1=="F" && $2=="description"{print $3;exit}' "$_rec")
       PC_MODE=$(awk -F '\t' '$1=="F" && $2=="mode"{print $3;exit}' "$_rec")
+      PC_MODEL=$(awk -F '\t' '$1=="F" && $2=="model"{print $3;exit}' "$_rec")
       PC_PROFILE=$(awk -F '\t' '$1=="F" && $2=="profile"{print $3;exit}' "$_rec")
       PC_READONLY=$(awk -F '\t' '$1=="F" && $2=="readOnly"{print $3;exit}' "$_rec")
       PC_TOOLS=$(awk -F '\t' '$1=="T"{print $2}' "$_rec")
@@ -262,14 +264,37 @@ restart the client once after the first run.
     }
 
     # Legacy agents already carry client-native frontmatter. They are passed
-    # through verbatim to both Markdown clients so the full catalogue stays
-    # discoverable; a canonical v1 agent never takes this path.
+    # through to both Markdown clients so the full catalogue stays discoverable;
+    # a canonical v1 agent never takes this path. The OpenCode pass-through
+    # drops the semantic model hint because OpenCode binds a provider-qualified
+    # model id, not the `opus`/`sonnet`/`haiku` aliases; the binding is reported
+    # NOT VERIFIED there. The Claude pass-through keeps the hint and adds the
+    # read-only tool list the independent auditor needs, because Claude does not
+    # read the OpenCode permission block.
     emit_legacy() {
-      src="$1"; dest_dir="$2"
+      src="$1"; dest_dir="$2"; client="$3"
       id=$(basename "$src" .md)
       schema=$(awk 'NR==1&&$0=="---"{fm=1;next} fm&&/^---$/{exit} fm&&/^schema:/{print $2}' "$src")
       [ "$schema" != "ai-engineering.subagent.v1" ] || return 3
-      cp "$src" "$dest_dir/$id.md" || return 2
+      if [ "$client" = opencode ]; then
+        awk '
+          NR==1 && $0=="---" { fm=1; print; next }
+          fm && /^---$/ { fm=0; print; next }
+          fm && /^model:[ \t]*/ { next }
+          { print }
+        ' "$src" > "$dest_dir/$id.md" || return 2
+      elif [ "$client" = claude ] && [ "$id" = external-auditor ]; then
+        awk '
+          NR==1 && $0=="---" { fm=1; print; next }
+          fm && /^---$/ {
+            if (!done) { print "disallowedTools: Write, Edit, NotebookEdit, Agent"; done=1 }
+            fm=0; print; next
+          }
+          { print }
+        ' "$src" > "$dest_dir/$id.md" || return 2
+      else
+        cp "$src" "$dest_dir/$id.md" || return 2
+      fi
       return 0
     }
 
@@ -322,8 +347,9 @@ restart the client once after the first run.
       tmp="$dest_dir/.${PC_ID}.tmp.$$"
       {
         printf '%s\n' '---'
-        printf 'name: %s\n' "$PC_ID"
+        printf 'name: %s\n' "$(claude_name)"
         printf 'description: %s\n' "$PC_DESCRIPTION"
+        if [ -n "$PC_MODEL" ]; then printf 'model: %s\n' "$PC_MODEL"; fi
         printf '%s\n' 'tools:'
         case "
 $PC_TOOLS
@@ -350,6 +376,11 @@ $PC_TOOLS
 " in *'
 websearch
 '*) printf '%s\n' '  - WebSearch' ;; esac
+        case "
+$PC_TOOLS
+" in *'
+skill
+'*) printf '%s\n' '  - Skill' ;; esac
         if [ "$PC_READONLY" != true ]; then
           case "
 $PC_TOOLS
@@ -397,10 +428,20 @@ write
     body_md() { awk 'NR==1&&$0=="---"{f=1;next} f&&/^---$/{f=0;s=1;next} s&&!n&&/^> Canonical delegation mode:/{n=1;next} s&&n{print}' "$1"; }
     intro_line() { printf '%s\n' "$PC_BODY" | awk 'NF && !/^#/ {print; exit}'; }
 
+    # A single-token canonical name is a valid Claude name; a multi-word display
+    # name falls back to the id. "Explore" keeps its name so it overrides the
+    # built-in Explore and keeps model: haiku.
+    claude_name() {
+      case "$PC_NAME" in
+        ''|*[!A-Za-z0-9_-]*) printf '%s\n' "$PC_ID" ;;
+        *) printf '%s\n' "$PC_NAME" ;;
+      esac
+    }
+
     # Only the canonical capability vocabulary may reach a writer. A capability
     # outside it fails closed; todowrite/delegate are known but unmapped here.
     gate_vocabulary() {
-      printf '%s\n' "$PC_TOOLS" | awk 'NF && $0 !~ /^(read|grep|glob|shell|webfetch|websearch|edit|write|todowrite|delegate)$/{bad=1} END{exit bad?1:0}'
+      printf '%s\n' "$PC_TOOLS" | awk 'NF && $0 !~ /^(read|grep|glob|shell|webfetch|websearch|skill|edit|write|todowrite|delegate)$/{bad=1} END{exit bad?1:0}'
     }
 
     # gate_opencode verifies the deny-first order, per-id skill grants with no
@@ -448,7 +489,7 @@ write
     gate_claude() {
       f="$1"
       fr=$(fm_region "$f")
-      printf '%s\n' "$fr" | grep -q "^name: $PC_ID$" || return 1
+      printf '%s\n' "$fr" | grep -q "^name: $(claude_name)$" || return 1
       printf '%s\n' "$fr" | grep -q '^description: .' || return 1
       if [ "$PC_READONLY" = true ]; then
         ! printf '%s\n' "$fr" | grep -q '^  - Bash$' || return 1
@@ -472,8 +513,8 @@ write
       parse_canonical "$src"; rc=$?
       if [ "$rc" -eq 3 ]; then
         lid=$(basename "$src" .md)
-        emit_legacy "$src" "$stage/oc" || fail "legacy pass-through failed for $lid (OpenCode)"
-        emit_legacy "$src" "$stage/cl" || fail "legacy pass-through failed for $lid (Claude)"
+        emit_legacy "$src" "$stage/oc" opencode || fail "legacy pass-through failed for $lid (OpenCode)"
+        emit_legacy "$src" "$stage/cl" claude || fail "legacy pass-through failed for $lid (Claude)"
         expected_md="$expected_md $lid"
         legacy_projected=$((legacy_projected + 1))
         continue
@@ -524,10 +565,18 @@ write
       printf '%s\n' '---' 'schema: ai-engineering.subagent.v1' 'id: bad-bs' '---' '## Boundaries' 'has \ here' > "$t/bad-bs.md"
       emit_projection "$t/bad-bs.md" "$t/codex"; rc=$?
       { [ "$rc" -ne 0 ] && [ ! -e "$t/codex/bad-bs.toml" ]; } || chk backslash
-      printf '%s\n' '---' 'description: legacy' 'mode: primary' '---' '# Legacy' > "$t/legacy.md"
+      printf '%s\n' '---' 'name: legacy' 'description: legacy' 'mode: primary' 'model: opus' '---' '# Legacy' > "$t/legacy.md"
       parse_canonical "$t/legacy.md"; [ $? -eq 3 ] || chk legacy-skip
-      emit_legacy "$t/legacy.md" "$t/oc" || chk legacy-pass
-      cmp -s "$t/legacy.md" "$t/oc/legacy.md" || chk legacy-verbatim
+      emit_legacy "$t/legacy.md" "$t/oc" opencode || chk legacy-oc-pass
+      emit_legacy "$t/legacy.md" "$t/cl" claude || chk legacy-cl-pass
+      cmp -s "$t/legacy.md" "$t/cl/legacy.md" || chk legacy-cl-verbatim
+      ! grep -q '^model:' "$t/oc/legacy.md" || chk legacy-oc-model-stripped
+      grep -q '^model: opus$' "$t/cl/legacy.md" || chk legacy-cl-model
+      # The independent auditor reaches Claude without the OpenCode permission
+      # block, so the Claude pass-through denies the writing and dispatch tools.
+      printf '%s\n' '---' 'name: external-auditor' 'description: auditor' 'mode: all' '---' '# Auditor' > "$t/external-auditor.md"
+      emit_legacy "$t/external-auditor.md" "$t/cl" claude || chk auditor-cl-pass
+      grep -q '^disallowedTools: Write, Edit, NotebookEdit, Agent$' "$t/cl/external-auditor.md" || chk auditor-cl-tools
 
       # Writer fixture: readOnly false, two skill ids, read+write, with Result.
       printf '%s\n' '---' 'schema: ai-engineering.subagent.v1' 'id: ft-writer' \
@@ -538,7 +587,7 @@ write
         > "$t/ft-writer.md"
       parse_canonical "$t/ft-writer.md" || chk writer-parse
       gate_vocabulary || chk writer-vocabulary
-      emit_legacy "$t/ft-writer.md" "$t/oc"; [ $? -eq 3 ] || chk legacy-reject-canonical
+      emit_legacy "$t/ft-writer.md" "$t/oc" opencode; [ $? -eq 3 ] || chk legacy-reject-canonical
       emit_opencode "$t/ft-writer.md" "$t/oc" || chk writer-oc-emit
       emit_claude "$t/ft-writer.md" "$t/cl" || chk writer-cl-emit
       gate_opencode "$t/oc/ft-writer.md" || chk writer-oc-gate
@@ -585,6 +634,21 @@ write
       ! printf '%s\n' "$cfr" | grep -q '^  - Write$' || chk reader-cl-write
       printf '%s\n' "$cfr" | grep -q '^skills: \[\]$' || chk reader-cl-empty-skills
       printf '%s\n' "$cfr" | grep -q '^  - Grep$' || chk reader-cl-grep
+
+      # Single-token canonical name: Explore keeps its name in the Claude
+      # projection so it overrides the built-in Explore and keeps model: haiku.
+      printf '%s\n' '---' 'schema: ai-engineering.subagent.v1' 'id: ft-explore' \
+        'name: Explore' 'description: fixture explore description' 'mode: underneath' \
+        'model: haiku' 'context:' '  profile: lean@1' '  skills: []' \
+        'tools:' '  - read' '  - skill' 'invariants:' '  readOnly: true' '---' '' \
+        '# Fixture Explore' 'explore intro sentence.' '' '## Steps' 'step' 'TERMINADO' > "$t/ft-explore.md"
+      parse_canonical "$t/ft-explore.md" || chk explore-parse
+      emit_claude "$t/ft-explore.md" "$t/cl" || chk explore-cl-emit
+      gate_claude "$t/cl/ft-explore.md" || chk explore-cl-gate
+      cfr=$(fm_region "$t/cl/ft-explore.md")
+      printf '%s\n' "$cfr" | grep -q '^name: Explore$' || chk explore-cl-name
+      printf '%s\n' "$cfr" | grep -q '^model: haiku$' || chk explore-cl-model
+      printf '%s\n' "$cfr" | grep -q '^  - Skill$' || chk explore-cl-skill
       b=$(body_md "$t/oc/ft-reader.md"); ! printf '%s\n' "$b" | grep -q '^## Result' || chk reader-no-result
       printf '%s\n' "$b" | grep -Fq 'reader intro sentence.' || chk reader-intro
 
@@ -642,25 +706,32 @@ write
       gen="$base/.agents.$runid.$client"
       gate_catalog "$staged" "$suffix" "$expected" "$count" || {
         fail "$client staged catalog is incomplete ($count expected)"; return 1; }
-      # The user requires exactly four agents: built-in Plan and Build, plus
-      # orchestrator (primary) and external-auditor (all). Every other custom
-      # agent must be a subagent.
-      # Only the OpenCode projection carries a client `mode:` frontmatter field;
-      # Claude projections express the same split through native tool grants.
+      # On OpenCode the user requires five agents: built-in Plan and Build, plus
+      # orchestrator and coder (primary) and external-auditor (all). Every other
+      # custom agent must be a subagent.
+      # Only the OpenCode projection carries a client `mode:` frontmatter field.
+      # Claude ignores `mode`, discovers every definition as a subagent, has
+      # Plan but no Build, and can run any definition with `claude --agent`.
       if [ "$client" = opencode ]; then
+        agents_n=0
+        subs_n=0
         for f in "$staged"/*.md; do
           id=$(basename "$f" .md)
           m=$(awk 'NR==1&&$0=="---"{fm=1;next} fm&&/^---$/{exit} fm&&/^mode:/{print $2;exit}' "$f")
           case "$id" in
-            orchestrator)
-              [ "$m" = primary ] || { fail "orchestrator must stay primary (got $m)"; return 1; } ;;
+            orchestrator|coder)
+              [ "$m" = primary ] || { fail "$id must stay primary (got $m)"; return 1; } ;;
             external-auditor)
               [ "$m" = all ] || { fail "external-auditor must stay all (got $m)"; return 1; } ;;
             *)
               [ "$m" = subagent ] || { fail "$id must be a subagent (got $m)"; return 1; } ;;
           esac
+          case "$m" in
+            primary|all) agents_n=$((agents_n + 1)) ;;
+            subagent) subs_n=$((subs_n + 1)) ;;
+          esac
         done
-        pass "$client agent/subagent split verified (2 custom agents, 8 subagents)"
+        pass "$client agent/subagent split verified ($agents_n custom agents, $subs_n subagents)"
       fi
       rm -rf "$gen" || { fail "cannot clear $gen"; return 1; }
       mv "$staged" "$gen" || { fail "cannot promote $client staged catalog"; return 1; }
@@ -789,13 +860,19 @@ key=$(printf '%s' "$(git rev-parse --show-toplevel)" | cksum | awk '{print $1}')
    `agents/<id>.md` carrying `schema: ai-engineering.subagent.v1`, the Codex
    emitter writes `<id>.toml`, the OpenCode emitter writes native Markdown with
    `mode: subagent` and deny-first permissions, and the Claude emitter writes
-   native frontmatter. Only `Plan`, `Build`, `orchestrator` and
-   `external-auditor` are agents; the other 8 custom definitions are subagents
-   (six domains, `writer-pr` and `reviewer-pr`) visible through the client's
-   native subagent surface. A publish-time allowlist
-   enforces that split. The canonical delegation mode (including read-only) still
-   wins from the canonical file. Legacy agents without the schema are copied
-   verbatim to both Markdown clients. All files are staged in a private temp directory under
+   native frontmatter. On OpenCode only `Plan`, `Build`, `orchestrator`, `coder`
+   and `external-auditor` are agents; the other nine custom definitions are
+   subagents (six domains, `explore`, `writer-pr` and `reviewer-pr`) visible
+   through the client's native subagent surface, and a publish-time allowlist
+   enforces that split. Claude ignores `mode`, discovers every definition as a
+   subagent, has `Plan` but no `Build`, and `claude --agent <id>` can run any
+   definition as the main session agent, so the five-agent restriction there is
+   `NOT VERIFIED`. The canonical delegation mode (including read-only) still
+   wins from the canonical file. Legacy agents without the schema are passed
+   through to both Markdown clients; the OpenCode copy drops the semantic model
+   hint (OpenCode binds a provider-qualified id) and the Claude copy of
+   `external-auditor` denies the writing and dispatch tools (Claude does not
+   read the OpenCode permission block). All files are staged in a private temp directory under
    `${AI_ENGINEERING_STATE_HOME:-$HOME/.ai-engineering}/projections/`; a catalog
    gate checks the exact id set and count before anything is published. The
    staged catalog is then moved to a versioned directory and the stable
@@ -888,11 +965,14 @@ repository, and its directory is the root.
   client after rerun, all 19 custom ids visible in `/api/agent`, with exactly
   `orchestrator` and `external-auditor` as custom agents and the other 17 as
   subagents, and the `.v2` record check reporting `ready`. That result is
-  historical: it does not cover the current revision, which removed the writer
-  emitter branch and reduced the catalog to eight agents. The current revision
-  is `NOT VERIFIED` on macOS until it is run. The staged-catalog gate and the
-  fail-closed relink guard were exercised in that self-test; a real discovery
-  destination pointing elsewhere remains `NOT VERIFIED`.
+  historical: it does not cover the current revision. The current revision was
+  run on 2026-11-27 in a sandbox HOME with `EXIT=0` and no `FAIL`: 9 canonical
+  projections plus 3 legacy pass-throughs per Markdown client, 9 Codex TOMLs,
+  12 definitions (3 custom agents and 9 subagents), and the self-test covering
+  the client-aware pass-through. The real HOME was not modified, so discovery
+  against the real links remains `NOT VERIFIED`. The staged-catalog gate and
+  the fail-closed relink guard were exercised in the sandbox self-test; a real
+  discovery destination pointing elsewhere remains `NOT VERIFIED`.
 - **Linux:** the earlier Alpine container run covered the previous block. The
   current block is `NOT VERIFIED` on Linux and other distributions.
 - **Windows:** simulated with command shims. A real run in Git Bash is `NOT
